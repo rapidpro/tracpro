@@ -1,0 +1,42 @@
+- extends "base.html"
+
+- load smartmin i18n
+
+- block login
+
+- block content
+  .row.login-form
+    .col-md-7.col-md-offset-2
+      .page-header
+        %h2
+          - trans "Sign in"
+
+      %form#login-form.form-stacked{method:"post"}
+        - for field, errors in form.errors.items
+          - if field == '__all__'
+            .alert.alert-danger.form-errors
+              %h3
+                Error
+              {{ errors }}
+      
+        %fieldset
+          .form-group
+            %label{ for:"username" }
+              - trans "Email"
+            .input
+              %input#id_username.form-control{ maxlength:"254", name:"username", type:"text" }
+
+          .form-group
+            %label{ for:"password" }
+              - trans "Password"
+            .input
+              %input#id_password.form-control{ name:"password", type:"password" }
+
+          - csrf_token
+          %button.btn.btn-primary.login-btn{ type:"submit"}
+            - trans "Login"
+
+          - if allow_email_recovery
+            %span.pull-right{ style:"padding-top:7px;padding-right:150px;"}
+              %a{ href:"{% url 'users.user_forget' %}"}
+                - trans "Forgot Password?"

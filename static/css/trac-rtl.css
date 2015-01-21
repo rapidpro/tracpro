@@ -1,0 +1,24 @@
+/* Bootstrap tweaks */
+
+.nav {
+    padding-right: 0;
+}
+
+/* Smartmin tweaks */
+
+.pagination-text {
+    text-align: left !important;
+}
+
+.table td.read-label {
+    text-align: left !important;
+}
+
+/* ChatPro */
+
+.pull-away {
+    float: left;
+}
+.pull-back {
+    float: right;
+}

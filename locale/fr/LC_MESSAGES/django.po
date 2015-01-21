@@ -1,0 +1,982 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+#
+# Translators:
+# stucampo <stuart.campo@gmail.com>, 2014
+# Vincent Turmine <vincent.turmine@gmail.com>, 2014
+msgid ""
+msgstr ""
+"Project-Id-Version: UReport\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2014-11-11 21:06+0000\n"
+"PO-Revision-Date: 2014-09-21 21:58+0000\n"
+"Last-Translator: TextIt <info@textit.in>\n"
+"Language-Team: French (http://www.transifex.com/projects/p/ureport/language/"
+"fr/)\n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: templates/chat/chat_list.haml:10
+msgid "phone"
+msgstr ""
+
+#: templates/chat/chat_list.haml:13
+msgid "msg"
+msgstr ""
+
+#: templates/chat/chat_list.haml:16
+msgid "date"
+msgstr ""
+
+#: templates/contacts/contact_list.haml:6
+#, python-format
+msgid ""
+"\n"
+"      Contacts in %(location)s.\n"
+"\n"
+"    "
+msgstr ""
+
+#: templates/contacts/contact_list.haml:15
+msgid "Phone"
+msgstr ""
+
+#: templates/contacts/contact_list.haml:18
+msgid "Name"
+msgstr "Nom"
+
+#: templates/contacts/contact_list.haml:21
+msgid "Location"
+msgstr ""
+
+#: templates/contacts/contact_list.haml:24
+#, fuzzy
+#| msgid "User Role"
+msgid "Role"
+msgstr "Rôle Utilisateur"
+
+#: templates/public/org_chooser.haml:5
+msgid ""
+"\n"
+"    No site selected, please contact your administrator to find valid "
+"TracPro sites.\n"
+"  "
+msgstr ""
+
+#: templates/smartmin/users/login.haml:14
+msgid "Sign in"
+msgstr "Se connecter"
+
+#: templates/smartmin/users/login.haml:49
+msgid "Login"
+msgstr "Se connecter"
+
+#: templates/smartmin/users/login.haml:54
+msgid "Forgot Password?"
+msgstr "Mot de passe oublié ?"
+
+#: tracpro/settings_common.py:164
+#, fuzzy
+#| msgid "The API token for the RapidPro account this dashboard is tied to"
+msgid "The API token for the chat organization for this org"
+msgstr "L'API token du tableau de bord auquel ce compte RapidPro est lié"
+
+#: tracpro/supervisors/models.py:12 tracpro/supervisors/views.py:24
+msgid "Region"
+msgstr ""
+
+#: tracpro/supervisors/models.py:13
+msgid ""
+"The name of the Region or State this supervisor belongs to, this should map "
+"to the Contact group on RapidPro"
+msgstr ""
+
+#: tracpro/supervisors/models.py:27
+msgid "Supervisor"
+msgstr ""
+
+#: tracpro/supervisors/models.py:28
+msgid "Supervisors"
+msgstr ""
+
+#: tracpro/supervisors/views.py:10
+msgid "Active"
+msgstr ""
+
+#: tracpro/supervisors/views.py:11
+msgid "Whether this user is active, disable to remove access"
+msgstr ""
+
+#: tracpro/supervisors/views.py:14
+#, fuzzy
+#| msgid "Your first name"
+msgid "First Name"
+msgstr "Votre prénom"
+
+#: tracpro/supervisors/views.py:14
+#, fuzzy
+#| msgid "The name of this category"
+msgid "The first name of the user"
+msgstr "Nom de la catégorie"
+
+#: tracpro/supervisors/views.py:16
+#, fuzzy
+#| msgid "Name"
+msgid "Last Name"
+msgstr "Nom"
+
+#: tracpro/supervisors/views.py:16
+#, fuzzy
+#| msgid "The location of the responder."
+msgid "The last name of the user"
+msgstr "La localisation du répondeur"
+
+#: tracpro/supervisors/views.py:18
+msgid "Email"
+msgstr "Email"
+
+#: tracpro/supervisors/views.py:18
+#, fuzzy
+#| msgid "That email address is already used"
+msgid "The email address for the user"
+msgstr "Cet email est déjà utilisé"
+
+#: tracpro/supervisors/views.py:20
+#, fuzzy
+#| msgid "Forgot Password?"
+msgid "New Password"
+msgstr "Mot de passe oublié ?"
+
+#: tracpro/supervisors/views.py:20
+msgid "The password used to log in (minimum of 8 characters, optional)"
+msgstr ""
+
+#: tracpro/supervisors/views.py:22
+#, fuzzy
+#| msgid "Forgot Password?"
+msgid "Password"
+msgstr "Mot de passe oublié ?"
+
+#: tracpro/supervisors/views.py:22
+msgid "The password used to log in (minimum of 8 characters)"
+msgstr ""
+
+#: tracpro/supervisors/views.py:24
+#, fuzzy
+#| msgid "The name of the sender of the message"
+msgid "The name of the region they supervise"
+msgstr "Le nom de l'expéditeur de ce message"
+
+#: tracpro/supervisors/views.py:27
+msgid "Site"
+msgstr ""
+
+#: tracpro/supervisors/views.py:27
+#, fuzzy
+#| msgid "The poll this question is part of"
+msgid "The site this user is part of"
+msgstr "Le sondage dont cette question fait partie"
+
+#: tracpro/translation.py:14
+msgid "Something to trigger localizations"
+msgstr "Quelque chose pour déclencher les localisations"
+
+#~ msgid "Content Blocks"
+#~ msgstr "Blocs"
+
+#~ msgid "%s Blocks"
+#~ msgstr "%s Blocs"
+
+#~ msgid "The name of this organization"
+#~ msgstr "Nom de l'organisation"
+
+#~ msgid "The logo that should be used for this organization"
+#~ msgstr "Le logo qui doit être utilisé pour l'organisation"
+
+#~ msgid "Administrators"
+#~ msgstr "Administrateurs"
+
+#~ msgid "The administrators in your organization"
+#~ msgstr "Les administrateurs de votre organisation"
+
+#~ msgid "Viewers"
+#~ msgstr "Visiteurs"
+
+#~ msgid "The viewers in your organization"
+#~ msgstr "Visiteurs de votre organisation"
+
+#~ msgid "Editors"
+#~ msgstr "Editeurs"
+
+#~ msgid "The editors in your organization"
+#~ msgstr "Les éditeurs de votre organisation"
+
+#~ msgid "Language"
+#~ msgstr "Langue"
+
+#~ msgid "The main language used by this organization"
+#~ msgstr "La langue principale de votre organisation"
+
+#~ msgid "Subdomain"
+#~ msgstr "Sous-domaine"
+
+#~ msgid "This subdomain is not available"
+#~ msgstr "Le sous-domaine n'est pas disponible"
+
+#~ msgid "The subdomain for this UReport instance"
+#~ msgstr "Le sous-domaine pour ce U-report"
+
+#~ msgid ""
+#~ "JSON blob used to store configuration information associated with this "
+#~ "organization"
+#~ msgstr ""
+#~ "JSON blob utilisé pour stocker les éléments de configuration relative à "
+#~ "cette organisation"
+
+#~ msgid "Administrator"
+#~ msgstr "Administrateur"
+
+#~ msgid "Editor"
+#~ msgstr "Editeur"
+
+#~ msgid "Viewer"
+#~ msgstr "Visiteur"
+
+#~ msgid "Org"
+#~ msgstr "Organisation"
+
+#~ msgid "The organization to which the account is invited to view"
+#~ msgstr "L'organisation à laquelle le compte est invité pour visiter"
+
+#~ msgid "The email to which we send the invitation of the viewer"
+#~ msgstr "L'email du visiteur à qui nous envoyons l'invitation"
+
+#~ msgid "Secret"
+#~ msgstr "Secret"
+
+#~ msgid "a unique code associated with this invitation"
+#~ msgstr "un code unique associé avec l'invitation"
+
+#~ msgid "%s Invitation"
+#~ msgstr "%s Invitation"
+
+#~ msgid "Banner"
+#~ msgstr "Bannière"
+
+#~ msgid "Pattern"
+#~ msgstr "Motif"
+
+#~ msgid "The organization in which the image will be used"
+#~ msgstr "L'organisation pour laquelle l'image sera utilisée"
+
+#~ msgid "The name to describe this background"
+#~ msgstr "Le nom pour décrire cet arrière-plan"
+
+#~ msgid "Background type"
+#~ msgstr "Type d'arrière-plan"
+
+#~ msgid "The image file"
+#~ msgstr "Le fichier image"
+
+#~ msgid "Your last name"
+#~ msgstr "Votre nom"
+
+#~ msgid "Your email address"
+#~ msgstr "Votre adresse email"
+
+#~ msgid "Your password, at least eight letters please"
+#~ msgstr "Votre mot de passe, avec au moins 8 lettres"
+
+#~ msgid "Organization"
+#~ msgstr "Organisation"
+
+#~ msgid "The subdomain of this organization"
+#~ msgstr "Le sous-domaine de votre organisation"
+
+#~ msgid "Passwords must contain at least 8 letters."
+#~ msgstr "Les mots de passe doivent contenir au moins 8 lettres"
+
+#~ msgid "Your Account"
+#~ msgstr "Votre compte"
+
+#~ msgid "Not Set"
+#~ msgstr "Non-installé"
+
+#~ msgid "Invite people to your organization"
+#~ msgstr "Invitez des membres de votre organisation"
+
+#~ msgid "User group"
+#~ msgstr "Groupe utilisateur"
+
+#~ msgid "One of the emails you entered is invalid."
+#~ msgstr "Un des emails que vous avez saisi est erroné"
+
+#~ msgid "Manage %(name)s Accounts"
+#~ msgstr "Gérer les comptes de %(name)s"
+
+#~ msgid "Select your Organization"
+#~ msgstr "Choisir votre organisation"
+
+#~ msgid ""
+#~ "Your account is not associated to an organization. Please Contact the "
+#~ "adminstrator."
+#~ msgstr ""
+#~ "Votre compte n'est pas associé à une organisation. SVP, contactez "
+#~ "l'administrateur."
+
+#~ msgid "Create"
+#~ msgstr "Créer"
+
+#~ msgid ""
+#~ "Your invitation link is invalid. Please contact your organization "
+#~ "administrator."
+#~ msgstr ""
+#~ "Le lien de votre invitation n'est pas valide. SVP, contacter "
+#~ "l'administrateur de votre organisation."
+
+#~ msgid "Join %(name)s"
+#~ msgstr "Rejoindre %(name)s"
+
+#~ msgid "Join"
+#~ msgstr "Rejoindre"
+
+#~ msgid ""
+#~ "Your invitation link has expired. Please contact your organization "
+#~ "administrator."
+#~ msgstr ""
+#~ "Votre invitation a expirée. SVP, contactez l'administrateur de votre "
+#~ "organisation"
+
+#~ msgid "The title for this story"
+#~ msgstr "Le titre de l'article"
+
+#~ msgid "The summary for the story"
+#~ msgstr "Le résumé de l'article"
+
+#~ msgid "The body of text for the story"
+#~ msgstr "Le texte principal de l'article"
+
+#~ msgid ""
+#~ "Any tags for this story, separated by spaces, can be used to do more "
+#~ "advanced filtering, optional"
+#~ msgstr ""
+#~ "Chaque mot-clé de l'article séparé par des espaces peut être utiliser "
+#~ "pour des filtres, optionnel"
+
+#~ msgid "The category for this story"
+#~ msgstr "La rubrique pour cet article"
+
+#~ msgid "The organization this story belongs to"
+#~ msgstr "L'organisation à qui appartient l'article"
+
+#~ msgid "Stories"
+#~ msgstr "Articles"
+
+#~ msgid "The name to describe this image"
+#~ msgstr "Le nom pour décrire cette image"
+
+#~ msgid "The story to associate to"
+#~ msgstr "L'article à associer à"
+
+#~ msgid "The image file to use"
+#~ msgstr "Le fichier image à utiliser"
+
+#~ msgid "Yes"
+#~ msgstr "Oui"
+
+#~ msgid "No"
+#~ msgstr "Non"
+
+#~ msgid "Story Images"
+#~ msgstr "Images de l'article"
+
+#~ msgid "Image %d"
+#~ msgstr "Image %d"
+
+#~ msgid "Image to display on story page and in previews. (optional)"
+#~ msgstr "Image à afficher au sein de l'article et du résumé (optionnel)"
+
+#~ msgid "Image to display on story page and in previews (optional)"
+#~ msgstr "Image à afficher au sein de l'article et des résumés (optionnel)"
+
+#~ msgid "Add"
+#~ msgstr "Ajouter"
+
+#~ msgid "Gallery"
+#~ msgstr "Galerie Photos"
+
+#~ msgid "Add Image"
+#~ msgstr "Ajouter une image"
+
+#~ msgid "Search"
+#~ msgstr "Rechercher"
+
+#~ msgid "U-report"
+#~ msgstr "U-report"
+
+#~ msgid "Toggle navigation"
+#~ msgstr "Toggle de navigation"
+
+#~ msgid "Admin"
+#~ msgstr "Administrateurs"
+
+#~ msgid "Configuration"
+#~ msgstr "Configuration"
+
+#~ msgid "Orgs"
+#~ msgstr "Organisations"
+
+#~ msgid "Users"
+#~ msgstr "Utilisateurs"
+
+#~ msgid "Content Types"
+#~ msgstr "Types de contenu"
+
+#~ msgid "Backgrounds"
+#~ msgstr "Images de fond"
+
+#~ msgid "Content"
+#~ msgstr "Contenu"
+
+#~ msgid "Polls"
+#~ msgstr "Sondages"
+
+#~ msgid "News Items"
+#~ msgstr "Nouveaux sujets"
+
+#~ msgid "Categories"
+#~ msgstr "Rubriques"
+
+#~ msgid "Category Images"
+#~ msgstr "Images de la Rubrique"
+
+#~ msgid "Pages & Videos"
+#~ msgstr "Pages & Vidéos"
+
+#~ msgid "About Content"
+#~ msgstr "Contenu \"A propos\""
+
+#~ msgid "Contact Us Content"
+#~ msgstr "Contenus \"Contacter-Nous\""
+
+#~ msgid "Missions Content"
+#~ msgstr "Contenu \"Missions\""
+
+#~ msgid "Join &amp; Engage Content"
+#~ msgstr "Contenu de \"Rejoindre & s'engager\""
+
+#~ msgid "Join Steps Content"
+#~ msgstr "Contenu \"Etapes d'inscription\""
+
+#~ msgid "U-reporters Content"
+#~ msgstr "Contenu \"U-reporters\""
+
+#~ msgid "Videos"
+#~ msgstr "Vidéos"
+
+#~ msgid "Logout"
+#~ msgstr "Se déconnecter"
+
+#~ msgid "About"
+#~ msgstr "A propos"
+
+#~ msgid "U-reporters"
+#~ msgstr "U-reporters"
+
+#~ msgid "Join & Engage"
+#~ msgstr "Rejoindre & S'engager"
+
+#~ msgid "FOLLOW US ON:"
+#~ msgstr "NOUS SUIVRE SUR :"
+
+#~ msgid "Edit"
+#~ msgstr "Editer"
+
+#~ msgid "Manage Users"
+#~ msgstr "Gérer les utilisateurs"
+
+#~ msgid "Accounts"
+#~ msgstr "Comptes"
+
+#~ msgid "Admins"
+#~ msgstr "Administrateurs"
+
+#~ msgid "Remove"
+#~ msgstr "Retirer"
+
+#~ msgid "You must have at least one administator"
+#~ msgstr "Vous devez avoir au moins un administrateur"
+
+#~ msgid "ABOUT U-REPORT"
+#~ msgstr "A PROPOS DE U-REPORT"
+
+#~ msgid "Scroll to Learn more"
+#~ msgstr "Défiler pour en savoir plus"
+
+#~ msgid "The mission of U-report"
+#~ msgstr "La mission d'U-report"
+
+#~ msgid "Speak out on what's happening in your community"
+#~ msgstr "Dire haut et fort ce qui se passe dans ta communauté"
+
+#~ msgid ""
+#~ "Use Ureport results and information to update and increase citizen's "
+#~ "awareness"
+#~ msgstr ""
+#~ "Exploiter les résultats d'U-report pour informer et éveiller les citoyens"
+
+#~ msgid "Participate in nationwide campaigns to help improve your country"
+#~ msgstr ""
+#~ "Participer aux campagnes nationales pour aider à l'amélioration de ton "
+#~ "pays"
+
+#~ msgid "CLICK HERE TO JOIN"
+#~ msgstr "CLIQUEZ ICI POUR S'INSCRIRE"
+
+#~ msgid "U-REPORT VIDEOS"
+#~ msgstr "VIDEOS DE L'U-REPORT"
+
+#~ msgid "No videos yet."
+#~ msgstr "Aucune vidéo"
+
+#~ msgid "WATCH IT ON YOUTUBE"
+#~ msgstr "REGARDER SUR YOUTUBE"
+
+#~ msgid "MORE POLLS"
+#~ msgstr "+ DE SONDAGES"
+
+#~ msgid "FILTER"
+#~ msgstr "FILTRER"
+
+#~ msgid "POLL LIST"
+#~ msgstr "LISTE DES SONDAGES"
+
+#~ msgid "All polls from most recent to oldest"
+#~ msgstr "Tous les sondages du plus récent au plus ancien"
+
+#~ msgid "ARCHIVED STORIES"
+#~ msgstr "ARTICLES ARCHIVES"
+
+#~ msgid "LIST"
+#~ msgstr "LISTE"
+
+#~ msgid "CURRENT POLL"
+#~ msgstr "SONDAGE EN COURS"
+
+#~ msgid "RESPONSE RATE"
+#~ msgstr "TAUX DE REPONSE"
+
+#~ msgid "Responded out of"
+#~ msgstr "Répondus sur "
+
+#~ msgid "RESPONDER'S RATE BY LOCATION"
+#~ msgstr "TAUX DE REPONDANT PAR LIEU"
+
+#~ msgid "Most responded"
+#~ msgstr "Plus répondu"
+
+#~ msgid "Least responded"
+#~ msgstr "Moins répondu"
+
+#~ msgid "TRENDING WORDS"
+#~ msgstr "LES MOTS LES PLUS FRÉQUENTS"
+
+#~ msgid "FEATURED RESPONSES"
+#~ msgstr "REPONSES SELECTIONNES"
+
+#~ msgid "VIEW FULL RESULT"
+#~ msgstr "VOIR TOUS LES RESULTATS"
+
+#~ msgid "U-REPORTERS IN"
+#~ msgstr "U-REPORTERS AU SEIN DE"
+
+#~ msgid "TOTAL # OF U-REPORTERS"
+#~ msgstr "NB TOTAL DE U-REPORTERS"
+
+#~ msgid "4 MOST ACTIVE REGIONS"
+#~ msgstr "LES 4 REGIONS LES PLUS ACTIVES"
+
+#~ msgid "RATE BY GENDER"
+#~ msgstr "TAUX PAR GENRE"
+
+#~ msgid "RATE BY AGE"
+#~ msgstr "TAUX PAR AGE"
+
+#~ msgid "WHAT U-REPORTERS ARE SAYING"
+#~ msgstr "CE QUE DISENT LES U-REPORTERS"
+
+#~ msgid "FEATURED VIDEO"
+#~ msgstr "VIDEO SELECTIONNEE"
+
+#~ msgid "WATCH MORE VIDEOS"
+#~ msgstr "REGARDER PLUS DE VIDEOS"
+
+#~ msgid "FEATURED REGION"
+#~ msgstr "REGION SELECTIONNEE"
+
+#~ msgid "VIEW MORE STORIES ON FACEBOOK"
+#~ msgstr "VOIR PLUS D'ARTICLES SUR FACEBOOK"
+
+#~ msgid "READ MORE TWEETS ON TWITTER"
+#~ msgstr "LIRE PLUS DE TWEETS SUR TWITTER"
+
+#~ msgid "NEWS FEED"
+#~ msgstr "FIL D'ACTUALITES"
+
+#~ msgid "Read This Story"
+#~ msgstr "Lire cet article"
+
+#~ msgid "U-REPORTER STORY"
+#~ msgstr "ARTICLE DE U-REPORTERS"
+
+#~ msgid "READ FULL STORY"
+#~ msgstr "LIRE TOUT L'ARTICLE"
+
+#~ msgid "Response Rate"
+#~ msgstr "Taux de réponse"
+
+#~ msgid "JOIN U-REPORT"
+#~ msgstr "S'INSCRIRE A U-REPORT"
+
+#~ msgid "HOW TO JOIN"
+#~ msgstr "COMMENT S'INSCRIRE"
+
+#~ msgid ""
+#~ "\n"
+#~ "              * U-report is a free program sponsored by UNICEF with help "
+#~ "of Network Providers in %(org.name)s. U-report will not ask for any "
+#~ "payments nor personal financial information, PLEASE disregard any "
+#~ "messages which ask you for payment either on this number or on the "
+#~ "Facebook and Twitter pages. All U-report services (all msg on %(org|"
+#~ "config:\"shortcode\")s) are free.\n"
+#~ "\n"
+#~ "            "
+#~ msgstr ""
+#~ "\n"
+#~ "              * U-report est une application gratuite offerte par UNICEF "
+#~ "avec l'aide des opérateurs réseau %(org.name)s. U-report ne requiert "
+#~ "aucun paiement ni information financière personnelle. Ne tenez jamais "
+#~ "compte des messages vous demandant un paiement sur ce numéro, Facebook ou "
+#~ "page Twitter. Tous les services et fonctions d'U-report (tous les SMS "
+#~ "envoyés au %(org|config:\"shortcode\")s) sont gratuits.\n"
+#~ "\n"
+#~ "            "
+
+#~ msgid "U-REPORT ON SOCIAL MEDIA"
+#~ msgstr "U-REPORT SUR LES MEDIAS SOCIAUX"
+
+#~ msgid "TWEET TO"
+#~ msgstr "ENVOYER UN TWEET A"
+
+#~ msgid "COMPOSE NEW TWEET"
+#~ msgstr "COMPOSER UN NOUVEAU TWEET"
+
+#~ msgid "CURRENT POLL IN"
+#~ msgstr "SONDAGE EN COURS SUR LE THÈME :"
+
+#~ msgid ""
+#~ "\n"
+#~ "                %(questions)s QUESTION POLLED ON THIS TOPIC\n"
+#~ "              "
+#~ msgid_plural ""
+#~ "\n"
+#~ "                %(questions)s QUESTIONS POLLED ON THIS TOPIC\n"
+#~ "              "
+#~ msgstr[0] ""
+#~ "\n"
+#~ "                %(questions)s QUESTION POSEE SUR CE SUJET\n"
+#~ "              "
+#~ msgstr[1] ""
+#~ "\n"
+#~ "                %(questions)s QUESTIONS POSÉES SUR CE SUJET           "
+
+#~ msgid "RESPONDED OUT OF"
+#~ msgstr "REPONSES SUR"
+
+#~ msgid "POLLED"
+#~ msgstr "INTERROGES"
+
+#~ msgid "POLL RESULTS"
+#~ msgstr "RESULTATS DU SONDAGE"
+
+#~ msgid "KEYWORDS"
+#~ msgstr "MOT-CLES"
+
+#~ msgid "STATISTICS"
+#~ msgstr "STATISTIQUES"
+
+#~ msgid "LOCATIONS"
+#~ msgstr "CARTOGRAPHIE"
+
+#~ msgid "FEATURED ANSWERS"
+#~ msgstr "REPONSES SELECTIONNEES"
+
+#~ msgid "No featured answers."
+#~ msgstr "Aucune réponse sélectionnée"
+
+#~ msgid "U-reporter in"
+#~ msgstr "U-report au sein de"
+
+#~ msgid "RELATED STORIES"
+#~ msgstr "ARTICLES ASSOCIES"
+
+#~ msgid "No related stories."
+#~ msgstr "AUCUN ARTICLE ASSOCIES"
+
+#~ msgid "READ MORE"
+#~ msgstr "EN SAVOIR PLUS"
+
+#~ msgid "FEATURED IMAGES"
+#~ msgstr "IMAGES SELECTIONNEES"
+
+#~ msgid "No featured images yet."
+#~ msgstr "Aucune image sélectionnée"
+
+#~ msgid "FEATURED STORY"
+#~ msgstr "ARTICLE SELECTIONNE"
+
+#~ msgid "BY"
+#~ msgstr "PAR"
+
+#~ msgid "LATEST U-REPORT STORIES"
+#~ msgstr "DERNIERS ARTICLES U-REPORT"
+
+#~ msgid "FILTERED BY"
+#~ msgstr "FILTRE PAR"
+
+#~ msgid "Scroll to read more"
+#~ msgstr "Dérouler pour lire plus d'information"
+
+#~ msgid "U-REPORT STORY CONTINUES"
+#~ msgstr "L'ARTICLE U-REPORT CONTINUE"
+
+#~ msgid "RELATED POLLS"
+#~ msgstr "SONDAGES ASSOCIES"
+
+#~ msgid "No related polls."
+#~ msgstr "Aucune sondage associé."
+
+#~ msgid "No featured images."
+#~ msgstr "Aucune image sélectionnée"
+
+#~ msgid "WHO WE ARE"
+#~ msgstr "A PROPOS DE NOUS"
+
+#~ msgid "U-REPORTER STATISTICS"
+#~ msgstr "STATISTIQUES DES U-REPORTERS"
+
+#~ msgid "AGE"
+#~ msgstr "AGE"
+
+#~ msgid "GENDER"
+#~ msgstr "GENRE"
+
+#~ msgid "REGISTRATION RATE: IN THE PAST 6 MONTHS"
+#~ msgstr "TAUX D'ENREGISTREMENT DEPUIS 6 MOIS"
+
+#~ msgid "OCCUPATION: TOP 9 MOST MENTIONED"
+#~ msgstr "LES 9 OCCUPATIONS LES PLUS MENTIONNES"
+
+#~ msgid "An optional image that can describe this category"
+#~ msgstr "Une image optionnelle qui peut décrire cette rubrique"
+
+#~ msgid "The organization this category applies to"
+#~ msgstr "L'organisation à laquelle la rubrique s'applique"
+
+#~ msgid "The category this image represents"
+#~ msgstr "La rubrique que cette image représente"
+
+#~ msgid "The title for this item"
+#~ msgstr "Le titre de ce sujet"
+
+#~ msgid "A short summary description for this item"
+#~ msgstr "Une description sommaire de ce sujet"
+
+#~ msgid "A link that should be associated with this item"
+#~ msgstr "Un lien qui devrait être associé à ce sujet"
+
+#~ msgid "The category this item belongs to"
+#~ msgstr "La rubrique à laquelle ce sujet appartient"
+
+#~ msgid "The organization this item belongs to"
+#~ msgstr "L'organisation à laquelle ce sujet appartient"
+
+#~ msgid "The title for this Video"
+#~ msgstr "Le titre pour cette vidéo"
+
+#~ msgid "A short summary description for this video"
+#~ msgstr "Une description sommaire pour cette vidéo"
+
+#~ msgid "The id of the YouTube video that should be linked to this item"
+#~ msgstr "L'ID de la vidéo Youtube qui devrait être associé à ce sujet"
+
+#~ msgid "The organization this video belongs to"
+#~ msgstr "L'organisation à la quelle la vidéo appartient"
+
+#~ msgid "The name of this poll category"
+#~ msgstr "Le nom de la rubrique de ce sondage"
+
+#~ msgid "Poll Categories"
+#~ msgstr "Catégories des sondages"
+
+#~ msgid "The Flow this Poll is based on"
+#~ msgstr "Le Flux de cet sondage est basé sur"
+
+#~ msgid "The title for this Poll"
+#~ msgstr "Le titre du sondage"
+
+#~ msgid "The category this Poll belongs to"
+#~ msgstr "La catégorie dont ce sondage fait partie"
+
+#~ msgid "The organization this poll is part of"
+#~ msgstr "L'organisation dont ce sondage fait partie"
+
+#~ msgid "The poll for this response"
+#~ msgstr "Le sondage pour cette réponse"
+
+#~ msgid "The location for this response"
+#~ msgstr "La localisation de cette réponse"
+
+#~ msgid "The featured response message"
+#~ msgstr "Le texte de la réponse sélectionnée"
+
+#~ msgid "The title of this question"
+#~ msgstr "Le titre de cette question"
+
+#~ msgid "The RuleSet this question is based on"
+#~ msgstr "Le jeu des règles sur lequel cette question est basée"
+
+#~ msgid "The message sent by the U-reporter you want to feature"
+#~ msgstr "Le message envoyé au U-reporter que tu veux sélectionner"
+
+#~ msgid "You must include a title for every included question."
+#~ msgstr "Vous devez donner un titre pour toute question inclue"
+
+#~ msgid "You must include at least one poll question."
+#~ msgstr "Vous devez inclure au moins une question"
+
+#~ msgid "Your poll has been created, now pick which questions to include."
+#~ msgstr ""
+#~ "Votre sondage a été créé, maintenant choisissez les question à inclure"
+
+#~ msgid "Poll Images"
+#~ msgstr "Images du sondage"
+
+#~ msgid "Now enter any responses you'd like to feature. (if any)"
+#~ msgstr ""
+#~ "Maintenant, entrer tout question que vous aimeriez mettre en avant (si "
+#~ "vous en avez)"
+
+#~ msgid "Image to display on poll page and in previews. (optional)"
+#~ msgstr "Image à afficher sur la page du sondage et des résumés (optionnel)"
+
+#~ msgid "Image to display on poll page and in previews (optional)"
+#~ msgstr "Image à afficher sur la page du sondage et des résumés (optionnel)"
+
+#~ msgid "Featured Poll Responses"
+#~ msgstr "Réponses aux sondages sélectionnées"
+
+#~ msgid "Your poll has been updated."
+#~ msgstr "Votre sondage a été mis a jour."
+
+#~ msgid "Response %d Reporter"
+#~ msgstr "Réponse %d Reporter"
+
+#~ msgid "The name or alias of the responder."
+#~ msgstr "Le nom ou pseudo du répondeur"
+
+#~ msgid "Response %d Location"
+#~ msgstr "Réponse %d Localisation"
+
+#~ msgid "Response %d Message"
+#~ msgstr "Réponse %d Message"
+
+#~ msgid "The text of the featured response."
+#~ msgstr "Le texte de la réponse sélectionnée"
+
+#~ msgid "Poll Questions"
+#~ msgstr "Questions du sondage"
+
+#~ msgid "Now set what images you want displayed on your poll page. (if any)"
+#~ msgstr ""
+#~ "Selectionner les images que vous voulez visionner sur le page du sondage"
+
+#~ msgid "Include"
+#~ msgstr "Inclure"
+
+#~ msgid "Title"
+#~ msgstr "Titre"
+
+#~ msgid "The question posed to your audience, will be displayed publicly"
+#~ msgstr "La question posé à votre audience, "
+
+#~ msgid "The shortcode that users will use to contact U-report locally"
+#~ msgstr ""
+#~ "Le numéro court à travers lequel les utilisateurs peuvent contacter U-"
+#~ "report"
+
+#~ msgid "The short text used to direct visitors to join U-report"
+#~ msgstr ""
+#~ "Le texte a utilisé pour encourager les visiteurs à rejoindre U-report"
+
+#~ msgid "The color used to draw the text on the join bar"
+#~ msgstr "La couleur du texte de la barre \"Rejoindre\""
+
+#~ msgid "The primary color for styling for this organization"
+#~ msgstr "Couleur principale de votre organisation"
+
+#~ msgid "The secondary color for styling for this organization"
+#~ msgstr "Couleur secondaire de votre organisation"
+
+#~ msgid "Up to 6 colors for styling charts, use comma between colors"
+#~ msgstr ""
+#~ "Définir jusqu'à 6 couleurs pour le style des graphiques, mettre une "
+#~ "virgule entre les couleurs"
+
+#~ msgid "The Google Analytics Tracking ID for this organization"
+#~ msgstr "ID de Google Analytics Tracking pour cette organisation"
+
+#~ msgid "The URL to the Youtube channel for this organization"
+#~ msgstr "URL de la chaine Youtube de cette organisation"
+
+#~ msgid "The URL to the Facebook page for this organization"
+#~ msgstr "URL de la page Facebook de cette organisation"
+
+#~ msgid "The Twitter handle for this organization"
+#~ msgstr "Le lien Twitter de cette organisation"
+
+#~ msgid "The Twitter widget used for following new users"
+#~ msgstr "Le widget Twitter utilisé pour suivre les nouveaux utilisateurs"
+
+#~ msgid "The Twitter widget used for searching"
+#~ msgstr "Le widget Twitter utilisé pour les recherches"
+
+#~ msgid "The name of txbhe Contact Group that contains registered reporters"
+#~ msgstr "Nom du groupe contenant les U-reporters inscrits"
+
+#~ msgid ""
+#~ "The label of the Contact Field that contains the birth date of reporters"
+#~ msgstr "Libellé du champ contenant la date de naissance des U-reporters"
+
+#~ msgid "The label of the Contact Field that contains the gender of reporters"
+#~ msgstr "Libellé du champ contenant le genre des U-reporters"
+
+#~ msgid ""
+#~ "The label of the Contact Field that contains the occupation of reporters"
+#~ msgstr "Libellé du champ contenant l'occupation des U-reporters"
+
+#~ msgid ""
+#~ "The label of the Contact Field that contains the registration date of "
+#~ "reporters"
+#~ msgstr "Libellé du champ contenant la date de naissance des U-reporters"
+
+#~ msgid "The label of the Contact Field that contains the State of reporters"
+#~ msgstr "Libellé du champ contenant l'Etat des U-reporters"
+
+#~ msgid ""
+#~ "The label of the Contact Field that contains the District of reporters"
+#~ msgstr "Libellé du champ contenant le District des U-reporters"
