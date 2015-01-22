@@ -1,0 +1,22 @@
+- extends "smartmin/base.html"
+- load smartmin i18n compress
+
+- block pre-content
+
+- block content
+
+  - if regions
+    - for region in regions
+      {{ region.name }},
+
+  - else
+    .none
+      - trans "You don't have access to any regions. Contact your administrator."
+
+- block extra-script
+  :javascript
+
+-block extra-style
+  {{ block.super }}
+  :css
+

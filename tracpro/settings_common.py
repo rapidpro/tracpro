@@ -1,4 +1,4 @@
-from __future__ import unicode_literals
+from __future__ import absolute_import, unicode_literals
 
 import sys
 
@@ -43,7 +43,8 @@ SITE_API_HOST = 'http://localhost:8001/api/v1'
 SITE_HOST_PATTERN = 'http://%s.localhost:8000'
 SITE_CHOOSER_TEMPLATE = 'home/org_chooser.haml'
 SITE_USER_HOME = '/'
-SITE_ALLOW_NO_ORG = ()
+SITE_ALLOW_NO_ORG = ('orgs_ext.org_create', 'orgs_ext.org_update', 'orgs_ext.org_list',
+                     'profiles.admin_create', 'profiles.admin_update', 'profiles.admin_list')
 
 # On Unix systems, a value of None will cause Django to use the same
 # timezone as the operating system.
@@ -153,7 +154,8 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.locale.LocaleMiddleware',
-    'dash.orgs.middleware.SetOrgMiddleware'
+    'dash.orgs.middleware.SetOrgMiddleware',
+    'tracpro.profiles.middleware.ForcePasswordChangeMiddleware',
 )
 
 ROOT_URLCONF = 'tracpro.urls'
@@ -172,7 +174,9 @@ if 'test' in sys.argv:
     CACHES['default'] = {'BACKEND': 'django.core.cache.backends.dummy.DummyCache',}
 
 
-ORG_CONFIG_FIELDS = []
+ORG_CONFIG_FIELDS = [dict(name='secret_token',
+                          field=dict(help_text=_("Secret token to include in all webhook requests from RapidPro"),
+                                     required=True))]
 
 INSTALLED_APPS = (
     'django.contrib.auth',
@@ -219,8 +223,11 @@ INSTALLED_APPS = (
 
     # custom
     'tracpro.contacts',
-    'tracpro.polls',
     'tracpro.groups',
+    'tracpro.home',
+    'tracpro.orgs_ext',
+    'tracpro.polls',
+    'tracpro.profiles',
 )
 
 LOGGING = {
@@ -290,11 +297,16 @@ PERMISSIONS = {
 
     'orgs.org': ('create', 'update', 'list', 'edit', 'home'),
 
-    'contacts.contact': (),
+    'contacts.contact': ('create', 'update', 'read', 'list', 'filter', 'delete'),
 
-    'polls.poll': (),
+    'groups.group': ('read', 'list', 'select'),
 
-    'regions.region': (),
+    'groups.region': ('read', 'list', 'select'),
+
+    'polls.poll': ('list', 'select'),
+
+    # can't create profiles.user.* permissions because we don't own User
+    'profiles.profile': ('user_create', 'user_read', 'user_update', 'user_list'),
 }
 
 # assigns the permissions that each group should have
@@ -304,11 +316,16 @@ GROUP_PERMISSIONS = {
         'orgs.org_edit',
 
         'contacts.contact.*',
+        'groups.group.*',
+        'groups.region.*',
         'polls.poll.*',
-        'regions.region.*',
+        'profiles.profile.*',
     ),
     "Editors": (
-
+        'contacts.contact.*',
+        'groups.group_read',
+        'groups.region_read',
+        'profiles.profile_user_read',
     ),
 }
 

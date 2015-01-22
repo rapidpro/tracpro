@@ -4,9 +4,12 @@ from django.conf import settings
 from django.conf.urls import patterns, include, url
 
 urlpatterns = patterns('',
-                       # url(r'', include('tracpro.contacts.urls')),
+                       url(r'', include('tracpro.contacts.urls')),
+                       url(r'', include('tracpro.groups.urls')),
+                       url(r'', include('tracpro.home.urls')),
                        url(r'', include('tracpro.polls.urls')),
-                       # url(r'', include('tracpro.regions.urls')),
+                       url(r'', include('tracpro.profiles.urls')),
+                       url(r'^manage/', include('tracpro.orgs_ext.urls')),
                        url(r'^users/', include('dash.users.urls')),
                        url(r'^i18n/', include('django.conf.urls.i18n')))
 

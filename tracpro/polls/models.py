@@ -12,15 +12,26 @@ class Poll(models.Model):
     """
     flow_uuid = models.CharField(max_length=36)  # TODO needs added on Temba side
 
-    name = models.CharField(max_length=64, verbose_name=_("Name of this poll"))  # taken from flow name
+    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='polls')
 
-    org = models.ForeignKey(Org, related_name='polls')
+    name = models.CharField(max_length=64, verbose_name=_("Name"))  # taken from flow name
+
+    is_active = models.BooleanField(default=True, help_text="Whether this item is active")
 
     @classmethod
     def create(cls, org, flow_uuid, name, created_on, questions=()):
         poll = Poll.objects.create(flow_uuid=flow_uuid, name=name, org=org, created_on=created_on)
         poll.questions.add(*questions)
         return poll
+
+    @classmethod
+    def update_flows(cls, org, flow_uuids):
+        # TODO
+        pass
+
+    @classmethod
+    def get_all(cls, org):
+        return org.polls.filter(is_active=True)
 
 
 class PollQuestion(models.Model):

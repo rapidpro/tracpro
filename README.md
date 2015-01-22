@@ -1,4 +1,4 @@
-#ChatPro
+#TracPro
 
 Dashboard for managing polls hosted in [RapidPro](http://rapidpro.io)
 
