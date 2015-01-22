@@ -4,55 +4,9 @@ import logging
 
 from collections import defaultdict
 from dash.utils import intersection
-from dash.utils.temba import temba_compare_contacts, temba_merge_contacts
-from enum import Enum
+from dash.utils.temba import temba_compare_contacts
 
 logger = logging.getLogger(__name__)
-
-
-class ChangeType(Enum):
-    created = 1
-    updated = 2
-    deleted = 3
-
-
-def temba_sync_contact(org, contact, change_type, primary_groups):
-    """
-    Syncs a local change to a contact
-    :param org: the org
-    :param contact: the contact
-    :param change_type: the change type
-    :param primary_groups: a set of group UUIDs which represent the primary groups for this org. Membership of primary
-    groups is mutually exclusive
-    """
-    client = org.get_temba_client()
-
-    if change_type == ChangeType.created:
-        temba_contact = contact.as_temba()
-        temba_contact = client.create_contact(temba_contact.name,
-                                              temba_contact.urns,
-                                              temba_contact.fields,
-                                              temba_contact.groups)
-        # update our contact with the new UUID from RapidPro
-        contact.uuid = temba_contact.uuid
-        contact.save()
-
-    elif change_type == ChangeType.updated:
-        # fetch contact so that we can merge with its URNs, fields and groups
-        remote_contact = client.get_contact(contact.uuid)
-        local_contact = contact.as_temba()
-
-        if temba_compare_contacts(remote_contact, local_contact):
-            merged_contact = temba_merge_contacts(local_contact, remote_contact, primary_groups)
-
-            client.update_contact(merged_contact.uuid,
-                                  merged_contact.name,
-                                  merged_contact.urns,
-                                  merged_contact.fields,
-                                  merged_contact.groups)
-
-    elif change_type == ChangeType.deleted:
-        client.delete_contact(contact.uuid)
 
 
 def temba_pull_contacts(org, primary_groups, group_class, contact_class):

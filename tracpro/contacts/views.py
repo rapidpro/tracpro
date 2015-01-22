@@ -1,6 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
+from dash.utils.temba import ChangeType
 from django.core.exceptions import PermissionDenied
 from django.core.urlresolvers import reverse
 from django import forms
@@ -11,7 +12,6 @@ from smartmin.users.views import SmartListView, SmartCreateView, SmartReadView, 
 from smartmin.users.views import SmartCRUDL
 from tracpro.groups.models import Region, Group
 from .models import Contact
-from .temba import ChangeType
 
 
 URN_SCHEME_TEL = 'tel'

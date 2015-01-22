@@ -2,8 +2,9 @@ from __future__ import absolute_import, unicode_literals
 
 from celery.utils.log import get_task_logger
 from dash.orgs.models import Org
+from dash.utils.temba import temba_push_contact
 from djcelery_transactions import task
-from .temba import temba_sync_contact, temba_pull_contacts
+from .temba import temba_pull_contacts
 
 logger = get_task_logger(__name__)
 
@@ -21,8 +22,9 @@ def push_contact_change(contact_id, change_type):
     logger.info("Pushing %s change to contact %s" % (change_type.name.upper(), contact.uuid))
 
     region_uuids = set([r.uuid for r in org.regions.filter(is_active=True)])
+    group_uuids = set([r.uuid for r in org.groups.filter(is_active=True)])
 
-    temba_sync_contact(org, contact, change_type, region_uuids)
+    temba_push_contact(org, contact, change_type, [region_uuids, group_uuids])
 
 
 @task

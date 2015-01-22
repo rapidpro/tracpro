@@ -86,7 +86,7 @@ class ContactCRUDLTest(TracProTest):
         # submit with no fields entered
         response = self.url_post('unicef', url, dict())
         self.assertEqual(response.status_code, 200)
-        self.assertFormError(response, 'form', 'full_name', 'This field is required.')
+        self.assertFormError(response, 'form', 'name', 'This field is required.')
         self.assertFormError(response, 'form', 'urn', 'This field is required.')
         self.assertFormError(response, 'form', 'region', 'This field is required.')
 
@@ -97,7 +97,7 @@ class ContactCRUDLTest(TracProTest):
 
         # check new contact and profile
         contact = Contact.objects.get(urn='tel:5678')
-        self.assertEqual(contact.full_name, "Mo Polls")
+        self.assertEqual(contact.name, "Mo Polls")
         self.assertEqual(contact.region, self.region1)
 
         # log in as a user
