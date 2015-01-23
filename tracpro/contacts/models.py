@@ -1,6 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
 from dash.orgs.models import Org
+from dash.utils import intersection
 from dash.utils.temba import ChangeType
 from django.contrib.auth.models import User
 from django.db import models
@@ -65,17 +66,17 @@ class Contact(models.Model):
         return contact
 
     @classmethod
-    def from_temba(cls, org, region, temba_contact):
-        group = None  # TODO
-        return cls.create(org, None, temba_contact.name, temba_contact.urns[0], region, group, temba_contact.uuid)
+    def kwargs_from_temba(cls, org, temba_contact):
+        org_region_uuids = [r.uuid for r in org.regions.all()]
+        region_uuids = intersection(org_region_uuids, temba_contact.groups)
+        region = Region.objects.get(org=org, uuid=region_uuids[0]) if region_uuids else None
 
-    def update_from_temba(self, org, region, temba_contact):
-        self.is_active = True
-        self.name = temba_contact.name
-        self.urn = temba_contact.urns[0]
-        self.region = region
-        self.group = None  # TODO
-        self.save()
+        org_group_uuids = [g.uuid for g in org.groups.all()]
+        group_uuids = intersection(org_group_uuids, temba_contact.groups)
+        group = Group.objects.get(org=org, uuid=group_uuids[0]) if group_uuids else None
+
+        return dict(org=org, name=temba_contact.name, urn=temba_contact.urns[0],
+                    region=region, group=group, uuid=temba_contact.uuid)
 
     def as_temba(self):
         temba_contact = TembaContact()

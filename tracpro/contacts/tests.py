@@ -33,22 +33,18 @@ class ContactTest(TracProTest):
 
         self.assertEqual(mock_create_contact.call_count, 1)
 
-    def test_from_temba(self):
+    def test_kwargs_from_temba(self):
         temba_contact = TembaContact.create(uuid='C-101', name="Jan", urns=['tel:123'],
                                             groups=['G-001', 'G-007'], fields=dict(chat_name="jxn"),
                                             language='eng', modified_on=timezone.now())
 
-        contact = Contact.from_temba(self.unicef, self.region1, temba_contact)
+        kwargs = Contact.kwargs_from_temba(self.unicef, temba_contact)
 
-        self.assertEqual(contact.uuid, 'C-101')
-        self.assertEqual(contact.name, "Jan")
-        self.assertEqual(contact.urn, 'tel:123')
-        self.assertEqual(contact.region, self.region1)
-        self.assertEqual(contact.group, self.group3)
-        self.assertIsNone(contact.created_by)
-        self.assertIsNotNone(contact.created_on)
-        self.assertIsNone(contact.modified_by)
-        self.assertIsNotNone(contact.modified_on)
+        self.assertEqual(kwargs, dict(uuid='C-101', org=self.unicef, name="Jan", urn='tel:123',
+                                      region=self.region1, group=self.group3))
+
+        # try creating contact from them
+        Contact.objects.create(**kwargs)
 
     def test_as_temba(self):
         temba_contact = self.contact1.as_temba()

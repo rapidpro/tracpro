@@ -43,7 +43,7 @@ class Region(AbstractGroup):
                                    help_text=_("Users who can access this region"))
 
     @classmethod
-    def update_region_groups(cls, org, group_uuids):
+    def update_groups(cls, org, group_uuids):
         """
         Updates an org's regions based on the selected groups UUIDs
         """

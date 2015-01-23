@@ -13,19 +13,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='Poll',
-            fields=[
-                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('flow_uuid', models.CharField(max_length=36)),
-                ('name', models.CharField(max_length=64, verbose_name='Name of this poll')),
-                ('org', models.ForeignKey(related_name='polls', to='orgs.Org')),
-            ],
-            options={
-            },
-            bases=(models.Model,),
-        ),
-        migrations.CreateModel(
-            name='PollAnswer',
+            name='Answer',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('flow_step_uuid', models.CharField(max_length=36)),
@@ -39,24 +27,37 @@ class Migration(migrations.Migration):
             bases=(models.Model,),
         ),
         migrations.CreateModel(
-            name='PollIssue',
+            name='Issue',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('flow_start_uuid', models.CharField(max_length=36)),
+                ('flow_start_id', models.IntegerField()),
                 ('created_on', models.DateTimeField(help_text='When this poll was created')),
-                ('poll', models.ForeignKey(related_name='starts', to='orgs.Org')),
             ],
             options={
             },
             bases=(models.Model,),
         ),
         migrations.CreateModel(
-            name='PollQuestion',
+            name='Poll',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('rule_set_uuid', models.CharField(max_length=36)),
-                ('name', models.CharField(max_length=64)),
+                ('flow_uuid', models.CharField(unique=True, max_length=36)),
+                ('name', models.CharField(max_length=64, verbose_name='Name')),
+                ('is_active', models.BooleanField(default=True, help_text='Whether this item is active')),
+                ('org', models.ForeignKey(related_name='polls', verbose_name='Organization', to='orgs.Org')),
+            ],
+            options={
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='Question',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('ruleset_uuid', models.CharField(unique=True, max_length=36)),
+                ('text', models.CharField(max_length=64)),
                 ('show_with_contact', models.BooleanField(default=False)),
+                ('is_active', models.BooleanField(default=True, help_text='Whether this item is active')),
                 ('poll', models.ForeignKey(related_name='questions', to='polls.Poll')),
             ],
             options={
@@ -64,27 +65,33 @@ class Migration(migrations.Migration):
             bases=(models.Model,),
         ),
         migrations.CreateModel(
-            name='PollResponse',
+            name='Response',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('flow_run_uuid', models.CharField(max_length=36)),
+                ('flow_run_id', models.IntegerField()),
                 ('contact', models.ForeignKey(related_name='responses', to='contacts.Contact')),
-                ('issue', models.ForeignKey(related_name='responses', to='polls.PollIssue')),
+                ('issue', models.ForeignKey(related_name='responses', to='polls.Issue')),
             ],
             options={
             },
             bases=(models.Model,),
         ),
         migrations.AddField(
-            model_name='pollanswer',
-            name='question',
-            field=models.ForeignKey(related_name='answers', to='polls.PollQuestion'),
+            model_name='issue',
+            name='poll',
+            field=models.ForeignKey(related_name='starts', to='polls.Poll'),
             preserve_default=True,
         ),
         migrations.AddField(
-            model_name='pollanswer',
+            model_name='answer',
+            name='question',
+            field=models.ForeignKey(related_name='answers', to='polls.Question'),
+            preserve_default=True,
+        ),
+        migrations.AddField(
+            model_name='answer',
             name='response',
-            field=models.ForeignKey(related_name='answers', to='polls.PollResponse'),
+            field=models.ForeignKey(related_name='answers', to='polls.Response'),
             preserve_default=True,
         ),
     ]

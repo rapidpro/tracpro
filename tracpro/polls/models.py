@@ -10,7 +10,7 @@ class Poll(models.Model):
     """
     Corresponds to a RapidPro Flow
     """
-    flow_uuid = models.CharField(max_length=36)  # TODO needs added on Temba side
+    flow_uuid = models.CharField(max_length=36, unique=True)
 
     org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='polls')
 
@@ -19,65 +19,104 @@ class Poll(models.Model):
     is_active = models.BooleanField(default=True, help_text="Whether this item is active")
 
     @classmethod
-    def create(cls, org, flow_uuid, name, created_on, questions=()):
-        poll = Poll.objects.create(flow_uuid=flow_uuid, name=name, org=org, created_on=created_on)
-        poll.questions.add(*questions)
-        return poll
+    def create(cls, org, name, flow_uuid):
+        return cls.objects.create(org=org, name=name, flow_uuid=flow_uuid)
 
     @classmethod
     def update_flows(cls, org, flow_uuids):
-        # TODO
-        pass
+        # de-activate polls not included
+        org.polls.exclude(flow_uuid=flow_uuids).update(is_active=False)
+
+        # fetch flow details
+        flows_by_uuid = {flow.uuid: flow for flow in org.get_temba_client().get_flows()}
+
+        for flow_uuid in flow_uuids:
+            flow = flows_by_uuid[flow_uuid]
+
+            poll = org.polls.filter(flow_uuid=flow.uuid).first()
+            if poll:
+                poll.name = flow.name
+                poll.is_active = True
+                poll.save()
+            else:
+                poll = cls.create(org, flow.name, flow.uuid)
+
+            poll.update_questions_from_rulesets(flow.rulesets)
+
+    def update_questions_from_rulesets(self, rulesets):
+        # de-activate any existing questions no longer included
+        self.questions.exclude(ruleset_uuid=[r.uuid for r in rulesets]).update(is_active=False)
+
+        for ruleset in rulesets:
+            question = self.questions.filter(ruleset_uuid=ruleset.uuid).first()
+            if question:
+                question.text = ruleset.label
+                question.is_active = True
+                question.save()
+            else:
+                Question.create(self, ruleset.label, ruleset.uuid)
 
     @classmethod
     def get_all(cls, org):
         return org.polls.filter(is_active=True)
 
+    def get_questions(self):
+        return self.questions.filter(is_active=True)
 
-class PollQuestion(models.Model):
+    def __unicode__(self):
+        return self.name
+
+
+class Question(models.Model):
     """
     Corresponds to RapidPro RuleSet
     """
-    rule_set_uuid = models.CharField(max_length=36)
+    ruleset_uuid = models.CharField(max_length=36, unique=True)
 
     poll = models.ForeignKey(Poll, related_name='questions')
 
-    name = models.CharField(max_length=64)  # taken from RuleSet label
+    text = models.CharField(max_length=64)  # taken from RuleSet label
 
     show_with_contact = models.BooleanField(default=False)
 
+    is_active = models.BooleanField(default=True, help_text="Whether this item is active")
 
-class PollIssue(models.Model):
+    @classmethod
+    def create(cls, poll, text, ruleset_uuid):
+        return cls.objects.create(poll=poll, text=text, ruleset_uuid=ruleset_uuid)
+
+
+class Issue(models.Model):
     """
     Corresponds to a RapidPro FlowStart
     """
-    flow_start_uuid = models.CharField(max_length=36)  # TODO needs added on Temba side
+    flow_start_id = models.IntegerField()
 
-    poll = models.ForeignKey(Org, related_name='starts')
+    poll = models.ForeignKey(Poll, related_name='starts')
 
     created_on = models.DateTimeField(help_text=_("When this poll was created"))
 
 
-class PollResponse(models.Model):
+class Response(models.Model):
     """
     Corresponds to RapidPro FlowRun
     """
-    flow_run_uuid = models.CharField(max_length=36)  # TODO needs added on Temba side
+    flow_run_id = models.IntegerField()
 
-    issue = models.ForeignKey(PollIssue, related_name='responses')
+    issue = models.ForeignKey(Issue, related_name='responses')
 
     contact = models.ForeignKey(Contact, related_name='responses')
 
 
-class PollAnswer(models.Model):
+class Answer(models.Model):
     """
     Corresponds to RapidPro FlowStep
     """
     flow_step_uuid = models.CharField(max_length=36)
 
-    response = models.ForeignKey(PollResponse, related_name='answers')
+    response = models.ForeignKey(Response, related_name='answers')
 
-    question = models.ForeignKey(PollQuestion, related_name='answers')
+    question = models.ForeignKey(Question, related_name='answers')
 
     category = models.CharField(max_length=36, null=True)
 

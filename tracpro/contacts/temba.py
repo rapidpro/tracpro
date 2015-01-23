@@ -9,9 +9,10 @@ from dash.utils.temba import temba_compare_contacts
 logger = logging.getLogger(__name__)
 
 
-def temba_pull_contacts(org, primary_groups, group_class, contact_class):
+def temba_pull_contacts(org, primary_groups, contact_class):
     """
-    Pulls contacts from RapidPro and syncs with local contacts
+    Pulls contacts from RapidPro and syncs with local contacts. Contact class must define a classmethod called
+    kwargs_from_temba which generates field kwargs from a fetched temba contact.
     """
     client = org.get_temba_client()
 
@@ -47,18 +48,24 @@ def temba_pull_contacts(org, primary_groups, group_class, contact_class):
 
     for primary_group in primary_groups:
         incoming_contacts = incoming_by_primary[primary_group]
-        group_obj = group_class.objects.get(uuid=primary_group)
 
         for incoming in incoming_contacts:
             if incoming.uuid in existing_by_uuid:
                 existing = existing_by_uuid[incoming.uuid]
 
                 if temba_compare_contacts(incoming, existing.as_temba()) or not existing.is_active:
-                    existing.update_from_temba(org, group_obj, incoming)
+                    kwargs = contact_class.kwargs_from_temba(org, incoming)
+                    for field, value in kwargs.iteritems():
+                        setattr(existing, field, value)
+
+                    existing.is_active = True
+                    existing.save()
+
                     updated_uuids.append(incoming.uuid)
             else:
-                created = contact_class.from_temba(org, group_obj, incoming)
-                created_uuids.append(created.uuid)
+                kwargs = contact_class.kwargs_from_temba(org, incoming)
+                contact_class.objects.create(**kwargs)
+                created_uuids.append(kwargs['uuid'])
 
     # any existing contact not in the incoming set, is now deleted if not already deleted
     for existing_uuid, existing in existing_by_uuid.iteritems():

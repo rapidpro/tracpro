@@ -7,12 +7,18 @@ from django.db import models, migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('polls', '0001_initial'),
+        ('groups', '0003_auto_20150122_0855'),
     ]
 
     operations = [
-        migrations.AddField(
-            model_name='poll',
+        migrations.AlterField(
+            model_name='group',
+            name='is_active',
+            field=models.BooleanField(default=True, help_text='Whether this item is active'),
+            preserve_default=True,
+        ),
+        migrations.AlterField(
+            model_name='region',
             name='is_active',
             field=models.BooleanField(default=True, help_text='Whether this item is active'),
             preserve_default=True,

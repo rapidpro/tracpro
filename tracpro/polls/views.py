@@ -2,10 +2,11 @@ from __future__ import absolute_import, unicode_literals
 
 from dash.orgs.views import OrgPermsMixin
 from django import forms
+from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
 from django.utils.translation import ugettext_lazy as _
 from smartmin.views import SmartCRUDL, SmartListView, SmartFormView
-from .models import Poll
+from .models import Poll, Question
 
 
 class PollCRUDL(SmartCRUDL):
@@ -13,11 +14,20 @@ class PollCRUDL(SmartCRUDL):
     actions = ('list', 'select')
 
     class List(OrgPermsMixin, SmartListView):
-        fields = ('name',)
+        fields = ('name', 'questions')
+
+        def derive_link_fields(self, context):
+            return 'name',
 
         def get_queryset(self, **kwargs):
             org = self.request.user.get_org()
             return Poll.get_all(org).order_by('name')
+
+        def get_questions(self, obj):
+            return obj.get_questions().count()
+
+        def lookup_field_link(self, context, field, obj):
+            return reverse('polls.question_filter', kwargs=dict(poll=obj.pk))
 
     class Select(OrgPermsMixin, SmartFormView):
         class FlowsForm(forms.Form):
@@ -49,3 +59,33 @@ class PollCRUDL(SmartCRUDL):
         def form_valid(self, form):
             Poll.update_flows(self.request.org, form.cleaned_data['flows'])
             return HttpResponseRedirect(self.get_success_url())
+
+
+class QuestionCRUDL(SmartCRUDL):
+    model = Question
+    actions = ('filter',)
+
+    class Filter(OrgPermsMixin, SmartListView):
+        fields = ('text', 'show_with_contact')
+
+        @classmethod
+        def derive_url_pattern(cls, path, action):
+            return r'^%s/%s/(?P<poll>\d+)/$' % (path, action)
+
+        def derive_title(self):
+            return _("Questions in %s") % self.derive_poll().name
+
+        def derive_poll(self):
+            if hasattr(self, '_poll'):
+                return self._poll
+
+            self._poll = Poll.objects.get(pk=self.kwargs['poll'], org=self.request.org)
+            return self._poll
+
+        def get_queryset(self, **kwargs):
+            return self.derive_poll().get_questions().order_by('pk')
+
+        def get_context_data(self, **kwargs):
+            context = super(QuestionCRUDL.Filter, self).get_context_data(**kwargs)
+            context['poll'] = self.derive_poll()
+            return context

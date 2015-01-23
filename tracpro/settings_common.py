@@ -305,6 +305,8 @@ PERMISSIONS = {
 
     'polls.poll': ('list', 'select'),
 
+    'polls.question': ('filter',),
+
     # can't create profiles.user.* permissions because we don't own User
     'profiles.profile': ('user_create', 'user_read', 'user_update', 'user_list'),
 }
@@ -319,6 +321,7 @@ GROUP_PERMISSIONS = {
         'groups.group.*',
         'groups.region.*',
         'polls.poll.*',
+        'polls.question.*',
         'profiles.profile.*',
     ),
     "Editors": (
