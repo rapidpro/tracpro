@@ -102,8 +102,8 @@ class Contact(models.Model):
         return self.responses.order_by('-created_on')
 
     def get_last_answer(self, question):
-        from tracpro.polls.models import PollAnswer
-        return PollAnswer.objects.filter(question=question, reponse__contact=self).order_by('-submitted_on').first()
+        from tracpro.polls.models import Answer
+        return Answer.objects.filter(question=question, reponse__contact=self).order_by('-submitted_on').first()
 
     def __unicode__(self):
         return self.name if self.name else self.get_urn()[1]

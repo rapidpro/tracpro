@@ -24,7 +24,7 @@ class Poll(models.Model):
 
     @classmethod
     def update_flows(cls, org, flow_uuids):
-        # de-activate polls not included
+        # de-activate polls whose flows were not selected
         org.polls.exclude(flow_uuid=flow_uuids).update(is_active=False)
 
         # fetch flow details
@@ -92,9 +92,13 @@ class Issue(models.Model):
     """
     flow_start_id = models.IntegerField()
 
-    poll = models.ForeignKey(Poll, related_name='starts')
+    poll = models.ForeignKey(Poll, related_name='issues')
 
-    created_on = models.DateTimeField(help_text=_("When this poll was created"))
+    conducted_on = models.DateTimeField(help_text=_("When the poll was conducted"))
+
+    @classmethod
+    def create(cls, poll, created_on, flow_start_id):
+        return cls.objects.create(poll=poll, created_on=created_on, flow_start_id=flow_start_id)
 
 
 class Response(models.Model):
@@ -107,13 +111,34 @@ class Response(models.Model):
 
     contact = models.ForeignKey(Contact, related_name='responses')
 
+    created_on = models.DateTimeField(help_text=_("When this response was created"))
+
+    @classmethod
+    def from_run(cls, poll, run):
+        # TODO for now just get last issue
+        issue = poll.issues.order_by('-conducted_on').first()
+
+        contact = Contact.objects.filter(org=poll.org, uuid=run.contact)
+
+        # TODO fetch and create contact if they don't exist
+
+        response = Response.objects.create(flow_run_id=run.id, issue=issue, contact=contact, created_on=run.created_on)
+
+        # organize values by ruleset UUID
+        valuesets_by_ruleset = {valueset.node: valueset for valueset in run.values}
+
+        # convert ruleset values to answers
+        for question in poll.questions:
+            valueset = valuesets_by_ruleset.get(question.ruleset_uuid, None)
+            if valueset:
+                Answer.objects.create(response=response, question=question,
+                                      category=valueset.category, value=valueset.value, submitted_on=valueset.time)
+
 
 class Answer(models.Model):
     """
     Corresponds to RapidPro FlowStep
     """
-    flow_step_uuid = models.CharField(max_length=36)
-
     response = models.ForeignKey(Response, related_name='answers')
 
     question = models.ForeignKey(Question, related_name='answers')
@@ -121,7 +146,5 @@ class Answer(models.Model):
     category = models.CharField(max_length=36, null=True)
 
     value = models.CharField(max_length=640, null=True)
-
-    decimal_value = models.DecimalField(max_digits=36, decimal_places=8, null=True)
 
     submitted_on = models.DateTimeField(help_text=_("When this answer was submitted"))
