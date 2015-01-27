@@ -2,6 +2,7 @@ from __future__ import absolute_import, unicode_literals
 
 from dash.orgs.models import Org
 from django.db import models
+from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from tracpro.contacts.models import Contact
 
@@ -90,15 +91,24 @@ class Issue(models.Model):
     """
     Corresponds to a RapidPro FlowStart
     """
-    flow_start_id = models.IntegerField()
+    flow_start_id = models.IntegerField(null=True)
 
     poll = models.ForeignKey(Poll, related_name='issues')
 
     conducted_on = models.DateTimeField(help_text=_("When the poll was conducted"))
 
     @classmethod
-    def create(cls, poll, created_on, flow_start_id):
-        return cls.objects.create(poll=poll, created_on=created_on, flow_start_id=flow_start_id)
+    def create(cls, poll, conducted_on, flow_start_id):
+        return cls.objects.create(poll=poll, conducted_on=conducted_on, flow_start_id=flow_start_id)
+
+    @classmethod
+    def get_or_create(cls, poll):
+        # TODO need a way to associate flow runs that may or may not have flow starts. For now just get last issue.
+        last = poll.issues.order_by('-conducted_on').first()
+        if last:
+            return last
+
+        return Issue.create(poll, timezone.now(), None)
 
 
 class Response(models.Model):
@@ -115,12 +125,8 @@ class Response(models.Model):
 
     @classmethod
     def from_run(cls, poll, run):
-        # TODO for now just get last issue
-        issue = poll.issues.order_by('-conducted_on').first()
-
-        contact = Contact.objects.filter(org=poll.org, uuid=run.contact)
-
-        # TODO fetch and create contact if they don't exist
+        issue = Issue.get_or_create(poll)
+        contact = Contact.get_or_fetch(poll.org, uuid=run.contact)
 
         response = Response.objects.create(flow_run_id=run.id, issue=issue, contact=contact, created_on=run.created_on)
 
@@ -128,11 +134,12 @@ class Response(models.Model):
         valuesets_by_ruleset = {valueset.node: valueset for valueset in run.values}
 
         # convert ruleset values to answers
-        for question in poll.questions:
+        for question in poll.questions.all():
             valueset = valuesets_by_ruleset.get(question.ruleset_uuid, None)
             if valueset:
                 Answer.objects.create(response=response, question=question,
                                       category=valueset.category, value=valueset.value, submitted_on=valueset.time)
+        return response
 
 
 class Answer(models.Model):

@@ -5,6 +5,7 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 from tracpro.contacts.models import Contact
 from tracpro.groups.models import Group, Region
+from tracpro.polls.models import Poll, Question
 from uuid import uuid4
 
 
@@ -47,6 +48,15 @@ class TracProTest(TestCase):
         self.contact4 = self.create_contact(self.unicef, "Dan", 'twitter:danny', self.region2, self.group2, 'C-004')
         self.contact5 = self.create_contact(self.unicef, "Eve", 'twitter:evee', self.region3, self.group2, 'C-005')
         self.contact6 = self.create_contact(self.nyaruka, "Norbert", 'twitter:n7', self.region4, self.group4, 'C-006')
+
+        # a poll with some questions
+        self.poll1 = Poll.create(self.unicef, "Farm Poll", 'F-001')
+        self.poll1_question1 = Question.create(self.poll1, "Number of sheep", 'RS-001')
+        self.poll1_question2 = Question.create(self.poll1, "Number of goats", 'RS-002')
+
+        # and a poll for the other org
+        self.poll2 = Poll.create(self.nyaruka, "Code Poll", 'F-002')
+        self.poll2_question1 = Question.create(self.poll2, "Number of bugs", 'RS-003')
 
     def create_org(self, name, timezone, subdomain):
         return Org.objects.create(name=name, timezone=timezone, subdomain=subdomain, api_token=unicode(uuid4()),

@@ -66,6 +66,18 @@ class Contact(models.Model):
         return contact
 
     @classmethod
+    def get_or_fetch(cls, org, uuid):
+        """
+        Gets a contact by UUID. If we don't find them locally, we try to fetch them from RapidPro
+        """
+        contact = Contact.objects.filter(org=org, uuid=uuid).first()
+        if contact:
+            return contact
+
+        temba_contact = org.get_temba_client().get_contact(uuid)
+        return cls.objects.create(**cls.kwargs_from_temba(org, temba_contact))
+
+    @classmethod
     def kwargs_from_temba(cls, org, temba_contact):
         org_region_uuids = [r.uuid for r in org.regions.all()]
         region_uuids = intersection(org_region_uuids, temba_contact.groups)
