@@ -2,7 +2,7 @@ from __future__ import absolute_import, unicode_literals
 
 from dash.orgs.models import Org
 from dash.utils import intersection
-from dash.utils.temba import ChangeType
+from dash.utils.sync import ChangeType
 from django.contrib.auth.models import User
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
@@ -71,9 +71,15 @@ class Contact(models.Model):
         region_uuids = intersection(org_region_uuids, temba_contact.groups)
         region = Region.objects.get(org=org, uuid=region_uuids[0]) if region_uuids else None
 
+        if not region:
+            raise ValueError("No region with UUID in %s" % ", ".join(temba_contact.groups))
+
         org_group_uuids = [g.uuid for g in org.groups.all()]
         group_uuids = intersection(org_group_uuids, temba_contact.groups)
         group = Group.objects.get(org=org, uuid=group_uuids[0]) if group_uuids else None
+
+        if not group:
+            raise ValueError("No group with UUID in %s" % ", ".join(temba_contact.groups))
 
         return dict(org=org, name=temba_contact.name, urn=temba_contact.urns[0],
                     region=region, group=group, uuid=temba_contact.uuid)

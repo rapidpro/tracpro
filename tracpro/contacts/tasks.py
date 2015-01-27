@@ -2,9 +2,8 @@ from __future__ import absolute_import, unicode_literals
 
 from celery.utils.log import get_task_logger
 from dash.orgs.models import Org
-from dash.utils.temba import temba_push_contact
+from dash.utils.sync import sync_pull_contacts, sync_push_contact
 from djcelery_transactions import task
-from .temba import temba_pull_contacts
 
 logger = get_task_logger(__name__)
 
@@ -24,7 +23,7 @@ def push_contact_change(contact_id, change_type):
     region_uuids = set([r.uuid for r in org.regions.filter(is_active=True)])
     group_uuids = set([r.uuid for r in org.groups.filter(is_active=True)])
 
-    temba_push_contact(org, contact, change_type, [region_uuids, group_uuids])
+    sync_push_contact(org, contact, change_type, [region_uuids, group_uuids])
 
 
 @task
@@ -39,7 +38,7 @@ def sync_org_contacts(org_id):
 
     logger.info('Starting contact sync task for org #%d' % org.id)
 
-    created, updated, deleted = temba_pull_contacts(org, primary_groups, Contact)
+    created, updated, deleted = sync_pull_contacts(org, primary_groups, Contact)
 
     logger.info("Finished contact sync for org #%d (%d created, %d updated, %d deleted)"
                 % (org.id, len(created), len(updated), len(deleted)))

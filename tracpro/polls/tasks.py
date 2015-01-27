@@ -2,9 +2,9 @@ from __future__ import absolute_import, unicode_literals
 
 from celery.utils.log import get_task_logger
 from dash.orgs.models import Org
-from dash.utils import parse_iso8601
 from djcelery_transactions import task
 from redis_cache import get_redis_connection
+from temba.utils import parse_iso8601
 from tracpro.polls.models import Response
 
 logger = get_task_logger(__name__)

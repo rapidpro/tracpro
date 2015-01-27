@@ -14,7 +14,7 @@ class ContactTest(TracProTest):
     @patch('dash.orgs.models.TembaClient.create_contact')
     def test_create(self, mock_create_contact):
         mock_create_contact.return_value = TembaContact.create(uuid='C-101', name="Mo Polls",
-                                                               urns=['tel:078123'], groups=['000-007'],
+                                                               urns=['tel:078123'], groups=['G-001'],
                                                                language='eng', modified_on=timezone.now())
 
         contact = Contact.create(self.unicef, self.user1, "Mo Polls", 'tel:078123', self.region1, self.group1)
