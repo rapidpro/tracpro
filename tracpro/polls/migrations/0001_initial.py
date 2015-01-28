@@ -8,7 +8,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('contacts', '0001_initial'),
-        ('orgs', '0009_auto_20150121_1449'),
+        ('orgs', '0008_org_timezone'),
     ]
 
     operations = [

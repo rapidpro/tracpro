@@ -8,7 +8,7 @@ from django.conf import settings
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('orgs', '0009_auto_20150121_1449'),
+        ('orgs', '0008_org_timezone'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
         ('groups', '0002_auto_20150122_0754'),
     ]
