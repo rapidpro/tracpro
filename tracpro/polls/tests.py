@@ -12,7 +12,7 @@ from .models import Poll, Response
 
 class PollTest(TracProTest):
     @patch('dash.orgs.models.TembaClient.get_flows')
-    def test_update_flows(self, mock_get_flows):
+    def test_sync_with_flows(self, mock_get_flows):
         mock_get_flows.return_value = [
             Flow.create(name="Poll #3", uuid='F-003', rulesets=[
                 FlowRuleSet.create(uuid='RS-004', label='How old are you'),
@@ -26,7 +26,7 @@ class PollTest(TracProTest):
                 FlowRuleSet.create(uuid='RS-008', label='What time is it')
             ])
         ]
-        Poll.update_flows(self.unicef, ['F-003', 'F-004'])
+        Poll.sync_with_flows(self.unicef, ['F-003', 'F-004'])
 
         self.assertEqual(self.unicef.polls.filter(is_active=True).count(), 2)
 

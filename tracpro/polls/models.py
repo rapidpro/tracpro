@@ -24,7 +24,7 @@ class Poll(models.Model):
         return cls.objects.create(org=org, name=name, flow_uuid=flow_uuid)
 
     @classmethod
-    def update_flows(cls, org, flow_uuids):
+    def sync_with_flows(cls, org, flow_uuids):
         # de-activate polls whose flows were not selected
         org.polls.exclude(flow_uuid=flow_uuids).update(is_active=False)
 

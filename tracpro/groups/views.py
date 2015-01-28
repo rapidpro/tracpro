@@ -68,7 +68,7 @@ class RegionCRUDL(SmartCRUDL):
             return kwargs
 
         def form_valid(self, form):
-            Region.update_region_groups(self.request.user.get_org(), form.cleaned_data['groups'])
+            Region.sync_with_groups(self.request.user.get_org(), form.cleaned_data['groups'])
             return HttpResponseRedirect(self.get_success_url())
 
 
@@ -114,5 +114,5 @@ class GroupCRUDL(SmartCRUDL):
             return kwargs
 
         def form_valid(self, form):
-            Group.update_reporter_groups(self.request.user.get_org(), form.cleaned_data['groups'])
+            Group.sync_with_groups(self.request.user.get_org(), form.cleaned_data['groups'])
             return HttpResponseRedirect(self.get_success_url())

@@ -13,6 +13,7 @@ def push_contact_change(contact_id, change_type):
     """
     Task to push a local contact change to RapidPro
     """
+    from tracpro.groups.models import Group, Region
     from .models import Contact
 
     contact = Contact.objects.select_related('org', 'region').get(pk=contact_id)
@@ -20,8 +21,8 @@ def push_contact_change(contact_id, change_type):
 
     logger.info("Pushing %s change to contact %s" % (change_type.name.upper(), contact.uuid))
 
-    region_uuids = set([r.uuid for r in org.regions.filter(is_active=True)])
-    group_uuids = set([r.uuid for r in org.groups.filter(is_active=True)])
+    region_uuids = set([r.uuid for r in Region.get_all(org)])
+    group_uuids = set([r.uuid for r in Group.get_all(org)])
 
     sync_push_contact(org, contact, change_type, [region_uuids, group_uuids])
 
@@ -31,10 +32,11 @@ def sync_org_contacts(org_id):
     """
     Syncs all contacts for the given org
     """
+    from tracpro.groups.models import Region
     from .models import Contact
 
     org = Org.objects.get(pk=org_id)
-    primary_groups = [r.uuid for r in org.regions.all()]
+    primary_groups = [r.uuid for r in Region.get_all(org)]
 
     logger.info('Starting contact sync task for org #%d' % org.id)
 

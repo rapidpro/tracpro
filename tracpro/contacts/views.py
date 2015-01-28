@@ -1,7 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
-from dash.utils.temba import ChangeType
+from dash.utils.sync import ChangeType
 from django.core.exceptions import PermissionDenied
 from django.core.urlresolvers import reverse
 from django import forms

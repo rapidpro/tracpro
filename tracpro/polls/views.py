@@ -49,7 +49,7 @@ class PollCRUDL(SmartCRUDL):
                 super(PollCRUDL.Select.FlowsForm, self).__init__(*args, **kwargs)
 
                 choices = []
-                for flow in org.get_temba_client().get_flows():
+                for flow in org.get_temba_client().get_flows(archived=False):
                     choices.append((flow.uuid, flow.name))
 
                 self.fields['flows'].choices = choices
@@ -67,7 +67,7 @@ class PollCRUDL(SmartCRUDL):
             return kwargs
 
         def form_valid(self, form):
-            Poll.update_flows(self.request.org, form.cleaned_data['flows'])
+            Poll.sync_with_flows(self.request.org, form.cleaned_data['flows'])
             return HttpResponseRedirect(self.get_success_url())
 
 

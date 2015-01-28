@@ -42,7 +42,7 @@ At this point everything should be good to go, you can start with:
 To run background tasks, you'll also need to start celery and have a local redis server:
 
 ```
-% celery -A tracpro worker -l info
+% celery -A tracpro worker -B -l info
 ```
 
 ###Running Tests

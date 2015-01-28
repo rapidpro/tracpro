@@ -30,7 +30,7 @@ class RegionTest(TracProTest):
     @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
     @patch('dash.orgs.models.TembaClient.get_groups')
     @patch('dash.orgs.models.TembaClient.get_contacts')
-    def test_update_groups(self, mock_get_contacts, mock_get_groups):
+    def test_sync_with_groups(self, mock_get_contacts, mock_get_groups):
         mock_get_groups.return_value = [TembaGroup.create(uuid='G-101', name="New region", size=2)]
         mock_get_contacts.return_value = [
             TembaContact.create(uuid='C-101', name="Jan", urns=['tel:123'], groups=['G-101', 'G-005'],
@@ -40,7 +40,7 @@ class RegionTest(TracProTest):
         ]
 
         # select one new group
-        Region.update_groups(self.unicef, ['G-101'])
+        Region.sync_with_groups(self.unicef, ['G-101'])
         self.assertEqual(self.unicef.regions.filter(is_active=True).count(), 1)
         self.assertEqual(self.unicef.regions.filter(is_active=False).count(), 3)  # existing de-activated
 
@@ -65,7 +65,7 @@ class RegionTest(TracProTest):
         Contact.objects.filter(name="Ken").update(is_active=False)
 
         # re-select new group
-        Region.update_groups(self.unicef, ['G-101'])
+        Region.sync_with_groups(self.unicef, ['G-101'])
 
         # local changes should be overwritten
         self.assertEqual(self.unicef.regions.get(is_active=True).name, 'New region')

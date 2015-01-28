@@ -2,11 +2,11 @@ Django==1.7.2
 Markdown==2.5.2
 Pillow==2.7.0
 Pygments==2.0.2
--e git+https://github.com/rapidpro/rapidpro-python@ca49e07be875d24e2365a5844f09936da26dad31#egg=rapidpro-python
+-e git+https://github.com/rapidpro/rapidpro-python@e5810d0f049c65d0093a2e9bb60681f266324184#egg=rapidpro-python
 amqp==1.4.6
 anyjson==0.3.3
 billiard==3.3.0.19
-boto==2.35.2
+boto==2.36.0
 celery==3.1.17
 celery-with-redis==3.0
 coverage==3.7.1

@@ -43,7 +43,7 @@ class Region(AbstractGroup):
                                    help_text=_("Users who can access this region"))
 
     @classmethod
-    def update_groups(cls, org, group_uuids):
+    def sync_with_groups(cls, org, group_uuids):
         """
         Updates an org's regions based on the selected groups UUIDs
         """
@@ -71,7 +71,7 @@ class Region(AbstractGroup):
 
 class Group(AbstractGroup):
     @classmethod
-    def update_reporter_groups(cls, org, group_uuids):
+    def sync_with_groups(cls, org, group_uuids):
         """
         Updates an org's reporter groups based on the selected groups UUIDs
         """
