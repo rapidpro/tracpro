@@ -115,7 +115,7 @@ class Response(models.Model):
     """
     Corresponds to RapidPro FlowRun
     """
-    flow_run_id = models.IntegerField()
+    flow_run_id = models.IntegerField(unique=True)
 
     issue = models.ForeignKey(Issue, related_name='responses')
 
@@ -123,23 +123,66 @@ class Response(models.Model):
 
     created_on = models.DateTimeField(help_text=_("When this response was created"))
 
+    updated_on = models.DateTimeField(help_text=_("When the last activity on this response was"))
+
+    is_complete = models.BooleanField(default=None, help_text=_("Whether this response is complete"))
+
     @classmethod
-    def from_run(cls, poll, run):
+    def get_or_create(cls, org, run, poll=None):
+        """
+        Gets or creates a response from a Temba flow run. If response is not up-to-date with provided run, then it is
+        updated.
+        """
+        response = Response.objects.filter(issue__poll__org=org, flow_run_id=run.id).first()
+        run_updated_on = cls.get_run_updated_on(run)
+
+        # if there is an up-to-date existing response, return it
+        if response and response.updated_on == run_updated_on:
+            return response
+
+        if not poll:
+            poll = Poll.get_all(org).get(flow_uuid=run.flow)
+
         issue = Issue.get_or_create(poll)
         contact = Contact.get_or_fetch(poll.org, uuid=run.contact)
-
-        response = Response.objects.create(flow_run_id=run.id, issue=issue, contact=contact, created_on=run.created_on)
+        questions = poll.get_questions()
 
         # organize values by ruleset UUID
         valuesets_by_ruleset = {valueset.node: valueset for valueset in run.values}
+        valuesets_by_question = {q: valuesets_by_ruleset.get(q.ruleset_uuid, None) for q in questions}
 
-        # convert ruleset values to answers
-        for question in poll.questions.all():
-            valueset = valuesets_by_ruleset.get(question.ruleset_uuid, None)
+        completed_questions = sum(1 for v in valuesets_by_question.values() if v is not None)
+        is_complete = completed_questions == len(questions)
+
+        if response:
+            # clear existing answers which will be replaced
+            response.answers.all().delete()
+
+            response.updated_on = run_updated_on
+            response.is_complete = is_complete
+            response.save(update_fields=('updated_on', 'is_complete'))
+        else:
+            response = Response.objects.create(flow_run_id=run.id, issue=issue, contact=contact,
+                                               created_on=run.created_on, updated_on=run_updated_on,
+                                               is_complete=is_complete)
+
+        # convert valuesets to answers
+        for question, valueset in valuesets_by_question.iteritems():
             if valueset:
                 Answer.objects.create(response=response, question=question,
                                       category=valueset.category, value=valueset.value, submitted_on=valueset.time)
+
         return response
+
+    @classmethod
+    def get_run_updated_on(cls, run):
+        # find the valueset with the latest time
+        last_value_on = None
+        for valueset in run.values:
+            if not last_value_on or valueset.time > last_value_on:
+                last_value_on = valueset.time
+
+        return last_value_on if last_value_on else run.created_on
 
 
 class Answer(models.Model):

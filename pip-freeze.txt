@@ -2,7 +2,7 @@ Django==1.7.2
 Markdown==2.5.2
 Pillow==2.7.0
 Pygments==2.0.2
--e git+https://github.com/rapidpro/rapidpro-python@98a28317105a5deffc7796e77b798bafdd857c9e#egg=rapidpro-python
+-e git+https://github.com/rapidpro/rapidpro-python@75e42d4d6022f3f01c9ade66b522e0683cb2f6b8#egg=rapidpro-python
 amqp==1.4.6
 anyjson==0.3.3
 billiard==3.3.0.19

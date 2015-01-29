@@ -145,8 +145,6 @@ class ResponseCRUDL(SmartCRUDL):
     actions = ('filter',)
 
     class Filter(OrgPermsMixin, SmartListView):
-        fields = ('contact', 'created_on')
-
         @classmethod
         def derive_url_pattern(cls, path, action):
             return r'^%s/%s/(?P<issue>\d+)/$' % (path, action)
@@ -162,6 +160,27 @@ class ResponseCRUDL(SmartCRUDL):
 
             self._issue = Issue.objects.select_related('poll').get(pk=self.kwargs['issue'], poll__org=self.request.org)
             return self._issue
+
+        def derive_questions(self):
+            return {'question_%d' % q.pk: q for q in self.derive_issue().poll.questions.all()}
+
+        def derive_fields(self):
+            return ['contact', 'created_on'] + self.derive_questions().keys()
+
+        def lookup_field_label(self, context, field, default=None):
+            if field.startswith('question_'):
+                question = self.derive_questions()[field]
+                return question.text
+            else:
+                return super(ResponseCRUDL.Filter, self).lookup_field_label(context, field, default)
+
+        def lookup_field_value(self, context, obj, field):
+            if field.startswith('question_'):
+                question = self.derive_questions()[field]
+                answer = obj.answers.filter(question=question).first()
+                return answer.value if answer else '--'
+            else:
+                return super(ResponseCRUDL.Filter, self).lookup_field_value(context, obj, field)
 
         def get_queryset(self, **kwargs):
             return self.derive_issue().responses.order_by('-created_on')

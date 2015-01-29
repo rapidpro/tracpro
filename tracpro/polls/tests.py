@@ -39,7 +39,8 @@ class PollTest(TracProTest):
 
 
 class ResponseTest(TracProTest):
-    def test_from_run(self):
+    def test_get_or_create(self):
+        # a complete run
         run = Run.create(id=1234,
                          flow='F-001',  # flow UUID for poll #1
                          contact='C-001',
@@ -54,13 +55,15 @@ class ResponseTest(TracProTest):
                                                     text="4",
                                                     value="4.00000000",
                                                     label="Number of goats",
-                                                    time=datetime.datetime(2014, 1, 2, 3, 4, 5, 6, pytz.UTC))],
-                         steps=[],  # not needed
+                                                    time=datetime.datetime(2015, 1, 2, 3, 4, 5, 6, pytz.UTC))],
+                         steps=[],  # not used
                          created_on=datetime.datetime(2013, 1, 2, 3, 4, 5, 6, pytz.UTC))
 
-        response = Response.from_run(self.poll1, run)
+        response = Response.get_or_create(self.unicef, run)
         self.assertEqual(response.contact, self.contact1)
         self.assertEqual(response.created_on, datetime.datetime(2013, 1, 2, 3, 4, 5, 6, pytz.UTC))
+        self.assertEqual(response.updated_on, datetime.datetime(2015, 1, 2, 3, 4, 5, 6, pytz.UTC))
+        self.assertTrue(response.is_complete)
         self.assertEqual(len(response.answers.all()), 2)
         answers = list(response.answers.order_by('question_id'))
         self.assertEqual(answers[0].question, self.poll1_question1)
@@ -70,7 +73,68 @@ class ResponseTest(TracProTest):
         self.assertEqual(answers[1].question, self.poll1_question2)
         self.assertEqual(answers[1].value, "4.00000000")
         self.assertEqual(answers[1].category, "1 - 25")
-        self.assertEqual(answers[1].submitted_on, datetime.datetime(2014, 1, 2, 3, 4, 5, 6, pytz.UTC))
+        self.assertEqual(answers[1].submitted_on, datetime.datetime(2015, 1, 2, 3, 4, 5, 6, pytz.UTC))
+
+        # an incomplete run
+        run = Run.create(id=2345,
+                         flow='F-001',  # flow UUID for poll #1
+                         contact='C-002',
+                         values=[RunValueSet.create(category="1 - 50",
+                                                    node='RS-001',
+                                                    text="6",
+                                                    value="6.00000000",
+                                                    label="Number of sheep",
+                                                    time=datetime.datetime(2014, 1, 2, 3, 4, 5, 6, pytz.UTC))],
+                         steps=[],  # not used
+                         created_on=datetime.datetime(2013, 1, 2, 3, 4, 5, 6, pytz.UTC))
+
+        response = Response.get_or_create(self.unicef, run)
+        self.assertEqual(response.contact, self.contact2)
+        self.assertEqual(response.created_on, datetime.datetime(2013, 1, 2, 3, 4, 5, 6, pytz.UTC))
+        self.assertEqual(response.updated_on, datetime.datetime(2014, 1, 2, 3, 4, 5, 6, pytz.UTC))
+        self.assertFalse(response.is_complete)
+        self.assertEqual(len(response.answers.all()), 1)
+
+        # now completed
+        run = Run.create(id=2345,
+                         flow='F-001',  # flow UUID for poll #1
+                         contact='C-002',
+                         values=[RunValueSet.create(category="1 - 50",
+                                                    node='RS-001',
+                                                    text="6",
+                                                    value="6.00000000",
+                                                    label="Number of sheep",
+                                                    time=datetime.datetime(2014, 1, 2, 3, 4, 5, 6, pytz.UTC)),
+                                 RunValueSet.create(category="1 - 25",
+                                                    node='RS-002',
+                                                    text="4",
+                                                    value="4.00000000",
+                                                    label="Number of goats",
+                                                    time=datetime.datetime(2015, 1, 2, 3, 4, 5, 6, pytz.UTC))],
+                         steps=[],  # not used
+                         created_on=datetime.datetime(2013, 1, 2, 3, 4, 5, 6, pytz.UTC))
+
+        response = Response.get_or_create(self.unicef, run)
+        self.assertEqual(response.contact, self.contact2)
+        self.assertEqual(response.created_on, datetime.datetime(2013, 1, 2, 3, 4, 5, 6, pytz.UTC))
+        self.assertEqual(response.updated_on, datetime.datetime(2015, 1, 2, 3, 4, 5, 6, pytz.UTC))
+        self.assertTrue(response.is_complete)
+        self.assertEqual(len(response.answers.all()), 2)
+
+        # an empty run
+        run = Run.create(id=3456,
+                         flow='F-001',  # flow UUID for poll #1
+                         contact='C-002',
+                         values=[],
+                         steps=[],  # not used
+                         created_on=datetime.datetime(2013, 1, 2, 3, 4, 5, 6, pytz.UTC))
+
+        response = Response.get_or_create(self.unicef, run)
+        self.assertEqual(response.contact, self.contact2)
+        self.assertEqual(response.created_on, datetime.datetime(2013, 1, 2, 3, 4, 5, 6, pytz.UTC))
+        self.assertEqual(response.updated_on, datetime.datetime(2013, 1, 2, 3, 4, 5, 6, pytz.UTC))
+        self.assertFalse(response.is_complete)
+        self.assertEqual(len(response.answers.all()), 0)
 
 
 class PollCRUDLTest(TracProTest):
@@ -94,3 +158,7 @@ class QuestionCRUDLTest(TracProTest):
         response = self.url_get('unicef', reverse('polls.question_filter', args=[self.poll1.pk]))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context['object_list']), 2)
+
+
+class PollTasksTest(TracProTest):
+    pass
