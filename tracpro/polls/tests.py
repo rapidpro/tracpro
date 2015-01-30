@@ -4,10 +4,11 @@ import datetime
 import pytz
 
 from django.core.urlresolvers import reverse
+from django.utils import timezone
 from mock import patch
 from temba.types import Flow, FlowRuleSet, Run, RunValueSet
 from tracpro.test import TracProTest
-from .models import Poll, Response
+from .models import Poll, Issue, Response
 
 
 class PollTest(TracProTest):
@@ -36,6 +37,34 @@ class PollTest(TracProTest):
         poll3 = Poll.objects.get(flow_uuid='F-003')
         self.assertEqual(poll3.name, "Poll #3")
         self.assertEqual(poll3.questions.count(), 2)
+
+
+class IssueTest(TracProTest):
+    def test_get_or_create(self):
+        # 2014-Jan-01 04:30 in org's Afg timezone
+        with patch.object(timezone, 'now', return_value=datetime.datetime(2014, 1, 1, 0, 0, 0, 0, pytz.utc)):
+            # no existing issues so one is created
+            issue1 = Issue.get_or_create(self.unicef, self.poll1)
+            self.assertEqual(issue1.conducted_on, datetime.datetime(2014, 1, 1, 0, 0, 0, 0, pytz.utc))
+
+        # 2014-Jan-01 23:30 in org's Afg timezone
+        with patch.object(timezone, 'now', return_value=datetime.datetime(2014, 1, 1, 19, 0, 0, 0, pytz.utc)):
+            # existing issue on same day is returned
+            issue2 = Issue.get_or_create(self.unicef, self.poll1)
+            self.assertEqual(issue1, issue2)
+
+        # 2014-Jan-02 00:30 in org's Afg timezone
+        with patch.object(timezone, 'now', return_value=datetime.datetime(2014, 1, 1, 20, 0, 0, 0, pytz.utc)):
+            # different day locally so new issue
+            issue3 = Issue.get_or_create(self.unicef, self.poll1)
+            self.assertNotEqual(issue3, issue1)
+            self.assertEqual(issue3.conducted_on, datetime.datetime(2014, 1, 1, 20, 0, 0, 0, pytz.utc))
+
+        # 2014-Jan-02 04:30 in org's Afg timezone
+        with patch.object(timezone, 'now', return_value=datetime.datetime(2014, 1, 2, 0, 0, 0, 0, pytz.utc)):
+            # same day locally so no new issue
+            issue4 = Issue.get_or_create(self.unicef, self.poll1)
+            self.assertEqual(issue3, issue4)
 
 
 class ResponseTest(TracProTest):

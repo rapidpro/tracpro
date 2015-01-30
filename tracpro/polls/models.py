@@ -1,5 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
+import pytz
+
 from dash.orgs.models import Org
 from django.db import models
 from django.utils import timezone
@@ -89,26 +91,31 @@ class Question(models.Model):
 
 class Issue(models.Model):
     """
-    Corresponds to a RapidPro FlowStart
+    Associates polls conducted on the same day
     """
-    flow_start_id = models.IntegerField(null=True)
-
     poll = models.ForeignKey(Poll, related_name='issues')
 
     conducted_on = models.DateTimeField(help_text=_("When the poll was conducted"))
 
     @classmethod
-    def create(cls, poll, conducted_on, flow_start_id):
-        return cls.objects.create(poll=poll, conducted_on=conducted_on, flow_start_id=flow_start_id)
+    def create(cls, poll, conducted_on):
+        return cls.objects.create(poll=poll, conducted_on=conducted_on)
 
     @classmethod
-    def get_or_create(cls, poll):
-        # TODO need a way to associate flow runs that may or may not have flow starts. For now just get last issue.
+    def get_or_create(cls, org, poll, for_date=None):
+        if not for_date:
+            for_date = timezone.now()
+
+        # get the requested date in the org timezone
+        org_timezone = pytz.timezone(org.timezone)
+        for_local_date = for_date.astimezone(org_timezone).date()
+
+        # if the last issue of this poll was on same day, return that
         last = poll.issues.order_by('-conducted_on').first()
-        if last:
+        if last and last.conducted_on.astimezone(org_timezone).date() == for_local_date:
             return last
 
-        return Issue.create(poll, timezone.now(), None)
+        return Issue.create(poll, for_date)
 
 
 class Response(models.Model):
@@ -143,7 +150,7 @@ class Response(models.Model):
         if not poll:
             poll = Poll.get_all(org).get(flow_uuid=run.flow)
 
-        issue = Issue.get_or_create(poll)
+        issue = Issue.get_or_create(org, poll)
         contact = Contact.get_or_fetch(poll.org, uuid=run.contact)
         questions = poll.get_questions()
 
