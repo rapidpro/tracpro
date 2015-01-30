@@ -134,6 +134,8 @@ class Response(models.Model):
 
     is_complete = models.BooleanField(default=None, help_text=_("Whether this response is complete"))
 
+    is_active = models.BooleanField(default=True, help_text="Whether this response is active")
+
     @classmethod
     def get_or_create(cls, org, run, poll=None):
         """
@@ -143,7 +145,7 @@ class Response(models.Model):
         response = Response.objects.filter(issue__poll__org=org, flow_run_id=run.id).first()
         run_updated_on = cls.get_run_updated_on(run)
 
-        # if there is an up-to-date existing response, return it
+        # if there is an up-to-date existing response for this run, return it
         if response and response.updated_on == run_updated_on:
             return response
 
@@ -152,9 +154,12 @@ class Response(models.Model):
 
         issue = Issue.get_or_create(org, poll)
         contact = Contact.get_or_fetch(poll.org, uuid=run.contact)
-        questions = poll.get_questions()
+
+        # if contact has an older response for this issue, retire it
+        Response.objects.filter(issue=issue, contact=contact).update(is_active=False)
 
         # organize values by ruleset UUID
+        questions = poll.get_questions()
         valuesets_by_ruleset = {valueset.node: valueset for valueset in run.values}
         valuesets_by_question = {q: valuesets_by_ruleset.get(q.ruleset_uuid, None) for q in questions}
 
