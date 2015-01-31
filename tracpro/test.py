@@ -1,5 +1,8 @@
 from __future__ import unicode_literals
 
+import datetime
+import pytz
+
 from dash.orgs.models import Org
 from django.contrib.auth.models import User
 from django.test import TestCase
@@ -99,6 +102,9 @@ class TracProTest(TestCase):
         if subdomain:
             extra['HTTP_HOST'] = '%s.localhost' % subdomain
         return self.client.post(url, data, **extra)
+
+    def datetime(self, year, month, day, hour=0, minute=0, second=0, microsecond=0, tz=pytz.UTC):
+        return datetime.datetime(year, month, day, hour, minute, second, microsecond, tz)
 
     def assertLoginRedirect(self, response, subdomain, next):
         self.assertRedirects(response, 'http://%s.localhost/users/login/?next=%s' % (subdomain, next))

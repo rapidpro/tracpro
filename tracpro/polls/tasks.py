@@ -2,10 +2,11 @@ from __future__ import absolute_import, unicode_literals
 
 from celery.utils.log import get_task_logger
 from dash.orgs.models import Org
+from django.db.models import Max
 from djcelery_transactions import task
 from redis_cache import get_redis_connection
 from temba.utils import parse_iso8601, format_iso8601
-from tracpro.polls.models import Poll, Response
+from tracpro.polls.models import Poll, Issue, Response
 
 logger = get_task_logger(__name__)
 
@@ -39,10 +40,7 @@ def fetch_org_new_runs(org):
 
     polls_by_flow_uuids = {p.flow_uuid: p for p in Poll.get_all(org)}
 
-    # TODO re-enable after https://github.com/nyaruka/rapidpro/pull/38
-    # runs = client.get_runs(flows=polls_by_flow_uuids.keys(), after=last_time)
-
-    runs = client.get_runs(after=last_time)
+    runs = client.get_runs(flows=polls_by_flow_uuids.keys(), after=last_time)
 
     if runs:
         # because the Temba API compares after dates with gte, oldest run will be usually be a duplicate
@@ -58,10 +56,6 @@ def fetch_org_new_runs(org):
 
         # convert flow runs into poll responses
         for run in runs:
-            # TODO remove after https://github.com/nyaruka/rapidpro/pull/38
-            if run.flow not in polls_by_flow_uuids.keys():
-                continue
-
             poll = polls_by_flow_uuids[run.flow]
             Response.get_or_create(org, run, poll=poll)
 
@@ -75,11 +69,17 @@ def fetch_org_updated_runs(org):
     """
     client = org.get_temba_client()
 
-    incomplete_responses = Response.objects.filter(issue__poll__org=org, is_complete=False)
+    incomplete_responses = Response.get_incomplete_to_update(org)
 
-    runs = client.get_runs(ids=[r.flow_run_id for r in incomplete_responses])
+    if incomplete_responses:
+        runs = client.get_runs(ids=[r.flow_run_id for r in incomplete_responses])
 
-    logger.info("Fetched %d runs for incomplete responses" % len(runs))
+        logger.info("Fetched %d runs for incomplete responses" % len(runs))
 
-    for run in runs:
-        Response.get_or_create(org, run)
+        polls_by_flow_uuids = {p.flow_uuid: p for p in Poll.get_all(org)}
+
+        for run in runs:
+            poll = polls_by_flow_uuids[run.flow]
+            Response.get_or_create(org, run, poll=poll)
+    else:
+        logger.info("No incomplete responses to update")

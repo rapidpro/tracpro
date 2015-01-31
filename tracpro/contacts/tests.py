@@ -13,8 +13,8 @@ class ContactTest(TracProTest):
     @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
     @patch('dash.orgs.models.TembaClient.create_contact')
     def test_create(self, mock_create_contact):
-        mock_create_contact.return_value = TembaContact.create(uuid='C-101', name="Mo Polls",
-                                                               urns=['tel:078123'], groups=['G-001'],
+        mock_create_contact.return_value = TembaContact.create(uuid='C-007', name="Mo Polls",
+                                                               urns=['tel:078123'], groups=['G-001', 'G-005'],
                                                                language='eng', modified_on=timezone.now())
 
         contact = Contact.create(self.unicef, self.user1, "Mo Polls", 'tel:078123', self.region1, self.group1)
@@ -29,18 +29,31 @@ class ContactTest(TracProTest):
 
         # reload and check UUID was updated by push task
         contact = Contact.objects.get(pk=contact.pk)
-        self.assertEqual(contact.uuid, 'C-101')
+        self.assertEqual(contact.uuid, 'C-007')
 
         self.assertEqual(mock_create_contact.call_count, 1)
 
+    @patch('dash.orgs.models.TembaClient.get_contact')
+    def test_get_or_fetch(self, mock_get_contact):
+        mock_get_contact.return_value = TembaContact.create(uuid='C-007', name="Mo Polls",
+                                                            urns=['tel:078123'], groups=['G-001', 'G-005'],
+                                                            language='eng', modified_on=timezone.now())
+        # get locally
+        contact = Contact.get_or_fetch(self.unicef, 'C-001')
+        self.assertEqual(contact.name, "Ann")
+
+        # fetch remotely
+        contact = Contact.get_or_fetch(self.unicef, 'C-009')
+        self.assertEqual(contact.name, "Mo Polls")
+
     def test_kwargs_from_temba(self):
-        temba_contact = TembaContact.create(uuid='C-101', name="Jan", urns=['tel:123'],
+        temba_contact = TembaContact.create(uuid='C-007', name="Jan", urns=['tel:123'],
                                             groups=['G-001', 'G-007'], fields=dict(chat_name="jxn"),
                                             language='eng', modified_on=timezone.now())
 
         kwargs = Contact.kwargs_from_temba(self.unicef, temba_contact)
 
-        self.assertEqual(kwargs, dict(uuid='C-101', org=self.unicef, name="Jan", urn='tel:123',
+        self.assertEqual(kwargs, dict(uuid='C-007', org=self.unicef, name="Jan", urn='tel:123',
                                       region=self.region1, group=self.group3))
 
         # try creating contact from them

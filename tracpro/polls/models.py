@@ -117,6 +117,22 @@ class Issue(models.Model):
 
         return Issue.create(poll, for_date)
 
+    def get_responses(self):
+        return self.responses.filter(is_active=True)
+
+    def get_complete_responses(self):
+        return self.responses.filter(is_active=True, is_complete=True)
+
+    def get_incomplete_responses(self):
+        return self.responses.filter(is_active=True, is_complete=False)
+
+    def get_completion(self):
+        """
+        Gets the completion level for this issue. An issue with no responses (complete or incomplete) returns None
+        """
+        total_responses = self.get_responses().count()
+        return self.get_complete_responses().count() / float(total_responses) if total_responses else None
+
 
 class Response(models.Model):
     """
@@ -181,8 +197,7 @@ class Response(models.Model):
         # convert valuesets to answers
         for question, valueset in valuesets_by_question.iteritems():
             if valueset:
-                Answer.objects.create(response=response, question=question,
-                                      category=valueset.category, value=valueset.value, submitted_on=valueset.time)
+                Answer.create(response, question, valueset.value, valueset.category, valueset.time)
 
         return response
 
@@ -196,6 +211,17 @@ class Response(models.Model):
 
         return last_value_on if last_value_on else run.created_on
 
+    @classmethod
+    def get_incomplete_to_update(cls, org):
+        """
+        Gets incomplete responses to the latest issues of all polls so that they can be updated
+        """
+        # get polls with the latest issue id for each
+        polls = Poll.get_all(org).annotate(latest_issue_id=models.Max('issues'))
+        latest_issues = [p.latest_issue_id for p in polls if p.latest_issue_id]
+
+        return Response.objects.filter(issue__in=latest_issues, is_active=True, is_complete=False)
+
 
 class Answer(models.Model):
     """
@@ -205,8 +231,13 @@ class Answer(models.Model):
 
     question = models.ForeignKey(Question, related_name='answers')
 
-    category = models.CharField(max_length=36, null=True)
-
     value = models.CharField(max_length=640, null=True)
 
+    category = models.CharField(max_length=36, null=True)
+
     submitted_on = models.DateTimeField(help_text=_("When this answer was submitted"))
+
+    @classmethod
+    def create(cls, response, question, value, category, submitted_on):
+        return Answer.objects.create(response=response, question=question,
+                                     value=value, category=category, submitted_on=submitted_on)

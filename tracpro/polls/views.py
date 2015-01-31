@@ -183,7 +183,7 @@ class ResponseCRUDL(SmartCRUDL):
                 return super(ResponseCRUDL.Filter, self).lookup_field_value(context, obj, field)
 
         def get_queryset(self, **kwargs):
-            return self.derive_issue().responses.order_by('-created_on')
+            return self.derive_issue().get_responses().order_by('-created_on')
 
         def get_context_data(self, **kwargs):
             context = super(ResponseCRUDL.Filter, self).get_context_data(**kwargs)

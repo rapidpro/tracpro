@@ -25,6 +25,27 @@ class AbstractGroup(models.Model):
         return cls.objects.create(org=org, name=name, uuid=uuid)
 
     @classmethod
+    def sync_with_groups(cls, org, group_uuids):
+        """
+        Updates an org's groups based on the selected groups UUIDs
+        """
+        # de-activate any active groups not included
+        cls.objects.filter(org=org, is_active=True).exclude(uuid__in=group_uuids).update(is_active=False)
+
+        # fetch group details
+        groups = org.get_temba_client().get_groups()
+        group_names = {group.uuid: group.name for group in groups}
+
+        for group_uuid in group_uuids:
+            existing = cls.objects.filter(org=org, uuid=group_uuid).first()
+            if existing:
+                existing.name = group_names[group_uuid]
+                existing.is_active = True
+                existing.save()
+            else:
+                cls.create(org, group_names[group_uuid], group_uuid)
+
+    @classmethod
     def get_all(cls, org):
         return cls.objects.filter(org=org, is_active=True)
 
@@ -39,6 +60,9 @@ class AbstractGroup(models.Model):
 
 
 class Region(AbstractGroup):
+    """
+    A geographical region modelled as a group
+    """
     users = models.ManyToManyField(User, verbose_name=_("Users"), related_name='regions',
                                    help_text=_("Users who can access this region"))
 
@@ -47,21 +71,7 @@ class Region(AbstractGroup):
         """
         Updates an org's regions based on the selected groups UUIDs
         """
-        # de-activate regions not included
-        org.regions.exclude(uuid__in=group_uuids).update(is_active=False)
-
-        # fetch group details
-        groups = org.get_temba_client().get_groups()
-        group_names = {group.uuid: group.name for group in groups}
-
-        for group_uuid in group_uuids:
-            existing = org.regions.filter(uuid=group_uuid).first()
-            if existing:
-                existing.name = group_names[group_uuid]
-                existing.is_active = True
-                existing.save()
-            else:
-                cls.create(org, group_names[group_uuid], group_uuid)
+        super(Region, cls).sync_with_groups(org, group_uuids)
 
         sync_org_contacts.delay(org.id)
 
@@ -70,23 +80,7 @@ class Region(AbstractGroup):
 
 
 class Group(AbstractGroup):
-    @classmethod
-    def sync_with_groups(cls, org, group_uuids):
-        """
-        Updates an org's reporter groups based on the selected groups UUIDs
-        """
-        # de-activate groups not included
-        org.groups.exclude(uuid__in=group_uuids).update(is_active=False)
-
-        # fetch group details
-        groups = org.get_temba_client().get_groups()
-        group_names = {group.uuid: group.name for group in groups}
-
-        for group_uuid in group_uuids:
-            existing = org.groups.filter(uuid=group_uuid).first()
-            if existing:
-                existing.name = group_names[group_uuid]
-                existing.is_active = True
-                existing.save()
-            else:
-                cls.create(org, group_names[group_uuid], group_uuid)
+    """
+    A data reporting group
+    """
+    pass
