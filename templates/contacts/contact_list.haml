@@ -1,0 +1,8 @@
+- extends "smartmin/list.html"
+- load smartmin i18n
+
+- block table-buttons
+  - if org_perms.contacts.contact_create
+    %a.btn.btn-default.pull-right{ href:"{% url 'contacts.contact_create' %}" }
+      %span.glyphicon.glyphicon-plus
+      - trans "Add"

@@ -57,7 +57,7 @@ class PollTest(TracProTest):
         self.assertEqual(Response.get_incomplete_to_update(self.unicef).count(), 0)
 
         # create issue but no responses yet
-        issue1 = Issue.get_or_create(self.unicef, self.poll1, for_date=self.datetime(2014, 1, 1))
+        issue1 = Issue.get_or_create(self.unicef, self.poll1, self.region1, for_date=self.datetime(2014, 1, 1))
 
         self.assertEqual(Response.get_incomplete_to_update(self.unicef).count(), 0)
 
@@ -70,7 +70,7 @@ class PollTest(TracProTest):
         self.assertEqual(list(Response.get_incomplete_to_update(self.unicef)), [response1])
 
         # create newer issue with an incomplete response
-        issue2 = Issue.get_or_create(self.unicef, self.poll1, for_date=self.datetime(2014, 1, 2))
+        issue2 = Issue.get_or_create(self.unicef, self.poll1, self.region1, for_date=self.datetime(2014, 1, 2))
         response3 = Response.objects.create(flow_run_id=345, issue=issue2, contact=self.contact1,
                                             created_on=timezone.now(), updated_on=timezone.now(), is_complete=False)
 
@@ -82,48 +82,74 @@ class IssueTest(TracProTest):
         # 2014-Jan-01 04:30 in org's Afg timezone
         with patch.object(timezone, 'now', return_value=datetime.datetime(2014, 1, 1, 0, 0, 0, 0, pytz.utc)):
             # no existing issues so one is created
-            issue1 = Issue.get_or_create(self.unicef, self.poll1)
+            issue1 = Issue.get_or_create(self.unicef, self.poll1, self.region1)
             self.assertEqual(issue1.conducted_on, datetime.datetime(2014, 1, 1, 0, 0, 0, 0, pytz.utc))
 
         # 2014-Jan-01 23:30 in org's Afg timezone
         with patch.object(timezone, 'now', return_value=datetime.datetime(2014, 1, 1, 19, 0, 0, 0, pytz.utc)):
             # existing issue on same day is returned
-            issue2 = Issue.get_or_create(self.unicef, self.poll1)
+            issue2 = Issue.get_or_create(self.unicef, self.poll1, self.region1)
             self.assertEqual(issue1, issue2)
 
         # 2014-Jan-02 00:30 in org's Afg timezone
         with patch.object(timezone, 'now', return_value=datetime.datetime(2014, 1, 1, 20, 0, 0, 0, pytz.utc)):
             # different day locally so new issue
-            issue3 = Issue.get_or_create(self.unicef, self.poll1)
+            issue3 = Issue.get_or_create(self.unicef, self.poll1, self.region1)
             self.assertNotEqual(issue3, issue1)
             self.assertEqual(issue3.conducted_on, datetime.datetime(2014, 1, 1, 20, 0, 0, 0, pytz.utc))
 
         # 2014-Jan-02 04:30 in org's Afg timezone
         with patch.object(timezone, 'now', return_value=datetime.datetime(2014, 1, 2, 0, 0, 0, 0, pytz.utc)):
             # same day locally so no new issue
-            issue4 = Issue.get_or_create(self.unicef, self.poll1)
+            issue4 = Issue.get_or_create(self.unicef, self.poll1, self.region1)
             self.assertEqual(issue3, issue4)
 
     def test_completion(self):
         date1 = self.datetime(2014, 1, 1, 7, 0)
 
         # issue with no responses (complete or incomplete) has null completion
-        issue = Issue.create(self.poll1, date1)
+        issue = Issue.create(self.poll1, [self.region1, self.region2], date1)
         self.assertEqual(issue.get_completion(), None)
 
-        # add a incomplete response
+        # add a incomplete response from contact in region #1
         response1 = Response.objects.create(flow_run_id=123, issue=issue, contact=self.contact1,
                                             created_on=date1, updated_on=date1, is_complete=False)
         self.assertEqual(issue.get_completion(), 0)
         self.assertEqual(list(issue.get_complete_responses()), [])
         self.assertEqual(list(issue.get_incomplete_responses()), [response1])
+        self.assertEqual(issue.get_completion(self.region1), 0)
+        self.assertEqual(list(issue.get_complete_responses(self.region1)), [])
+        self.assertEqual(list(issue.get_incomplete_responses(self.region1)), [response1])
+        self.assertEqual(issue.get_completion(self.region2), None)
+        self.assertEqual(list(issue.get_complete_responses(self.region2)), [])
+        self.assertEqual(list(issue.get_incomplete_responses(self.region2)), [])
 
-        # add a complete response
+        # add a complete response from another contact in region #1
         response2 = Response.objects.create(flow_run_id=234, issue=issue, contact=self.contact2,
                                             created_on=date1, updated_on=date1, is_complete=True)
         self.assertEqual(issue.get_completion(), 0.5)
         self.assertEqual(list(issue.get_complete_responses()), [response2])
         self.assertEqual(list(issue.get_incomplete_responses()), [response1])
+        self.assertEqual(issue.get_completion(self.region1), 0.5)
+        self.assertEqual(list(issue.get_complete_responses(self.region1)), [response2])
+        self.assertEqual(list(issue.get_incomplete_responses(self.region1)), [response1])
+        self.assertEqual(issue.get_completion(self.region2), None)
+        self.assertEqual(list(issue.get_complete_responses(self.region2)), [])
+        self.assertEqual(list(issue.get_incomplete_responses(self.region2)), [])
+
+        # add a complete response from contact in different region
+        response3 = Response.objects.create(flow_run_id=345, issue=issue, contact=self.contact4,
+                                            created_on=date1, updated_on=date1, is_complete=True)
+
+        self.assertEqual(issue.get_completion(), (2 / 3.0))
+        self.assertEqual(list(issue.get_complete_responses().order_by('pk')), [response2, response3])
+        self.assertEqual(list(issue.get_incomplete_responses()), [response1])
+        self.assertEqual(issue.get_completion(self.region1), 0.5)
+        self.assertEqual(list(issue.get_complete_responses(self.region1)), [response2])
+        self.assertEqual(list(issue.get_incomplete_responses(self.region1)), [response1])
+        self.assertEqual(issue.get_completion(self.region2), 1)
+        self.assertEqual(list(issue.get_complete_responses(self.region2)), [response3])
+        self.assertEqual(list(issue.get_incomplete_responses(self.region2)), [])
 
 
 class ResponseTest(TracProTest):
@@ -271,7 +297,7 @@ class ResponseCRUDLTest(TracProTest):
         date3 = self.datetime(2014, 1, 2, 7, 0)
 
         # create issue with 2 responses (1 complete, 1 incomplete)
-        self.issue1 = Issue.create(self.poll1, date1)
+        self.issue1 = Issue.create(self.poll1, [self.region1], date1)
         self.issue1_r1 = Response.objects.create(flow_run_id=123, issue=self.issue1, contact=self.contact1,
                                                  created_on=date1, updated_on=date1, is_complete=True)
         Answer.create(self.issue1_r1, self.poll1_question1, "5.0000", "1 - 10", date1)
@@ -280,7 +306,7 @@ class ResponseCRUDLTest(TracProTest):
                                                  created_on=date2, updated_on=date2, is_complete=False)
 
         # create second issue with 1 incomplete response
-        self.issue2 = Issue.create(self.poll1, date3)
+        self.issue2 = Issue.create(self.poll1, [self.region1], date3)
         self.issue2_r1 = Response.objects.create(flow_run_id=345, issue=self.issue2, contact=self.contact1,
                                                  created_on=date3, updated_on=date3, is_complete=False)
 

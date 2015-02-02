@@ -7,6 +7,7 @@ from django.db import models
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from tracpro.contacts.models import Contact
+from tracpro.groups.models import Region
 
 
 class Poll(models.Model):
@@ -80,8 +81,6 @@ class Question(models.Model):
 
     text = models.CharField(max_length=64)  # taken from RuleSet label
 
-    show_with_contact = models.BooleanField(default=False)
-
     is_active = models.BooleanField(default=True, help_text="Whether this item is active")
 
     @classmethod
@@ -95,14 +94,19 @@ class Issue(models.Model):
     """
     poll = models.ForeignKey(Poll, related_name='issues')
 
+    regions = models.ManyToManyField(Region, related_name='issues', help_text="Regions where poll was conducted")
+
     conducted_on = models.DateTimeField(help_text=_("When the poll was conducted"))
 
     @classmethod
-    def create(cls, poll, conducted_on):
-        return cls.objects.create(poll=poll, conducted_on=conducted_on)
+    def create(cls, poll, regions, conducted_on):
+        issue = cls.objects.create(poll=poll, conducted_on=conducted_on)
+        for region in regions:
+            issue.regions.add(region)
+        return issue
 
     @classmethod
-    def get_or_create(cls, org, poll, for_date=None):
+    def get_or_create(cls, org, poll, region, for_date=None):
         if not for_date:
             for_date = timezone.now()
 
@@ -110,28 +114,34 @@ class Issue(models.Model):
         org_timezone = pytz.timezone(org.timezone)
         for_local_date = for_date.astimezone(org_timezone).date()
 
-        # if the last issue of this poll was on same day, return that
-        last = poll.issues.order_by('-conducted_on').first()
+        # if the last issue of this poll to this region was on same day, return that
+        last = region.issues.order_by('-conducted_on').first()
         if last and last.conducted_on.astimezone(org_timezone).date() == for_local_date:
             return last
 
-        return Issue.create(poll, for_date)
+        return Issue.create(poll, [region], for_date)
 
-    def get_responses(self):
-        return self.responses.filter(is_active=True)
+    def get_responses(self, region=None):
+        responses = self.responses.filter(is_active=True)
+        if region:
+            responses = responses.filter(contact__region=region)
+        return responses
 
-    def get_complete_responses(self):
-        return self.responses.filter(is_active=True, is_complete=True)
+    def get_complete_responses(self, region=None):
+        return self.get_responses(region).filter(is_complete=True)
 
-    def get_incomplete_responses(self):
-        return self.responses.filter(is_active=True, is_complete=False)
+    def get_incomplete_responses(self, region=None):
+        return self.get_responses(region).filter(is_complete=False)
 
-    def get_completion(self):
+    def get_completion(self, region=None):
         """
         Gets the completion level for this issue. An issue with no responses (complete or incomplete) returns None
         """
-        total_responses = self.get_responses().count()
-        return self.get_complete_responses().count() / float(total_responses) if total_responses else None
+        total_responses = self.get_responses(region).count()
+        if total_responses:
+            return self.get_complete_responses(region).count() / float(total_responses)
+        else:
+            return None
 
 
 class Response(models.Model):
@@ -168,8 +178,8 @@ class Response(models.Model):
         if not poll:
             poll = Poll.get_all(org).get(flow_uuid=run.flow)
 
-        issue = Issue.get_or_create(org, poll)
         contact = Contact.get_or_fetch(poll.org, uuid=run.contact)
+        issue = Issue.get_or_create(org, poll, contact.region)
 
         # if contact has an older response for this issue, retire it
         Response.objects.filter(issue=issue, contact=contact).update(is_active=False)

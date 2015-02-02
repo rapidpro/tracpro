@@ -1,30 +1,28 @@
 - extends "smartmin/base.html"
 - load smartmin i18n compress
+- load polls
 
 - block pre-content
 
 - block content
 
-  %p
-    TODO
-
-  %p
-    Regions:
-    - for region in regions
-      {{ region.name }},
-  %p
-    Groups:
-    - for group in groups
-      {{ group.name }},
-  %p
-    Polls:
-    - for poll in polls
-      {{ poll.name }},
-
-
-  - if not regions
+  - if not request.region
     .none
       - trans "You don't have access to any regions. Contact your administrator."
+
+  - else
+    .page-header
+      %h2
+        - trans "Latest polls"
+    %ul
+      - for issue in latest_issues
+        %li
+          %a{ href:"{% url 'polls.response_filter' issue.pk %}" }
+            {{ issue.poll }} on {{ issue.conducted_on }}
+          - with completion=issue|completion_percent:request.region
+            .progress
+              .progress-bar{ role:"progressbar", style:"width: {{ completion }}%; min-width: 2em" }
+                {{ completion }}%
 
 - block extra-script
   :javascript
@@ -32,4 +30,3 @@
 -block extra-style
   {{ block.super }}
   :css
-

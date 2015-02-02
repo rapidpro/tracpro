@@ -123,16 +123,6 @@ class ContactCRUDLTest(TracProTest):
         response = self.url_post('unicef', url, data)
         self.assertEqual(response.status_code, 302)
 
-    def test_create_in(self):
-        url = reverse('contacts.contact_create_in', args=[self.region1.pk])
-
-        # log in as a user
-        self.login(self.user1)
-
-        response = self.url_get('unicef', url)
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context['form'].initial['region'], self.region1)
-
     def test_update(self):
         # log in as an org administrator
         self.login(self.admin)
@@ -172,16 +162,6 @@ class ContactCRUDLTest(TracProTest):
         self.assertEqual(response.status_code, 404)
 
     def test_list(self):
-        url = reverse('contacts.contact_list')
-
-        # log in as admin
-        self.login(self.admin)
-
-        response = self.url_get('unicef', url)
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.context['object_list']), 5)
-
-    def test_filter(self):
         self.login(self.user1)
 
         # view a region we do have access to

@@ -129,11 +129,20 @@ TEMPLATE_LOADERS = (
     'hamlpy.template.loaders.HamlPyFilesystemLoader',
     'hamlpy.template.loaders.HamlPyAppDirectoriesLoader',
     'django.template.loaders.filesystem.Loader',
-    'django.template.loaders.app_directories.Loader',
-    
-#     'django.template.loaders.eggs.Loader',
+    'django.template.loaders.app_directories.Loader'
 )
 
+MIDDLEWARE_CLASSES = (
+    'django.middleware.common.CommonMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
+    'dash.orgs.middleware.SetOrgMiddleware',
+    'tracpro.profiles.middleware.ForcePasswordChangeMiddleware',
+    'tracpro.groups.middleware.UserRegionsMiddleware'
+)
 
 TEMPLATE_CONTEXT_PROCESSORS = (
     'django.contrib.auth.context_processors.auth',
@@ -146,17 +155,6 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'dash.orgs.context_processors.user_group_perms_processor',
     'dash.orgs.context_processors.set_org_processor',
     'dash.context_processors.lang_direction'
-)
-
-MIDDLEWARE_CLASSES = (
-    'django.middleware.common.CommonMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.locale.LocaleMiddleware',
-    'dash.orgs.middleware.SetOrgMiddleware',
-    'tracpro.profiles.middleware.ForcePasswordChangeMiddleware',
 )
 
 ROOT_URLCONF = 'tracpro.urls'
@@ -298,11 +296,11 @@ PERMISSIONS = {
 
     'orgs.org': ('create', 'update', 'list', 'edit', 'home'),
 
-    'contacts.contact': ('create', 'update', 'read', 'list', 'filter', 'delete'),
+    'contacts.contact': ('create', 'read', 'update', 'delete', 'list'),
 
-    'groups.group': ('read', 'list', 'select'),
+    'groups.group': ('list', 'select'),
 
-    'groups.region': ('read', 'list', 'select'),
+    'groups.region': ('list', 'select'),
 
     'polls.poll': ('list', 'select'),
 
@@ -333,8 +331,6 @@ GROUP_PERMISSIONS = {
     ),
     "Editors": (
         'contacts.contact.*',
-        'groups.group_read',
-        'groups.region_read',
         'profiles.profile_user_read',
     ),
 }

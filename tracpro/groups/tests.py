@@ -101,15 +101,3 @@ class RegionCRUDLTest(TracProTest):
         response = self.url_get('unicef', list_url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context['object_list']), 3)
-
-    def test_read(self):
-        # log in as a regular user
-        self.login(self.user1)
-
-        # view region we have access to
-        response = self.url_get('unicef', reverse('groups.region_read', args=[self.region1.pk]))
-        self.assertEqual(response.status_code, 200)
-
-        # try to view region we don't have access to
-        response = self.url_get('unicef', reverse('groups.region_read', args=[self.region3.pk]))
-        self.assertEqual(response.status_code, 404)

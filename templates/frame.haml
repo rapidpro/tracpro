@@ -128,9 +128,23 @@
                       - else
                         %p.navbar-text{ style:"float: left;"}
                           {{ request.user.username }}
+
+                    - if request.region
+                      %li.dropdown
+                        %a.dropdown-toggle{ href:"#", data-toggle:"dropdown", role:"button"}
+                          {{ request.region }}
+                          %span.caret
+                        %ul.dropdown-menu{ role:"menu" }
+                          - for region in request.user_regions
+                            %li
+                              %a{ href:"{{ request.path }}?_region={{ region.pk }}" }
+                                {{ region.name }}
+
+                    %li
                       %a{ href:"{% url 'users.user_logout' %}?go=/", style:"float: right;"}
                         %span.glyphicon.glyphicon-log-out
                         - trans "Logout"
+
                   - else
                     %li
                       %a{ href:"{% url 'users.user_login' %}"}

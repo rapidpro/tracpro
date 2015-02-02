@@ -28,20 +28,7 @@ class ContactGroupsForm(forms.Form):
 
 class RegionCRUDL(SmartCRUDL):
     model = Region
-    actions = ('read', 'list', 'select')
-
-    class Read(OrgObjPermsMixin, SmartReadView):
-        fields = ('name', 'contacts')
-
-        def get_queryset(self):
-            return self.request.user.get_regions(self.request.org)
-
-        def get_context_data(self, **kwargs):
-            context = super(RegionCRUDL.Read, self).get_context_data(**kwargs)
-            return context
-
-        def get_contacts(self, obj):
-            return obj.get_contacts().count()
+    actions = ('list', 'select')
 
     class List(OrgPermsMixin, SmartListView):
         fields = ('name', 'contacts')
@@ -74,20 +61,7 @@ class RegionCRUDL(SmartCRUDL):
 
 class GroupCRUDL(SmartCRUDL):
     model = Group
-    actions = ('read', 'list', 'select')
-
-    class Read(OrgObjPermsMixin, SmartReadView):
-        fields = ('name', 'contacts')
-
-        def get_queryset(self):
-            return Group.get_all(self.request.org)
-
-        def get_context_data(self, **kwargs):
-            context = super(GroupCRUDL.Read, self).get_context_data(**kwargs)
-            return context
-
-        def get_contacts(self, obj):
-            return obj.get_contacts().count()
+    actions = ('list', 'select')
 
     class List(OrgPermsMixin, SmartListView):
         fields = ('name', 'contacts')

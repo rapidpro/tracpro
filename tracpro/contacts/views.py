@@ -5,7 +5,7 @@ from dash.utils.sync import ChangeType
 from django.core.exceptions import PermissionDenied
 from django.core.urlresolvers import reverse
 from django import forms
-from django.http import Http404, HttpResponseRedirect
+from django.http import HttpResponseRedirect
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 from smartmin.users.views import SmartListView, SmartCreateView, SmartReadView, SmartUpdateView, SmartDeleteView
@@ -104,20 +104,15 @@ class ContactFieldsMixin(object):
 
 class ContactCRUDL(SmartCRUDL):
     model = Contact
-    actions = ('create', 'update', 'read', 'list', 'filter', 'delete')
+    actions = ('create', 'read', 'update', 'delete', 'list')
 
     class Create(OrgPermsMixin, ContactFormMixin, SmartCreateView):
         fields = ('name', 'urn', 'region', 'group')
         form_class = ContactForm
 
-        def dispatch(self, request, *args, **kwargs):
-            return super(ContactCRUDL.Create, self).dispatch(request, *args, **kwargs)
-
         def derive_initial(self):
             initial = super(ContactCRUDL.Create, self).derive_initial()
-            region_id = self.kwargs.get('region', None)
-            if region_id:
-                initial['region'] = Region.objects.get(org=self.request.org, pk=region_id)
+            initial['region'] = self.request.region
             return initial
 
         def save(self, obj):
@@ -179,46 +174,40 @@ class ContactCRUDL(SmartCRUDL):
             return super(ContactCRUDL.Read, self).lookup_field_label(context, field, default)
 
     class List(OrgPermsMixin, ContactFieldsMixin, SmartListView):
-        fields = ('name', 'urn', 'region', 'group')
+        def derive_fields(self):
+            return ['name', 'urn', 'group'] + self.derive_issues().keys()
+
+        def lookup_field_label(self, context, field, default=None):
+            if field.startswith('issue_'):
+                issue = self.derive_issues()[field]
+                return "%s (%s)" % (issue.poll.name, issue.conducted_on.date())
+
+            return super(ContactCRUDL.List, self).lookup_field_label(context, field, default)
+
+        def lookup_field_value(self, context, obj, field):
+            if field.startswith('issue_'):
+                issue = self.derive_issues()[field]
+                responded = issue.responses.filter(contact=obj).exists()
+                return '<span class="glyphicon glyphicon-%s"></span>' % ('ok' if responded else 'time')
+
+            return super(ContactCRUDL.List, self).lookup_field_value(context, obj, field)
+
+        def lookup_field_class(self, field, obj=None, default=None):
+            if field.startswith('issue_'):
+                return 'centered'
+
+            return super(ContactCRUDL.List, self).lookup_field_class(field, obj, default)
+
+        def derive_issues(self):
+            if hasattr(self, '_issues'):
+                return self._issues
+
+            latest_issues = self.request.region.issues.order_by('-conducted_on')[0:3]
+            self._issues = {'issue_%d' % i.pk: i for i in latest_issues}
+            return self._issues
 
         def get_queryset(self, **kwargs):
-            qs = super(ContactCRUDL.List, self).get_queryset(**kwargs)
-
-            regions = self.request.user.get_regions(self.request.org)
-            qs = qs.filter(org=self.request.org, is_active=True, region__in=regions)
-            return qs.order_by('name')
-
-    class Filter(OrgPermsMixin, ContactFieldsMixin, SmartListView):
-        fields = ('name', 'urn', 'group')
-
-        @classmethod
-        def derive_url_pattern(cls, path, action):
-            return r'^%s/%s/(?P<region>\d+)/$' % (path, action)
-
-        def derive_title(self):
-            return _("Contacts in %s") % self.derive_region().name
-
-        def derive_region(self):
-            if hasattr(self, '_region'):
-                return self._region
-
-            region = Region.objects.filter(pk=self.kwargs['region'], org=self.request.org).first()
-            if not region:
-                raise Http404("No such region in this org")
-
-            if region not in self.request.user.get_regions(self.request.org):
-                raise PermissionDenied()
-
-            self._region = region
-            return region
-
-        def get_queryset(self, **kwargs):
-            return self.derive_region().get_contacts().order_by('name')
-
-        def get_context_data(self, **kwargs):
-            context = super(ContactCRUDL.Filter, self).get_context_data(**kwargs)
-            context['region'] = self.derive_region()
-            return context
+            return self.request.region.get_contacts().order_by('name')
 
     class Delete(OrgObjPermsMixin, SmartDeleteView):
         cancel_url = '@contacts.contact_list'

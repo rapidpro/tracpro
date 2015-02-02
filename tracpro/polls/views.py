@@ -106,7 +106,7 @@ class IssueCRUDL(SmartCRUDL):
     actions = ('filter',)
 
     class Filter(OrgPermsMixin, SmartListView):
-        fields = ('conducted_on', 'responses')
+        fields = ('conducted_on', 'regions', 'responses')
 
         @classmethod
         def derive_url_pattern(cls, path, action):
@@ -126,10 +126,13 @@ class IssueCRUDL(SmartCRUDL):
             return self._poll
 
         def get_queryset(self, **kwargs):
-            return self.derive_poll().issues.order_by('-conducted_on')
+            return self.derive_poll().issues.prefetch_related('regions').order_by('-conducted_on')
+
+        def get_regions(self, obj):
+            return ", ".join([unicode(r) for r in obj.regions.all()])
 
         def get_responses(self, obj):
-            return obj.responses.count()
+            return obj.get_responses().count()
 
         def lookup_field_link(self, context, field, obj):
             return reverse('polls.response_filter', kwargs=dict(issue=obj.pk))
@@ -152,7 +155,7 @@ class ResponseCRUDL(SmartCRUDL):
         def derive_title(self):
             issue = self.derive_issue()
             date = issue.conducted_on.strftime("%b %d, %Y")
-            return _("Responses for %s on %s") % (issue.poll.name, date)
+            return _("%s on %s") % (issue.poll.name, date)
 
         def derive_issue(self):
             if hasattr(self, '_issue'):
@@ -162,7 +165,11 @@ class ResponseCRUDL(SmartCRUDL):
             return self._issue
 
         def derive_questions(self):
-            return {'question_%d' % q.pk: q for q in self.derive_issue().poll.questions.all()}
+            if hasattr(self, '_questions'):
+                return self._questions
+
+            self._questions = {'question_%d' % q.pk: q for q in self.derive_issue().poll.questions.all()}
+            return self._questions
 
         def derive_fields(self):
             return ['contact', 'created_on'] + self.derive_questions().keys()
@@ -183,9 +190,13 @@ class ResponseCRUDL(SmartCRUDL):
                 return super(ResponseCRUDL.Filter, self).lookup_field_value(context, obj, field)
 
         def get_queryset(self, **kwargs):
-            return self.derive_issue().get_responses().order_by('-created_on')
+            return self.derive_issue().get_responses(region=self.request.region).order_by('-created_on')
 
         def get_context_data(self, **kwargs):
             context = super(ResponseCRUDL.Filter, self).get_context_data(**kwargs)
-            context['issue'] = self.derive_issue()
+            issue = self.derive_issue()
+            other_regions = issue.regions.exclude(pk=self.request.region.pk).order_by('name')
+
+            context['issue'] = issue
+            context['other_regions'] = other_regions
             return context

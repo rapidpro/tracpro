@@ -1,0 +1,19 @@
+- extends "smartmin/list.html"
+- load smartmin i18n
+
+- block pre-content
+  .page-header
+    %h2
+      {{ title }}
+  - if other_regions
+    - blocktrans with region=request.region other_regions=other_regions|join:", "
+      These are the responses for <strong>{{ region }}</strong>. Poll was also conducted in {{ other_regions }}.
+
+- block table-buttons
+  .btn-group.pull-right
+    %a.btn.btn-default{ href:"javascript:alert('TODO')" }
+      %span.glyphicon.glyphicon-comment
+      - trans "Message Respondents"
+    %a.btn.btn-default{ href:"javascript:alert('TODO')" }
+      %span.glyphicon.glyphicon-comment
+      - trans "Message Non-respondents"
