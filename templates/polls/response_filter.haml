@@ -24,18 +24,19 @@
             - trans "Send Message"
         .modal-body
           %form.form-horizontal{ id:"send-message-form" }
+            %input{ type:"hidden", name:"issue", value:"{{ issue.pk }}" }
             .form-group
-              %label.col-sm-2.control-label{ for:"recipients" }
+              %label.col-sm-2.control-label{ for:"cohort" }
                 - trans "Recipients"
               .col-sm-10
-                %select.form-control{ id:"recipients", style:"width: 100%" }
-                  %option{ value:"all" }
+                %select.form-control{ id:"cohort", style:"width: 100%" }
+                  %option{ value:"A" }
                     - blocktrans with count=response_count
                       All contacts ({{ count }})
-                  %option{ value:"respondents" }
+                  %option{ value:"R" }
                     - blocktrans with count=complete_response_count
                       Respondents ({{ count }})
-                  %option{ value:"non_respondents" }
+                  %option{ value:"N" }
                     - blocktrans with count=incomplete_response_count
                       Non-respondents ({{ count }})
             .form-group

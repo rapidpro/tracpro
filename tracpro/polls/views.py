@@ -180,9 +180,7 @@ class ResponseCRUDL(SmartCRUDL):
             return r'^%s/%s/(?P<issue>\d+)/$' % (path, action)
 
         def derive_title(self):
-            issue = self.derive_issue()
-            date = issue.conducted_on.strftime("%b %d, %Y")
-            return _("%s on %s") % (issue.poll.name, date)
+            return unicode(self.derive_issue())
 
         def derive_issue(self):
             if hasattr(self, '_issue'):

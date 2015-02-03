@@ -224,6 +224,7 @@ INSTALLED_APPS = (
     'tracpro.contacts',
     'tracpro.groups',
     'tracpro.home',
+    'tracpro.msgs',
     'tracpro.orgs_ext',
     'tracpro.polls',
     'tracpro.profiles',
@@ -302,6 +303,8 @@ PERMISSIONS = {
 
     'groups.region': ('list', 'select'),
 
+    'msgs.message': ('list', 'send'),
+
     'polls.poll': ('list', 'select'),
 
     'polls.question': ('filter',),
@@ -323,6 +326,7 @@ GROUP_PERMISSIONS = {
         'contacts.contact.*',
         'groups.group.*',
         'groups.region.*',
+        'msgs.message.*',
         'polls.poll.*',
         'polls.question.*',
         'polls.issue.*',

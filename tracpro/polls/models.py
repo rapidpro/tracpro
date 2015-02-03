@@ -138,6 +138,9 @@ class Issue(models.Model):
     def get_complete_responses(self, region=None):
         return self.get_responses(region).filter(status=RESPONSE_COMPLETE)
 
+    def get_incomplete_responses(self, region=None):
+        return self.get_responses(region).exclude(status=RESPONSE_COMPLETE)
+
     def get_completion(self, region=None):
         """
         Gets the completion level for this issue. An issue with no responses (complete or incomplete) returns None
@@ -147,6 +150,9 @@ class Issue(models.Model):
             return self.get_complete_responses(region).count() / float(total_responses)
         else:
             return None
+
+    def __unicode__(self):
+        return "%s (%s)" % (self.poll.name, self.conducted_on.strftime("%b %d, %Y"))
 
 
 class Response(models.Model):
