@@ -11,6 +11,7 @@ from django.utils.translation import ugettext_lazy as _
 from smartmin.users.views import SmartListView, SmartCreateView, SmartReadView, SmartUpdateView, SmartDeleteView
 from smartmin.users.views import SmartCRUDL
 from tracpro.groups.models import Region, Group
+from tracpro.polls.models import RESPONSE_COMPLETE
 from .models import Contact
 
 
@@ -187,8 +188,8 @@ class ContactCRUDL(SmartCRUDL):
         def lookup_field_value(self, context, obj, field):
             if field.startswith('issue_'):
                 issue = self.derive_issues()[field]
-                responded = issue.responses.filter(contact=obj).exists()
-                return '<span class="glyphicon glyphicon-%s"></span>' % ('ok' if responded else 'time')
+                has_completed = issue.responses.filter(contact=obj, status=RESPONSE_COMPLETE).exists()
+                return '<span class="glyphicon glyphicon-%s"></span>' % ('ok' if has_completed else 'time')
 
             return super(ContactCRUDL.List, self).lookup_field_value(context, obj, field)
 

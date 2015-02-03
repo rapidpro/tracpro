@@ -132,7 +132,8 @@
                     - if request.region
                       %li.dropdown
                         %a.dropdown-toggle{ href:"#", data-toggle:"dropdown", role:"button"}
-                          {{ request.region }}
+                          %strong
+                            {{ request.region }}
                           %span.caret
                         %ul.dropdown-menu{ role:"menu" }
                           - for region in request.user_regions

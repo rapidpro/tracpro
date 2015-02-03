@@ -14,15 +14,23 @@
     .page-header
       %h2
         - trans "Latest polls"
-    %ul
+      %p
+        %a{ href:"{% url 'polls.issue_list' %}" }
+          - trans "View all"
+    %table{ style:"width: 100%" }
       - for issue in latest_issues
-        %li
-          %a{ href:"{% url 'polls.response_filter' issue.pk %}" }
-            {{ issue.poll }} on {{ issue.conducted_on }}
-          - with completion=issue|completion_percent:request.region
-            .progress
-              .progress-bar{ role:"progressbar", style:"width: {{ completion }}%; min-width: 2em" }
-                {{ completion }}%
+        %tr
+          %td
+            %a{ href:"{% url 'polls.response_filter' issue.pk %}" }
+              {{ issue.poll }}
+          %td
+            {{ issue.conducted_on | gmail_time }}
+          %td
+            - with completion=issue|completion_percent:request.region
+              .progress
+                .progress-bar{ role:"progressbar", style:"width: {{ completion }}%; min-width: 2em" }
+                  {{ completion }}%
+
 
 - block extra-script
   :javascript

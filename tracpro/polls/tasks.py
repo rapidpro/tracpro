@@ -69,7 +69,7 @@ def fetch_org_updated_runs(org):
     """
     client = org.get_temba_client()
 
-    incomplete_responses = Response.get_incomplete_to_update(org)
+    incomplete_responses = Response.get_update_required(org)
 
     if incomplete_responses:
         runs = client.get_runs(ids=[r.flow_run_id for r in incomplete_responses])

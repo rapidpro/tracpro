@@ -10,6 +10,14 @@ from tracpro.contacts.models import Contact
 from tracpro.groups.models import Region
 
 
+RESPONSE_EMPTY = 'E'
+RESPONSE_PARTIAL = 'P'
+RESPONSE_COMPLETE = 'C'
+RESPONSE_STATUS_CHOICES = ((RESPONSE_EMPTY, _("Empty")),
+                           (RESPONSE_PARTIAL, _("Partial")),
+                           (RESPONSE_COMPLETE, _("Complete")))
+
+
 class Poll(models.Model):
     """
     Corresponds to a RapidPro Flow
@@ -128,10 +136,7 @@ class Issue(models.Model):
         return responses
 
     def get_complete_responses(self, region=None):
-        return self.get_responses(region).filter(is_complete=True)
-
-    def get_incomplete_responses(self, region=None):
-        return self.get_responses(region).filter(is_complete=False)
+        return self.get_responses(region).filter(status=RESPONSE_COMPLETE)
 
     def get_completion(self, region=None):
         """
@@ -158,7 +163,8 @@ class Response(models.Model):
 
     updated_on = models.DateTimeField(help_text=_("When the last activity on this response was"))
 
-    is_complete = models.BooleanField(default=None, help_text=_("Whether this response is complete"))
+    status = models.CharField(max_length=1, verbose_name=_("Status"), choices=RESPONSE_STATUS_CHOICES,
+                              help_text=_("Current status of this response"))
 
     is_active = models.BooleanField(default=True, help_text="Whether this response is active")
 
@@ -190,19 +196,24 @@ class Response(models.Model):
         valuesets_by_question = {q: valuesets_by_ruleset.get(q.ruleset_uuid, None) for q in questions}
 
         completed_questions = sum(1 for v in valuesets_by_question.values() if v is not None)
-        is_complete = completed_questions == len(questions)
+        if completed_questions == 0:
+            status = RESPONSE_EMPTY
+        elif completed_questions < len(questions):
+            status = RESPONSE_PARTIAL
+        else:
+            status = RESPONSE_COMPLETE
 
         if response:
             # clear existing answers which will be replaced
             response.answers.all().delete()
 
             response.updated_on = run_updated_on
-            response.is_complete = is_complete
-            response.save(update_fields=('updated_on', 'is_complete'))
+            response.status = status
+            response.save(update_fields=('updated_on', 'status'))
         else:
             response = Response.objects.create(flow_run_id=run.id, issue=issue, contact=contact,
                                                created_on=run.created_on, updated_on=run_updated_on,
-                                               is_complete=is_complete)
+                                               status=status)
 
         # convert valuesets to answers
         for question, valueset in valuesets_by_question.iteritems():
@@ -222,7 +233,7 @@ class Response(models.Model):
         return last_value_on if last_value_on else run.created_on
 
     @classmethod
-    def get_incomplete_to_update(cls, org):
+    def get_update_required(cls, org):
         """
         Gets incomplete responses to the latest issues of all polls so that they can be updated
         """
@@ -230,7 +241,7 @@ class Response(models.Model):
         polls = Poll.get_all(org).annotate(latest_issue_id=models.Max('issues'))
         latest_issues = [p.latest_issue_id for p in polls if p.latest_issue_id]
 
-        return Response.objects.filter(issue__in=latest_issues, is_active=True, is_complete=False)
+        return Response.objects.filter(issue__in=latest_issues, is_active=True).exclude(status=RESPONSE_COMPLETE)
 
 
 class Answer(models.Model):

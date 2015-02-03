@@ -87,6 +87,9 @@ class TracProTest(TestCase):
         result = self.client.login(username=user.username, password=user.username)
         self.assertTrue(result, "Couldn't login as %(user)s / %(user)s" % dict(user=user.username))
 
+    def switch_region(self, region):
+        self.client.session['region'] = region.pk
+
     def url_get(self, subdomain, url, params=None):
         if params is None:
             params = {}

@@ -8,7 +8,7 @@ from django.utils import timezone
 from mock import patch
 from temba.types import Flow, FlowRuleSet, Run, RunValueSet
 from tracpro.test import TracProTest
-from .models import Poll, Issue, Response, Answer
+from .models import Poll, Issue, Response, Answer, RESPONSE_EMPTY, RESPONSE_PARTIAL, RESPONSE_COMPLETE
 
 
 class PollTest(TracProTest):
@@ -52,29 +52,32 @@ class PollTest(TracProTest):
         # existing poll that was inactive should now be active
         self.assertTrue(Poll.objects.get(flow_uuid='F-001').is_active)
 
-    def test_get_incomplete_to_update(self):
+    def test_get_update_required(self):
         # no issues means no responses to update
-        self.assertEqual(Response.get_incomplete_to_update(self.unicef).count(), 0)
+        self.assertEqual(Response.get_update_required(self.unicef).count(), 0)
 
         # create issue but no responses yet
         issue1 = Issue.get_or_create(self.unicef, self.poll1, self.region1, for_date=self.datetime(2014, 1, 1))
 
-        self.assertEqual(Response.get_incomplete_to_update(self.unicef).count(), 0)
+        self.assertEqual(Response.get_update_required(self.unicef).count(), 0)
 
-        # add an incomplete and a complete response
+        # add an empty, a partial and a complete response
         response1 = Response.objects.create(flow_run_id=123, issue=issue1, contact=self.contact1,
-                                            created_on=timezone.now(), updated_on=timezone.now(), is_complete=False)
-        Response.objects.create(flow_run_id=234, issue=issue1, contact=self.contact1,
-                                created_on=timezone.now(), updated_on=timezone.now(), is_complete=True)
+                                            created_on=timezone.now(), updated_on=timezone.now(), status=RESPONSE_EMPTY)
+        response2 = Response.objects.create(flow_run_id=234, issue=issue1, contact=self.contact2,
+                                            created_on=timezone.now(), updated_on=timezone.now(), status=RESPONSE_PARTIAL)
+        Response.objects.create(flow_run_id=345, issue=issue1, contact=self.contact3,
+                                created_on=timezone.now(), updated_on=timezone.now(), status=RESPONSE_COMPLETE)
 
-        self.assertEqual(list(Response.get_incomplete_to_update(self.unicef)), [response1])
+        self.assertEqual(list(Response.get_update_required(self.unicef).order_by('pk')), [response1, response2])
 
         # create newer issue with an incomplete response
         issue2 = Issue.get_or_create(self.unicef, self.poll1, self.region1, for_date=self.datetime(2014, 1, 2))
-        response3 = Response.objects.create(flow_run_id=345, issue=issue2, contact=self.contact1,
-                                            created_on=timezone.now(), updated_on=timezone.now(), is_complete=False)
+        response3 = Response.objects.create(flow_run_id=456, issue=issue2, contact=self.contact1,
+                                            created_on=timezone.now(), updated_on=timezone.now(), status=RESPONSE_EMPTY)
 
-        self.assertEqual(list(Response.get_incomplete_to_update(self.unicef)), [response3])
+        # shouldn't include any responses from older issue
+        self.assertEqual(list(Response.get_update_required(self.unicef)), [response3])
 
 
 class IssueTest(TracProTest):
@@ -113,43 +116,51 @@ class IssueTest(TracProTest):
 
         # add a incomplete response from contact in region #1
         response1 = Response.objects.create(flow_run_id=123, issue=issue, contact=self.contact1,
-                                            created_on=date1, updated_on=date1, is_complete=False)
-        self.assertEqual(issue.get_completion(), 0)
+                                            created_on=date1, updated_on=date1, status=RESPONSE_EMPTY)
+
+        self.assertEqual(list(issue.get_responses()), [response1])
         self.assertEqual(list(issue.get_complete_responses()), [])
-        self.assertEqual(list(issue.get_incomplete_responses()), [response1])
-        self.assertEqual(issue.get_completion(self.region1), 0)
+        self.assertEqual(issue.get_completion(), 0)
+
+        self.assertEqual(list(issue.get_responses(self.region1)), [response1])
         self.assertEqual(list(issue.get_complete_responses(self.region1)), [])
-        self.assertEqual(list(issue.get_incomplete_responses(self.region1)), [response1])
-        self.assertEqual(issue.get_completion(self.region2), None)
+        self.assertEqual(issue.get_completion(self.region1), 0)
+
+        self.assertEqual(list(issue.get_responses(self.region2)), [])
         self.assertEqual(list(issue.get_complete_responses(self.region2)), [])
-        self.assertEqual(list(issue.get_incomplete_responses(self.region2)), [])
+        self.assertEqual(issue.get_completion(self.region2), None)
 
         # add a complete response from another contact in region #1
         response2 = Response.objects.create(flow_run_id=234, issue=issue, contact=self.contact2,
-                                            created_on=date1, updated_on=date1, is_complete=True)
-        self.assertEqual(issue.get_completion(), 0.5)
+                                            created_on=date1, updated_on=date1, status=RESPONSE_COMPLETE)
+
+        self.assertEqual(list(issue.get_responses().order_by('pk')), [response1, response2])
         self.assertEqual(list(issue.get_complete_responses()), [response2])
-        self.assertEqual(list(issue.get_incomplete_responses()), [response1])
-        self.assertEqual(issue.get_completion(self.region1), 0.5)
+        self.assertEqual(issue.get_completion(), 0.5)
+
+        self.assertEqual(list(issue.get_responses(self.region1).order_by('pk')), [response1, response2])
         self.assertEqual(list(issue.get_complete_responses(self.region1)), [response2])
-        self.assertEqual(list(issue.get_incomplete_responses(self.region1)), [response1])
-        self.assertEqual(issue.get_completion(self.region2), None)
+        self.assertEqual(issue.get_completion(self.region1), 0.5)
+
+        self.assertEqual(list(issue.get_responses(self.region2)), [])
         self.assertEqual(list(issue.get_complete_responses(self.region2)), [])
-        self.assertEqual(list(issue.get_incomplete_responses(self.region2)), [])
+        self.assertEqual(issue.get_completion(self.region2), None)
 
         # add a complete response from contact in different region
         response3 = Response.objects.create(flow_run_id=345, issue=issue, contact=self.contact4,
-                                            created_on=date1, updated_on=date1, is_complete=True)
+                                            created_on=date1, updated_on=date1, status=RESPONSE_COMPLETE)
 
-        self.assertEqual(issue.get_completion(), (2 / 3.0))
+        self.assertEqual(list(issue.get_responses().order_by('pk')), [response1, response2, response3])
         self.assertEqual(list(issue.get_complete_responses().order_by('pk')), [response2, response3])
-        self.assertEqual(list(issue.get_incomplete_responses()), [response1])
-        self.assertEqual(issue.get_completion(self.region1), 0.5)
+        self.assertEqual(issue.get_completion(), (2 / 3.0))
+
+        self.assertEqual(list(issue.get_responses(self.region1).order_by('pk')), [response1, response2])
         self.assertEqual(list(issue.get_complete_responses(self.region1)), [response2])
-        self.assertEqual(list(issue.get_incomplete_responses(self.region1)), [response1])
-        self.assertEqual(issue.get_completion(self.region2), 1)
+        self.assertEqual(issue.get_completion(self.region1), 0.5)
+
+        self.assertEqual(list(issue.get_responses(self.region2)), [response3])
         self.assertEqual(list(issue.get_complete_responses(self.region2)), [response3])
-        self.assertEqual(list(issue.get_incomplete_responses(self.region2)), [])
+        self.assertEqual(issue.get_completion(self.region2), 1)
 
 
 class ResponseTest(TracProTest):
@@ -177,7 +188,7 @@ class ResponseTest(TracProTest):
         self.assertEqual(response1.contact, self.contact1)
         self.assertEqual(response1.created_on, datetime.datetime(2013, 1, 2, 3, 4, 5, 6, pytz.UTC))
         self.assertEqual(response1.updated_on, datetime.datetime(2015, 1, 2, 3, 4, 5, 6, pytz.UTC))
-        self.assertTrue(response1.is_complete)
+        self.assertEqual(response1.status, RESPONSE_COMPLETE)
         self.assertEqual(len(response1.answers.all()), 2)
         answers = list(response1.answers.order_by('question_id'))
         self.assertEqual(answers[0].question, self.poll1_question1)
@@ -189,7 +200,7 @@ class ResponseTest(TracProTest):
         self.assertEqual(answers[1].category, "1 - 25")
         self.assertEqual(answers[1].submitted_on, datetime.datetime(2015, 1, 2, 3, 4, 5, 6, pytz.UTC))
 
-        # an incomplete run
+        # an partially complete run
         run = Run.create(id=2345,
                          flow='F-001',  # flow UUID for poll #1
                          contact='C-002',
@@ -206,7 +217,7 @@ class ResponseTest(TracProTest):
         self.assertEqual(response2.contact, self.contact2)
         self.assertEqual(response2.created_on, datetime.datetime(2013, 1, 2, 3, 4, 5, 6, pytz.UTC))
         self.assertEqual(response2.updated_on, datetime.datetime(2014, 1, 2, 3, 4, 5, 6, pytz.UTC))
-        self.assertFalse(response2.is_complete)
+        self.assertEqual(response2.status, RESPONSE_PARTIAL)
         self.assertEqual(len(response2.answers.all()), 1)
 
         # now completed
@@ -232,7 +243,7 @@ class ResponseTest(TracProTest):
         self.assertEqual(response3.contact, self.contact2)
         self.assertEqual(response3.created_on, datetime.datetime(2013, 1, 2, 3, 4, 5, 6, pytz.UTC))
         self.assertEqual(response3.updated_on, datetime.datetime(2015, 1, 2, 3, 4, 5, 6, pytz.UTC))
-        self.assertTrue(response3.is_complete)
+        self.assertEqual(response3.status, RESPONSE_COMPLETE)
         self.assertEqual(len(response3.answers.all()), 2)
 
         # an empty run
@@ -247,7 +258,7 @@ class ResponseTest(TracProTest):
         self.assertEqual(response4.contact, self.contact3)
         self.assertEqual(response4.created_on, datetime.datetime(2013, 1, 2, 3, 4, 5, 6, pytz.UTC))
         self.assertEqual(response4.updated_on, datetime.datetime(2013, 1, 2, 3, 4, 5, 6, pytz.UTC))
-        self.assertFalse(response4.is_complete)
+        self.assertEqual(response4.status, RESPONSE_EMPTY)
         self.assertEqual(len(response4.answers.all()), 0)
 
         # new run for same contact should de-activate old response
@@ -296,19 +307,19 @@ class ResponseCRUDLTest(TracProTest):
         date2 = self.datetime(2014, 1, 1, 8, 0)
         date3 = self.datetime(2014, 1, 2, 7, 0)
 
-        # create issue with 2 responses (1 complete, 1 incomplete)
+        # create issue with 2 responses (1 complete, 1 partial)
         self.issue1 = Issue.create(self.poll1, [self.region1], date1)
         self.issue1_r1 = Response.objects.create(flow_run_id=123, issue=self.issue1, contact=self.contact1,
-                                                 created_on=date1, updated_on=date1, is_complete=True)
+                                                 created_on=date1, updated_on=date1, status=RESPONSE_COMPLETE)
         Answer.create(self.issue1_r1, self.poll1_question1, "5.0000", "1 - 10", date1)
         Answer.create(self.issue1_r1, self.poll1_question2, "3.0000", "1 - 10", date1)
         self.issue1_r2 = Response.objects.create(flow_run_id=234, issue=self.issue1, contact=self.contact2,
-                                                 created_on=date2, updated_on=date2, is_complete=False)
+                                                 created_on=date2, updated_on=date2, status=RESPONSE_PARTIAL)
 
         # create second issue with 1 incomplete response
         self.issue2 = Issue.create(self.poll1, [self.region1], date3)
         self.issue2_r1 = Response.objects.create(flow_run_id=345, issue=self.issue2, contact=self.contact1,
-                                                 created_on=date3, updated_on=date3, is_complete=False)
+                                                 created_on=date3, updated_on=date3, status=RESPONSE_PARTIAL)
 
     def test_filter(self):
         # log in as admin

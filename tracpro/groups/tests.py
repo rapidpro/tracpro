@@ -101,3 +101,28 @@ class RegionCRUDLTest(TracProTest):
         response = self.url_get('unicef', list_url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context['object_list']), 3)
+
+
+class UserRegionsMiddlewareTest(TracProTest):
+    def test_process_request(self):
+        # make anonymous request to home page
+        response = self.url_get('unicef', reverse('home.home'))
+        self.assertEqual(response.status_code, 302)
+
+        self.login(self.user2)
+
+        # should default to first user region A-Z
+        response = self.url_get('unicef', reverse('home.home'))
+        self.assertContains(response, "Khost", status_code=200)
+
+        # should come from session this time
+        response = self.url_get('unicef', reverse('home.home'))
+        self.assertContains(response, "Khost", status_code=200)
+
+        # any page allows region to be set via _region param
+        response = self.url_get('unicef', reverse('home.home'), {'_region': self.region3.pk})
+        self.assertContains(response, "Kunar", status_code=200)
+
+        # can't set to region that user doesn't have access to
+        response = self.url_get('unicef', reverse('home.home'), {'_region': self.region1.pk})
+        self.assertContains(response, "Khost", status_code=200)

@@ -10,10 +10,46 @@
       These are the responses for <strong>{{ region }}</strong>. Poll was also conducted in {{ other_regions }}.
 
 - block table-buttons
-  .btn-group.pull-right
-    %a.btn.btn-default{ href:"javascript:alert('TODO')" }
-      %span.glyphicon.glyphicon-comment
-      - trans "Message Respondents"
-    %a.btn.btn-default{ href:"javascript:alert('TODO')" }
-      %span.glyphicon.glyphicon-comment
-      - trans "Message Non-respondents"
+  %a.btn.btn-default.pull-right{ type:"button", data-toggle:"modal", data-target:"#send-message-dialog" }
+    %span.glyphicon.glyphicon-comment
+    - trans "Send Message..."
+
+  .modal.fade{ role:"dialog", id:"send-message-dialog" }
+    .modal-dialog
+      .modal-content
+        .modal-header
+          %button.close{ type:"button", data-dismiss:"modal" }
+            &times;
+          %h4.modal-title
+            - trans "Send Message"
+        .modal-body
+          %form.form-horizontal{ id:"send-message-form" }
+            .form-group
+              %label.col-sm-2.control-label{ for:"recipients" }
+                - trans "Recipients"
+              .col-sm-10
+                %select.form-control{ id:"recipients", style:"width: 100%" }
+                  %option{ value:"all" }
+                    - blocktrans with count=response_count
+                      All contacts ({{ count }})
+                  %option{ value:"respondents" }
+                    - blocktrans with count=complete_response_count
+                      Respondents ({{ count }})
+                  %option{ value:"non_respondents" }
+                    - blocktrans with count=incomplete_response_count
+                      Non-respondents ({{ count }})
+            .form-group
+              %label.col-sm-2.control-label{ for:"message" }
+              .col-sm-10
+                %textarea.form-control{ id:"message", style:"width: 100%", placeholder:"Enter message" }
+        .modal-footer
+          %button.btn.btn-default{ type:"button", data-dismiss:"modal" }
+            -trans "Cancel"
+          %button.btn.btn-primary{ type:"button", onclick:"onMessageSend()" }
+            -trans "Send"
+
+- block extra-script
+  :javascript
+    function onMessageSend() {
+      $('#send-message-form').submit();
+    }

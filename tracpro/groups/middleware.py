@@ -13,7 +13,6 @@ class UserRegionsMiddleware(object):
 
             if '_region' in request.GET:
                 region_id = request.GET.get('_region', None)
-                request.session['region'] = region_id
             elif 'region' in request.session:
                 region_id = request.session['region']
             else:
@@ -22,8 +21,13 @@ class UserRegionsMiddleware(object):
             if region_id:
                 region = user_regions.filter(pk=region_id).first()
             else:
+                region = None
+
+            if not region:
                 region = user_regions.first()
 
+            if region:
+                request.session['region'] = region.pk
         else:
             user_regions = Region.objects.none()
             region = None

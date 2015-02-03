@@ -164,17 +164,15 @@ class ContactCRUDLTest(TracProTest):
     def test_list(self):
         self.login(self.user1)
 
-        # view a region we do have access to
-        response = self.url_get('unicef', reverse('contacts.contact_filter', args=[self.region1.pk]))
+        response = self.url_get('unicef', reverse('contacts.contact_list'))
         self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context['object_list']), 3)
 
-        # try to view a region we don't have access to
-        response = self.url_get('unicef', reverse('contacts.contact_filter', args=[self.region3.pk]))
-        self.assertEqual(response.status_code, 403)
+        self.login(self.user2)
+        self.switch_region(self.region2)
 
-        # try to view a region in a different org
-        response = self.url_get('unicef', reverse('contacts.contact_filter', args=[self.region4.pk]))
-        self.assertEqual(response.status_code, 404)
+        response = self.url_get('unicef', reverse('contacts.contact_list'))
+        self.assertEqual(len(response.context['object_list']), 1)
 
     def test_delete(self):
         # log in as an org administrator

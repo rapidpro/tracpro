@@ -306,7 +306,7 @@ PERMISSIONS = {
 
     'polls.question': ('filter',),
 
-    'polls.issue': ('filter',),
+    'polls.issue': ('list', 'filter'),
 
     'polls.response': ('filter',),
 

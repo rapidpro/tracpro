@@ -103,9 +103,36 @@ class QuestionCRUDL(SmartCRUDL):
 
 class IssueCRUDL(SmartCRUDL):
     model = Issue
-    actions = ('filter',)
+    actions = ('list', 'filter')
+
+    class List(OrgPermsMixin, SmartListView):
+        """
+        All issues in current region
+        """
+        fields = ('poll', 'conducted_on', 'sent_to', 'responses')
+
+        def derive_title(self):
+            return _("All polls")
+
+        def derive_link_fields(self, context):
+            return 'responses'
+
+        def get_queryset(self, **kwargs):
+            return self.request.region.issues.order_by('-conducted_on')
+
+        def get_sent_to(self, obj):
+            return obj.get_responses(self.request.region).count()
+
+        def get_responses(self, obj):
+            return obj.get_complete_responses(self.request.region).count()
+
+        def lookup_field_link(self, context, field, obj):
+            return reverse('polls.response_filter', kwargs=dict(issue=obj.pk))
 
     class Filter(OrgPermsMixin, SmartListView):
+        """
+        Issues filtered by poll
+        """
         fields = ('conducted_on', 'regions', 'responses')
 
         @classmethod
@@ -199,4 +226,7 @@ class ResponseCRUDL(SmartCRUDL):
 
             context['issue'] = issue
             context['other_regions'] = other_regions
+            context['response_count'] = issue.get_responses(self.request.region).count()
+            context['complete_response_count'] = issue.get_complete_responses(self.request.region).count()
+            context['incomplete_response_count'] = context['response_count'] - context['complete_response_count']
             return context
