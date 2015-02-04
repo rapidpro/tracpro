@@ -4,6 +4,7 @@ import pytz
 
 from dash.orgs.models import Org
 from django.db import models
+from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from tracpro.contacts.models import Contact
@@ -102,20 +103,16 @@ class Issue(models.Model):
     """
     poll = models.ForeignKey(Poll, related_name='issues')
 
-    # TODO change this to be ForeignKey so polls go to one region or all
-    regions = models.ManyToManyField(Region, related_name='issues', help_text="Regions where poll was conducted")
+    region = models.ForeignKey(Region, null=True, related_name='issues', help_text="Region where poll was conducted")
 
     conducted_on = models.DateTimeField(help_text=_("When the poll was conducted"))
 
     @classmethod
-    def create(cls, poll, regions, conducted_on):
-        issue = cls.objects.create(poll=poll, conducted_on=conducted_on)
-        for region in regions:
-            issue.regions.add(region)
-        return issue
+    def create(cls, poll, region, conducted_on):
+        return cls.objects.create(poll=poll, region=region, conducted_on=conducted_on)
 
     @classmethod
-    def get_or_create(cls, org, poll, region, for_date=None):
+    def get_or_create_non_regional(cls, org, poll, for_date=None):
         if not for_date:
             for_date = timezone.now()
 
@@ -123,18 +120,25 @@ class Issue(models.Model):
         org_timezone = pytz.timezone(org.timezone)
         for_local_date = for_date.astimezone(org_timezone).date()
 
-        # if the last issue of this poll to this region was on same day, return that
-        last = region.issues.order_by('-conducted_on').first()
+        # if the last non-regional issue of this poll was on same day, return that
+        last = poll.issues.filter(region=None).order_by('-conducted_on').first()
         if last and last.conducted_on.astimezone(org_timezone).date() == for_local_date:
             return last
 
-        return Issue.create(poll, [region], for_date)
+        return Issue.create(poll, None, for_date)
 
     @classmethod
-    def get_all(cls, org):
-        return cls.objects.filter(poll__org=org, poll__is_active=True)
+    def get_all(cls, org, region=None):
+        issues = cls.objects.filter(poll__org=org, poll__is_active=True)
+        if region:
+            # any issue to this region or any non-regional issue
+            issues = issues.filter(Q(region=None) | Q(region=region))
+        return issues.select_related('poll', 'region')
 
     def get_responses(self, region=None):
+        if region and self.region_id and region.pk != self.region_id:
+            raise ValueError("Request for responses in region where poll wasn't conducted")
+
         responses = self.responses.filter(is_active=True)
         if region:
             responses = responses.filter(contact__region=region)
@@ -184,7 +188,7 @@ class Response(models.Model):
     def get_or_create(cls, org, run, poll=None):
         """
         Gets or creates a response from a Temba flow run. If response is not up-to-date with provided run, then it is
-        updated.
+        updated. If the run doesn't match with an existing poll issue, it's assumed to be non-regional.
         """
         response = Response.objects.filter(issue__poll__org=org, flow_run_id=run.id).first()
         run_updated_on = cls.get_run_updated_on(run)
@@ -197,7 +201,7 @@ class Response(models.Model):
             poll = Poll.get_all(org).get(flow_uuid=run.flow)
 
         contact = Contact.get_or_fetch(poll.org, uuid=run.contact)
-        issue = Issue.get_or_create(org, poll, contact.region)
+        issue = Issue.get_or_create_non_regional(org, poll)
 
         # if contact has an older response for this issue, retire it
         Response.objects.filter(issue=issue, contact=contact).update(is_active=False)

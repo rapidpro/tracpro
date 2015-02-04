@@ -3,10 +3,11 @@ from __future__ import absolute_import, unicode_literals
 from dash.orgs.views import OrgPermsMixin
 from django import forms
 from django.core.urlresolvers import reverse
+from django.db.models import Q
 from django.http import HttpResponseRedirect, JsonResponse
 from django.utils.translation import ugettext_lazy as _
 from django.views.decorators.csrf import csrf_exempt
-from smartmin.views import SmartCRUDL, SmartListView, SmartFormView, SmartUpdateView
+from smartmin.views import SmartCRUDL, SmartListView, SmartFormView
 from .models import Poll, Question, Issue, Response
 from .tasks import restart_participants
 
@@ -111,7 +112,7 @@ class IssueCRUDL(SmartCRUDL):
         """
         All issues in current region
         """
-        fields = ('poll', 'conducted_on', 'sent_to', 'responses')
+        fields = ('poll', 'conducted_on', 'region', 'sent_to', 'responses')
 
         def derive_title(self):
             return _("All Polls")
@@ -120,17 +121,17 @@ class IssueCRUDL(SmartCRUDL):
             return 'responses'
 
         def get_queryset(self, **kwargs):
-            if self.request.region:
-                issues = self.request.region.issues
-            else:
-                issues = Issue.get_all(self.request.org)
-            return issues.select_related('poll').order_by('-conducted_on')
+            issues = Issue.get_all(self.request.org, self.request.region)
+            return issues.order_by('-conducted_on')
 
         def get_sent_to(self, obj):
             return obj.get_responses(self.request.region).count()
 
         def get_responses(self, obj):
             return obj.get_complete_responses(self.request.region).count()
+
+        def get_region(self, obj):
+            return obj.region if obj.region else _("All")
 
         def lookup_field_link(self, context, field, obj):
             return reverse('polls.response_filter', kwargs=dict(issue=obj.pk))
@@ -249,17 +250,16 @@ class ResponseCRUDL(SmartCRUDL):
             context = super(ResponseCRUDL.Filter, self).get_context_data(**kwargs)
             issue = self.derive_issue()
 
+            # can only restart regional contacts in the last issue of a poll in that region
             if self.request.region:
-                other_regions = issue.regions.exclude(pk=self.request.region.pk).order_by('name')
+                newer_issues = Issue.objects.filter(poll=issue.poll, pk__gt=issue.pk)
+                newer_issues = newer_issues.filter(Q(region=None) | Q(region=self.request.region))
+                can_restart = not newer_issues.exists()
             else:
-                other_regions = []
-
-            # can only restart the last issue of any poll
-            can_restart = not Issue.objects.filter(poll=issue.poll, pk__gt=issue.pk).exists()
+                can_restart = False
 
             context['issue'] = issue
             context['can_restart'] = can_restart
-            context['other_regions'] = other_regions
             context['response_count'] = issue.get_responses(self.request.region).count()
             context['complete_response_count'] = issue.get_complete_responses(self.request.region).count()
             context['incomplete_response_count'] = context['response_count'] - context['complete_response_count']

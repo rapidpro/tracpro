@@ -5,9 +5,9 @@
   .page-header
     %h2
       {{ title }}
-  - if other_regions
-    - blocktrans with region=request.region other_regions=other_regions|join:", "
-      These are the responses for <strong>{{ region }}</strong>. Poll was also conducted in {{ other_regions }}.
+  - if request.region and not issue.region
+    - blocktrans with region=request.region
+      These are the responses for <strong>{{ region }}</strong>. Poll was also conducted in other regions.
 
 - block table-buttons
   .btn-group.pull-right
@@ -36,14 +36,26 @@
               .col-sm-10
                 %select.form-control{ name:"cohort", style:"width: 100%" }
                   %option{ value:"A" }
-                    - blocktrans with count=response_count
-                      All contacts ({{ count }})
+                    - if request.region
+                      - blocktrans with region=request.region count=response_count
+                        All participants in {{ region }} ({{ count }})
+                    - else
+                      - blocktrans with count=response_count
+                        All participants ({{ count }})
                   %option{ value:"R" }
-                    - blocktrans with count=complete_response_count
-                      Respondents ({{ count }})
+                    - if request.region
+                      - blocktrans with region=request.region count=complete_response_count
+                        Respondents in {{ region }} ({{ count }})
+                    - else
+                      - blocktrans with count=complete_response_count
+                        Respondents ({{ count }})
                   %option{ value:"N" }
-                    - blocktrans with count=incomplete_response_count
-                      Non-respondents ({{ count }})
+                    - if request.region
+                      - blocktrans with region=request.region count=incomplete_response_count
+                        Non-respondents in {{ region }} ({{ count }})
+                    - else
+                      - blocktrans with count=incomplete_response_count
+                        Non-respondents ({{ count }})
             .form-group
               %label.col-sm-2.control-label{ for:"message" }
               .col-sm-10
@@ -61,13 +73,17 @@
           %button.close{ type:"button", data-dismiss:"modal" }
             &times;
           %h4.modal-title
-            - trans "Restart Participants"
+            - trans "Restart Non-respondents"
         .modal-body
           %form{ id:"restart-form" }
             %input{ type:"hidden", name:"issue", value:"{{ issue.pk }}" }
           %p
-            - blocktrans with count=incomplete_response_count
-              Restart poll for {{ count }} non-respondents?
+            - if request.region
+              - blocktrans with region=request.region count=incomplete_response_count
+                Restart poll for {{ count }} non-respondents in {{ region }}?
+            - else
+              - blocktrans with count=incomplete_response_count
+                Restart poll for {{ count }} non-respondents?
         .modal-footer
           %button.btn.btn-default{ type:"button", data-dismiss:"modal" }
             -trans "Cancel"
