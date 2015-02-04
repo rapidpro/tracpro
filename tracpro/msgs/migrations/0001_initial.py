@@ -21,14 +21,14 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('text', models.CharField(max_length=640)),
-                ('time', models.DateTimeField(help_text='When the message was sent', auto_now_add=True)),
+                ('sent_on', models.DateTimeField(help_text='When the message was sent', auto_now_add=True)),
                 ('cohort', models.CharField(max_length=1, verbose_name='Cohort', choices=[('A', 'All'), ('R', 'Respondents'), ('N', 'Non-respondents')])),
                 ('status', models.CharField(help_text='Current status of this message', max_length=1, verbose_name='Status', choices=[('P', 'Pending'), ('S', 'Sent'), ('F', 'Failed')])),
                 ('issue', models.ForeignKey(related_name='messages', verbose_name='Poll Issue', to='polls.Issue')),
                 ('org', models.ForeignKey(related_name='messages', verbose_name='Organization', to='orgs.Org')),
                 ('recipients', models.ManyToManyField(help_text='Contacts to whom this message was sent', related_name='messages', to='contacts.Contact')),
                 ('region', models.ForeignKey(to='groups.Region')),
-                ('user', models.ForeignKey(related_name='messages', verbose_name='Sender', to=settings.AUTH_USER_MODEL)),
+                ('sent_by', models.ForeignKey(related_name='messages', to=settings.AUTH_USER_MODEL)),
             ],
             options={
             },

@@ -77,7 +77,7 @@
                         %a{ href:"{% url 'profiles.admin_list' %}"}
                           - trans "Users"
 
-                -if org_perms.orgs.org_home or org_perms.groups.group_list or org_perms.groups.region_list or org_perms.profiles.profile_user_list or org_perms.polls.poll_list
+                -if org_perms.orgs.org_home or org_perms.groups.group_list or org_perms.groups.region_list or org_perms.profiles.profile_user_list or org_perms.polls.poll_list or org_perms.msgs.message_list
                   %li.dropdown
                     %a.dropdown-toggle{href:"#", data-toggle:"dropdown"}
                       - trans "Administration"
@@ -107,6 +107,11 @@
                         %li
                           %a{ href:"{% url 'groups.group_list' %}" }
                             - trans "Reporter Groups"
+
+                      - if org_perms.msgs.message_list
+                        %li
+                          %a{ href:"{% url 'msgs.message_list' %}" }
+                            - trans "Message Log"
 
                 - if org
                   %li
@@ -202,6 +207,10 @@
           $(this).closest('form').submit();
         });
       });
+
+      function display_alert(type, text) {
+        $('.content').prepend('<div class="alert alert-' + type + '"><a class="close" data-dismiss="alert">×</a>' + text + '</div>');
+      }
     </script>
 
     {# media associated with any form we are displaying #}

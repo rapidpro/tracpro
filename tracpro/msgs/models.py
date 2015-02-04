@@ -14,7 +14,7 @@ MESSAGE_MAX_LEN = 640
 COHORT_ALL = 'A'
 COHORT_RESPONDENTS = 'R'
 COHORT_NONRESPONDENTS = 'N'
-COHORT_CHOICES = ((COHORT_ALL, _("All")),
+COHORT_CHOICES = ((COHORT_ALL, _("All participants")),
                   (COHORT_RESPONDENTS, _("Respondents")),
                   (COHORT_NONRESPONDENTS, _("Non-respondents")))
 
@@ -33,14 +33,14 @@ class Message(models.Model):
     """
     org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="messages")
 
-    user = models.ForeignKey(User, verbose_name=_("Sender"), related_name="messages")
+    sent_by = models.ForeignKey(User, related_name="messages")
+
+    sent_on = models.DateTimeField(auto_now_add=True, help_text=_("When the message was sent"))
 
     text = models.CharField(max_length=MESSAGE_MAX_LEN)
 
     recipients = models.ManyToManyField(Contact, related_name='messages',
                                         help_text="Contacts to whom this message was sent")
-
-    time = models.DateTimeField(auto_now_add=True, help_text=_("When the message was sent"))
 
     issue = models.ForeignKey(Issue, verbose_name=_("Poll Issue"), related_name="messages")
 
@@ -53,7 +53,7 @@ class Message(models.Model):
 
     @classmethod
     def create(cls, org, user, text, issue, cohort, region):
-        message = cls.objects.create(org=org, user=user, text=text, issue=issue, cohort=cohort, region=region)
+        message = cls.objects.create(org=org, sent_by=user, text=text, issue=issue, cohort=cohort, region=region)
 
         if cohort == COHORT_ALL:
             responses = issue.get_responses(region)
@@ -73,9 +73,10 @@ class Message(models.Model):
 
     def as_json(self):
         return dict(id=self.pk,
-                    user_id=self.user.pk,
+                    sent_by=self.sent_by.pk,
+                    sent_on=self.sent_on,
                     text=self.text,
-                    time=self.time,
                     issue_id=self.issue.pk,
                     cohort=self.cohort,
-                    region_id=self.region.pk)
+                    region_id=self.region.pk,
+                    recipients=self.recipients.count())
