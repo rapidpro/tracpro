@@ -310,7 +310,7 @@ PERMISSIONS = {
 
     'polls.question': ('filter',),
 
-    'polls.issue': ('list', 'filter'),
+    'polls.issue': ('list', 'filter', 'restart'),
 
     'polls.response': ('filter',),
 
@@ -336,6 +336,9 @@ GROUP_PERMISSIONS = {
     ),
     "Editors": (
         'contacts.contact.*',
+        'msgs.message_send',
+        'polls.issue_restart',
+        'polls.response_filter',
         'profiles.profile_user_read',
     ),
 }

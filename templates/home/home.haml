@@ -11,25 +11,48 @@
       - trans "You don't have access to any regions. Contact your administrator."
 
   - else
-    .page-header
-      %h2
-        - trans "Latest polls"
-      %p
-        %a{ href:"{% url 'polls.issue_list' %}" }
-          - trans "View all"
-    %table{ style:"width: 100%" }
-      - for issue in latest_issues
-        %tr
-          %td
-            %a{ href:"{% url 'polls.response_filter' issue.pk %}" }
-              {{ issue.poll }}
-          %td
-            {{ issue.conducted_on | gmail_time }}
-          %td
-            - with completion=issue|completion_percent:request.region
-              .progress
-                .progress-bar{ role:"progressbar", style:"width: {{ completion }}%; min-width: 2em" }
-                  {{ completion }}%
+    .container{ style:"margin: 0 -15px" }
+      .col-md-6
+        .page-header
+          %h2
+            - trans "Latest Polls"
+        %p
+          %a{ href:"{% url 'polls.issue_list' %}" }
+            - trans "View all"
+        %table.table.table-striped{ style:"width: 100%" }
+          %thead
+            %tr
+              %th
+                - trans "Poll"
+              %th
+                - trans "Date"
+              %th
+                - trans "Responses"
+          %tbody
+            - for issue in latest_issues
+              %tr
+                %td
+                  %a{ href:"{% url 'polls.response_filter' issue.pk %}" }
+                    {{ issue.poll }}
+                %td
+                  {{ issue.conducted_on|gmail_time }}
+                %td
+                  {{ issue|completion_fraction:request.region }}
+
+      .col-md-6
+        .page-header
+          %h2
+            - trans "Start Poll"
+        %form.form-inline{ id:"start-poll-form" }
+          %label.control-label{ for:"start-poll"  }
+            - trans "Poll"
+          %select.form-control{ id:"start-poll" }
+            - for poll in polls
+              %option{ value:"{{ poll.pk }}" }
+                {{ poll.name }}
+          %button.btn.btn-default{ type:"button", onclick:'alert("TODO")' }
+            %span.glyphicon.glyphicon-send
+            - trans "Start"
 
 
 - block extra-script

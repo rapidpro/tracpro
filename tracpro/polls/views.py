@@ -3,10 +3,12 @@ from __future__ import absolute_import, unicode_literals
 from dash.orgs.views import OrgPermsMixin
 from django import forms
 from django.core.urlresolvers import reverse
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, JsonResponse
 from django.utils.translation import ugettext_lazy as _
-from smartmin.views import SmartCRUDL, SmartListView, SmartFormView
+from django.views.decorators.csrf import csrf_exempt
+from smartmin.views import SmartCRUDL, SmartListView, SmartFormView, SmartUpdateView
 from .models import Poll, Question, Issue, Response
+from .tasks import restart_participants
 
 
 class PollCRUDL(SmartCRUDL):
@@ -103,7 +105,7 @@ class QuestionCRUDL(SmartCRUDL):
 
 class IssueCRUDL(SmartCRUDL):
     model = Issue
-    actions = ('list', 'filter')
+    actions = ('list', 'filter', 'restart')
 
     class List(OrgPermsMixin, SmartListView):
         """
@@ -173,6 +175,23 @@ class IssueCRUDL(SmartCRUDL):
             context['poll'] = self.derive_poll()
             return context
 
+    class Restart(OrgPermsMixin, SmartFormView):
+        @csrf_exempt
+        def dispatch(self, request, *args, **kwargs):
+            return super(IssueCRUDL.Restart, self).dispatch(request, *args, **kwargs)
+
+        def post(self, request, *args, **kwargs):
+            org = self.derive_org()
+            issue = Issue.objects.get(poll__org=org, pk=request.POST.get('issue'))
+            region = self.request.region
+
+            incomplete_responses = issue.get_incomplete_responses(region)
+            contact_uuids = [r.contact.uuid for r in incomplete_responses]
+
+            restart_participants.delay(issue.pk, contact_uuids)
+
+            return JsonResponse({'contacts': len(contact_uuids)})
+
 
 class ResponseCRUDL(SmartCRUDL):
     model = Response
@@ -235,7 +254,11 @@ class ResponseCRUDL(SmartCRUDL):
             else:
                 other_regions = []
 
+            # can only restart the last issue of any poll
+            can_restart = not Issue.objects.filter(poll=issue.poll, pk__gt=issue.pk).exists()
+
             context['issue'] = issue
+            context['can_restart'] = can_restart
             context['other_regions'] = other_regions
             context['response_count'] = issue.get_responses(self.request.region).count()
             context['complete_response_count'] = issue.get_complete_responses(self.request.region).count()

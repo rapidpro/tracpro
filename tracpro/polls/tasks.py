@@ -83,3 +83,15 @@ def fetch_org_updated_runs(org):
             Response.get_or_create(org, run, poll=poll)
     else:
         logger.info("No incomplete responses to update")
+
+
+@task
+def restart_participants(issue_id, contact_uuids):
+    """
+    Restarts the given contacts in the given poll issue
+    """
+    issue = Issue.objects.select_related('poll').get(pk=issue_id)
+    org = issue.poll.org
+    client = org.get_temba_client()
+
+    # TODO

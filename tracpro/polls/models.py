@@ -102,6 +102,7 @@ class Issue(models.Model):
     """
     poll = models.ForeignKey(Poll, related_name='issues')
 
+    # TODO change this to be ForeignKey so polls go to one region or all
     regions = models.ManyToManyField(Region, related_name='issues', help_text="Regions where poll was conducted")
 
     conducted_on = models.DateTimeField(help_text=_("When the poll was conducted"))

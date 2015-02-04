@@ -3,8 +3,9 @@ from __future__ import absolute_import, unicode_literals
 from dash.orgs.views import OrgPermsMixin
 from django.utils.translation import ugettext_lazy as _
 from smartmin.users.views import SmartTemplateView
-from tracpro.groups.models import Group
-from tracpro.polls.models import Issue
+from tracpro.polls.models import Poll, Issue
+
+LATEST_ISSUES_COUNT = 5
 
 
 class HomeView(OrgPermsMixin, SmartTemplateView):
@@ -25,6 +26,6 @@ class HomeView(OrgPermsMixin, SmartTemplateView):
         else:
             issues = Issue.get_all(self.request.org)
 
-        context['latest_issues'] = issues.order_by('-conducted_on')[0:3]
-        context['all_groups'] = Group.get_all(self.request.org).order_by('name')
+        context['latest_issues'] = issues.order_by('-conducted_on')[0:LATEST_ISSUES_COUNT]
+        context['polls'] = Poll.get_all(self.request.org).order_by('name')
         return context

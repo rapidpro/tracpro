@@ -10,9 +10,14 @@
       These are the responses for <strong>{{ region }}</strong>. Poll was also conducted in {{ other_regions }}.
 
 - block table-buttons
-  %a.btn.btn-default.pull-right{ type:"button", data-toggle:"modal", data-target:"#send-message-dialog" }
-    %span.glyphicon.glyphicon-comment
-    - trans "Send Message..."
+  .btn-group.pull-right
+    %a.btn.btn-default{ type:"button", data-toggle:"modal", data-target:"#send-message-dialog" }
+      %span.glyphicon.glyphicon-comment
+      - trans "Send Message..."
+    - if can_restart
+      %a.btn.btn-default{ type:"button", data-toggle:"modal", data-target:"#restart-dialog" }
+        %span.glyphicon.glyphicon-repeat
+        - trans "Restart..."
 
   .modal.fade{ role:"dialog", id:"send-message-dialog" }
     .modal-dialog
@@ -49,6 +54,26 @@
           %button.btn.btn-primary{ type:"button", onclick:"onMessageSend()" }
             -trans "Send"
 
+  .modal.fade{ role:"dialog", id:"restart-dialog" }
+    .modal-dialog
+      .modal-content
+        .modal-header
+          %button.close{ type:"button", data-dismiss:"modal" }
+            &times;
+          %h4.modal-title
+            - trans "Restart Participants"
+        .modal-body
+          %form{ id:"restart-form" }
+            %input{ type:"hidden", name:"issue", value:"{{ issue.pk }}" }
+          %p
+            - blocktrans with count=incomplete_response_count
+              Restart poll for {{ count }} non-respondents?
+        .modal-footer
+          %button.btn.btn-default{ type:"button", data-dismiss:"modal" }
+            -trans "Cancel"
+          %button.btn.btn-primary{ type:"button", onclick:"onRestart()" }
+            -trans "Restart"
+
 - block extra-script
   :javascript
     function onMessageSend() {
@@ -56,5 +81,13 @@
       $.post('{% url "msgs.message_send"  %}', data).success(function(data) {
         $('#send-message-dialog').modal('hide')
         display_alert('success', "Sent message to " + data.recipients + " recipients")
+      });
+    }
+
+    function onRestart() {
+    data = $('#restart-form').serialize();
+      $.post('{% url "polls.issue_restart"  %}').success(function(data) {
+        $('#restart-dialog').modal('hide')
+        display_alert('success', "Restarted poll for " + data.contacts + " contacts")
       });
     }
