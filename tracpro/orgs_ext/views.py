@@ -7,6 +7,10 @@ from django.utils.translation import ugettext_lazy as _
 from smartmin.users.views import SmartCRUDL
 
 
+def org_ext_context_processor(request):
+    return dict(user_is_admin=request.user.is_admin_for(request.org))
+
+
 class OrgExtCRUDL(SmartCRUDL):
     actions = ('create', 'update', 'list', 'home', 'edit')
     model = Org

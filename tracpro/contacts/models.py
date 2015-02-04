@@ -78,6 +78,10 @@ class Contact(models.Model):
         return cls.objects.create(**cls.kwargs_from_temba(org, temba_contact))
 
     @classmethod
+    def get_all(cls, org):
+        return org.contacts.filter(is_active=True)
+
+    @classmethod
     def kwargs_from_temba(cls, org, temba_contact):
         org_region_uuids = [r.uuid for r in org.regions.all()]
         region_uuids = intersection(org_region_uuids, temba_contact.groups)

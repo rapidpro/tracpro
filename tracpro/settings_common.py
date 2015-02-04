@@ -154,7 +154,8 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'django.core.context_processors.request',
     'dash.orgs.context_processors.user_group_perms_processor',
     'dash.orgs.context_processors.set_org_processor',
-    'dash.context_processors.lang_direction'
+    'dash.context_processors.lang_direction',
+    'tracpro.orgs_ext.views.org_ext_context_processor'
 )
 
 ROOT_URLCONF = 'tracpro.urls'

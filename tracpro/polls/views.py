@@ -112,13 +112,17 @@ class IssueCRUDL(SmartCRUDL):
         fields = ('poll', 'conducted_on', 'sent_to', 'responses')
 
         def derive_title(self):
-            return _("All polls")
+            return _("All Polls")
 
         def derive_link_fields(self, context):
             return 'responses'
 
         def get_queryset(self, **kwargs):
-            return self.request.region.issues.order_by('-conducted_on')
+            if self.request.region:
+                issues = self.request.region.issues
+            else:
+                issues = Issue.get_all(self.request.org)
+            return issues.select_related('poll').order_by('-conducted_on')
 
         def get_sent_to(self, obj):
             return obj.get_responses(self.request.region).count()
@@ -197,7 +201,10 @@ class ResponseCRUDL(SmartCRUDL):
             return self._questions
 
         def derive_fields(self):
-            return ['contact', 'created_on'] + self.derive_questions().keys()
+            base_fields = ['created_on', 'contact']
+            if not self.request.region:
+                base_fields.append('region')
+            return base_fields + self.derive_questions().keys()
 
         def lookup_field_label(self, context, field, default=None):
             if field.startswith('question_'):
@@ -207,7 +214,9 @@ class ResponseCRUDL(SmartCRUDL):
                 return super(ResponseCRUDL.Filter, self).lookup_field_label(context, field, default)
 
         def lookup_field_value(self, context, obj, field):
-            if field.startswith('question_'):
+            if field == 'region':
+                return obj.contact.region
+            elif field.startswith('question_'):
                 question = self.derive_questions()[field]
                 answer = obj.answers.filter(question=question).first()
                 return answer.value if answer else '--'
@@ -220,7 +229,11 @@ class ResponseCRUDL(SmartCRUDL):
         def get_context_data(self, **kwargs):
             context = super(ResponseCRUDL.Filter, self).get_context_data(**kwargs)
             issue = self.derive_issue()
-            other_regions = issue.regions.exclude(pk=self.request.region.pk).order_by('name')
+
+            if self.request.region:
+                other_regions = issue.regions.exclude(pk=self.request.region.pk).order_by('name')
+            else:
+                other_regions = []
 
             context['issue'] = issue
             context['other_regions'] = other_regions

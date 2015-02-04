@@ -18,9 +18,18 @@ class MessageCRUDL(SmartCRUDL):
         field_config = {'cohort': {'label': _("Recipients")}}
         title = _("Message Log")
 
+        def derive_fields(self):
+            fields = ['sent_on', 'sent_by', 'text', 'issue', 'cohort']
+            if not self.request.region:
+                fields.append('region')
+            return fields
+
         def get_queryset(self, **kwargs):
-            org = self.request.user.get_org()
-            return org.messages.order_by('-sent_on')
+            if self.request.region:
+                qs = self.request.region.messages
+            else:
+                qs = self.request.org.messages
+            return qs.order_by('-sent_on')
 
         def get_cohort(self, obj):
             return obj.get_cohort_display()

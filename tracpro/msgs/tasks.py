@@ -15,12 +15,12 @@ def send_message(message_id):
     client = message.org.get_temba_client()
 
     try:
-        client.create_broadcast(message.text, contacts=[c.uuid for c in message.recipients])
+        client.create_broadcast(message.text, contacts=[c.uuid for c in message.recipients.all()])
 
         message.status = STATUS_SENT
         message.save(update_fields=('status',))
 
-        logger.info("Sent message %d from user #%d" % (message.pk, message.user.pk))
+        logger.info("Sent message %d from user #%d" % (message.pk, message.sent_by.pk))
     except Exception:
         message.status = STATUS_FAILED
         message.save(update_fields=('status',))

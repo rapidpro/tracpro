@@ -46,7 +46,7 @@ class Message(models.Model):
 
     cohort = models.CharField(max_length=1, verbose_name=_("Cohort"), choices=COHORT_CHOICES)
 
-    region = models.ForeignKey(Region)
+    region = models.ForeignKey(Region, null=True, related_name="messages")
 
     status = models.CharField(max_length=1, verbose_name=_("Status"), choices=STATUS_CHOICES,
                               help_text=_("Current status of this message"))
@@ -78,5 +78,5 @@ class Message(models.Model):
                     text=self.text,
                     issue_id=self.issue.pk,
                     cohort=self.cohort,
-                    region_id=self.region.pk,
+                    region_id=self.region.pk if self.region else None,
                     recipients=self.recipients.count())

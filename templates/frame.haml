@@ -134,17 +134,28 @@
                         %p.navbar-text{ style:"float: left;"}
                           {{ request.user.username }}
 
-                    - if request.region
-                      %li.dropdown
-                        %a.dropdown-toggle{ href:"#", data-toggle:"dropdown", role:"button"}
-                          %strong
-                            {{ request.region }}
-                          %span.caret
-                        %ul.dropdown-menu{ role:"menu" }
-                          - for region in request.user_regions
-                            %li
-                              %a{ href:"{{ request.path }}?_region={{ region.pk }}" }
-                                {{ region.name }}
+                      - if request.user_regions.count > 1
+                        %li.dropdown
+                          %a.dropdown-toggle{ href:"#", data-toggle:"dropdown", role:"button"}
+                            %strong
+                              - if request.region
+                                {{ request.region }}
+                              - else
+                                - trans "All Regions"
+                            %span.caret
+                          %ul.dropdown-menu{ role:"menu" }
+                            - for region in request.user_regions
+                              %li
+                                %a{ href:"{{ request.path }}?_region={{ region.pk }}" }
+                                  {{ region.name }}
+                            - if user_is_admin
+                              %li.divider
+                              %li
+                                %a{ href:"{{ request.path }}?_region=0" }
+                                  - trans "All Regions"
+                      - elif request.user_regions.count == 1
+                        %strong
+                          {{ request.region }}
 
                     %li
                       %a{ href:"{% url 'users.user_logout' %}?go=/", style:"float: right;"}

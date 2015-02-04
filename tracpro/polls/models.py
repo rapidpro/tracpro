@@ -129,11 +129,16 @@ class Issue(models.Model):
 
         return Issue.create(poll, [region], for_date)
 
+    @classmethod
+    def get_all(cls, org):
+        return cls.objects.filter(poll__org=org, poll__is_active=True)
+
     def get_responses(self, region=None):
         responses = self.responses.filter(is_active=True)
         if region:
             responses = responses.filter(contact__region=region)
-        return responses
+
+        return responses.select_related('contact')
 
     def get_complete_responses(self, region=None):
         return self.get_responses(region).filter(status=RESPONSE_COMPLETE)
