@@ -44,7 +44,7 @@
                 %a{ href:"/response/filter/[[ issue.id ]]/" }
                   [[ issue.poll.name ]]
               %td
-                [[ issue.conducted_on | date:'MMM dd, yyyy' ]]
+                [[ issue.conducted_on | autodate ]]
               %td
                 %span{ ng-if:"issue.region" }
                   [[ issue.region.name ]]
