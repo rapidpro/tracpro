@@ -19,6 +19,7 @@
       .col-md-12.buttons
         .btn-group.pull-away
           %a.btn.btn-default{ href:"{% url 'polls.issue_list' %}" }
+            %span.glyphicon.glyphicon-th-list
             - trans "View all"
           - if request.region
             %button.btn.btn-default{ type:"button", data-toggle:"modal", data-target:"#start-poll-dialog" }
@@ -41,7 +42,7 @@
           %tbody
             %tr{ ng-repeat:"issue in issues" }
               %td
-                %a{ href:"/response/filter/[[ issue.id ]]/" }
+                %a{ href:"/poll/read/[[ issue.poll.id ]]/" }
                   [[ issue.poll.name ]]
               %td
                 [[ issue.conducted_on | autodate ]]
@@ -51,7 +52,8 @@
                 %span{ ng-if:"!issue.region" }
                   All
               %td
-                [[ issue.responses.complete ]] / [[ issue.responses.total ]]
+                %a{ href:"/response/filter/[[ issue.id ]]/" }
+                  [[ issue.responses.complete ]] / [[ issue.responses.total ]]
 
     - if request.region
       .modal.fade{ role:"dialog", id:"start-poll-dialog" }

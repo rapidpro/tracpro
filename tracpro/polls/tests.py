@@ -300,17 +300,6 @@ class PollCRUDLTest(TracProTest):
         self.assertEqual(len(response.context['object_list']), 1)
 
 
-class QuestionCRUDLTest(TracProTest):
-    def test_filter(self):
-        # log in as admin
-        self.login(self.admin)
-
-        # view questions for our only poll
-        response = self.url_get('unicef', reverse('polls.question_filter', args=[self.poll1.pk]))
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.context['object_list']), 2)
-
-
 class ResponseCRUDLTest(TracProTest):
     def setUp(self):
         super(ResponseCRUDLTest, self).setUp()

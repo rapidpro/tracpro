@@ -1,45 +1,55 @@
 from __future__ import absolute_import, unicode_literals
 
-from dash.orgs.views import OrgPermsMixin
+from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from django import forms
 from django.core.urlresolvers import reverse
-from django.http import HttpResponseRedirect, JsonResponse, Http404
+from django.http import HttpResponseRedirect, JsonResponse
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
-from smartmin.views import SmartCRUDL, SmartCreateView, SmartListView, SmartFormView
-from .models import Poll, Question, Issue, Response
+from smartmin.views import SmartCRUDL, SmartCreateView, SmartReadView, SmartListView, SmartFormView
+from .models import Poll, Issue, Response
 from .tasks import issue_restart_participants
 
 
 class PollCRUDL(SmartCRUDL):
     model = Poll
-    actions = ('list', 'select')
+    actions = ('read', 'list', 'select')
+
+    class Read(OrgObjPermsMixin, SmartReadView):
+        fields = ('name', 'questions', 'issues', 'last_conducted')
+
+        def derive_issues(self, obj):
+            return Issue.get_all(self.request.org, self.request.region, poll=obj)
+
+        def get_questions(self, obj):
+            return "<br/>".join([q.text for q in obj.get_questions()])
+
+        def get_issues(self, obj):
+            return self.derive_issues(obj).count()
+
+        def get_last_conducted(self, obj):
+            last_issue = self.derive_issues(obj).order_by('-conducted_on').first()
+            return last_issue.conducted_on if last_issue else _("Never")
 
     class List(OrgPermsMixin, SmartListView):
         fields = ('name', 'questions', 'issues', 'last_conducted')
         default_order = ('name',)
 
-        def derive_link_fields(self, context):
-            return 'questions', 'issues'
-
         def derive_queryset(self, **kwargs):
             return Poll.get_all(self.request.org)
+
+        def derive_issues(self, obj):
+            return Issue.get_all(self.request.org, self.request.region, poll=obj)
 
         def get_questions(self, obj):
             return obj.get_questions().count()
 
         def get_issues(self, obj):
-            return obj.issues.count()
+            return self.derive_issues(obj).count()
 
         def get_last_conducted(self, obj):
-            last_issue = obj.issues.order_by('-conducted_on').first()
+            last_issue = self.derive_issues(obj).order_by('-conducted_on').first()
             return last_issue.conducted_on if last_issue else _("Never")
-
-        def lookup_field_link(self, context, field, obj):
-            if field == 'questions':
-                return reverse('polls.question_filter', kwargs=dict(poll=obj.pk))
-            elif field == 'issues':
-                return reverse('polls.issue_filter', kwargs=dict(poll=obj.pk))
 
     class Select(OrgPermsMixin, SmartFormView):
         class FlowsForm(forms.Form):
@@ -73,40 +83,9 @@ class PollCRUDL(SmartCRUDL):
             return HttpResponseRedirect(self.get_success_url())
 
 
-class QuestionCRUDL(SmartCRUDL):
-    model = Question
-    actions = ('filter',)
-
-    class Filter(OrgPermsMixin, SmartListView):
-        fields = ('text',)
-        default_order = ('pk',)
-
-        @classmethod
-        def derive_url_pattern(cls, path, action):
-            return r'^%s/%s/(?P<poll>\d+)/$' % (path, action)
-
-        def derive_title(self):
-            return _("Questions in %s") % self.derive_poll().name
-
-        def derive_queryset(self, **kwargs):
-            return self.derive_poll().get_questions()
-
-        def derive_poll(self):
-            if hasattr(self, '_poll'):
-                return self._poll
-
-            self._poll = Poll.objects.get(pk=self.kwargs['poll'], org=self.request.org)
-            return self._poll
-
-        def get_context_data(self, **kwargs):
-            context = super(QuestionCRUDL.Filter, self).get_context_data(**kwargs)
-            context['poll'] = self.derive_poll()
-            return context
-
-
 class IssueCRUDL(SmartCRUDL):
     model = Issue
-    actions = ('list', 'filter', 'latest', 'start', 'restart')
+    actions = ('list', 'latest', 'start', 'restart')
 
     class List(OrgPermsMixin, SmartListView):
         """
@@ -119,7 +98,7 @@ class IssueCRUDL(SmartCRUDL):
             return _("All Polls")
 
         def derive_link_fields(self, context):
-            return 'responses'
+            return 'poll', 'responses'
 
         def derive_queryset(self, **kwargs):
             return Issue.get_all(self.request.org, self.request.region)
@@ -134,48 +113,10 @@ class IssueCRUDL(SmartCRUDL):
             return obj.region if obj.region else _("All")
 
         def lookup_field_link(self, context, field, obj):
-            return reverse('polls.response_filter', kwargs=dict(issue=obj.pk))
-
-    class Filter(OrgPermsMixin, SmartListView):
-        """
-        Issues filtered by poll
-        """
-        fields = ('conducted_on', 'regions', 'responses')
-        default_order = ('-conducted_on',)
-
-        @classmethod
-        def derive_url_pattern(cls, path, action):
-            return r'^%s/%s/(?P<poll>\d+)/$' % (path, action)
-
-        def derive_title(self):
-            return _("Issues of %s") % self.derive_poll().name
-
-        def derive_link_fields(self, context):
-            return 'responses'
-
-        def derive_poll(self):
-            if hasattr(self, '_poll'):
-                return self._poll
-
-            self._poll = Poll.objects.get(pk=self.kwargs['poll'], org=self.request.org)
-            return self._poll
-
-        def derive_queryset(self, **kwargs):
-            return self.derive_poll().issues.prefetch_related('regions')
-
-        def get_regions(self, obj):
-            return ", ".join([unicode(r) for r in obj.regions.all()])
-
-        def get_responses(self, obj):
-            return obj.get_responses().count()
-
-        def lookup_field_link(self, context, field, obj):
-            return reverse('polls.response_filter', kwargs=dict(issue=obj.pk))
-
-        def get_context_data(self, **kwargs):
-            context = super(IssueCRUDL.Filter, self).get_context_data(**kwargs)
-            context['poll'] = self.derive_poll()
-            return context
+            if field == 'poll':
+                return reverse('polls.poll_read', args=[obj.poll_id])
+            elif field == 'responses':
+                return reverse('polls.response_filter', kwargs=dict(issue=obj.pk))
 
     class Latest(OrgPermsMixin, SmartListView):
         def get_queryset(self):
@@ -238,7 +179,7 @@ class ResponseCRUDL(SmartCRUDL):
             base_fields = ['created_on', 'contact']
             if not self.request.region:
                 base_fields.append('region')
-            return base_fields + self.derive_questions().keys()
+            return base_fields + ['group'] + self.derive_questions().keys()
 
         def derive_link_fields(self, context):
             return 'contact',
@@ -256,6 +197,8 @@ class ResponseCRUDL(SmartCRUDL):
         def lookup_field_value(self, context, obj, field):
             if field == 'region':
                 return obj.contact.region
+            elif field == 'group':
+                return obj.contact.group
             elif field.startswith('question_'):
                 question = self.derive_questions()[field]
                 answer = obj.answers.filter(question=question).first()

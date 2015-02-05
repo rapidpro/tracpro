@@ -134,9 +134,9 @@ class ContactCRUDL(SmartCRUDL):
 
     class Read(OrgPermsMixin, SmartReadView):
         def derive_fields(self):
-            fields = ['name', 'urn', 'region', 'group']
+            fields = ['name', 'urn', 'region', 'group', 'last_response']
             if self.object.created_by_id:
-                fields += ['added_by']
+                fields.append('created_by')
             return fields
 
         def get_queryset(self):
@@ -162,8 +162,9 @@ class ContactCRUDL(SmartCRUDL):
         def get_urn(self, obj):
             return obj.get_urn()[1]
 
-        def get_added_by(self, obj):
-            return obj.created_by.get_full_name()
+        def get_last_response(self, obj):
+            last_response = obj.responses.order_by('-updated_on').first()
+            return last_response.updated_on if last_response else _("Never")
 
         def lookup_field_label(self, context, field, default=None):
             if field == 'urn':

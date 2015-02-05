@@ -306,11 +306,9 @@ PERMISSIONS = {
 
     'msgs.message': ('list', 'send'),
 
-    'polls.poll': ('list', 'select'),
+    'polls.poll': ('read', 'list', 'select'),
 
-    'polls.question': ('filter',),
-
-    'polls.issue': ('list', 'filter', 'latest', 'start', 'restart'),
+    'polls.issue': ('list', 'latest', 'start', 'restart'),
 
     'polls.response': ('filter',),
 
@@ -329,7 +327,6 @@ GROUP_PERMISSIONS = {
         'groups.region.*',
         'msgs.message.*',
         'polls.poll.*',
-        'polls.question.*',
         'polls.issue.*',
         'polls.response.*',
         'profiles.profile.*',
@@ -337,6 +334,7 @@ GROUP_PERMISSIONS = {
     "Editors": (
         'contacts.contact.*',
         'msgs.message_send',
+        'polls.poll_read',
         'polls.issue_latest',
         'polls.issue_list',
         'polls.issue_start',

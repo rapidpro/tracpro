@@ -137,11 +137,16 @@ class Issue(models.Model):
         return Issue.create(poll, None, for_date)
 
     @classmethod
-    def get_all(cls, org, region=None):
+    def get_all(cls, org, region=None, poll=None):
         issues = cls.objects.filter(poll__org=org, poll__is_active=True)
+
         if region:
             # any issue to this region or any non-regional issue
             issues = issues.filter(Q(region=None) | Q(region=region))
+
+        if poll:
+            issues = issues.filter(poll=poll)
+
         return issues.select_related('poll', 'region')
 
     def get_responses(self, region=None):
