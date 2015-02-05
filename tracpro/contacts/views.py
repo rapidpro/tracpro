@@ -175,6 +175,8 @@ class ContactCRUDL(SmartCRUDL):
             return super(ContactCRUDL.Read, self).lookup_field_label(context, field, default)
 
     class List(OrgPermsMixin, ContactFieldsMixin, SmartListView):
+        default_order = ('name',)
+
         def derive_fields(self):
             base_fields = ['name', 'urn', 'group']
             if self.request.region:
@@ -215,12 +217,11 @@ class ContactCRUDL(SmartCRUDL):
 
             return self._issues
 
-        def get_queryset(self, **kwargs):
+        def derive_queryset(self, **kwargs):
             if self.request.region:
-                qs = self.request.region.get_contacts()
+                return self.request.region.get_contacts()
             else:
-                qs = Contact.get_all(self.request.org)
-            return qs.order_by('name')
+                return Contact.get_all(self.request.org)
 
     class Delete(OrgObjPermsMixin, SmartDeleteView):
         cancel_url = '@contacts.contact_list'

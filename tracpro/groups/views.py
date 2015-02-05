@@ -1,10 +1,10 @@
 from __future__ import absolute_import, unicode_literals
 
-from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
+from dash.orgs.views import OrgPermsMixin
 from django import forms
 from django.http import HttpResponseRedirect
 from django.utils.translation import ugettext_lazy as _
-from smartmin.users.views import SmartCRUDL, SmartReadView, SmartListView, SmartFormView
+from smartmin.users.views import SmartCRUDL, SmartListView, SmartFormView
 from .models import Group, Region
 
 
@@ -32,10 +32,10 @@ class RegionCRUDL(SmartCRUDL):
 
     class List(OrgPermsMixin, SmartListView):
         fields = ('name', 'contacts')
+        default_order = ('name',)
 
-        def get_queryset(self, **kwargs):
-            org = self.request.user.get_org()
-            return Region.get_all(org).order_by('name')
+        def derive_queryset(self, **kwargs):
+            return Region.get_all(self.request.org)
 
         def get_contacts(self, obj):
             return obj.get_contacts().count()
@@ -65,10 +65,10 @@ class GroupCRUDL(SmartCRUDL):
 
     class List(OrgPermsMixin, SmartListView):
         fields = ('name', 'contacts')
+        default_order = ('name',)
 
-        def get_queryset(self, **kwargs):
-            org = self.request.user.get_org()
-            return Group.get_all(org).order_by('name')
+        def derive_queryset(self, **kwargs):
+            return Group.get_all(self.request.org)
 
         def get_contacts(self, obj):
             return obj.get_contacts().count()

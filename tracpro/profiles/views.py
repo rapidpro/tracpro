@@ -211,13 +211,15 @@ class UserCRUDL(SmartCRUDL):
                 return _("User")
 
     class List(OrgPermsMixin, UserFieldsMixin, SmartListView):
+        default_order = ('profile__full_name',)
         fields = ('full_name', 'email', 'regions')
         permission = 'profiles.profile_user_list'
+        select_related = ('profile',)
         title = _("Supervisors")
 
-        def get_queryset(self, **kwargs):
-            qs = super(UserCRUDL.List, self).get_queryset(**kwargs)
-            qs = qs.filter(pk__in=self.request.org.get_org_editors(), is_active=True).select_related('profile')
+        def derive_queryset(self, **kwargs):
+            qs = super(UserCRUDL.List, self).derive_queryset(**kwargs)
+            qs = qs.filter(pk__in=self.request.org.get_org_editors(), is_active=True)
             return qs
 
 
@@ -247,10 +249,11 @@ class ManageUserCRUDL(SmartCRUDL):
     class List(UserFieldsMixin, SmartListView):
         fields = ('full_name', 'email', 'orgs')
         default_order = ('profile__full_name',)
+        select_related = ('profile', 'org_admins', 'org_editors')
 
-        def get_queryset(self, **kwargs):
-            qs = super(ManageUserCRUDL.List, self).get_queryset(**kwargs)
-            qs = qs.filter(is_active=True).exclude(profile=None).select_related('profile', 'org_admins', 'org_editors')
+        def derive_queryset(self, **kwargs):
+            qs = super(ManageUserCRUDL.List, self).derive_queryset(**kwargs)
+            qs = qs.filter(is_active=True).exclude(profile=None)
             return qs
 
         def get_orgs(self, obj):

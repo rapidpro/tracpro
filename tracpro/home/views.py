@@ -3,9 +3,7 @@ from __future__ import absolute_import, unicode_literals
 from dash.orgs.views import OrgPermsMixin
 from django.utils.translation import ugettext_lazy as _
 from smartmin.users.views import SmartTemplateView
-from tracpro.polls.models import Poll, Issue
-
-LATEST_ISSUES_COUNT = 5
+from tracpro.polls.models import Poll
 
 
 class HomeView(OrgPermsMixin, SmartTemplateView):

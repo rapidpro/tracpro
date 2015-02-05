@@ -167,6 +167,14 @@ class Issue(models.Model):
         else:
             return None
 
+    def is_last_for_region(self, region):
+        """
+        Whether or not this is the last issue of the poll conducted in the given region. Includes non-regional polls.
+        """
+        newer_issues = Issue.objects.filter(poll=self.poll, pk__gt=self.pk)
+        newer_issues = newer_issues.filter(Q(region=None) | Q(region=region))
+        return not newer_issues.exists()
+
     def as_json(self, region=None):
         region_as_json = dict(id=self.region.pk, name=self.region.name) if self.region else None
         responses_as_json = dict(complete=self.get_complete_responses(region).count(),
@@ -204,9 +212,13 @@ class Response(models.Model):
     @classmethod
     def create_empty(cls, org, issue, run):
         """
-        Creates an empty response from a run that we've just created
+        Creates an empty response from a run. Used to start or restart a contact in an existing issue.
         """
         contact = Contact.get_or_fetch(org, uuid=run.contact)
+
+        # de-activate any existing responses for this contact
+        issue.responses.filter(contact=contact).update(is_active=False)
+
         return Response.objects.create(flow_run_id=run.id, issue=issue, contact=contact,
                                        created_on=run.created_on, updated_on=run.created_on,
                                        status=RESPONSE_EMPTY)
