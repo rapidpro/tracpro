@@ -78,7 +78,7 @@ class QuestionCRUDL(SmartCRUDL):
     actions = ('filter',)
 
     class Filter(OrgPermsMixin, SmartListView):
-        fields = ('text', 'show_with_contact')
+        fields = ('text',)
         default_order = ('pk',)
 
         @classmethod
