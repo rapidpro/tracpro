@@ -61,7 +61,7 @@ class Message(models.Model):
             responses = issue.get_complete_responses(region)
         elif cohort == COHORT_NONRESPONDENTS:
             responses = issue.get_incomplete_responses(region)
-        else:
+        else:  # pragma: no cover
             raise ValueError("Invalid cohort code: %s" % cohort)
 
         for contact in [r.contact for r in responses]:
@@ -72,11 +72,4 @@ class Message(models.Model):
         return message
 
     def as_json(self):
-        return dict(id=self.pk,
-                    sent_by=self.sent_by.pk,
-                    sent_on=self.sent_on,
-                    text=self.text,
-                    issue_id=self.issue.pk,
-                    cohort=self.cohort,
-                    region_id=self.region.pk if self.region else None,
-                    recipients=self.recipients.count())
+        return dict(id=self.pk, recipients=self.recipients.count())

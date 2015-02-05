@@ -11,7 +11,7 @@ from django.utils.translation import ugettext_lazy as _
 from smartmin.users.views import SmartListView, SmartCreateView, SmartReadView, SmartUpdateView, SmartDeleteView
 from smartmin.users.views import SmartCRUDL
 from tracpro.groups.models import Region, Group
-from tracpro.polls.models import RESPONSE_COMPLETE
+from tracpro.polls.models import Issue, RESPONSE_COMPLETE
 from .models import Contact
 
 
@@ -209,12 +209,8 @@ class ContactCRUDL(SmartCRUDL):
             if hasattr(self, '_issues'):
                 return self._issues
 
-            if self.request.region:
-                latest_issues = self.request.region.issues.order_by('-conducted_on')[0:3]
-                self._issues = {'issue_%d' % i.pk: i for i in latest_issues}
-            else:
-                self._issues = {}
-
+            latest_issues = Issue.get_all(self.request.org, self.request.region).order_by('-conducted_on')[0:3]
+            self._issues = {'issue_%d' % i.pk: i for i in latest_issues}
             return self._issues
 
         def derive_queryset(self, **kwargs):

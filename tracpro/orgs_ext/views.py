@@ -8,7 +8,7 @@ from smartmin.users.views import SmartCRUDL
 
 
 def org_ext_context_processor(request):
-    is_admin = not request.user.is_anonymous() and request.user.is_admin_for(request.org)
+    is_admin = request.org and not request.user.is_anonymous() and request.user.is_admin_for(request.org)
     return dict(user_is_admin=is_admin)
 
 

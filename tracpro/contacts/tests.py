@@ -4,7 +4,8 @@ from django.core.urlresolvers import reverse
 from django.test.utils import override_settings
 from django.utils import timezone
 from mock import patch
-from temba.types import Contact as TembaContact
+from temba.types import Contact as TembaContact, Run
+from tracpro.polls.models import Issue, Response
 from tracpro.test import TracProTest
 from .models import Contact
 
@@ -162,17 +163,21 @@ class ContactCRUDLTest(TracProTest):
         self.assertEqual(response.status_code, 404)
 
     def test_list(self):
+        issue1 = Issue.create(self.poll1, None, self.datetime(2014, 12, 1))
+        Response.create_empty(self.unicef, issue1, Run.create(id=123, contact='C-001', created_on=timezone.now()))
+
+        self.login(self.admin)
+        response = self.url_get('unicef', reverse('contacts.contact_list'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context['object_list']), 5)
+        self.assertNotContains(response, "Farm Poll")  # no poll issues shown in "All Regions" view
+
         self.login(self.user1)
 
         response = self.url_get('unicef', reverse('contacts.contact_list'))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context['object_list']), 3)
-
-        self.login(self.user2)
-        self.switch_region(self.region2)
-
-        response = self.url_get('unicef', reverse('contacts.contact_list'))
-        self.assertEqual(len(response.context['object_list']), 1)
+        self.assertContains(response, "Farm Poll")
 
     def test_delete(self):
         # log in as an org administrator

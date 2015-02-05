@@ -119,6 +119,9 @@ class Issue(models.Model):
 
     @classmethod
     def get_or_create_non_regional(cls, org, poll, for_date=None):
+        """
+        Gets or creates an issue for a non-regional poll started in RapidPro
+        """
         if not for_date:
             for_date = timezone.now()
 
@@ -171,6 +174,11 @@ class Issue(models.Model):
         """
         Whether or not this is the last issue of the poll conducted in the given region. Includes non-regional polls.
         """
+        # did this issue cover the given region
+        if self.region_id and self.region_id != region.pk:
+            return False
+
+        # did any newer issues cover the given region
         newer_issues = Issue.objects.filter(poll=self.poll, pk__gt=self.pk)
         newer_issues = newer_issues.filter(Q(region=None) | Q(region=region))
         return not newer_issues.exists()

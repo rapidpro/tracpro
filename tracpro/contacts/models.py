@@ -120,9 +120,5 @@ class Contact(models.Model):
         self.save()
         self.push(ChangeType.deleted)
 
-    def get_last_answer(self, question):
-        from tracpro.polls.models import Answer
-        return Answer.objects.filter(question=question, reponse__contact=self).order_by('-submitted_on').first()
-
     def __unicode__(self):
         return self.name if self.name else self.get_urn()[1]
