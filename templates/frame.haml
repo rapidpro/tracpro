@@ -154,8 +154,9 @@
                                 %a{ href:"{{ request.path }}?_region=0" }
                                   - trans "All Regions"
                       - elif request.user_regions.count == 1
-                        %strong
-                          {{ request.region }}
+                        %p.navbar-text{ style:"float: left;"}
+                          %strong
+                            {{ request.region }}
 
                     %li
                       %a{ href:"{% url 'users.user_logout' %}?go=/", style:"float: right;"}
