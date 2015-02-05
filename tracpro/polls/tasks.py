@@ -89,6 +89,9 @@ def fetch_org_updated_runs(org):
 
 @task
 def issue_start(issue_id):
+    """
+    Starts a newly created issue by creating runs in RapidPro and creating empty responses for them.
+    """
     from tracpro.polls.models import Issue, Response
 
     issue = Issue.objects.select_related('poll', 'region').get(pk=issue_id)
@@ -104,20 +107,28 @@ def issue_start(issue_id):
     for run in runs:
         Response.create_empty(org, issue, run)
 
-    logger.info("Create %d new runs for new poll issue #%d" % (len(runs), issue.pk))
+    logger.info("Created %d new runs for new poll issue #%d" % (len(runs), issue.pk))
+
 
 @task
 def issue_restart_participants(issue_id, contact_uuids):
     """
-    Restarts the given contacts in the given poll issue
+    Restarts the given contacts in the given poll issue by replacing any existing response they have with an empty one.
     """
-    from tracpro.polls.models import Issue
+    from tracpro.polls.models import Issue, Response
 
     issue = Issue.objects.select_related('poll').get(pk=issue_id)
     if not issue.region:
         raise ValueError("Can't restart participants of a non-regional poll")
 
+    if not issue.is_last_for_region(issue.region):
+        raise ValueError("Can only restart last issue of poll for a region")
+
     org = issue.poll.org
     client = org.get_temba_client()
 
-    # TODO
+    runs = client.create_runs(issue.poll.flow_uuid, contact_uuids, restart_participants=True)
+    for run in runs:
+        Response.create_empty(org, issue, run)
+
+    logger.info("Created %d restart runs for poll issue #%d" % (len(runs), issue.pk))
