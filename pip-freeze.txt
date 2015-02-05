@@ -2,7 +2,7 @@ Django==1.7.2
 Markdown==2.5.2
 Pillow==2.7.0
 Pygments==2.0.2
--e git+https://github.com/rapidpro/rapidpro-python@75e42d4d6022f3f01c9ade66b522e0683cb2f6b8#egg=rapidpro-python
+-e git+https://github.com/rapidpro/rapidpro-python@3493536728f57fc05b5b99b359979bf2f181cbc0#egg=rapidpro-python
 amqp==1.4.6
 anyjson==0.3.3
 billiard==3.3.0.19
@@ -26,7 +26,7 @@ django-rosetta==0.7.4
 django-storages==1.1.8
 django-timezones==0.2
 enum34==1.0.4
-gunicorn==19.1.1
+gunicorn==19.2.1
 hamlpy==0.82.2
 kombu==3.0.24
 mock==1.0.1

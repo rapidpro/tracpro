@@ -47,10 +47,6 @@ class MessageCRUDL(SmartCRUDL):
             return super(MessageCRUDL.List, self).lookup_field_link(context, field, obj)
 
     class Send(OrgPermsMixin, SmartCreateView):
-        @csrf_exempt
-        def dispatch(self, request, *args, **kwargs):
-            return super(MessageCRUDL.Send, self).dispatch(request, *args, **kwargs)
-
         def post(self, request, *args, **kwargs):
             org = self.derive_org()
             text = request.POST.get('text')

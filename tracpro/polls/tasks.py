@@ -2,11 +2,9 @@ from __future__ import absolute_import, unicode_literals
 
 from celery.utils.log import get_task_logger
 from dash.orgs.models import Org
-from django.db.models import Max
 from djcelery_transactions import task
 from redis_cache import get_redis_connection
 from temba.utils import parse_iso8601, format_iso8601
-from tracpro.polls.models import Poll, Issue, Response
 
 logger = get_task_logger(__name__)
 
@@ -26,6 +24,8 @@ def fetch_all_new_runs():
 
 
 def fetch_org_new_runs(org):
+    from tracpro.polls.models import Poll, Response
+
     client = org.get_temba_client()
     r = get_redis_connection()
     last_time_key = LAST_FETCHED_RUN_TIME_KEY % org.pk
@@ -67,6 +67,8 @@ def fetch_org_updated_runs(org):
     """
     Fetches updated runs for incomplete responses
     """
+    from tracpro.polls.models import Poll, Response
+
     client = org.get_temba_client()
 
     incomplete_responses = Response.get_update_required(org)
@@ -86,11 +88,35 @@ def fetch_org_updated_runs(org):
 
 
 @task
-def restart_participants(issue_id, contact_uuids):
+def issue_start(issue_id):
+    from tracpro.polls.models import Issue, Response
+
+    issue = Issue.objects.select_related('poll', 'region').get(pk=issue_id)
+    if not issue.region:
+        raise ValueError("Can't start non-regional poll")
+
+    org = issue.poll.org
+    client = org.get_temba_client()
+
+    contact_uuids = [c.uuid for c in issue.region.get_contacts()]
+
+    runs = client.create_runs(issue.poll.flow_uuid, contact_uuids, restart_participants=True)
+    for run in runs:
+        Response.create_empty(org, issue, run)
+
+    logger.info("Create %d new runs for new poll issue #%d" % (len(runs), issue.pk))
+
+@task
+def issue_restart_participants(issue_id, contact_uuids):
     """
     Restarts the given contacts in the given poll issue
     """
+    from tracpro.polls.models import Issue
+
     issue = Issue.objects.select_related('poll').get(pk=issue_id)
+    if not issue.region:
+        raise ValueError("Can't restart participants of a non-regional poll")
+
     org = issue.poll.org
     client = org.get_temba_client()
 

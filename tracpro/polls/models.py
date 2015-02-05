@@ -9,6 +9,7 @@ from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from tracpro.contacts.models import Contact
 from tracpro.groups.models import Region
+from .tasks import issue_start
 
 
 RESPONSE_EMPTY = 'E'
@@ -108,8 +109,13 @@ class Issue(models.Model):
     conducted_on = models.DateTimeField(help_text=_("When the poll was conducted"))
 
     @classmethod
-    def create(cls, poll, region, conducted_on):
-        return cls.objects.create(poll=poll, region=region, conducted_on=conducted_on)
+    def create(cls, poll, region, conducted_on, do_start=False):
+        issue = cls.objects.create(poll=poll, region=region, conducted_on=conducted_on)
+
+        if do_start:
+            issue_start.delay(issue.pk)
+
+        return issue
 
     @classmethod
     def get_or_create_non_regional(cls, org, poll, for_date=None):
@@ -194,6 +200,16 @@ class Response(models.Model):
                               help_text=_("Current status of this response"))
 
     is_active = models.BooleanField(default=True, help_text="Whether this response is active")
+
+    @classmethod
+    def create_empty(cls, org, issue, run):
+        """
+        Creates an empty response from a run that we've just created
+        """
+        contact = Contact.get_or_fetch(org, uuid=run.contact)
+        return Response.objects.create(flow_run_id=run.id, issue=issue, contact=contact,
+                                       created_on=run.created_on, updated_on=run.created_on,
+                                       status=RESPONSE_EMPTY)
 
     @classmethod
     def get_or_create(cls, org, run, poll=None):

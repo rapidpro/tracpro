@@ -20,9 +20,10 @@
         .btn-group.pull-away
           %a.btn.btn-default{ href:"{% url 'polls.issue_list' %}" }
             - trans "View all"
-          %button.btn.btn-default{ type:"button", data-toggle:"modal", data-target:"#start-dialog" }
-            %span.glyphicon.glyphicon-send
-            - trans "Start..."
+          - if request.region
+            %button.btn.btn-default{ type:"button", data-toggle:"modal", data-target:"#start-poll-dialog" }
+              %span.glyphicon.glyphicon-send
+              - trans "Start..."
 
     .row{ ng-controller:"LatestIssuesController", ng-init:'init()' }
       .col-md-12.buttons
@@ -52,31 +53,46 @@
               %td
                 [[ issue.responses.complete ]] / [[ issue.responses.total ]]
 
-    .modal.fade{ role:"dialog", id:"start-dialog" }
-      .modal-dialog
-        .modal-content
-          .modal-header
-            %button.close{ type:"button", data-dismiss:"modal" }
-              &times;
-            %h4.modal-title
-              - trans "Start Poll"
-          .modal-body
-            %form.form-horizontal{ id:"start-poll-form" }
-              %select.form-control{ id:"start-poll" }
-                - for poll in polls
-                  %option{ value:"{{ poll.pk }}" }
-                    {{ poll.name }}
-          .modal-footer
-            %button.btn.btn-default{ type:"button", data-dismiss:"modal" }
-              -trans "Cancel"
-            %button.btn.btn-primary{ type:"button", onclick:"onStartPoll()" }
-              -trans "Start"
+    - if request.region
+      .modal.fade{ role:"dialog", id:"start-poll-dialog" }
+        .modal-dialog
+          .modal-content
+            .modal-header
+              %button.close{ type:"button", data-dismiss:"modal" }
+                &times;
+              %h4.modal-title
+                - trans "Start Poll"
+            .modal-body
+              %form.form-horizontal{ id:"start-poll-form" }
+                {% csrf_token %}
+                .form-group
+                  %label.col-sm-2.control-label{ for:"start-poll" }
+                    - trans "Poll"
+                  .col-sm-10
+                    %select.form-control{ name:"poll", style:"width: 100%" }
+                      - for poll in polls
+                        %option{ value:"{{ poll.pk }}" }
+                          {{ poll.name }}
+                .form-group
+                  %label.col-sm-2.control-label
+                    - trans "Region"
+                  .col-sm-10
+                    %input.form-control{ type:"text", style:"width: 100%", readonly:"readonly", value:'{{ request.region }}' }
+            .modal-footer
+              %button.btn.btn-default{ type:"button", data-dismiss:"modal" }
+                -trans "Cancel"
+              %button.btn.btn-primary{ type:"button", onclick:"onPollStart()" }
+                -trans "Start"
 
 
 - block extra-script
   :javascript
-    function onStartPoll() {
-      // TODO
+    function onPollStart() {
+      data = $('#start-poll-form').serialize();
+      $.post('{% url "polls.issue_start"  %}', data).success(function(data) {
+        $('#start-poll-dialog').modal('hide')
+        display_alert('success', 'Started new poll for contacts in {{ request.region }}')
+      });
     }
 
 -block extra-style

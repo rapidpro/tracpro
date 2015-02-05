@@ -29,6 +29,7 @@
             - trans "Send Message"
         .modal-body
           %form.form-horizontal{ id:"send-message-form" }
+            {% csrf_token %}
             %input{ type:"hidden", name:"issue", value:"{{ issue.pk }}" }
             .form-group
               %label.col-sm-2.control-label{ for:"cohort" }
@@ -76,6 +77,7 @@
             - trans "Restart Non-respondents"
         .modal-body
           %form{ id:"restart-form" }
+            {% csrf_token %}
             %input{ type:"hidden", name:"issue", value:"{{ issue.pk }}" }
           %p
             - if request.region

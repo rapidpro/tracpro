@@ -5,11 +5,11 @@ from django import forms
 from django.core.urlresolvers import reverse
 from django.db.models import Q
 from django.http import HttpResponseRedirect, JsonResponse
+from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
-from django.views.decorators.csrf import csrf_exempt
-from smartmin.views import SmartCRUDL, SmartListView, SmartFormView
+from smartmin.views import SmartCRUDL, SmartCreateView, SmartListView, SmartFormView
 from .models import Poll, Question, Issue, Response
-from .tasks import restart_participants
+from .tasks import issue_restart_participants
 
 
 class PollCRUDL(SmartCRUDL):
@@ -106,7 +106,7 @@ class QuestionCRUDL(SmartCRUDL):
 
 class IssueCRUDL(SmartCRUDL):
     model = Issue
-    actions = ('list', 'filter', 'restart', 'latest')
+    actions = ('list', 'filter', 'latest', 'start', 'restart')
 
     class List(OrgPermsMixin, SmartListView):
         """
@@ -184,20 +184,23 @@ class IssueCRUDL(SmartCRUDL):
             results = [i.as_json(self.request.region) for i in context['object_list']]
             return JsonResponse({'count': len(results), 'results': results})
 
-    class Restart(OrgPermsMixin, SmartFormView):
-        @csrf_exempt
-        def dispatch(self, request, *args, **kwargs):
-            return super(IssueCRUDL.Restart, self).dispatch(request, *args, **kwargs)
+    class Start(OrgPermsMixin, SmartCreateView):
+        def post(self, request, *args, **kwargs):
+            org = self.derive_org()
+            poll = Poll.objects.get(org=org, pk=request.POST.get('poll'))
+            issue = Issue.create(poll, request.region, timezone.now(), do_start=True)
+            return JsonResponse(issue.as_json(request.region))
 
+    class Restart(OrgPermsMixin, SmartFormView):
         def post(self, request, *args, **kwargs):
             org = self.derive_org()
             issue = Issue.objects.get(poll__org=org, pk=request.POST.get('issue'))
-            region = self.request.region
+            region = request.region
 
             incomplete_responses = issue.get_incomplete_responses(region)
             contact_uuids = [r.contact.uuid for r in incomplete_responses]
 
-            restart_participants.delay(issue.pk, contact_uuids)
+            issue_restart_participants.delay(issue.pk, contact_uuids)
 
             return JsonResponse({'contacts': len(contact_uuids)})
 
