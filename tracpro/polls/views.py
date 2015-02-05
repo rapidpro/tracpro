@@ -106,7 +106,7 @@ class QuestionCRUDL(SmartCRUDL):
 
 class IssueCRUDL(SmartCRUDL):
     model = Issue
-    actions = ('list', 'filter', 'restart')
+    actions = ('list', 'filter', 'restart', 'latest')
 
     class List(OrgPermsMixin, SmartListView):
         """
@@ -176,6 +176,14 @@ class IssueCRUDL(SmartCRUDL):
             context['poll'] = self.derive_poll()
             return context
 
+    class Latest(OrgPermsMixin, SmartListView):
+        def get_queryset(self):
+            return Issue.get_all(self.request.org, self.request.region).order_by('-conducted_on')[0:5]
+
+        def render_to_response(self, context, **response_kwargs):
+            results = [i.as_json(self.request.region) for i in context['object_list']]
+            return JsonResponse({'count': len(results), 'results': results})
+
     class Restart(OrgPermsMixin, SmartFormView):
         @csrf_exempt
         def dispatch(self, request, *args, **kwargs):
@@ -226,6 +234,9 @@ class ResponseCRUDL(SmartCRUDL):
                 base_fields.append('region')
             return base_fields + self.derive_questions().keys()
 
+        def derive_link_fields(self, context):
+            return 'contact',
+
         def lookup_field_label(self, context, field, default=None):
             if field.startswith('question_'):
                 question = self.derive_questions()[field]
@@ -242,6 +253,12 @@ class ResponseCRUDL(SmartCRUDL):
                 return answer.value if answer else '--'
             else:
                 return super(ResponseCRUDL.Filter, self).lookup_field_value(context, obj, field)
+
+        def lookup_field_link(self, context, field, obj):
+            if field == 'contact':
+                return reverse('contacts.contact_read', args=[obj.contact.pk])
+
+            return super(ResponseCRUDL.Filter, self).lookup_field_link(context, field, obj)
 
         def get_queryset(self, **kwargs):
             return self.derive_issue().get_responses(region=self.request.region).order_by('-created_on')

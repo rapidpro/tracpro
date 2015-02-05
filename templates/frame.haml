@@ -205,6 +205,8 @@
 
     {% compress js %}
     %script{ type:"text/coffeescript", src:"{{ STATIC_URL }}coffee/trac.coffee" }
+    %script{ type:"text/coffeescript", src:"{{ STATIC_URL }}coffee/services.coffee" }
+    %script{ type:"text/coffeescript", src:"{{ STATIC_URL }}coffee/controllers.coffee" }
     {% endcompress %}
 
     <script type="text/javascript">

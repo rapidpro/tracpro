@@ -161,6 +161,17 @@ class Issue(models.Model):
         else:
             return None
 
+    def as_json(self, region=None):
+        region_as_json = dict(id=self.region.pk, name=self.region.name) if self.region else None
+        responses_as_json = dict(complete=self.get_complete_responses(region).count(),
+                                 total=self.get_responses(region).count())
+
+        return dict(id=self.pk,
+                    poll=dict(id=self.poll.pk, name=self.poll.name),
+                    conducted_on=self.conducted_on,
+                    region=region_as_json,
+                    responses=responses_as_json)
+
     def __unicode__(self):
         return "%s (%s)" % (self.poll.name, self.conducted_on.strftime("%b %d, %Y"))
 

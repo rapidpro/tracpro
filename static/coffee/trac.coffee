@@ -1,4 +1,4 @@
-app = angular.module('trac', []);
+app = angular.module('trac', ['trac.services', 'trac.controllers']);
 
 app.config [ '$httpProvider', ($httpProvider) ->
   $httpProvider.defaults.xsrfCookieName = 'csrftoken'
