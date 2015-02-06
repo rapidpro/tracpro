@@ -288,6 +288,25 @@ class ResponseTest(TracProTest):
         self.assertEqual(Response.get_or_create(self.unicef, run), response5)
 
 
+class AnswerTest(TracProTest):
+    def test_create(self):
+        issue = Issue.create(self.poll1, None, timezone.now())
+        response = Response.create_empty(self.unicef, issue,
+                                         Run.create(id=123, contact='C-001', created_on=timezone.now()))
+
+        answer1 = Answer.create(response, self.poll1_question1, "4.00000", "1 - 5", timezone.now())
+        self.assertEqual(answer1.response, response)
+        self.assertEqual(answer1.question, self.poll1_question1)
+        self.assertEqual(answer1.category, "1 - 5")
+        self.assertEqual(answer1.value, "4.00000")
+
+        answer2 = Answer.create(response, self.poll1_question1, "rain", dict(base="Rain", rwa="Imvura"), timezone.now())
+        self.assertEqual(answer2.category, "Rain")
+
+        answer3 = Answer.create(response, self.poll1_question1, "rain", dict(eng="Yes"), timezone.now())
+        self.assertEqual(answer3.category, "Yes")
+
+
 class PollCRUDLTest(TracProTest):
     def test_list(self):
         url = reverse('polls.poll_list')

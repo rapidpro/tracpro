@@ -328,5 +328,12 @@ class Answer(models.Model):
 
     @classmethod
     def create(cls, response, question, value, category, submitted_on):
+        # category can be a string or a multi-language dict
+        if isinstance(category, dict):
+            if 'base' in category:
+                category = category['base']
+            else:
+                category = category.itervalues().next()
+
         return Answer.objects.create(response=response, question=question,
                                      value=value, category=category, submitted_on=submitted_on)
