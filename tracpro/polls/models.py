@@ -253,16 +253,13 @@ class Response(models.Model):
             poll = Poll.get_all(org).get(flow_uuid=run.flow)
 
         contact = Contact.get_or_fetch(poll.org, uuid=run.contact)
-        issue = Issue.get_or_create_non_regional(org, poll)
-
-        # if contact has an older response for this issue, retire it
-        Response.objects.filter(issue=issue, contact=contact).update(is_active=False)
 
         # organize values by ruleset UUID
         questions = poll.get_questions()
         valuesets_by_ruleset = {valueset.node: valueset for valueset in run.values}
         valuesets_by_question = {q: valuesets_by_ruleset.get(q.ruleset_uuid, None) for q in questions}
 
+        # categorize response completeness
         completed_questions = sum(1 for v in valuesets_by_question.values() if v is not None)
         if completed_questions == 0:
             status = RESPONSE_EMPTY
@@ -279,6 +276,12 @@ class Response(models.Model):
             response.status = status
             response.save(update_fields=('updated_on', 'status'))
         else:
+            # if we don't have an existing response, then this poll started in RapidPro and is non-regional
+            issue = Issue.get_or_create_non_regional(org, poll)
+
+            # if contact has an older response for this issue, retire it
+            Response.objects.filter(issue=issue, contact=contact).update(is_active=False)
+
             response = Response.objects.create(flow_run_id=run.id, issue=issue, contact=contact,
                                                created_on=run.created_on, updated_on=run_updated_on,
                                                status=status)
