@@ -9,7 +9,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('contacts', '0001_initial'),
-        ('orgs', '0009_auto_20150121_1449'),
+        ('orgs', '0008_org_timezone'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
         ('groups', '0004_auto_20150123_0909'),
         ('polls', '0014_remove_response_is_complete'),
