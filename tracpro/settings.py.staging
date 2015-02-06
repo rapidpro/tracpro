@@ -85,6 +85,8 @@ MIDDLEWARE_CLASSES = (
     'smartmin.middleware.AjaxRedirect',
     'django.middleware.locale.LocaleMiddleware',
     'dash.orgs.middleware.SetOrgMiddleware',
+    'tracpro.profiles.middleware.ForcePasswordChangeMiddleware',
+    'tracpro.groups.middleware.UserRegionsMiddleware'
 )
 
 LOGGING = {
