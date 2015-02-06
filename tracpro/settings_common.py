@@ -382,8 +382,8 @@ INTERNAL_IPS = ('127.0.0.1',)
 import djcelery
 djcelery.setup_loader()
 
-BROKER_URL = 'redis://localhost:6379/%d' % (10 if TESTING else 13)
-CELERY_RESULT_BACKEND = 'redis://localhost:6379/13'
+BROKER_URL = 'redis://localhost:6379/%d' % (10 if TESTING else 4)
+CELERY_RESULT_BACKEND = BROKER_URL
 
 CELERYBEAT_SCHEDULE = {
     'sync-contacts': {
