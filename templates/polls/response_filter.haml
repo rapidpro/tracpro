@@ -103,8 +103,8 @@
     }
 
     function onRestart() {
-    data = $('#restart-form').serialize();
-      $.post('{% url "polls.issue_restart"  %}').success(function(data) {
+      data = $('#restart-form').serialize();
+      $.post('{% url "polls.issue_restart"  %}', data).success(function(data) {
         $('#restart-dialog').modal('hide')
         display_alert('success', "Restarted poll for " + data.contacts + " contacts")
       });
