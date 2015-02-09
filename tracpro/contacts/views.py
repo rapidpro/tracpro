@@ -1,5 +1,6 @@
 from __future__ import absolute_import, unicode_literals
 
+from collections import OrderedDict
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from dash.utils.sync import ChangeType
 from django.core.exceptions import PermissionDenied
@@ -210,8 +211,9 @@ class ContactCRUDL(SmartCRUDL):
             if hasattr(self, '_issues'):
                 return self._issues
 
-            latest_issues = Issue.get_all(self.request.org, self.request.region).order_by('-conducted_on')[0:3]
-            self._issues = {'issue_%d' % i.pk: i for i in latest_issues}
+            self._issues = OrderedDict()
+            for issue in Issue.get_all(self.request.org, self.request.region).order_by('-conducted_on')[0:3]:
+                self._issues['issue_%d' % issue.pk] = issue
             return self._issues
 
         def derive_queryset(self, **kwargs):
