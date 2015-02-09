@@ -1,5 +1,6 @@
 from __future__ import absolute_import, unicode_literals
 
+from collections import OrderedDict
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from django import forms
 from django.core.urlresolvers import reverse
@@ -172,7 +173,9 @@ class ResponseCRUDL(SmartCRUDL):
             if hasattr(self, '_questions'):
                 return self._questions
 
-            self._questions = {'question_%d' % q.pk: q for q in self.derive_issue().poll.questions.all()}
+            self._questions = OrderedDict()
+            for question in self.derive_issue().poll.get_questions():
+                self._questions['question_%d' % question.pk] = question
             return self._questions
 
         def derive_fields(self):

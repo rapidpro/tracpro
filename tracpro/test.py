@@ -54,12 +54,12 @@ class TracProTest(TestCase):
 
         # a poll with some questions
         self.poll1 = Poll.create(self.unicef, "Farm Poll", 'F-001')
-        self.poll1_question1 = Question.create(self.poll1, "Number of sheep", 'RS-001')
-        self.poll1_question2 = Question.create(self.poll1, "Number of goats", 'RS-002')
+        self.poll1_question1 = Question.create(self.poll1, "Number of sheep", 1, 'RS-001')
+        self.poll1_question2 = Question.create(self.poll1, "Number of goats", 2, 'RS-002')
 
         # and a poll for the other org
         self.poll2 = Poll.create(self.nyaruka, "Code Poll", 'F-002')
-        self.poll2_question1 = Question.create(self.poll2, "Number of bugs", 'RS-003')
+        self.poll2_question1 = Question.create(self.poll2, "Number of bugs", 1, 'RS-003')
 
     def create_org(self, name, timezone, subdomain):
         return Org.objects.create(name=name, timezone=timezone, subdomain=subdomain, api_token=unicode(uuid4()),

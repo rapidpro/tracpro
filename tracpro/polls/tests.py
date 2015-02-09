@@ -79,6 +79,10 @@ class PollTest(TracProTest):
         # shouldn't include any responses from older issue
         self.assertEqual(list(Response.get_update_required(self.unicef)), [response3])
 
+    def test_get_questions(self):
+        self.assertEqual(list(self.poll1.get_questions()), [self.poll1_question1, self.poll1_question2])
+        self.assertEqual(list(self.poll2.get_questions()), [self.poll2_question1])
+
 
 class IssueTest(TracProTest):
     def test_get_or_create_non_regional(self):

@@ -61,21 +61,24 @@ class Poll(models.Model):
         # de-activate any existing questions no longer included
         self.questions.exclude(ruleset_uuid=[r.uuid for r in rulesets]).update(is_active=False)
 
+        order = 1
         for ruleset in rulesets:
             question = self.questions.filter(ruleset_uuid=ruleset.uuid).first()
             if question:
                 question.text = ruleset.label
                 question.is_active = True
+                question.order = order
                 question.save()
             else:
-                Question.create(self, ruleset.label, ruleset.uuid)
+                Question.create(self, ruleset.label, order, ruleset.uuid)
+            order += 1
 
     @classmethod
     def get_all(cls, org):
         return org.polls.filter(is_active=True)
 
     def get_questions(self):
-        return self.questions.filter(is_active=True)
+        return self.questions.filter(is_active=True).order_by('order')
 
     def __unicode__(self):
         return self.name
@@ -93,9 +96,11 @@ class Question(models.Model):
 
     is_active = models.BooleanField(default=True, help_text="Whether this item is active")
 
+    order = models.IntegerField()
+
     @classmethod
-    def create(cls, poll, text, ruleset_uuid):
-        return cls.objects.create(poll=poll, text=text, ruleset_uuid=ruleset_uuid)
+    def create(cls, poll, text, order, ruleset_uuid):
+        return cls.objects.create(poll=poll, text=text, order=order, ruleset_uuid=ruleset_uuid)
 
 
 class Issue(models.Model):
