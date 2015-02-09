@@ -116,55 +116,54 @@ class IssueTest(TracProTest):
 
         # issue with no responses (complete or incomplete) has null completion
         issue = Issue.create(self.poll1, None, date1)
-        self.assertEqual(issue.get_completion(), None)
 
         # add a incomplete response from contact in region #1
         response1 = Response.objects.create(flow_run_id=123, issue=issue, contact=self.contact1,
                                             created_on=date1, updated_on=date1, status=RESPONSE_EMPTY)
 
         self.assertEqual(list(issue.get_responses()), [response1])
-        self.assertEqual(list(issue.get_complete_responses()), [])
-        self.assertEqual(issue.get_completion(), 0)
+        self.assertEqual(issue.get_response_counts(),
+                         {RESPONSE_EMPTY: 1, RESPONSE_PARTIAL: 0, RESPONSE_COMPLETE: 0})
 
         self.assertEqual(list(issue.get_responses(self.region1)), [response1])
-        self.assertEqual(list(issue.get_complete_responses(self.region1)), [])
-        self.assertEqual(issue.get_completion(self.region1), 0)
+        self.assertEqual(issue.get_response_counts(self.region1),
+                         {RESPONSE_EMPTY: 1, RESPONSE_PARTIAL: 0, RESPONSE_COMPLETE: 0})
 
         self.assertEqual(list(issue.get_responses(self.region2)), [])
-        self.assertEqual(list(issue.get_complete_responses(self.region2)), [])
-        self.assertEqual(issue.get_completion(self.region2), None)
+        self.assertEqual(issue.get_response_counts(self.region2),
+                         {RESPONSE_EMPTY: 0, RESPONSE_PARTIAL: 0, RESPONSE_COMPLETE: 0})
 
         # add a complete response from another contact in region #1
         response2 = Response.objects.create(flow_run_id=234, issue=issue, contact=self.contact2,
                                             created_on=date1, updated_on=date1, status=RESPONSE_COMPLETE)
 
         self.assertEqual(list(issue.get_responses().order_by('pk')), [response1, response2])
-        self.assertEqual(list(issue.get_complete_responses()), [response2])
-        self.assertEqual(issue.get_completion(), 0.5)
+        self.assertEqual(issue.get_response_counts(),
+                         {RESPONSE_EMPTY: 1, RESPONSE_PARTIAL: 0, RESPONSE_COMPLETE: 1})
 
         self.assertEqual(list(issue.get_responses(self.region1).order_by('pk')), [response1, response2])
-        self.assertEqual(list(issue.get_complete_responses(self.region1)), [response2])
-        self.assertEqual(issue.get_completion(self.region1), 0.5)
+        self.assertEqual(issue.get_response_counts(self.region1),
+                         {RESPONSE_EMPTY: 1, RESPONSE_PARTIAL: 0, RESPONSE_COMPLETE: 1})
 
         self.assertEqual(list(issue.get_responses(self.region2)), [])
-        self.assertEqual(list(issue.get_complete_responses(self.region2)), [])
-        self.assertEqual(issue.get_completion(self.region2), None)
+        self.assertEqual(issue.get_response_counts(self.region2),
+                         {RESPONSE_EMPTY: 0, RESPONSE_PARTIAL: 0, RESPONSE_COMPLETE: 0})
 
         # add a complete response from contact in different region
         response3 = Response.objects.create(flow_run_id=345, issue=issue, contact=self.contact4,
                                             created_on=date1, updated_on=date1, status=RESPONSE_COMPLETE)
 
         self.assertEqual(list(issue.get_responses().order_by('pk')), [response1, response2, response3])
-        self.assertEqual(list(issue.get_complete_responses().order_by('pk')), [response2, response3])
-        self.assertEqual(issue.get_completion(), (2 / 3.0))
+        self.assertEqual(issue.get_response_counts(),
+                         {RESPONSE_EMPTY: 1, RESPONSE_PARTIAL: 0, RESPONSE_COMPLETE: 2})
 
         self.assertEqual(list(issue.get_responses(self.region1).order_by('pk')), [response1, response2])
-        self.assertEqual(list(issue.get_complete_responses(self.region1)), [response2])
-        self.assertEqual(issue.get_completion(self.region1), 0.5)
+        self.assertEqual(issue.get_response_counts(self.region1),
+                         {RESPONSE_EMPTY: 1, RESPONSE_PARTIAL: 0, RESPONSE_COMPLETE: 1})
 
         self.assertEqual(list(issue.get_responses(self.region2)), [response3])
-        self.assertEqual(list(issue.get_complete_responses(self.region2)), [response3])
-        self.assertEqual(issue.get_completion(self.region2), 1)
+        self.assertEqual(issue.get_response_counts(self.region2),
+                         {RESPONSE_EMPTY: 0, RESPONSE_PARTIAL: 0, RESPONSE_COMPLETE: 1})
 
     def test_is_last_for_region(self):
         issue1 = Issue.create(self.poll1, self.region1, timezone.now())

@@ -8,7 +8,7 @@ from django.http import HttpResponseRedirect, JsonResponse
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from smartmin.views import SmartCRUDL, SmartCreateView, SmartReadView, SmartListView, SmartFormView
-from .models import Poll, Issue, Response
+from .models import Poll, Issue, Response, RESPONSE_EMPTY, RESPONSE_PARTIAL, RESPONSE_COMPLETE
 from .tasks import issue_restart_participants
 
 
@@ -92,7 +92,7 @@ class IssueCRUDL(SmartCRUDL):
         """
         All issues in current region
         """
-        fields = ('poll', 'conducted_on', 'region', 'sent_to', 'responses')
+        fields = ('poll', 'conducted_on', 'region', 'responses')
         default_order = ('-conducted_on',)
 
         def derive_title(self):
@@ -104,11 +104,10 @@ class IssueCRUDL(SmartCRUDL):
         def derive_queryset(self, **kwargs):
             return Issue.get_all(self.request.org, self.request.region)
 
-        def get_sent_to(self, obj):
-            return obj.get_responses(self.request.region).count()
-
         def get_responses(self, obj):
-            return obj.get_complete_responses(self.request.region).count()
+            counts = obj.get_response_counts(self.request.region)
+            total = counts[RESPONSE_EMPTY] + counts[RESPONSE_PARTIAL] + counts[RESPONSE_COMPLETE]
+            return "%d / %d" % (counts[RESPONSE_COMPLETE], total)
 
         def get_region(self, obj):
             return obj.region if obj.region else _("All")
@@ -222,9 +221,11 @@ class ResponseCRUDL(SmartCRUDL):
             # can only restart regional polls and if they're the last issue
             can_restart = self.request.region and issue.is_last_for_region(self.request.region)
 
+            counts = issue.get_response_counts(self.request.region)
+
             context['issue'] = issue
             context['can_restart'] = can_restart
-            context['response_count'] = issue.get_responses(self.request.region).count()
-            context['complete_response_count'] = issue.get_complete_responses(self.request.region).count()
-            context['incomplete_response_count'] = context['response_count'] - context['complete_response_count']
+            context['response_count'] = counts[RESPONSE_EMPTY] + counts[RESPONSE_PARTIAL] + counts[RESPONSE_COMPLETE]
+            context['complete_response_count'] = counts[RESPONSE_COMPLETE]
+            context['incomplete_response_count'] = counts[RESPONSE_EMPTY] + counts[RESPONSE_PARTIAL]
             return context

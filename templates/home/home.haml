@@ -1,6 +1,5 @@
 - extends "smartmin/base.html"
 - load smartmin i18n compress
-- load polls
 
 - block pre-content
 
@@ -53,7 +52,7 @@
                   All
               %td
                 %a{ href:"/response/filter/[[ issue.id ]]/" }
-                  [[ issue.responses.complete ]] / [[ issue.responses.total ]]
+                  [[ issue.responses.C ]] / [[ issue.responses.E + issue.responses.P + issue.responses.C ]]
 
       .col-md-12.loading{ ng-if:"loading" }
 

@@ -6,7 +6,7 @@ from django.db import models
 from django.utils.translation import ugettext_lazy as _
 from tracpro.contacts.models import Contact
 from tracpro.groups.models import Region
-from tracpro.polls.models import Issue
+from tracpro.polls.models import Issue, RESPONSE_COMPLETE
 from .tasks import send_message
 
 MESSAGE_MAX_LEN = 640
@@ -58,9 +58,9 @@ class Message(models.Model):
         if cohort == COHORT_ALL:
             responses = issue.get_responses(region)
         elif cohort == COHORT_RESPONDENTS:
-            responses = issue.get_complete_responses(region)
+            responses = issue.get_responses(region).filter(status=RESPONSE_COMPLETE)
         elif cohort == COHORT_NONRESPONDENTS:
-            responses = issue.get_incomplete_responses(region)
+            responses = issue.get_responses(region).exclude(status=RESPONSE_COMPLETE)
         else:  # pragma: no cover
             raise ValueError("Invalid cohort code: %s" % cohort)
 

@@ -4,7 +4,7 @@ import pytz
 
 from dash.orgs.models import Org
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from tracpro.contacts.models import Contact
@@ -164,21 +164,12 @@ class Issue(models.Model):
 
         return responses.select_related('contact')
 
-    def get_complete_responses(self, region=None):
-        return self.get_responses(region).filter(status=RESPONSE_COMPLETE)
+    def get_response_counts(self, region=None):
+        status_counts = self.get_responses(region).values('status').annotate(count=Count('status'))
 
-    def get_incomplete_responses(self, region=None):
-        return self.get_responses(region).exclude(status=RESPONSE_COMPLETE)
-
-    def get_completion(self, region=None):
-        """
-        Gets the completion level for this issue. An issue with no responses (complete or incomplete) returns None
-        """
-        total_responses = self.get_responses(region).count()
-        if total_responses:
-            return self.get_complete_responses(region).count() / float(total_responses)
-        else:
-            return None
+        base = {RESPONSE_EMPTY: 0, RESPONSE_PARTIAL: 0, RESPONSE_COMPLETE: 0}
+        base.update({sc['status']: sc['count'] for sc in status_counts})
+        return base
 
     def is_last_for_region(self, region):
         """
@@ -193,16 +184,20 @@ class Issue(models.Model):
         newer_issues = newer_issues.filter(Q(region=None) | Q(region=region))
         return not newer_issues.exists()
 
+    def get_answers_to(self, question):
+        """
+        Gets all answers from active responses for this issue, to the given question
+        """
+        return Answer.objects.filter(response__issue=self, response__is_active=True, question=question)
+
     def as_json(self, region=None):
         region_as_json = dict(id=self.region.pk, name=self.region.name) if self.region else None
-        responses_as_json = dict(complete=self.get_complete_responses(region).count(),
-                                 total=self.get_responses(region).count())
 
         return dict(id=self.pk,
                     poll=dict(id=self.poll.pk, name=self.poll.name),
                     conducted_on=self.conducted_on,
                     region=region_as_json,
-                    responses=responses_as_json)
+                    responses=self.get_response_counts(region))
 
     def __unicode__(self):
         return "%s (%s)" % (self.poll.name, self.conducted_on.strftime("%b %d, %Y"))
