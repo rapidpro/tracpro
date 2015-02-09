@@ -27,4 +27,6 @@ services.factory 'PollService', ['$http', ($http) ->
           issue.conducted_on = parse_iso8601 issue.conducted_on
 
         callback(data.results)
+      .error (data, status, headers, config) =>
+        console.error("Problem fetching latest poll issues. Server returned " + status)
 ]
