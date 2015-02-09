@@ -308,7 +308,7 @@ PERMISSIONS = {
 
     'polls.poll': ('read', 'list', 'select'),
 
-    'polls.issue': ('list', 'latest', 'start', 'restart'),
+    'polls.issue': ('read', 'list', 'latest', 'start', 'restart'),
 
     'polls.response': ('filter',),
 
@@ -335,6 +335,7 @@ GROUP_PERMISSIONS = {
         'contacts.contact.*',
         'msgs.message_send',
         'polls.poll_read',
+        'polls.issue_read',
         'polls.issue_latest',
         'polls.issue_list',
         'polls.issue_start',

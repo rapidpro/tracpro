@@ -86,7 +86,21 @@ class PollCRUDL(SmartCRUDL):
 
 class IssueCRUDL(SmartCRUDL):
     model = Issue
-    actions = ('list', 'latest', 'start', 'restart')
+    actions = ('read', 'list', 'latest', 'start', 'restart')
+
+    class Read(OrgPermsMixin, SmartReadView):
+        def get_queryset(self):
+            return Issue.get_all(self.request.org, self.request.region)
+
+        def get_context_data(self, **kwargs):
+            context = super(IssueCRUDL.Read, self).get_context_data(**kwargs)
+
+            response_counts = self.object.get_response_counts(self.request.region)
+            questions = self.object.poll.get_questions()
+
+            context['response_counts'] = response_counts
+            context['questions'] = questions
+            return context
 
     class List(OrgPermsMixin, SmartListView):
         """

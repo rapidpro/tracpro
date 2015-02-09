@@ -9,6 +9,14 @@
     - blocktrans with region=request.region
       These are the responses for <strong>{{ region }}</strong>. Poll was also conducted in other regions.
 
+  %ul.nav.nav-tabs{ style:"margin-bottom: 1em" }
+    %li
+      %a{ href:"{% url 'polls.issue_read' issue.pk %}" }
+        - trans "Summary"
+    %li.active
+      %a{ href:"{% url 'polls.response_filter' issue.pk %}" }
+        - trans "Responses"
+
 - block table-buttons
   .btn-group.pull-right
     %a.btn.btn-default{ type:"button", data-toggle:"modal", data-target:"#send-message-dialog" }
