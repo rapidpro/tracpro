@@ -2,7 +2,7 @@ from __future__ import absolute_import, unicode_literals
 
 from dash.orgs.views import OrgPermsMixin
 from django import forms
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, JsonResponse
 from django.utils.translation import ugettext_lazy as _
 from smartmin.users.views import SmartCRUDL, SmartListView, SmartFormView
 from .models import Group, Region
@@ -28,7 +28,7 @@ class ContactGroupsForm(forms.Form):
 
 class RegionCRUDL(SmartCRUDL):
     model = Region
-    actions = ('list', 'select')
+    actions = ('list', 'active', 'select')
 
     class List(OrgPermsMixin, SmartListView):
         fields = ('name', 'contacts')
@@ -39,6 +39,12 @@ class RegionCRUDL(SmartCRUDL):
 
         def get_contacts(self, obj):
             return obj.get_contacts().count()
+
+    class Active(OrgPermsMixin, SmartListView):
+        def get(self, request, *args, **kwargs):
+            regions = Region.get_most_active(self.request.org)[0:5]
+            results = [{'id': r.pk, 'name': r.name, 'response_count': r.response_count} for r in regions]
+            return JsonResponse({'count': len(results), 'results': results})
 
     class Select(OrgPermsMixin, SmartFormView):
         title = _("Region Groups")
@@ -61,7 +67,7 @@ class RegionCRUDL(SmartCRUDL):
 
 class GroupCRUDL(SmartCRUDL):
     model = Group
-    actions = ('list', 'select')
+    actions = ('list', 'active', 'select')
 
     class List(OrgPermsMixin, SmartListView):
         fields = ('name', 'contacts')
@@ -72,6 +78,12 @@ class GroupCRUDL(SmartCRUDL):
 
         def get_contacts(self, obj):
             return obj.get_contacts().count()
+
+    class Active(OrgPermsMixin, SmartListView):
+        def get(self, request, *args, **kwargs):
+            regions = Group.get_most_active(self.request.org)[0:5]
+            results = [{'id': r.pk, 'name': r.name, 'response_count': r.response_count} for r in regions]
+            return JsonResponse({'count': len(results), 'results': results})
 
     class Select(OrgPermsMixin, SmartFormView):
         title = _("Reporter Groups")

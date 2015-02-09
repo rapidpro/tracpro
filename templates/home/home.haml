@@ -11,19 +11,16 @@
 
   - else
     .page-header
+      .btn-group.pull-away
+        %a.btn.btn-default{ href:"{% url 'polls.issue_list' %}" }
+          %span.glyphicon.glyphicon-th-list
+          - trans "View All"
+        - if request.region
+          %button.btn.btn-default{ type:"button", data-toggle:"modal", data-target:"#start-poll-dialog" }
+            %span.glyphicon.glyphicon-send
+            - trans "Start..."
       %h2
         - trans "Latest Polls"
-
-    .row
-      .col-md-12.buttons
-        .btn-group.pull-away
-          %a.btn.btn-default{ href:"{% url 'polls.issue_list' %}" }
-            %span.glyphicon.glyphicon-th-list
-            - trans "View all"
-          - if request.region
-            %button.btn.btn-default{ type:"button", data-toggle:"modal", data-target:"#start-poll-dialog" }
-              %span.glyphicon.glyphicon-send
-              - trans "Start..."
 
     .row{ ng-controller:"LatestIssuesController", ng-init:'init()' }
       .col-md-12
@@ -86,6 +83,64 @@
                 -trans "Cancel"
               %button.btn.btn-primary{ type:"button", onclick:"onPollStart()" }
                 -trans "Start"
+
+    .row
+      .col-md-6
+        .page-header
+          - if org_perms.groups.region_list
+            %a.btn.btn-default.pull-away{ href:"{% url 'groups.region_list' %}" }
+              %span.glyphicon.glyphicon-th-list
+              - trans "View All"
+          %h2
+            - trans "Active Regions"
+
+        .{ ng-controller:"ActiveRegionsController", ng-init:'init()' }
+          %p
+            Regions with most responses in the last day:
+          %table.table.table-striped{ style:"width: 100%" }
+            %thead
+              %tr
+                %th
+                  - trans "Region"
+                %th
+                  - trans "Responses"
+            %tbody
+              %tr{ ng-repeat:"region in regions" }
+                %td
+                  [[ region.name ]]
+                %td
+                  [[ region.response_count ]]
+
+          .loading{ ng-if:"loading" }
+
+      .col-md-6
+        .page-header
+          - if org_perms.groups.group_list
+            %a.btn.btn-default.pull-away{ href:"{% url 'groups.group_list' %}" }
+              %span.glyphicon.glyphicon-th-list
+              - trans "View All"
+          %h2
+            - trans "Active Groups"
+
+        .{ ng-controller:"ActiveGroupsController", ng-init:'init()' }
+          %p
+            Reporting groups with most responses in the last day:
+          %table.table.table-striped{ style:"width: 100%" }
+            %thead
+              %tr
+                %th
+                  - trans "Group"
+                %th
+                  - trans "Responses"
+            %tbody
+              %tr{ ng-repeat:"group in groups" }
+                %td
+                  [[ group.name ]]
+                %td
+                  [[ group.response_count ]]
+
+          .loading{ ng-if:"loading" }
+
 
 
 - block extra-script

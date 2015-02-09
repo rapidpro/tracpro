@@ -1,8 +1,12 @@
 from __future__ import absolute_import, unicode_literals
 
+import datetime
+
 from dash.orgs.models import Org
 from django.contrib.auth.models import User
 from django.db import models
+from django.db.models import Count
+from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from tracpro.contacts.tasks import sync_org_contacts
 
@@ -48,6 +52,34 @@ class AbstractGroup(models.Model):
     @classmethod
     def get_all(cls, org):
         return cls.objects.filter(org=org, is_active=True)
+
+    @classmethod
+    def get_response_counts(cls, org, last_day=True):
+        from tracpro.polls.models import Response
+        qs = Response.objects.filter(issue__poll__org=org, is_active=True)
+
+        if last_day:
+            one_day_ago = timezone.now() - datetime.timedelta(days=1)
+            qs = qs.filter(updated_on__gte=one_day_ago)
+
+        field = 'contact__%s' % cls.__name__.lower()
+
+        qs = qs.filter(**{'%s__is_active' % field: True})
+        counts = qs.values(field).annotate(count=Count(field))
+        return {count[field]: count['count'] for count in counts}
+
+    @classmethod
+    def get_most_active(cls, org):
+        count_by_id = cls.get_response_counts(org, last_day=True)
+
+        groups = []
+        for group in cls.get_all(org):
+            count = count_by_id.get(group.pk, 0)
+            if count:
+                group.response_count = count
+                groups.append(group)
+
+        return sorted(groups, key=lambda g: g.response_count, reverse=True)
 
     def get_contacts(self):
         return self.contacts.filter(is_active=True)
