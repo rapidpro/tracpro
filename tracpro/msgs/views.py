@@ -42,7 +42,7 @@ class MessageCRUDL(SmartCRUDL):
 
         def lookup_field_link(self, context, field, obj):
             if field == 'issue':
-                return reverse('polls.response_filter', args=[obj.pk])
+                return reverse('polls.issue_read', args=[obj.issue.pk])
 
             return super(MessageCRUDL.List, self).lookup_field_link(context, field, obj)
 
