@@ -27,6 +27,42 @@
     %h3
       {{ question.order }}. {{ question.text }}
 
-    .{ style:"border: 3px dashed #DDD; padding: 3em" }
-      Swanky chart goes here
+    .chart{ data-chart-type:"pie", data-question-id:"{{ question.pk }}", style:"min-width: 310px; height: 400px; max-width: 600px; margin: 0 auto" }
 
+    %script{ type:"text/javascript" }
+      var chart_{{ question.pk }}_data = {{ question.chart_data }};
+
+
+- block extra-script
+  :javascript
+    $(function() {
+      $('.chart').each(function() {
+        var container = $(this);
+        var chart_type = container.data('chart-type');
+        var question_id = container.data('question-id');
+        var data = eval('chart_' + question_id + '_data');
+
+        if (chart_type == 'pie') {
+          init_pie_chart(container, data);
+        }
+      });
+    });
+
+    function init_pie_chart(container, data) {
+      container.highcharts({
+        title: null,
+        tooltip: { enabled: false },
+        plotOptions: {
+          pie: {
+            dataLabels: {
+              enabled: true,
+              format: '<b>{point.name}</b>: {point.percentage:.1f} %',
+              style: {
+                color: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
+              }
+            }
+          }
+        },
+        series: [{type: 'pie', data: data}]
+      });
+    }

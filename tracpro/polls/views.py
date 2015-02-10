@@ -1,11 +1,14 @@
 from __future__ import absolute_import, unicode_literals
 
-from collections import OrderedDict
+import json
+
+from collections import OrderedDict, Counter
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from django import forms
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect, JsonResponse
 from django.utils import timezone
+from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 from smartmin.views import SmartCRUDL, SmartCreateView, SmartReadView, SmartListView, SmartFormView
 from .models import Poll, Issue, Response, RESPONSE_EMPTY, RESPONSE_PARTIAL, RESPONSE_COMPLETE
@@ -97,6 +100,16 @@ class IssueCRUDL(SmartCRUDL):
 
             response_counts = self.object.get_response_counts(self.request.region)
             questions = self.object.poll.get_questions()
+
+            for question in questions:
+                answers = self.object.get_answers_to(question)
+                category_counts = Counter([answer.category for answer in answers])
+
+                # TODO what to do for questions that are open-ended
+                # is_open_ended = len(category_counts.keys()) == 1
+
+                data = [[category, count] for category, count in category_counts.iteritems()]
+                question.chart_data = mark_safe(json.dumps(data))
 
             context['response_counts'] = response_counts
             context['questions'] = questions
