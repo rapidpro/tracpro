@@ -83,14 +83,14 @@ class Contact(models.Model):
 
     @classmethod
     def kwargs_from_temba(cls, org, temba_contact):
-        org_region_uuids = [r.uuid for r in org.regions.all()]
+        org_region_uuids = [r.uuid for r in Region.get_all(org)]
         region_uuids = intersection(org_region_uuids, temba_contact.groups)
         region = Region.objects.get(org=org, uuid=region_uuids[0]) if region_uuids else None
 
         if not region:  # pragma: no cover
             raise ValueError("No region with UUID in %s" % ", ".join(temba_contact.groups))
 
-        org_group_uuids = [g.uuid for g in org.groups.all()]
+        org_group_uuids = [g.uuid for g in Group.get_all(org)]
         group_uuids = intersection(org_group_uuids, temba_contact.groups)
         group = Group.objects.get(org=org, uuid=group_uuids[0]) if group_uuids else None
 
