@@ -31,7 +31,8 @@ class RegionTest(TracProTest):
     @patch('dash.orgs.models.TembaClient.get_groups')
     @patch('dash.orgs.models.TembaClient.get_contacts')
     def test_sync_with_groups(self, mock_get_contacts, mock_get_groups):
-        mock_get_groups.return_value = [TembaGroup.create(uuid='G-101', name="New region", size=2)]
+        mock_get_groups.return_value = [TembaGroup.create(uuid='G-101', name="New region", size=2),
+                                        TembaGroup.create(uuid='G-102', name="Other region", size=1)]
         mock_get_contacts.return_value = [
             TembaContact.create(uuid='C-101', name="Jan", urns=['tel:123'], groups=['G-101', 'G-005'],
                                 fields=dict(chat_name="jan"), language='eng', modified_on=timezone.now()),

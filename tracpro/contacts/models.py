@@ -28,7 +28,7 @@ class Contact(models.Model):
     region = models.ForeignKey(Region, verbose_name=_("Region"), related_name='contacts',
                                help_text=_("Region or state this contact lives in"))
 
-    group = models.ForeignKey(Group, verbose_name=_("Reporter group"), related_name='contacts')
+    group = models.ForeignKey(Group, null=True, verbose_name=_("Reporter group"), related_name='contacts')
 
     is_active = models.BooleanField(default=True, help_text=_("Whether this contact is active"))
 
@@ -94,18 +94,19 @@ class Contact(models.Model):
         group_uuids = intersection(org_group_uuids, temba_contact.groups)
         group = Group.objects.get(org=org, uuid=group_uuids[0]) if group_uuids else None
 
-        if not group:  # pragma: no cover
-            raise ValueError("No reporting group with UUID in %s" % ", ".join(temba_contact.groups))
-
         return dict(org=org, name=temba_contact.name, urn=temba_contact.urns[0],
                     region=region, group=group, uuid=temba_contact.uuid)
 
     def as_temba(self):
+        groups = [self.region.uuid]
+        if self.group_id:
+            groups.append(self.group.uuid)
+
         temba_contact = TembaContact()
         temba_contact.name = self.name
         temba_contact.urns = [self.urn]
         temba_contact.fields = {}
-        temba_contact.groups = [self.region.uuid, self.group.uuid]
+        temba_contact.groups = groups
         temba_contact.uuid = self.uuid
         return temba_contact
 
