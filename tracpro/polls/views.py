@@ -90,7 +90,27 @@ class PollCRUDL(SmartCRUDL):
 
 class IssueCRUDL(SmartCRUDL):
     model = Issue
-    actions = ('read', 'participation', 'list', 'latest', 'start', 'restart')
+    actions = ('create', 'restart', 'read', 'participation', 'list', 'latest')
+
+    class Create(OrgPermsMixin, SmartCreateView):
+        def post(self, request, *args, **kwargs):
+            org = self.derive_org()
+            poll = Poll.objects.get(org=org, pk=request.POST.get('poll'))
+            issue = Issue.create_regional(self.request.user, poll, request.region, timezone.now(), do_start=True)
+            return JsonResponse(issue.as_json(request.region))
+
+    class Restart(OrgPermsMixin, SmartFormView):
+        def post(self, request, *args, **kwargs):
+            org = self.derive_org()
+            issue = Issue.objects.get(poll__org=org, pk=request.POST.get('issue'))
+            region = request.region
+
+            incomplete_responses = issue.get_incomplete_responses(region)
+            contact_uuids = [r.contact.uuid for r in incomplete_responses]
+
+            issue_restart_participants.delay(issue.pk, contact_uuids)
+
+            return JsonResponse({'contacts': len(contact_uuids)})
 
     class Read(OrgPermsMixin, SmartReadView):
         def get_queryset(self):
@@ -209,26 +229,6 @@ class IssueCRUDL(SmartCRUDL):
         def render_to_response(self, context, **response_kwargs):
             results = [i.as_json(self.request.region) for i in context['object_list']]
             return JsonResponse({'count': len(results), 'results': results})
-
-    class Start(OrgPermsMixin, SmartCreateView):
-        def post(self, request, *args, **kwargs):
-            org = self.derive_org()
-            poll = Poll.objects.get(org=org, pk=request.POST.get('poll'))
-            issue = Issue.create(poll, request.region, timezone.now(), do_start=True)
-            return JsonResponse(issue.as_json(request.region))
-
-    class Restart(OrgPermsMixin, SmartFormView):
-        def post(self, request, *args, **kwargs):
-            org = self.derive_org()
-            issue = Issue.objects.get(poll__org=org, pk=request.POST.get('issue'))
-            region = request.region
-
-            incomplete_responses = issue.get_incomplete_responses(region)
-            contact_uuids = [r.contact.uuid for r in incomplete_responses]
-
-            issue_restart_participants.delay(issue.pk, contact_uuids)
-
-            return JsonResponse({'contacts': len(contact_uuids)})
 
 
 class ResponseCRUDL(SmartCRUDL):

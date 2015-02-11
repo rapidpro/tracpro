@@ -308,7 +308,7 @@ PERMISSIONS = {
 
     'polls.poll': ('read', 'list', 'select'),
 
-    'polls.issue': ('read', 'participation', 'list', 'latest', 'start', 'restart'),
+    'polls.issue': ('create', 'restart', 'read', 'participation', 'list', 'latest'),
 
     'polls.response': ('filter',),
 
@@ -337,12 +337,12 @@ GROUP_PERMISSIONS = {
         'groups.region_active',
         'msgs.message_send',
         'polls.poll_read',
+        'polls.issue_create',
+        'polls.issue_restart',
         'polls.issue_read',
         'polls.issue_participation',
         'polls.issue_latest',
         'polls.issue_list',
-        'polls.issue_start',
-        'polls.issue_restart',
         'polls.response_filter',
         'profiles.profile_user_read',
     ),

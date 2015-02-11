@@ -146,9 +146,9 @@
 
 - block extra-script
   :javascript
-    function onPollStart() {
+    function onPollCreate() {
       data = $('#start-poll-form').serialize();
-      $.post('{% url "polls.issue_start"  %}', data).success(function(data) {
+      $.post('{% url "polls.issue_create"  %}', data).success(function(data) {
         $('#start-poll-dialog').modal('hide')
         display_alert('success', 'Started new poll for contacts in {{ request.region }}')
       });

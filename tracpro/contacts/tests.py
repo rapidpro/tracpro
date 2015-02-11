@@ -163,7 +163,7 @@ class ContactCRUDLTest(TracProTest):
         self.assertEqual(response.status_code, 404)
 
     def test_list(self):
-        issue1 = Issue.create(self.poll1, None, self.datetime(2014, 12, 1))
+        issue1 = Issue.objects.create(poll=self.poll1, region=None, conducted_on=self.datetime(2014, 12, 1))
         Response.create_empty(self.unicef, issue1, Run.create(id=123, contact='C-001', created_on=timezone.now()))
 
         self.login(self.admin)

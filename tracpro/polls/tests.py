@@ -115,7 +115,7 @@ class IssueTest(TracProTest):
         date1 = self.datetime(2014, 1, 1, 7, 0)
 
         # issue with no responses (complete or incomplete) has null completion
-        issue = Issue.create(self.poll1, None, date1)
+        issue = Issue.objects.create(poll=self.poll1, conducted_on=date1)
 
         # add a incomplete response from contact in region #1
         response1 = Response.objects.create(flow_run_id=123, issue=issue, contact=self.contact1,
@@ -166,9 +166,9 @@ class IssueTest(TracProTest):
                          {RESPONSE_EMPTY: 0, RESPONSE_PARTIAL: 0, RESPONSE_COMPLETE: 1})
 
     def test_is_last_for_region(self):
-        issue1 = Issue.create(self.poll1, self.region1, timezone.now())
-        issue2 = Issue.create(self.poll1, None, timezone.now())
-        issue3 = Issue.create(self.poll1, self.region2, timezone.now())
+        issue1 = Issue.objects.create(poll=self.poll1, region=self.region1, conducted_on=timezone.now())
+        issue2 = Issue.objects.create(poll=self.poll1, region=None, conducted_on=timezone.now())
+        issue3 = Issue.objects.create(poll=self.poll1, region=self.region2, conducted_on=timezone.now())
 
         self.assertFalse(issue1.is_last_for_region(self.region1))  # issue #2 covers region #1 and is newer
         self.assertFalse(issue1.is_last_for_region(self.region2))  # issue #1 didn't cover region #2
@@ -293,7 +293,7 @@ class ResponseTest(TracProTest):
 
 class AnswerTest(TracProTest):
     def test_create(self):
-        issue = Issue.create(self.poll1, None, timezone.now())
+        issue = Issue.objects.create(poll=self.poll1, region=None, conducted_on=timezone.now())
         response = Response.create_empty(self.unicef, issue,
                                          Run.create(id=123, contact='C-001', created_on=timezone.now()))
 
@@ -330,7 +330,7 @@ class ResponseCRUDLTest(TracProTest):
         date3 = self.datetime(2014, 1, 2, 7, 0)
 
         # create non-regional issue with 3 responses (1 complete, 1 partial, 1 empty)
-        self.issue1 = Issue.create(self.poll1, None, date1)
+        self.issue1 = Issue.objects.create(poll=self.poll1, region=None, conducted_on=date1)
 
         self.issue1_r1 = Response.objects.create(flow_run_id=123, issue=self.issue1, contact=self.contact1,
                                                  created_on=date1, updated_on=date1, status=RESPONSE_COMPLETE)
@@ -345,7 +345,7 @@ class ResponseCRUDLTest(TracProTest):
                                                  created_on=date3, updated_on=date3, status=RESPONSE_EMPTY)
 
         # create regional issue with 1 incomplete response
-        self.issue2 = Issue.create(self.poll1, self.region1, date3)
+        self.issue2 = Issue.objects.create(poll=self.poll1, region=self.region1, conducted_on=date3)
         self.issue2_r1 = Response.objects.create(flow_run_id=456, issue=self.issue2, contact=self.contact1,
                                                  created_on=date3, updated_on=date3, status=RESPONSE_PARTIAL)
 
@@ -359,8 +359,8 @@ class ResponseCRUDLTest(TracProTest):
         self.assertContains(response, "Number of goats")
 
         responses = list(response.context['object_list'])
-        self.assertEqual(len(responses), 3)
-        self.assertEqual(responses, [self.issue1_r3, self.issue1_r2, self.issue1_r1])  # newest first
+        self.assertEqual(len(responses), 2)
+        self.assertEqual(responses, [self.issue1_r2, self.issue1_r1])  # newest non-empty first
 
         # can't restart from "All Regions" view of responses
         self.assertFalse(response.context['can_restart'])

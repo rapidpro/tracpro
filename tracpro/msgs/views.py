@@ -4,7 +4,6 @@ from dash.orgs.views import OrgPermsMixin
 from django.core.urlresolvers import reverse
 from django.http import JsonResponse
 from django.utils.translation import ugettext_lazy as _
-from django.views.decorators.csrf import csrf_exempt
 from smartmin.users.views import SmartCRUDL, SmartListView, SmartCreateView
 from tracpro.polls.models import Issue
 from .models import Message

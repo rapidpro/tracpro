@@ -3,6 +3,7 @@ from __future__ import absolute_import, unicode_literals
 import pytz
 
 from dash.orgs.models import Org
+from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import Q, Count
 from django.utils import timezone
@@ -113,9 +114,11 @@ class Issue(models.Model):
 
     conducted_on = models.DateTimeField(help_text=_("When the poll was conducted"))
 
+    created_by = models.ForeignKey(User, null=True, related_name="issues_created")
+
     @classmethod
-    def create(cls, poll, region, conducted_on, do_start=False):
-        issue = cls.objects.create(poll=poll, region=region, conducted_on=conducted_on)
+    def create_regional(cls, user, poll, region, conducted_on, do_start=False):
+        issue = cls.objects.create(poll=poll, region=region, conducted_on=conducted_on, created_by=user)
 
         if do_start:
             issue_start.delay(issue.pk)
@@ -139,7 +142,7 @@ class Issue(models.Model):
         if last and last.conducted_on.astimezone(org_timezone).date() == for_local_date:
             return last
 
-        return Issue.create(poll, None, for_date)
+        return cls.objects.create(poll=poll, conducted_on=for_date)
 
     @classmethod
     def get_all(cls, org, region=None, poll=None):

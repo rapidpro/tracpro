@@ -17,7 +17,7 @@ class MessageTest(TracProTest):
         now = timezone.now()
 
         # create non-regional issue with 3 responses (1 complete, 1 partial, 1 empty)
-        issue1 = Issue.create(self.poll1, None, timezone.now())
+        issue1 = Issue.objects.create(poll=self.poll1, region=None, conducted_on=timezone.now())
 
         Response.objects.create(flow_run_id=123, issue=issue1, contact=self.contact1,
                                 created_on=now, updated_on=now, status=RESPONSE_COMPLETE)

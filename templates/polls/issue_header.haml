@@ -4,6 +4,24 @@
 .page-header
   %h2
     {{ issue }}
+  %ul.issue-details
+    %li
+      %strong><
+        - trans "Region"
+      :
+      - if issue.region
+        {{ issue.region }}
+      - else
+        - trans "All"
+    %li
+      %strong><
+        - trans "Created by"
+      :
+      - if issue.created_by_id
+        {{ issue.created_by }}
+      - else
+        - trans "RapidPro"
+
 
 %ul.nav.nav-tabs{ style:"margin-bottom: 1em" }
   %li{ class:"{% if_url 'polls.issue_read' 'active' '' %}" }
@@ -15,3 +33,16 @@
   %li{ class:"{% if_url 'polls.response_filter' 'active' '' %}" }
     %a{ href:"{% url 'polls.response_filter' issue.pk %}" }
       - trans "Responses"
+
+
+:css
+  ul.issue-details {
+    margin: 0;
+    padding: 0;
+  }
+  ul.issue-details li {
+    display: inline-block;
+    margin: 5px;
+    padding: 0;
+    list-style: none;
+  }
