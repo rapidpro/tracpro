@@ -1,5 +1,6 @@
 from __future__ import absolute_import, unicode_literals
 
+import cgi
 import json
 
 from collections import OrderedDict, Counter
@@ -130,7 +131,7 @@ class IssueCRUDL(SmartCRUDL):
                     # from flows.json to determine which questions are open-ended?
                     # is_open_ended = len(category_counts.keys()) == 1
 
-                    chart_data = [[category, count] for category, count in category_counts.iteritems()]
+                    chart_data = [[cgi.escape(category), count] for category, count in category_counts.iteritems()]
                 else:
                     chart_data = []
 
