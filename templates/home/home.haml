@@ -41,7 +41,8 @@
                 %a{ href:"/poll/read/[[ issue.poll.id ]]/" }
                   [[ issue.poll.name ]]
               %td
-                [[ issue.conducted_on | autodate ]]
+                %a{ href:"/issue/read/[[ issue.id ]]/" }
+                  [[ issue.conducted_on | autodate ]]
               %td
                 %span{ ng-if:"issue.region" }
                   [[ issue.region.name ]]
