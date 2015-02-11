@@ -2,7 +2,7 @@ from __future__ import absolute_import, unicode_literals
 
 import json
 
-from collections import OrderedDict, Counter
+from collections import OrderedDict, Counter, defaultdict
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from django import forms
 from django.core.urlresolvers import reverse
@@ -11,6 +11,7 @@ from django.utils import timezone
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 from smartmin.views import SmartCRUDL, SmartCreateView, SmartReadView, SmartListView, SmartFormView
+from tracpro.groups.models import Group
 from .models import Poll, Issue, Response, RESPONSE_EMPTY, RESPONSE_PARTIAL, RESPONSE_COMPLETE
 from .tasks import issue_restart_participants
 
@@ -89,7 +90,7 @@ class PollCRUDL(SmartCRUDL):
 
 class IssueCRUDL(SmartCRUDL):
     model = Issue
-    actions = ('read', 'list', 'latest', 'start', 'restart')
+    actions = ('read', 'participation', 'list', 'latest', 'start', 'restart')
 
     class Read(OrgPermsMixin, SmartReadView):
         def get_queryset(self):
@@ -97,22 +98,76 @@ class IssueCRUDL(SmartCRUDL):
 
         def get_context_data(self, **kwargs):
             context = super(IssueCRUDL.Read, self).get_context_data(**kwargs)
-
-            response_counts = self.object.get_response_counts(self.request.region)
             questions = self.object.poll.get_questions()
 
             for question in questions:
-                answers = self.object.get_answers_to(question)
-                category_counts = Counter([answer.category for answer in answers])
+                answers = self.object.get_answers_to(question, self.request.region)
+                if answers:
+                    category_counts = Counter([answer.category for answer in answers])
 
-                # TODO what to do for questions that are open-ended
-                # is_open_ended = len(category_counts.keys()) == 1
+                    # TODO what to do for questions that are open-ended. Do we also need to expose some more information
+                    # from flows.json to determine which questions are open-ended?
+                    # is_open_ended = len(category_counts.keys()) == 1
 
-                data = [[category, count] for category, count in category_counts.iteritems()]
-                question.chart_data = mark_safe(json.dumps(data))
+                    chart_data = [[category, count] for category, count in category_counts.iteritems()]
+                else:
+                    chart_data = []
 
-            context['response_counts'] = response_counts
+                question.chart_data = mark_safe(json.dumps(chart_data))
+
             context['questions'] = questions
+            return context
+
+    class Participation(OrgPermsMixin, SmartReadView):
+        def get_queryset(self):
+            return Issue.get_all(self.request.org, self.request.region)
+
+        def get_context_data(self, **kwargs):
+            context = super(IssueCRUDL.Participation, self).get_context_data(**kwargs)
+            reporting_groups = Group.get_all(self.request.org).order_by('name')
+            responses = self.object.get_responses(self.request.region)
+
+            # initialize an ordered dict of group to response counts
+            per_group_counts = OrderedDict()
+            for reporting_group in reporting_groups:
+                per_group_counts[reporting_group] = dict(E=0, P=0, C=0)
+
+            no_group_counts = dict(E=0, P=0, C=0)
+            overall_counts = dict(E=0, P=0, C=0)
+
+            reporting_groups_by_id = {g.pk: g for g in reporting_groups}
+            for response in responses:
+                group_id = response.contact.group_id
+                group = reporting_groups_by_id[group_id] if group_id else None
+                status = response.status
+
+                if group:
+                    per_group_counts[group][status] += 1
+                else:
+                    no_group_counts[status] += 1
+
+                overall_counts[status] += 1
+
+            def calc_completion(counts):
+                total = counts['E'] + counts['P'] + counts['C']
+                return "%d%%" % int(100 * counts['C'] / total) if total else ''
+
+            # for each set of counts, also calculate the completion percentage
+            for group, counts in per_group_counts.iteritems():
+                counts['X'] = calc_completion(counts)
+
+            no_group_counts['X'] = calc_completion(no_group_counts)
+            overall_counts['X'] = calc_completion(overall_counts)
+
+            # participation table counts
+            context['per_group_counts'] = per_group_counts
+            context['no_group_counts'] = no_group_counts
+            context['overall_counts'] = overall_counts
+
+            # message recipient counts
+            context['all_participants_count'] = overall_counts['E'] + overall_counts['P'] + overall_counts['C']
+            context['incomplete_count'] = overall_counts['E'] + overall_counts['P']
+            context['complete_count'] = overall_counts['C']
             return context
 
     class List(OrgPermsMixin, SmartListView):
@@ -187,9 +242,6 @@ class ResponseCRUDL(SmartCRUDL):
         def derive_url_pattern(cls, path, action):
             return r'^%s/%s/(?P<issue>\d+)/$' % (path, action)
 
-        def derive_title(self):
-            return unicode(self.derive_issue())
-
         def derive_issue(self):
             if hasattr(self, '_issue'):
                 return self._issue
@@ -216,7 +268,8 @@ class ResponseCRUDL(SmartCRUDL):
             return 'contact',
 
         def derive_queryset(self, **kwargs):
-            return self.derive_issue().get_responses(region=self.request.region)
+            # only show partial and complete responses
+            return self.derive_issue().get_responses(region=self.request.region).exclude(status=RESPONSE_EMPTY)
 
         def lookup_field_label(self, context, field, default=None):
             if field.startswith('question_'):

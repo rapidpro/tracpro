@@ -184,11 +184,15 @@ class Issue(models.Model):
         newer_issues = newer_issues.filter(Q(region=None) | Q(region=region))
         return not newer_issues.exists()
 
-    def get_answers_to(self, question):
+    def get_answers_to(self, question, region=None):
         """
         Gets all answers from active responses for this issue, to the given question
         """
-        return Answer.objects.filter(response__issue=self, response__is_active=True, question=question)
+        qs = Answer.objects.filter(response__issue=self, response__is_active=True, question=question)
+        if region:
+            qs = qs.filter(response__contact__region=region)
+
+        return qs
 
     def as_json(self, region=None):
         region_as_json = dict(id=self.region.pk, name=self.region.name) if self.region else None

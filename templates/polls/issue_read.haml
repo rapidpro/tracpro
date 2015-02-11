@@ -1,33 +1,17 @@
 - extends "smartmin/base.html"
 - load smartmin i18n
 
+- block pre-content
+
+  {% include 'polls/issue_header.haml' with issue=object %}
+
 - block content
-
-  %ul.nav.nav-tabs{ style:"margin-bottom: 1em" }
-    %li.active
-      %a{ href:"{% url 'polls.issue_read' object.pk %}" }
-        - trans "Summary"
-    %li
-      %a{ href:"{% url 'polls.response_filter' object.pk %}" }
-        - trans "Responses"
-
-  .well
-    .row
-      .col-md-4
-        - trans "Empty Responses:"
-        {{ response_counts.E }}
-      .col-md-4
-        - trans "Partial Responses:"
-        {{ response_counts.P }}
-      .col-md-4
-        - trans "Complete Responses:"
-        {{ response_counts.C }}
 
   - for question in questions
     %h3
       {{ question.order }}. {{ question.text }}
 
-    .chart{ data-chart-type:"pie", data-question-id:"{{ question.pk }}", style:"min-width: 310px; height: 400px; max-width: 600px; margin: 0 auto" }
+    .chart{ data-chart-type:"pie", data-question-id:"{{ question.pk }}" }
 
     %script{ type:"text/javascript" }
       var chart_{{ question.pk }}_data = {{ question.chart_data }};
@@ -42,13 +26,18 @@
         var question_id = container.data('question-id');
         var data = eval('chart_' + question_id + '_data');
 
-        if (chart_type == 'pie') {
-          init_pie_chart(container, data);
+        if (data && data.length > 0) {
+          if (chart_type == 'pie') {
+            init_chart_pie(container, data);
+          }
+        }
+        else {
+          init_chart_nodata(container);
         }
       });
     });
 
-    function init_pie_chart(container, data) {
+    function init_chart_pie(container, data) {
       container.highcharts({
         title: null,
         tooltip: { enabled: false },
@@ -66,3 +55,26 @@
         series: [{type: 'pie', data: data}]
       });
     }
+
+    function init_chart_nodata(container) {
+      container.addClass('chart-no-data');
+      container.text("No data")
+    }
+
+- block extra-style
+    {{ block.super }}
+    :css
+      .chart {
+        min-width: 310px;
+        max-width: 600px;
+        height: 400px;
+        margin: 0 auto
+      }
+      .chart-no-data {
+        border: 2px dashed #DDDDDD;
+        padding: 1em;
+        height: auto !important;
+        font-size: 20px;
+        color: #DDDDDD;
+        text-align: center;
+      }
