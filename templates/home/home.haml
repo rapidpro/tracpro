@@ -22,7 +22,7 @@
       %h2
         - trans "Latest Polls"
 
-    .row{ ng-controller:"LatestIssuesController", ng-init:'init()' }
+    .row.ng-cloak{ ng-controller:"LatestIssuesController", ng-init:'init()', ng-cloak:"" }
       .col-md-12
         %table.table.table-striped{ style:"width: 100%" }
           %thead
@@ -33,6 +33,8 @@
                 - trans "Date"
               %th
                 - trans "Region"
+              %th
+                - trans "Participants"
               %th
                 - trans "Responses"
           %tbody
@@ -49,8 +51,11 @@
                 %span{ ng-if:"!issue.region" }
                   All
               %td
+                %a{ href:"/issue/participation/[[ issue.id ]]/" }
+                  [[ issue.responses.E + issue.responses.P + issue.responses.C ]]
+              %td
                 %a{ href:"/response/filter/[[ issue.id ]]/" }
-                  [[ issue.responses.C ]] / [[ issue.responses.E + issue.responses.P + issue.responses.C ]]
+                  [[ issue.responses.P ]] / [[ issue.responses.C ]]
 
       .col-md-12.loading{ ng-if:"loading" }
 
@@ -95,7 +100,7 @@
           %h2
             - trans "Active Regions"
 
-        .{ ng-controller:"ActiveRegionsController", ng-init:'init()' }
+        .ng-cloak{ ng-controller:"ActiveRegionsController", ng-init:'init()', ng-cloak:"" }
           %p
             Regions with most responses in the last day:
           %table.table.table-striped{ style:"width: 100%" }
@@ -123,7 +128,7 @@
           %h2
             - trans "Active Groups"
 
-        .{ ng-controller:"ActiveGroupsController", ng-init:'init()' }
+        .ng-cloak{ ng-controller:"ActiveGroupsController", ng-init:'init()', ng-cloak:"" }
           %p
             Reporting groups with most responses in the last day:
           %table.table.table-striped{ style:"width: 100%" }

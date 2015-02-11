@@ -2,8 +2,9 @@ from __future__ import absolute_import, unicode_literals
 
 import json
 
-from collections import OrderedDict, Counter, defaultdict
+from collections import OrderedDict, Counter
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
+from dash.utils import get_obj_cacheable
 from django import forms
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect, JsonResponse
@@ -27,7 +28,7 @@ class PollCRUDL(SmartCRUDL):
             return Issue.get_all(self.request.org, self.request.region, poll=obj)
 
         def get_questions(self, obj):
-            return "<br/>".join([q.text for q in obj.get_questions()])
+            return "<br/>".join(["%d. %s" % (q.order, q.text) for q in obj.get_questions()])
 
         def get_issues(self, obj):
             return self.derive_issues(obj).count()
@@ -194,7 +195,7 @@ class IssueCRUDL(SmartCRUDL):
         """
         All issues in current region
         """
-        fields = ('poll', 'conducted_on', 'region', 'responses')
+        fields = ('poll', 'conducted_on', 'region', 'participants', 'responses')
         default_order = ('-conducted_on',)
 
         def derive_title(self):
@@ -206,10 +207,13 @@ class IssueCRUDL(SmartCRUDL):
         def derive_queryset(self, **kwargs):
             return Issue.get_all(self.request.org, self.request.region)
 
+        def get_participants(self, obj):
+            counts = get_obj_cacheable(obj, '_response_counts', lambda: obj.get_response_counts(self.request.region))
+            return counts[RESPONSE_EMPTY] + counts[RESPONSE_PARTIAL] + counts[RESPONSE_COMPLETE]
+
         def get_responses(self, obj):
-            counts = obj.get_response_counts(self.request.region)
-            total = counts[RESPONSE_EMPTY] + counts[RESPONSE_PARTIAL] + counts[RESPONSE_COMPLETE]
-            return "%d / %d" % (counts[RESPONSE_COMPLETE], total)
+            counts = get_obj_cacheable(obj, '_response_counts', lambda: obj.get_response_counts(self.request.region))
+            return "%s / %s" % (counts[RESPONSE_PARTIAL], counts[RESPONSE_COMPLETE])
 
         def get_region(self, obj):
             return obj.region if obj.region else _("All")
@@ -219,6 +223,8 @@ class IssueCRUDL(SmartCRUDL):
                 return reverse('polls.poll_read', args=[obj.poll_id])
             elif field == 'conducted_on':
                 return reverse('polls.issue_read', args=[obj.pk])
+            elif field == 'participants':
+                return reverse('polls.issue_participation', args=[obj.pk])
             elif field == 'responses':
                 return reverse('polls.response_filter', kwargs=dict(issue=obj.pk))
 
@@ -243,20 +249,18 @@ class ResponseCRUDL(SmartCRUDL):
             return r'^%s/%s/(?P<issue>\d+)/$' % (path, action)
 
         def derive_issue(self):
-            if hasattr(self, '_issue'):
-                return self._issue
-
-            self._issue = Issue.objects.select_related('poll').get(pk=self.kwargs['issue'], poll__org=self.request.org)
-            return self._issue
+            def fetch():
+                return Issue.objects.select_related('poll').get(pk=self.kwargs['issue'], poll__org=self.request.org)
+            return get_obj_cacheable(self, '_issue', fetch)
 
         def derive_questions(self):
-            if hasattr(self, '_questions'):
-                return self._questions
+            def fetch():
+                questions = OrderedDict()
+                for question in self.derive_issue().poll.get_questions():
+                    questions['question_%d' % question.pk] = question
+                return questions
 
-            self._questions = OrderedDict()
-            for question in self.derive_issue().poll.get_questions():
-                self._questions['question_%d' % question.pk] = question
-            return self._questions
+            return get_obj_cacheable(self, '_questions', fetch)
 
         def derive_fields(self):
             base_fields = ['created_on', 'contact']
