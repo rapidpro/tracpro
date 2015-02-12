@@ -107,7 +107,8 @@ class UserCRUDL(SmartCRUDL):
         fields = ('full_name', 'email', 'password', 'confirm_password', 'change_password', 'regions')
         form_class = UserForm
         permission = 'profiles.profile_user_create'
-        success_message = _("New user created")
+        success_message = _("New supervisor created")
+        title = _("Create Supervisor")
 
         def save(self, obj):
             org = self.request.user.get_org()
@@ -121,7 +122,8 @@ class UserCRUDL(SmartCRUDL):
         fields = ('full_name', 'email', 'new_password', 'confirm_password', 'regions', 'is_active')
         form_class = UserForm
         permission = 'profiles.profile_user_update'
-        success_message = _("User updated")
+        success_message = _("Supervisor updated")
+        title = _("Edit Supervisor")
 
         def derive_initial(self):
             initial = super(UserCRUDL.Update, self).derive_initial()
@@ -208,7 +210,7 @@ class UserCRUDL(SmartCRUDL):
             if obj.is_admin_for(self.request.org):
                 return _("Administrator")
             else:
-                return _("User")
+                return _("Supervisor")
 
     class List(OrgPermsMixin, UserFieldsMixin, SmartListView):
         default_order = ('profile__full_name',)
