@@ -42,7 +42,6 @@ class PollCRUDL(SmartCRUDL):
             issues = Issue.get_all(self.request.org, self.request.region, poll=self.object)
 
             # if we're viewing "All Regions" don't include regional only issues
-            # TODO include explanation of this on page
             if not self.request.region:
                 issues = issues.filter(region=None)
 

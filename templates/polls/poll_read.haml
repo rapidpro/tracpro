@@ -7,6 +7,9 @@
 
 - block content
 
+  - if not request.region
+    - trans "Charts only include data from non-regional issues"
+
   - for question in questions
     %h3
       {{ question.order }}. {{ question.text }}
