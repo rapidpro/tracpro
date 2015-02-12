@@ -40,11 +40,10 @@
           %tbody
             %tr{ ng-repeat:"issue in issues" }
               %td
-                %a{ href:"/poll/read/[[ issue.poll.id ]]/" }
+                %a{ href:"/issue/read/[[ issue.id ]]/" }
                   [[ issue.poll.name ]]
               %td
-                %a{ href:"/issue/read/[[ issue.id ]]/" }
-                  [[ issue.conducted_on | autodate ]]
+                [[ issue.conducted_on | autodate ]]
               %td
                 %span{ ng-if:"issue.region" }
                   [[ issue.region.name ]]

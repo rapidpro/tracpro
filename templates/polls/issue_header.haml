@@ -15,13 +15,18 @@
         - trans "All"
     %li
       %strong><
+        - trans "Poll"
+      :
+      %a{ href:"{% url 'polls.poll_read' issue.poll.pk %}" }
+        {{ issue.poll }}
+    %li
+      %strong><
         - trans "Created by"
       :
       - if issue.created_by_id
         {{ issue.created_by }}
       - else
         - trans "RapidPro"
-
 
 %ul.nav.nav-tabs{ style:"margin-bottom: 1em" }
   %li{ class:"{% if_url 'polls.issue_read' 'active' '' %}" }

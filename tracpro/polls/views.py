@@ -203,7 +203,7 @@ class IssueCRUDL(SmartCRUDL):
             return _("All Polls")
 
         def derive_link_fields(self, context):
-            return 'poll', 'conducted_on', 'responses'
+            return 'poll', 'responses'
 
         def derive_queryset(self, **kwargs):
             return Issue.get_all(self.request.org, self.request.region)
@@ -221,8 +221,6 @@ class IssueCRUDL(SmartCRUDL):
 
         def lookup_field_link(self, context, field, obj):
             if field == 'poll':
-                return reverse('polls.poll_read', args=[obj.poll_id])
-            elif field == 'conducted_on':
                 return reverse('polls.issue_read', args=[obj.pk])
             elif field == 'participants':
                 return reverse('polls.issue_participation', args=[obj.pk])
