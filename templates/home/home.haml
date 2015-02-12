@@ -22,7 +22,7 @@
       %h2
         - trans "Latest Polls"
 
-    .row.ng-cloak{ ng-controller:"LatestIssuesController", ng-init:'init()', ng-cloak:"" }
+    .row.ng-cloak{ ng-controller:"LatestIssuesController", ng-init:'init()', ng-cloak:"", style:"margin-bottom: 1em" }
       .col-md-12
         %table.table.table-striped{ style:"width: 100%" }
           %thead
@@ -56,7 +56,9 @@
                 %a{ href:"/response/filter/[[ issue.id ]]/" }
                   [[ issue.responses.P ]] / [[ issue.responses.C ]]
 
-      .col-md-12.loading{ ng-if:"loading" }
+        .loading{ ng-if:"loading" }
+        .none{ ng-if:"!loading && issues.length == 0" }
+          - trans "None"
 
     - if request.region
       .modal.fade{ role:"dialog", id:"start-poll-dialog" }
@@ -117,6 +119,8 @@
                   [[ region.response_count ]]
 
           .loading{ ng-if:"loading" }
+          .none{ ng-if:"!loading && regions.length == 0" }
+            - trans "None"
 
       .col-md-6
         .page-header
@@ -145,7 +149,8 @@
                   [[ group.response_count ]]
 
           .loading{ ng-if:"loading" }
-
+          .none{ ng-if:"!loading && groups.length == 0" }
+            - trans "None"
 
 
 - block extra-script
@@ -161,3 +166,8 @@
 -block extra-style
   {{ block.super }}
   :css
+    .none {
+      font-style: italic;
+      text-align: center;
+    }
+
