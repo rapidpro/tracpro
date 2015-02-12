@@ -1,5 +1,8 @@
 from __future__ import absolute_import, unicode_literals
 
+import json
+
+from datetime import timedelta
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.test.utils import override_settings
@@ -8,6 +11,7 @@ from mock import patch
 from temba.types import Contact as TembaContact, Group as TembaGroup
 from tracpro.contacts.models import Contact
 from tracpro.groups.models import Region, Group
+from tracpro.polls.models import Issue, Response, RESPONSE_COMPLETE, RESPONSE_PARTIAL, RESPONSE_EMPTY
 from tracpro.test import TracProTest
 
 
@@ -88,20 +92,114 @@ class GroupTest(TracProTest):
 
 class RegionCRUDLTest(TracProTest):
     def test_list(self):
-        list_url = reverse('groups.region_list')
+        url = reverse('groups.region_list')
 
         # log in as a non-administrator
         self.login(self.user1)
 
-        response = self.url_get('unicef', list_url)
+        response = self.url_get('unicef', url)
         self.assertRedirects(response, 'http://unicef.localhost/users/login/?next=/region/')
 
         # log in as an administrator
         self.login(self.admin)
 
-        response = self.url_get('unicef', list_url)
+        response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context['object_list']), 3)
+
+    def test_most_active(self):
+        url = reverse('groups.region_most_active')
+
+        five_days_ago = timezone.now() - timedelta(days=5)
+        five_hours_ago = timezone.now() - timedelta(hours=5)
+        issue = Issue.objects.create(poll=self.poll1, conducted_on=five_days_ago)
+
+        # empty response in last 24 hours for contact in region #1
+        Response.objects.create(flow_run_id=123, issue=issue, contact=self.contact1,
+                                created_on=five_hours_ago, updated_on=five_hours_ago, status=RESPONSE_EMPTY)
+
+        # partial response not in last 24 hours for contact in region #2
+        Response.objects.create(flow_run_id=234, issue=issue, contact=self.contact4,
+                                created_on=five_days_ago, updated_on=five_days_ago, status=RESPONSE_PARTIAL)
+
+        # partial response in last 24 hours for contact in region #2
+        Response.objects.create(flow_run_id=345, issue=issue, contact=self.contact4,
+                                created_on=five_hours_ago, updated_on=five_hours_ago, status=RESPONSE_PARTIAL)
+
+        # 2 complete responses in last 24 hours for contact in region #3
+        Response.objects.create(flow_run_id=456, issue=issue, contact=self.contact5,
+                                created_on=five_hours_ago, updated_on=five_hours_ago, status=RESPONSE_COMPLETE)
+        Response.objects.create(flow_run_id=567, issue=issue, contact=self.contact5,
+                                created_on=five_hours_ago, updated_on=five_hours_ago, status=RESPONSE_COMPLETE)
+
+        # log in as a non-administrator
+        self.login(self.user1)
+
+        response = self.url_get('unicef', url)
+        results = json.loads(response.content)['results']
+        self.assertEqual(len(results), 2)
+        self.assertEqual(results[0]['id'], self.region3.pk)
+        self.assertEqual(results[0]['name'], self.region3.name)
+        self.assertEqual(results[0]['response_count'], 2)
+        self.assertEqual(results[1]['id'], self.region2.pk)
+        self.assertEqual(results[1]['name'], self.region2.name)
+        self.assertEqual(results[1]['response_count'], 1)
+
+
+class GroupCRUDLTest(TracProTest):
+    def test_list(self):
+        url = reverse('groups.group_list')
+
+        # log in as a non-administrator
+        self.login(self.user1)
+
+        response = self.url_get('unicef', url)
+        self.assertRedirects(response, 'http://unicef.localhost/users/login/?next=/group/')
+
+        # log in as an administrator
+        self.login(self.admin)
+
+        response = self.url_get('unicef', url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context['object_list']), 3)
+
+    def test_most_active(self):
+        url = reverse('groups.group_most_active')
+
+        five_days_ago = timezone.now() - timedelta(days=5)
+        five_hours_ago = timezone.now() - timedelta(hours=5)
+        issue = Issue.objects.create(poll=self.poll1, conducted_on=five_days_ago)
+
+        # empty response in last 24 hours for contact in group #1
+        Response.objects.create(flow_run_id=123, issue=issue, contact=self.contact1,
+                                created_on=five_hours_ago, updated_on=five_hours_ago, status=RESPONSE_EMPTY)
+
+        # partial response not in last 24 hours for contact in group #2
+        Response.objects.create(flow_run_id=234, issue=issue, contact=self.contact3,
+                                created_on=five_days_ago, updated_on=five_days_ago, status=RESPONSE_PARTIAL)
+
+        # partial response in last 24 hours for contact in group #2
+        Response.objects.create(flow_run_id=345, issue=issue, contact=self.contact3,
+                                created_on=five_hours_ago, updated_on=five_hours_ago, status=RESPONSE_PARTIAL)
+
+        # 2 complete responses in last 24 hours for contact in group #3
+        Response.objects.create(flow_run_id=456, issue=issue, contact=self.contact5,
+                                created_on=five_hours_ago, updated_on=five_hours_ago, status=RESPONSE_COMPLETE)
+        Response.objects.create(flow_run_id=567, issue=issue, contact=self.contact5,
+                                created_on=five_hours_ago, updated_on=five_hours_ago, status=RESPONSE_COMPLETE)
+
+        # log in as a non-administrator
+        self.login(self.user1)
+
+        response = self.url_get('unicef', url)
+        results = json.loads(response.content)['results']
+        self.assertEqual(len(results), 2)
+        self.assertEqual(results[0]['id'], self.group3.pk)
+        self.assertEqual(results[0]['name'], self.group3.name)
+        self.assertEqual(results[0]['response_count'], 2)
+        self.assertEqual(results[1]['id'], self.group2.pk)
+        self.assertEqual(results[1]['name'], self.group2.name)
+        self.assertEqual(results[1]['response_count'], 1)
 
 
 class UserRegionsMiddlewareTest(TracProTest):

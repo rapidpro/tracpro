@@ -49,7 +49,7 @@ class TracProTest(TestCase):
         self.contact2 = self.create_contact(self.unicef, "Bob", 'tel:2345', self.region1, self.group1, 'C-002')
         self.contact3 = self.create_contact(self.unicef, "Cat", 'tel:3456', self.region1, self.group2, 'C-003')
         self.contact4 = self.create_contact(self.unicef, "Dan", 'twitter:danny', self.region2, self.group2, 'C-004')
-        self.contact5 = self.create_contact(self.unicef, "Eve", 'twitter:evee', self.region3, self.group2, 'C-005')
+        self.contact5 = self.create_contact(self.unicef, "Eve", 'twitter:evee', self.region3, self.group3, 'C-005')
         self.contact6 = self.create_contact(self.nyaruka, "Norbert", 'twitter:n7', self.region4, self.group4, 'C-006')
 
         # a poll with some questions

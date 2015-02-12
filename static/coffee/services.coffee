@@ -34,7 +34,7 @@ services.factory 'PollService', ['$http', ($http) ->
     # Fetches most active regions
     #=====================================================================
     fetchActiveRegions: (callback) ->
-      $http.get('/region/active/')
+      $http.get('/region/most_active/')
       .success (data) =>
         callback(data.results)
 
@@ -42,7 +42,7 @@ services.factory 'PollService', ['$http', ($http) ->
     # Fetches most active groups
     #=====================================================================
     fetchActiveGroups: (callback) ->
-      $http.get('/group/active/')
+      $http.get('/group/most_active/')
       .success (data) =>
         callback(data.results)
 ]

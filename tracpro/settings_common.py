@@ -300,9 +300,9 @@ PERMISSIONS = {
 
     'contacts.contact': ('create', 'read', 'update', 'delete', 'list'),
 
-    'groups.group': ('list', 'active', 'select'),
+    'groups.group': ('list', 'most_active', 'select'),
 
-    'groups.region': ('list', 'active', 'select'),
+    'groups.region': ('list', 'most_active', 'select'),
 
     'msgs.message': ('list', 'send'),
 
@@ -333,8 +333,8 @@ GROUP_PERMISSIONS = {
     ),
     "Editors": (
         'contacts.contact.*',
-        'groups.group_active',
-        'groups.region_active',
+        'groups.group_most_active',
+        'groups.region_most_active',
         'msgs.message_send',
         'polls.poll_read',
         'polls.issue_create',

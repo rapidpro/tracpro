@@ -272,7 +272,7 @@ class ResponseCRUDL(SmartCRUDL):
 
         def derive_queryset(self, **kwargs):
             # only show partial and complete responses
-            return self.derive_issue().get_responses(region=self.request.region).exclude(status=RESPONSE_EMPTY)
+            return self.derive_issue().get_responses(region=self.request.region, include_empty=False)
 
         def lookup_field_label(self, context, field, default=None):
             if field.startswith('question_'):

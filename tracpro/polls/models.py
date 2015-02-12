@@ -157,13 +157,15 @@ class Issue(models.Model):
 
         return issues.select_related('poll', 'region')
 
-    def get_responses(self, region=None):
+    def get_responses(self, region=None, include_empty=True):
         if region and self.region_id and region.pk != self.region_id:
             raise ValueError("Request for responses in region where poll wasn't conducted")
 
         responses = self.responses.filter(is_active=True)
         if region:
             responses = responses.filter(contact__region=region)
+        if not include_empty:
+            responses = responses.exclude(status=RESPONSE_EMPTY)
 
         return responses.select_related('contact')
 

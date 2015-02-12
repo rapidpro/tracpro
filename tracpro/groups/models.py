@@ -54,9 +54,12 @@ class AbstractGroup(models.Model):
         return cls.objects.filter(org=org, is_active=True)
 
     @classmethod
-    def get_response_counts(cls, org, last_day=True):
-        from tracpro.polls.models import Response
+    def get_response_counts(cls, org, last_day=True, include_empty=False):
+        from tracpro.polls.models import Response, RESPONSE_EMPTY
         qs = Response.objects.filter(issue__poll__org=org, is_active=True)
+
+        if not include_empty:
+            qs = qs.exclude(status=RESPONSE_EMPTY)
 
         if last_day:
             one_day_ago = timezone.now() - datetime.timedelta(days=1)
@@ -70,7 +73,7 @@ class AbstractGroup(models.Model):
 
     @classmethod
     def get_most_active(cls, org):
-        count_by_id = cls.get_response_counts(org, last_day=True)
+        count_by_id = cls.get_response_counts(org, last_day=True, include_empty=False)
 
         groups = []
         for group in cls.get_all(org):

@@ -28,7 +28,7 @@ class ContactGroupsForm(forms.Form):
 
 class RegionCRUDL(SmartCRUDL):
     model = Region
-    actions = ('list', 'active', 'select')
+    actions = ('list', 'most_active', 'select')
 
     class List(OrgPermsMixin, SmartListView):
         fields = ('name', 'contacts')
@@ -40,7 +40,7 @@ class RegionCRUDL(SmartCRUDL):
         def get_contacts(self, obj):
             return obj.get_contacts().count()
 
-    class Active(OrgPermsMixin, SmartListView):
+    class MostActive(OrgPermsMixin, SmartListView):
         def get(self, request, *args, **kwargs):
             regions = Region.get_most_active(self.request.org)[0:5]
             results = [{'id': r.pk, 'name': r.name, 'response_count': r.response_count} for r in regions]
@@ -67,7 +67,7 @@ class RegionCRUDL(SmartCRUDL):
 
 class GroupCRUDL(SmartCRUDL):
     model = Group
-    actions = ('list', 'active', 'select')
+    actions = ('list', 'most_active', 'select')
 
     class List(OrgPermsMixin, SmartListView):
         fields = ('name', 'contacts')
@@ -79,7 +79,7 @@ class GroupCRUDL(SmartCRUDL):
         def get_contacts(self, obj):
             return obj.get_contacts().count()
 
-    class Active(OrgPermsMixin, SmartListView):
+    class MostActive(OrgPermsMixin, SmartListView):
         def get(self, request, *args, **kwargs):
             regions = Group.get_most_active(self.request.org)[0:5]
             results = [{'id': r.pk, 'name': r.name, 'response_count': r.response_count} for r in regions]
