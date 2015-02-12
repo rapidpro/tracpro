@@ -70,7 +70,7 @@ class Contact(models.Model):
         """
         Gets a contact by UUID. If we don't find them locally, we try to fetch them from RapidPro
         """
-        contact = Contact.objects.filter(org=org, uuid=uuid).first()
+        contact = Contact.objects.filter(org=org, uuid=uuid).select_related('region', 'group').first()
         if contact:
             return contact
 

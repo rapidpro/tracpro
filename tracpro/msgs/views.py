@@ -17,7 +17,7 @@ class MessageCRUDL(SmartCRUDL):
         fields = ('sent_on', 'sent_by', 'issue', 'cohort', 'region', 'text')
         field_config = {'text': {'class': 'italicized'},
                         'cohort': {'label': _("Recipients")},
-                        'issue': {'label': _("Poll")}}
+                        'issue': {'label': _("Poll Issue")}}
         title = _("Message Log")
         default_order = ('-sent_on',)
 

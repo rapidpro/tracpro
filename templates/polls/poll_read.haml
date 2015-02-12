@@ -1,0 +1,90 @@
+- extends "smartmin/base.html"
+- load smartmin i18n
+
+- block pre-content
+
+  {% include 'polls/poll_header.haml' with poll=object %}
+
+- block content
+
+  - for question in questions
+    %h3
+      {{ question.order }}. {{ question.text }}
+
+    .chart{ data-chart-type:"trend", data-question-id:"{{ question.pk }}" }
+
+    %script{ type:"text/javascript" }
+      var chart_{{ question.pk }}_series = {{ question.chart_data }};
+
+
+- block extra-script
+  :javascript
+    $(function() {
+      $('.chart').each(function() {
+        var container = $(this);
+        var chart_type = container.data('chart-type');
+        var question_id = container.data('question-id');
+        var series = eval('chart_' + question_id + '_series');
+
+        if (series && series.length > 0) {
+          if (chart_type == 'trend') {
+            init_chart_trend(container, series);
+          }
+        }
+        else {
+          init_chart_nodata(container);
+        }
+      });
+    });
+
+    function init_chart_trend(container, series) {
+      container.highcharts({
+        chart: { type: 'area' },
+        title: null,
+        xAxis: {
+            type: 'datetime',
+            title: { enabled: false }
+        },
+        yAxis: {
+            title: {
+                text: 'Percent'
+            }
+        },
+        tooltip: { enabled: false },
+        plotOptions: {
+            area: {
+                stacking: 'percent',
+                lineColor: '#ffffff',
+                lineWidth: 1,
+                marker: {
+                    lineWidth: 1,
+                    lineColor: '#ffffff'
+                }
+            }
+        },
+        series: series
+      });
+    }
+
+    function init_chart_nodata(container) {
+      container.addClass('chart-no-data');
+      container.text("No data")
+    }
+
+- block extra-style
+    {{ block.super }}
+    :css
+      .chart {
+        min-width: 320px;
+        max-width: 700px;
+        height: 320px;
+        margin: 0 auto
+      }
+      .chart-no-data {
+        border: 2px dashed #DDDDDD;
+        padding: 1em;
+        height: auto !important;
+        font-size: 20px;
+        color: #DDDDDD;
+        text-align: center;
+      }

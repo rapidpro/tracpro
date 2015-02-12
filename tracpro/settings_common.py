@@ -308,7 +308,7 @@ PERMISSIONS = {
 
     'polls.poll': ('read', 'list', 'select'),
 
-    'polls.issue': ('create', 'restart', 'read', 'participation', 'list', 'latest'),
+    'polls.issue': ('create', 'restart', 'read', 'participation', 'list', 'filter', 'latest'),
 
     'polls.response': ('filter',),
 
@@ -343,6 +343,7 @@ GROUP_PERMISSIONS = {
         'polls.issue_participation',
         'polls.issue_latest',
         'polls.issue_list',
+        'polls.issue_filter',
         'polls.response_filter',
         'profiles.profile_user_read',
     ),

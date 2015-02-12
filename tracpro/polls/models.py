@@ -1,9 +1,12 @@
 from __future__ import absolute_import, unicode_literals
 
+import json
 import pytz
 
+from collections import Counter
 from dash.orgs.models import Org
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from django.db import models
 from django.db.models import Q, Count
 from django.utils import timezone
@@ -19,6 +22,8 @@ RESPONSE_COMPLETE = 'C'
 RESPONSE_STATUS_CHOICES = ((RESPONSE_EMPTY, _("Empty")),
                            (RESPONSE_PARTIAL, _("Partial")),
                            (RESPONSE_COMPLETE, _("Complete")))
+
+ANSWER_CACHE_TTL = 60 * 60 * 24 * 7  # 1 week
 
 
 class Poll(models.Model):
@@ -199,6 +204,29 @@ class Issue(models.Model):
 
         return qs
 
+    def get_answer_category_counts(self, question, region=None):
+        cache_key = self._answer_cache_key(question, region, 'category_counts')
+        cached = cache.get(cache_key)
+        if cached:
+            return json.loads(cached)
+
+        answers = self.get_answers_to(question, region)
+        counts = Counter([answer.category for answer in answers])
+
+        cache.set(cache_key, json.dumps(counts), ANSWER_CACHE_TTL)
+        return counts
+
+    def clear_answer_cache(self, question, region):
+        """
+        Clears an answer cache for this issue for the given region. A None region means to clear the multi-regional
+        answers rather than clear the cache for all regions.
+        """
+        cache.delete(self._answer_cache_key(question, region, 'category_counts'))
+
+    def _answer_cache_key(self, question, region, item):
+        region_id = region.pk if region else 0
+        return 'issue:%d:answer_cache:%d:%d:%s' % (self.pk, question.pk, region_id, item)
+
     def as_json(self, region=None):
         region_as_json = dict(id=self.region.pk, name=self.region.name) if self.region else None
 
@@ -251,7 +279,7 @@ class Response(models.Model):
         Gets or creates a response from a Temba flow run. If response is not up-to-date with provided run, then it is
         updated. If the run doesn't match with an existing poll issue, it's assumed to be non-regional.
         """
-        response = Response.objects.filter(issue__poll__org=org, flow_run_id=run.id).first()
+        response = Response.objects.filter(issue__poll__org=org, flow_run_id=run.id).select_related('issue').first()
         run_updated_on = cls.get_run_updated_on(run)
 
         # if there is an up-to-date existing response for this run, return it
@@ -299,6 +327,10 @@ class Response(models.Model):
         for question, valueset in valuesets_by_question.iteritems():
             if valueset:
                 Answer.create(response, question, valueset.value, valueset.category, valueset.time)
+
+        # clear answer caches for this contact's region
+        for question in questions:
+            response.issue.clear_answer_cache(question, contact.region)
 
         return response
 

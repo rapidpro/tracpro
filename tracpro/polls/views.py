@@ -1,9 +1,11 @@
 from __future__ import absolute_import, unicode_literals
 
+import calendar
 import cgi
+import datetime
 import json
 
-from collections import OrderedDict, Counter
+from collections import OrderedDict, defaultdict
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from dash.utils import get_obj_cacheable
 from django import forms
@@ -18,25 +20,67 @@ from .models import Poll, Issue, Response, RESPONSE_EMPTY, RESPONSE_PARTIAL, RES
 from .tasks import issue_restart_participants
 
 
+def datetime_to_ms(dt):
+    """
+    Converts a datetime to a millisecond accuracy timestamp
+    """
+    seconds = calendar.timegm(dt.utctimetuple())
+    return seconds * 1000 + dt.microsecond / 1000
+
+
+class ChartJsDataEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime.datetime):
+            return datetime_to_ms(obj)
+        return json.JSONEncoder.default(self, obj)
+
+
 class PollCRUDL(SmartCRUDL):
     model = Poll
     actions = ('read', 'list', 'select')
 
     class Read(OrgObjPermsMixin, SmartReadView):
-        fields = ('name', 'questions', 'issues', 'last_conducted')
 
-        def derive_issues(self, obj):
-            return Issue.get_all(self.request.org, self.request.region, poll=obj)
+        def get_context_data(self, **kwargs):
+            context = super(PollCRUDL.Read, self).get_context_data(**kwargs)
+            questions = self.object.get_questions()
 
-        def get_questions(self, obj):
-            return "<br/>".join(["%d. %s" % (q.order, q.text) for q in obj.get_questions()])
+            issues = Issue.get_all(self.request.org, self.request.region, poll=self.object)
 
-        def get_issues(self, obj):
-            return self.derive_issues(obj).count()
+            # if we're viewing "All Regions" don't include regional only issues
+            # TODO include explanation of this on page
+            if not self.request.region:
+                issues = issues.filter(region=None)
 
-        def get_last_conducted(self, obj):
-            last_issue = self.derive_issues(obj).order_by('-conducted_on').first()
-            return last_issue.conducted_on if last_issue else _("Never")
+            # TODO this should be configurable based on date but for now let's just consider the last 10 issues
+            issues = issues.order_by('-conducted_on')[0:10]
+
+            for question in questions:
+                categories = set()
+                counts_by_issue = OrderedDict()
+
+                # fetch category counts for all issues, keeping track of all found categories
+                for issue in reversed(issues):
+                    category_counts = issue.get_answer_category_counts(question, self.request.region)
+                    counts_by_issue[issue] = category_counts
+
+                    for category in category_counts.keys():
+                        categories.add(category)
+
+                categories = list(categories)
+                category_series = defaultdict(list)
+
+                for issue, category_counts in counts_by_issue.iteritems():
+                    for category in categories:
+                        count = category_counts.get(category, 0)
+                        category_series[category].append((issue.conducted_on, count))
+
+                chart_data = [dict(name=category, data=data) for category, data in category_series.iteritems()]
+
+                question.chart_data = mark_safe(json.dumps(chart_data, cls=ChartJsDataEncoder))
+
+            context['questions'] = questions
+            return context
 
     class List(OrgPermsMixin, SmartListView):
         fields = ('name', 'questions', 'issues', 'last_conducted')
@@ -90,9 +134,30 @@ class PollCRUDL(SmartCRUDL):
             return HttpResponseRedirect(self.get_success_url())
 
 
+class IssueListMixin(object):
+    def get_participants(self, obj):
+            counts = get_obj_cacheable(obj, '_response_counts', lambda: obj.get_response_counts(self.request.region))
+            return counts[RESPONSE_EMPTY] + counts[RESPONSE_PARTIAL] + counts[RESPONSE_COMPLETE]
+
+    def get_responses(self, obj):
+        counts = get_obj_cacheable(obj, '_response_counts', lambda: obj.get_response_counts(self.request.region))
+        return "%s / %s" % (counts[RESPONSE_PARTIAL], counts[RESPONSE_COMPLETE])
+
+    def get_region(self, obj):
+        return obj.region if obj.region else _("All")
+
+    def lookup_field_link(self, context, field, obj):
+        if field == 'poll' or field == 'conducted_on':
+            return reverse('polls.issue_read', args=[obj.pk])
+        elif field == 'participants':
+            return reverse('polls.issue_participation', args=[obj.pk])
+        elif field == 'responses':
+            return reverse('polls.response_filter', kwargs=dict(issue=obj.pk))
+
+
 class IssueCRUDL(SmartCRUDL):
     model = Issue
-    actions = ('create', 'restart', 'read', 'participation', 'list', 'latest')
+    actions = ('create', 'restart', 'read', 'participation', 'list', 'filter', 'latest')
 
     class Create(OrgPermsMixin, SmartCreateView):
         def post(self, request, *args, **kwargs):
@@ -123,17 +188,13 @@ class IssueCRUDL(SmartCRUDL):
             questions = self.object.poll.get_questions()
 
             for question in questions:
-                answers = self.object.get_answers_to(question, self.request.region)
-                if answers:
-                    category_counts = Counter([answer.category for answer in answers])
+                category_counts = self.object.get_answer_category_counts(question, self.request.region)
 
-                    # TODO what to do for questions that are open-ended. Do we also need to expose some more information
-                    # from flows.json to determine which questions are open-ended?
-                    # is_open_ended = len(category_counts.keys()) == 1
+                # TODO what to do for questions that are open-ended. Do we also need to expose some more information
+                # from flows.json to determine which questions are open-ended?
+                # is_open_ended = len(category_counts.keys()) == 1
 
-                    chart_data = [[cgi.escape(category), count] for category, count in category_counts.iteritems()]
-                else:
-                    chart_data = []
+                chart_data = [[cgi.escape(category), count] for category, count in category_counts.iteritems()]
 
                 question.chart_data = mark_safe(json.dumps(chart_data))
 
@@ -192,40 +253,44 @@ class IssueCRUDL(SmartCRUDL):
             context['complete_count'] = overall_counts['C']
             return context
 
-    class List(OrgPermsMixin, SmartListView):
+    class List(OrgPermsMixin, IssueListMixin, SmartListView):
         """
         All issues in current region
         """
         fields = ('poll', 'conducted_on', 'region', 'participants', 'responses')
         default_order = ('-conducted_on',)
+        add_button = False  # TODO this doesn't work without https://github.com/nyaruka/smartmin/pull/48 so we're overriding the template as well
+        link_fields = ('poll', 'participants', 'responses')
 
         def derive_title(self):
-            return _("All Polls")
-
-        def derive_link_fields(self, context):
-            return 'poll', 'responses'
+            return _("Poll Issues")
 
         def derive_queryset(self, **kwargs):
             return Issue.get_all(self.request.org, self.request.region)
 
-        def get_participants(self, obj):
-            counts = get_obj_cacheable(obj, '_response_counts', lambda: obj.get_response_counts(self.request.region))
-            return counts[RESPONSE_EMPTY] + counts[RESPONSE_PARTIAL] + counts[RESPONSE_COMPLETE]
+    class Filter(OrgPermsMixin, IssueListMixin, SmartListView):
+        """
+        Issues filtered by poll
+        """
+        fields = ('conducted_on', 'region', 'participants', 'responses')
+        link_fields = ('conducted_on', 'participants', 'responses')
 
-        def get_responses(self, obj):
-            counts = get_obj_cacheable(obj, '_response_counts', lambda: obj.get_response_counts(self.request.region))
-            return "%s / %s" % (counts[RESPONSE_PARTIAL], counts[RESPONSE_COMPLETE])
+        @classmethod
+        def derive_url_pattern(cls, path, action):
+            return r'^%s/%s/(?P<poll>\d+)/$' % (path, action)
 
-        def get_region(self, obj):
-            return obj.region if obj.region else _("All")
+        def derive_poll(self):
+            def fetch():
+                return Poll.objects.get(pk=self.kwargs['poll'], org=self.request.org, is_active=True)
+            return get_obj_cacheable(self, '_poll', fetch)
 
-        def lookup_field_link(self, context, field, obj):
-            if field == 'poll':
-                return reverse('polls.issue_read', args=[obj.pk])
-            elif field == 'participants':
-                return reverse('polls.issue_participation', args=[obj.pk])
-            elif field == 'responses':
-                return reverse('polls.response_filter', kwargs=dict(issue=obj.pk))
+        def derive_queryset(self, **kwargs):
+            return Issue.get_all(self.request.org, self.request.region).filter(poll=self.derive_poll())
+
+        def get_context_data(self, **kwargs):
+            context = super(IssueCRUDL.Filter, self).get_context_data(**kwargs)
+            context['poll'] = self.derive_poll()
+            return context
 
     class Latest(OrgPermsMixin, SmartListView):
         def get_queryset(self):
