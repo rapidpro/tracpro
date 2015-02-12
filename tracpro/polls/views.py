@@ -1,13 +1,12 @@
 from __future__ import absolute_import, unicode_literals
 
-import calendar
 import cgi
 import datetime
 import json
 
 from collections import OrderedDict, defaultdict
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
-from dash.utils import get_obj_cacheable
+from dash.utils import datetime_to_ms, get_obj_cacheable
 from django import forms
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect, JsonResponse
@@ -20,15 +19,10 @@ from .models import Poll, Issue, Response, RESPONSE_EMPTY, RESPONSE_PARTIAL, RES
 from .tasks import issue_restart_participants
 
 
-def datetime_to_ms(dt):
-    """
-    Converts a datetime to a millisecond accuracy timestamp
-    """
-    seconds = calendar.timegm(dt.utctimetuple())
-    return seconds * 1000 + dt.microsecond / 1000
-
-
 class ChartJsDataEncoder(json.JSONEncoder):
+    """
+    JSON Encoder which encodes datetime objects millisecond timestamps. Used for highcharts.js data.
+    """
     def default(self, obj):
         if isinstance(obj, datetime.datetime):
             return datetime_to_ms(obj)

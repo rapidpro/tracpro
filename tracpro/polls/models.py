@@ -5,6 +5,7 @@ import pytz
 
 from collections import Counter
 from dash.orgs.models import Org
+from dash.utils import get_sys_cacheable
 from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.db import models
@@ -205,16 +206,12 @@ class Issue(models.Model):
         return qs
 
     def get_answer_category_counts(self, question, region=None):
+        def calculate():
+            answers = self.get_answers_to(question, region)
+            return Counter([answer.category for answer in answers])
+
         cache_key = self._answer_cache_key(question, region, 'category_counts')
-        cached = cache.get(cache_key)
-        if cached:
-            return json.loads(cached)
-
-        answers = self.get_answers_to(question, region)
-        counts = Counter([answer.category for answer in answers])
-
-        cache.set(cache_key, json.dumps(counts), ANSWER_CACHE_TTL)
-        return counts
+        return get_sys_cacheable(cache_key, ANSWER_CACHE_TTL, calculate)
 
     def clear_answer_cache(self, question, region):
         """

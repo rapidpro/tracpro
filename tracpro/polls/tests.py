@@ -176,6 +176,31 @@ class IssueTest(TracProTest):
         self.assertFalse(issue2.is_last_for_region(self.region2))  # issue #3 covers region #2 and is newer
         self.assertTrue(issue3.is_last_for_region(self.region2))
 
+    def test_get_answer_category_counts(self):
+        issue = Issue.objects.create(poll=self.poll1, region=None, conducted_on=timezone.now())
+        response1 = Response.create_empty(self.unicef, issue,
+                                          Run.create(id=123, contact='C-001', created_on=timezone.now()))
+        Answer.create(response1, self.poll1_question1, "4.00000", "1 - 5", timezone.now())
+        response2 = Response.create_empty(self.unicef, issue,
+                                          Run.create(id=234, contact='C-002', created_on=timezone.now()))
+        Answer.create(response2, self.poll1_question1, "3.00000", "1 - 5", timezone.now())
+        response3 = Response.create_empty(self.unicef, issue,
+                                          Run.create(id=345, contact='C-004', created_on=timezone.now()))
+        Answer.create(response3, self.poll1_question1, "8.00000", "6 - 10", timezone.now())
+
+        self.assertEqual(issue.get_answer_category_counts(self.poll1_question1), {"1 - 5": 2, "6 - 10": 1})
+
+        # this time is from cache
+        with self.assertNumQueries(0):
+            self.assertEqual(issue.get_answer_category_counts(self.poll1_question1), {"1 - 5": 2, "6 - 10": 1})
+
+        self.assertEqual(issue.get_answer_category_counts(self.poll1_question1, self.region1), {"1 - 5": 2})
+
+        with self.assertNumQueries(0):
+            self.assertEqual(issue.get_answer_category_counts(self.poll1_question1, self.region1), {"1 - 5": 2})
+
+        self.assertEqual(issue.get_answer_category_counts(self.poll1_question1, self.region2), {"6 - 10": 1})
+
 
 class ResponseTest(TracProTest):
     def test_get_or_create(self):

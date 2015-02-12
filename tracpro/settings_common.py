@@ -163,16 +163,12 @@ ROOT_URLCONF = 'tracpro.urls'
 CACHES = {
     'default': {
         'BACKEND': 'redis_cache.cache.RedisCache',
-        'LOCATION': '127.0.0.1:6379:1',
+        'LOCATION': '127.0.0.1:6379:10',
         'OPTIONS': {
             'CLIENT_CLASS': 'redis_cache.client.DefaultClient',
         }
     }
 }
-
-if 'test' in sys.argv:
-    CACHES['default'] = {'BACKEND': 'django.core.cache.backends.dummy.DummyCache',}
-
 
 ORG_CONFIG_FIELDS = [dict(name='secret_token',
                           field=dict(help_text=_("Secret token to include in all webhook requests from RapidPro"),
