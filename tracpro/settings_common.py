@@ -170,9 +170,7 @@ CACHES = {
     }
 }
 
-ORG_CONFIG_FIELDS = [dict(name='secret_token',
-                          field=dict(help_text=_("Secret token to include in all webhook requests from RapidPro"),
-                                     required=True))]
+ORG_CONFIG_FIELDS = []
 
 INSTALLED_APPS = (
     'django.contrib.auth',
