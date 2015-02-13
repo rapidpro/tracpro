@@ -9,12 +9,10 @@ controllers.controller 'LatestIssuesController', [ '$scope', '$timeout', 'PollSe
   $scope.issues = []
 
   $scope.init = ->
-    $scope.refresh()
+    $timeout($scope.refresh, 1)
 
   $scope.refresh = ->
     PollService.fetchLatestIssues (issues) ->
-      console.info("Refreshing latest issues")
-
       $scope.issues = issues
       $scope.loading = false
       $timeout($scope.refresh, 5000)
@@ -31,7 +29,7 @@ controllers.controller 'ActiveRegionsController', [ '$scope', '$timeout', 'PollS
   $scope.regions = []
 
   $scope.init = ->
-    $scope.refresh()
+    $timeout($scope.refresh, 1)
 
   $scope.refresh = ->
     PollService.fetchActiveRegions (regions) ->
@@ -51,7 +49,7 @@ controllers.controller 'ActiveGroupsController', [ '$scope', '$timeout', 'PollSe
   $scope.groups = []
 
   $scope.init = ->
-    $scope.refresh()
+    $timeout($scope.refresh, 1)
 
   $scope.refresh = ->
     PollService.fetchActiveGroups (groups) ->

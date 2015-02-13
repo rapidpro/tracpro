@@ -31,6 +31,10 @@ services.factory 'PollService', ['$http', ($http) ->
         callback(data.results)
       .error (data, status, headers, config) =>
         console.error("Problem fetching latest poll issues. Server returned " + status)
+      .then (response) =>
+            console.info(response)
+          , (errResponse) =>
+            console.error(errResponse)
 
     #=====================================================================
     # Fetches most active regions
