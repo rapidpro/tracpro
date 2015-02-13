@@ -13,6 +13,8 @@ controllers.controller 'LatestIssuesController', [ '$scope', '$timeout', 'PollSe
 
   $scope.refresh = ->
     PollService.fetchLatestIssues (issues) ->
+      console.info("Refreshing latest issues")
+
       $scope.issues = issues
       $scope.loading = false
       $timeout($scope.refresh, 5000)

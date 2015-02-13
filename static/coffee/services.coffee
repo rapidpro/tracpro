@@ -22,6 +22,8 @@ services.factory 'PollService', ['$http', ($http) ->
     fetchLatestIssues: (callback) ->
       $http.get('/issue/latest/')
       .success (data) =>
+        console.info("Received " + data.results.length + " latest issues")
+
         for issue in data.results
           # parse datetime string
           issue.conducted_on = parse_iso8601 issue.conducted_on
