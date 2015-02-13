@@ -6,7 +6,7 @@ import os
 
 DEBUG = False
 TEMPLATE_DEBUG = DEBUG
-COMPRESS_ENABLED = True
+COMPRESS_ENABLED = False
 
 SITE_API_HOST = 'http://textit.staging.nyaruka.com/api/v1'
 SITE_HOST_PATTERN = 'http://%s.tracpro.staging.nyaruka.com'
