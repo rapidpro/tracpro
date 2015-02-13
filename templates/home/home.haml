@@ -20,7 +20,7 @@
             %span.glyphicon.glyphicon-send
             - trans "Start..."
       %h2
-        - trans "Latest Polls"
+        - trans "Latest Polling"
 
     .row.ng-cloak{ ng-controller:"LatestIssuesController", ng-init:'init()', ng-cloak:"", style:"margin-bottom: 1em" }
       .col-md-12
@@ -28,9 +28,9 @@
           %thead
             %tr
               %th
-                - trans "Poll"
+                - trans "Conducted On"
               %th
-                - trans "Date"
+                - trans "Poll"
               %th
                 - trans "Region"
               %th
@@ -41,9 +41,10 @@
             %tr{ ng-repeat:"issue in issues" }
               %td
                 %a{ href:"/issue/read/[[ issue.id ]]/" }
-                  [[ issue.poll.name ]]
+                  [[ issue.conducted_on | autodate ]]
               %td
-                [[ issue.conducted_on | autodate ]]
+                %a{ href:"/poll/read/[[ issue.poll.id ]]/" }
+                  [[ issue.poll.name ]]
               %td
                 %span{ ng-if:"issue.region" }
                   [[ issue.region.name ]]

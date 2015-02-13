@@ -143,7 +143,9 @@ class IssueListMixin(object):
         return obj.region if obj.region else _("All")
 
     def lookup_field_link(self, context, field, obj):
-        if field == 'poll' or field == 'conducted_on':
+        if field == 'poll':
+            return reverse('polls.poll_read', args=[obj.poll_id])
+        if field == 'conducted_on':
             return reverse('polls.issue_read', args=[obj.pk])
         elif field == 'participants':
             return reverse('polls.issue_participation', args=[obj.pk])
@@ -253,13 +255,13 @@ class IssueCRUDL(SmartCRUDL):
         """
         All issues in current region
         """
-        fields = ('poll', 'conducted_on', 'region', 'participants', 'responses')
+        fields = ('conducted_on', 'poll', 'region', 'participants', 'responses')
+        link_fields = ('conducted_on', 'poll', 'participants', 'responses')
         default_order = ('-conducted_on',)
         add_button = False
-        link_fields = ('poll', 'participants', 'responses')
 
         def derive_title(self):
-            return _("Poll Issues")
+            return _("All Poll Issues")
 
         def derive_queryset(self, **kwargs):
             return Issue.get_all(self.request.org, self.request.region)
