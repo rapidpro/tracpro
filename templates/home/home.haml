@@ -54,7 +54,9 @@
                   [[ issue.responses.E + issue.responses.P + issue.responses.C ]]
               %td
                 %a{ href:"/response/filter/[[ issue.id ]]/" }
-                  [[ issue.responses.P ]] / [[ issue.responses.C ]]
+                  [[ issue.responses.C ]]
+                  %span{ ng-if:"issue.responses.P" }
+                    ([[ issue.responses.P ]])
 
         .loading{ ng-if:"loading" }
         .none{ ng-if:"!loading && issues.length == 0" }

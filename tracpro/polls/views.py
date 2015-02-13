@@ -134,7 +134,10 @@ class IssueListMixin(object):
 
     def get_responses(self, obj):
         counts = get_obj_cacheable(obj, '_response_counts', lambda: obj.get_response_counts(self.request.region))
-        return "%s / %s" % (counts[RESPONSE_PARTIAL], counts[RESPONSE_COMPLETE])
+        if counts[RESPONSE_PARTIAL]:
+            return "%s (%s)" % (counts[RESPONSE_COMPLETE], counts[RESPONSE_PARTIAL])
+        else:
+            return counts[RESPONSE_COMPLETE]
 
     def get_region(self, obj):
         return obj.region if obj.region else _("All")
