@@ -37,11 +37,11 @@ pisa==3.0.33
 polib==1.0.4
 psycopg2==2.6
 pytz==2014.10
-raven==5.1.1
+raven==5.2.0
 redis==2.10.3
 requests==2.5.1
 six==1.9.0
--e git+https://github.com/nyaruka/smartmin.git@d62bc5db33f7ffd5b00c69970d6d9f60cd3a9391#egg=smartmin-master
+-e git+https://github.com/nyaruka/smartmin.git@5b203cb9b6491b5856ffb8e2762593e0a3e79ad8#egg=smartmin-master
 sorl-thumbnail==11.12.1b
 sqlparse==0.1.14
 wsgiref==0.1.2

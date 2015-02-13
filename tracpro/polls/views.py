@@ -252,7 +252,7 @@ class IssueCRUDL(SmartCRUDL):
         """
         fields = ('poll', 'conducted_on', 'region', 'participants', 'responses')
         default_order = ('-conducted_on',)
-        add_button = False  # TODO this doesn't work without https://github.com/nyaruka/smartmin/pull/48 so we're overriding the template as well
+        add_button = False
         link_fields = ('poll', 'participants', 'responses')
 
         def derive_title(self):
@@ -300,6 +300,7 @@ class ResponseCRUDL(SmartCRUDL):
 
     class Filter(OrgPermsMixin, SmartListView):
         default_order = ('-created_on',)
+        link_fields = ('contact',)
 
         @classmethod
         def derive_url_pattern(cls, path, action):
@@ -324,9 +325,6 @@ class ResponseCRUDL(SmartCRUDL):
             if not self.request.region:
                 base_fields.append('region')
             return base_fields + ['group'] + self.derive_questions().keys()
-
-        def derive_link_fields(self, context):
-            return 'contact',
 
         def derive_queryset(self, **kwargs):
             # only show partial and complete responses

@@ -20,15 +20,13 @@ class MessageCRUDL(SmartCRUDL):
                         'issue': {'label': _("Poll Issue")}}
         title = _("Message Log")
         default_order = ('-sent_on',)
+        link_fields = ('issue',)
 
         def derive_fields(self):
             fields = ['sent_on', 'sent_by', 'text', 'issue', 'cohort']
             if not self.request.region:
                 fields.append('region')
             return fields
-
-        def derive_link_fields(self, context):
-            return ('issue',)
 
         def derive_queryset(self, **kwargs):
             if self.request.region:
