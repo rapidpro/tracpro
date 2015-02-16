@@ -135,6 +135,8 @@ class PollCRUDL(SmartCRUDL):
 
 
 class IssueListMixin(object):
+    default_order = ('-conducted_on',)
+
     def get_participants(self, obj):
             counts = get_obj_cacheable(obj, '_response_counts', lambda: obj.get_response_counts(self.request.region))
             return counts[RESPONSE_EMPTY] + counts[RESPONSE_PARTIAL] + counts[RESPONSE_COMPLETE]
@@ -264,7 +266,6 @@ class IssueCRUDL(SmartCRUDL):
         """
         fields = ('conducted_on', 'poll', 'region', 'participants', 'responses')
         link_fields = ('conducted_on', 'poll', 'participants', 'responses')
-        default_order = ('-conducted_on',)
         add_button = False
 
         def derive_title(self):
