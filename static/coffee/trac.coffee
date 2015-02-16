@@ -9,6 +9,6 @@ app.config [ '$interpolateProvider', '$httpProvider', ($interpolateProvider, $ht
   $httpProvider.defaults.xsrfCookieName = 'csrftoken'
   $httpProvider.defaults.xsrfHeaderName = 'X-CSRFToken'
 
-  # Performance improvement
-  $httpProvider.useApplyAsync(true);
+  # Disabled since we reverted to Angular 1.2.x
+  # $httpProvider.useApplyAsync(true);
 ]
