@@ -76,7 +76,8 @@ class PollCRUDL(SmartCRUDL):
             return context
 
     class List(OrgPermsMixin, SmartListView):
-        fields = ('name', 'questions', 'issues', 'last_conducted')
+        fields = ('name', 'questions', 'dates', 'last_conducted')
+        link_fields = ('name', 'dates')
         default_order = ('name',)
 
         def derive_queryset(self, **kwargs):
@@ -88,12 +89,18 @@ class PollCRUDL(SmartCRUDL):
         def get_questions(self, obj):
             return obj.get_questions().count()
 
-        def get_issues(self, obj):
+        def get_dates(self, obj):
             return self.derive_issues(obj).count()
 
         def get_last_conducted(self, obj):
             last_issue = self.derive_issues(obj).order_by('-conducted_on').first()
             return last_issue.conducted_on if last_issue else _("Never")
+
+        def lookup_field_link(self, context, field, obj):
+            if field == 'dates':
+                return reverse('polls.issue_filter', args=[obj.pk])
+
+            return super(PollCRUDL.List, self).lookup_field_link(context, field, obj)
 
     class Select(OrgPermsMixin, SmartFormView):
         class FlowsForm(forms.Form):
