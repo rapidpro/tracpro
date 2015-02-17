@@ -7,8 +7,23 @@
 
 - block content
 
-  - if not request.region
-    - trans "Charts only include data from non-regional issues"
+  .
+    - if not request.region
+      - trans "Charts only include data from non-regional issues"
+
+    .pull-away
+      %form.form-inline{ method:"get" }
+        %label.control-label{ for:"window-select" }
+        - trans "Show"
+        %select.form-control{ id:"window-select", name:"window", onchange:"onChartWindowChange(this)" }
+          - for win in window_options
+            - if win.0 == window
+              %option{ value:"{{ win.0 }}", selected:"selected" }
+                {{ win.1 }}
+            - else
+              %option{ value:"{{ win.0 }}" }
+                {{ win.1 }}
+
 
   - for question in questions
     %h3
@@ -76,6 +91,10 @@
     function init_chart_nodata(container) {
       container.addClass('chart-no-data');
       container.text("No data")
+    }
+
+    function onChartWindowChange(ctrl) {
+      ctrl.form.submit();
     }
 
 - block extra-style

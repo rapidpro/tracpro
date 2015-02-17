@@ -87,6 +87,9 @@ class Poll(models.Model):
     def get_questions(self):
         return self.questions.filter(is_active=True).order_by('order')
 
+    def get_issues(self, region=None):
+        return Issue.get_all(self.org, region).filter(poll=self)
+
     def __unicode__(self):
         return self.name
 
@@ -151,15 +154,12 @@ class Issue(models.Model):
         return cls.objects.create(poll=poll, conducted_on=for_date)
 
     @classmethod
-    def get_all(cls, org, region=None, poll=None):
+    def get_all(cls, org, region=None):
         issues = cls.objects.filter(poll__org=org, poll__is_active=True)
 
         if region:
             # any issue to this region or any non-regional issue
             issues = issues.filter(Q(region=None) | Q(region=region))
-
-        if poll:
-            issues = issues.filter(poll=poll)
 
         return issues.select_related('poll', 'region')
 

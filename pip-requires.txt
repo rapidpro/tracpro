@@ -26,6 +26,7 @@ nose
 pillow
 pisa
 psycopg2
+python-dateutil
 raven
 sorl-thumbnail==11.12.1b
 xlutils

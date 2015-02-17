@@ -7,6 +7,7 @@ import json
 from collections import OrderedDict, defaultdict
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from dash.utils import datetime_to_ms, get_obj_cacheable
+from dateutil.relativedelta import relativedelta
 from django import forms
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect, JsonResponse
@@ -19,7 +20,16 @@ from .models import Poll, Issue, Response, RESPONSE_EMPTY, RESPONSE_PARTIAL, RES
 from .tasks import issue_restart_participants
 
 
-class ChartJsDataEncoder(json.JSONEncoder):
+WINDOW_LAST_1_MONTH = '1-mo'
+WINDOW_LAST_3_MONTHS = '3-mo'
+WINDOW_LAST_6_MONTHS = '6-mo'
+WINDOW_LAST_12_MONTHS = '12-mo'
+WINDOW_OPTIONS = ((WINDOW_LAST_3_MONTHS, _("Last 3 months")),
+                  (WINDOW_LAST_6_MONTHS, _("Last 6 months")),
+                  (WINDOW_LAST_12_MONTHS, _("Last 12 months")))
+
+
+class ChartJsonEncoder(json.JSONEncoder):
     """
     JSON Encoder which encodes datetime objects millisecond timestamps. Used for highcharts.js data.
     """
@@ -37,16 +47,22 @@ class PollCRUDL(SmartCRUDL):
 
         def get_context_data(self, **kwargs):
             context = super(PollCRUDL.Read, self).get_context_data(**kwargs)
+            window = self.request.REQUEST.get('window', WINDOW_LAST_6_MONTHS)
             questions = self.object.get_questions()
 
-            issues = Issue.get_all(self.request.org, self.request.region, poll=self.object)
+            issues = self.object.get_issues(self.request.region)
 
             # if we're viewing "All Regions" don't include regional only issues
             if not self.request.region:
                 issues = issues.filter(region=None)
 
-            # TODO this should be configurable based on date but for now let's just consider the last 10 issues
-            issues = issues.order_by('-conducted_on')[0:10]
+            window_val, window_unit = window.split('-', 1)
+            if window_unit == 'mo':
+                since = timezone.now() - relativedelta(months=int(window_val))
+            else:  # pragma: no cover
+                raise ValueError("Unsupported window unit: %s" % window_unit)
+
+            issues = issues.filter(conducted_on__gte=since).order_by('-conducted_on')
 
             for question in questions:
                 categories = set()
@@ -68,10 +84,12 @@ class PollCRUDL(SmartCRUDL):
                         count = category_counts.get(category, 0)
                         category_series[category].append((issue.conducted_on, count))
 
-                chart_data = [dict(name=category, data=data) for category, data in category_series.iteritems()]
+                chart_data = [dict(name=cgi.escape(category), data=data) for category, data in category_series.iteritems()]
 
-                question.chart_data = mark_safe(json.dumps(chart_data, cls=ChartJsDataEncoder))
+                question.chart_data = mark_safe(json.dumps(chart_data, cls=ChartJsonEncoder))
 
+            context['window'] = window
+            context['window_options'] = WINDOW_OPTIONS
             context['questions'] = questions
             return context
 
@@ -291,7 +309,7 @@ class IssueCRUDL(SmartCRUDL):
             return get_obj_cacheable(self, '_poll', fetch)
 
         def derive_queryset(self, **kwargs):
-            return Issue.get_all(self.request.org, self.request.region).filter(poll=self.derive_poll())
+            return self.derive_poll().get_issues(self.request.region)
 
         def get_context_data(self, **kwargs):
             context = super(IssueCRUDL.Filter, self).get_context_data(**kwargs)

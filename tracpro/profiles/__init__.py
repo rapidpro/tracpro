@@ -1,5 +1,6 @@
 from __future__ import absolute_import, unicode_literals
 
+from dash.utils import get_obj_cacheable
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
@@ -54,14 +55,14 @@ def _user_get_full_name(user):
 
 
 def _user_get_regions(user, org):
-    if not hasattr(user, '_regions'):
+    def calculate():
         # org admins have implicit access to all regions
         if user.is_admin_for(org):
-            user._regions = Region.get_all(org)
+            return Region.get_all(org)
         else:
-            user._regions = user.regions.filter(is_active=True)
+            return user.regions.filter(is_active=True)
 
-    return user._regions
+    return get_obj_cacheable(user, '_regions', calculate)
 
 
 def _user_update_regions(user, regions):

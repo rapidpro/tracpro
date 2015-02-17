@@ -2,6 +2,7 @@ from __future__ import absolute_import, unicode_literals
 
 from collections import OrderedDict
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
+from dash.utils import get_obj_cacheable
 from dash.utils.sync import ChangeType
 from django.core.exceptions import PermissionDenied
 from django.core.urlresolvers import reverse
@@ -208,13 +209,13 @@ class ContactCRUDL(SmartCRUDL):
             return super(ContactCRUDL.List, self).lookup_field_class(field, obj, default)
 
         def derive_issues(self):
-            if hasattr(self, '_issues'):
-                return self._issues
+            def fetch():
+                issues = OrderedDict()
+                for issue in Issue.get_all(self.request.org, self.request.region).order_by('-conducted_on')[0:3]:
+                    issues['issue_%d' % issue.pk] = issue
+                return issues
 
-            self._issues = OrderedDict()
-            for issue in Issue.get_all(self.request.org, self.request.region).order_by('-conducted_on')[0:3]:
-                self._issues['issue_%d' % issue.pk] = issue
-            return self._issues
+            return get_obj_cacheable(self, '_issues', fetch)
 
         def derive_queryset(self, **kwargs):
             if self.request.region:
