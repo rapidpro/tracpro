@@ -223,6 +223,7 @@ INSTALLED_APPS = (
     'tracpro.orgs_ext',
     'tracpro.polls',
     'tracpro.profiles',
+    'tracpro.trac',
 )
 
 LOGGING = {
@@ -302,9 +303,9 @@ PERMISSIONS = {
 
     'polls.poll': ('read', 'list', 'select'),
 
-    'polls.issue': ('create', 'restart', 'read', 'participation', 'list', 'filter', 'latest'),
+    'polls.issue': ('create', 'restart', 'read', 'participation', 'list', 'by_poll', 'latest'),
 
-    'polls.response': ('filter',),
+    'polls.response': ('by_issue', 'by_contact'),
 
     # can't create profiles.user.* permissions because we don't own User
     'profiles.profile': ('user_create', 'user_read', 'user_update', 'user_list'),
@@ -337,8 +338,9 @@ GROUP_PERMISSIONS = {
         'polls.issue_participation',
         'polls.issue_latest',
         'polls.issue_list',
-        'polls.issue_filter',
-        'polls.response_filter',
+        'polls.issue_by_poll',
+        'polls.response_by_contact',
+        'polls.response_by_issue',
         'profiles.profile_user_read',
     ),
 }

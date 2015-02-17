@@ -374,12 +374,12 @@ class ResponseCRUDLTest(TracProTest):
         self.issue2_r1 = Response.objects.create(flow_run_id=456, issue=self.issue2, contact=self.contact1,
                                                  created_on=date3, updated_on=date3, status=RESPONSE_PARTIAL)
 
-    def test_filter(self):
+    def test_by_issue(self):
         # log in as admin
         self.login(self.admin)
 
         # view responses for issue #1
-        response = self.url_get('unicef', reverse('polls.response_filter', args=[self.issue1.pk]))
+        response = self.url_get('unicef', reverse('polls.response_by_issue', args=[self.issue1.pk]))
         self.assertContains(response, "Number of sheep", status_code=200)
         self.assertContains(response, "Number of goats")
 
@@ -393,11 +393,11 @@ class ResponseCRUDLTest(TracProTest):
         self.switch_region(self.region1)
 
         # can't restart as there is a later issue of the same poll in region #1
-        response = self.url_get('unicef', reverse('polls.response_filter', args=[self.issue1.pk]))
+        response = self.url_get('unicef', reverse('polls.response_by_issue', args=[self.issue1.pk]))
         self.assertFalse(response.context['can_restart'])
 
         self.switch_region(self.region2)
 
         # can restart as this is the latest issue of this poll in region #2
-        response = self.url_get('unicef', reverse('polls.response_filter', args=[self.issue1.pk]))
+        response = self.url_get('unicef', reverse('polls.response_by_issue', args=[self.issue1.pk]))
         self.assertTrue(response.context['can_restart'])

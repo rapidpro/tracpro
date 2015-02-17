@@ -116,6 +116,16 @@ class Contact(models.Model):
     def get_urn(self):
         return tuple(self.urn.split(':', 1))
 
+    def get_responses(self, include_empty=True):
+        from tracpro.polls.models import RESPONSE_EMPTY
+
+        qs = self.responses.filter(issue__poll__is_active=True, is_active=True).select_related('issue')
+
+        if not include_empty:
+            qs = qs.exclude(status=RESPONSE_EMPTY)
+
+        return qs
+
     def release(self):
         self.is_active = False
         self.save()

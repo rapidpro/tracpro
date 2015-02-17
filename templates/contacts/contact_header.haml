@@ -1,0 +1,14 @@
+- load i18n
+- load trac
+
+.page-header
+  %h2
+    {{ contact }}
+
+%ul.nav.nav-tabs{ style:"margin-bottom: 1em" }
+  %li{ class:"{% if_url 'contacts.contact_read' 'active' '' %}" }
+    %a{ href:"{% url 'contacts.contact_read' contact.pk %}" }
+      - trans "Summary"
+  %li{ class:"{% if_url 'polls.response_by_contact' 'active' '' %}" }
+    %a{ href:"{% url 'polls.response_by_contact' contact.pk %}" }
+      - trans "Responses"

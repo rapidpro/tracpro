@@ -1,6 +1,10 @@
 - extends "smartmin/read.html"
 - load smartmin i18n
 
+- block pre-content
+
+  {% include 'contacts/contact_header.haml' with contact=object %}
+
 - block read-buttons
   .btn-group.pull-away
     %a.btn.btn-default{ href:"{{ edit_button_url }}" }

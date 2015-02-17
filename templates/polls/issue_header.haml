@@ -1,5 +1,5 @@
 - load i18n
-- load polls
+- load trac
 
 .page-header
   %h2
@@ -35,8 +35,8 @@
   %li{ class:"{% if_url 'polls.issue_participation' 'active' '' %}" }
     %a{ href:"{% url 'polls.issue_participation' issue.pk %}" }
       - trans "Participation"
-  %li{ class:"{% if_url 'polls.response_filter' 'active' '' %}" }
-    %a{ href:"{% url 'polls.response_filter' issue.pk %}" }
+  %li{ class:"{% if_url 'polls.response_by_issue' 'active' '' %}" }
+    %a{ href:"{% url 'polls.response_by_issue' issue.pk %}" }
       - trans "Responses"
 
 
