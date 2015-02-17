@@ -54,7 +54,7 @@
                 %a{ href:"/issue/participation/[[ issue.id ]]/" }
                   [[ issue.responses.E + issue.responses.P + issue.responses.C ]]
               %td
-                %a{ href:"/response/filter/[[ issue.id ]]/" }
+                %a{ href:"/response/by_issue/[[ issue.id ]]/" }
                   [[ issue.responses.C ]]
                   %span{ ng-if:"issue.responses.P" }
                     ([[ issue.responses.P ]])

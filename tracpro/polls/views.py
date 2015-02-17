@@ -97,7 +97,7 @@ class PollCRUDL(SmartCRUDL):
     class List(OrgPermsMixin, SmartListView):
         fields = ('name', 'questions', 'issues', 'last_conducted')
         field_config = {'issues': {'label': _("Dates")}}
-        link_fields = ('name', 'dates')
+        link_fields = ('name', 'issues')
         default_order = ('name',)
 
         def derive_queryset(self, **kwargs):
