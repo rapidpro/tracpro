@@ -3,6 +3,7 @@ from __future__ import absolute_import, unicode_literals
 from dash.orgs.models import Org
 from django.contrib.auth.models import User
 from django.db import models
+from django.db.models import Q
 from django.utils.translation import ugettext_lazy as _
 from tracpro.contacts.models import Contact
 from tracpro.groups.models import Region
@@ -71,5 +72,18 @@ class Message(models.Model):
 
         return message
 
+    @classmethod
+    def get_all(cls, org, region=None):
+        messages = cls.objects.filter(org=org)
+
+        if region:
+            # any message to this region or any non-regional message
+            messages = messages.filter(Q(region=None) | Q(region=region))
+
+        return messages.select_related('region')
+
     def as_json(self):
         return dict(id=self.pk, recipients=self.recipients.count())
+
+    def __unicode__(self):
+        return self.text

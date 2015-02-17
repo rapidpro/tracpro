@@ -1,5 +1,6 @@
 from __future__ import absolute_import, unicode_literals
 
+from django.core.urlresolvers import reverse
 from django.test.utils import override_settings
 from django.utils import timezone
 from mock import patch
@@ -54,4 +55,24 @@ class MessageTest(TracProTest):
 
 
 class MessageCRUDLTest(TracProTest):
-    pass
+    def test_list(self):
+        url = reverse('msgs.message_list')
+
+        # create a non-regional issue
+        issue1 = Issue.objects.create(poll=self.poll1, region=None, conducted_on=timezone.now())
+
+        # send 1 message to all regions and 2 more to specific regions
+        msg1 = Message.create(self.unicef, self.admin, "Test to all", issue1, COHORT_ALL, None)
+        msg2 = Message.create(self.unicef, self.admin, "Test to region #1", issue1, COHORT_ALL, self.region1)
+        msg3 = Message.create(self.unicef, self.admin, "Test to region #2", issue1, COHORT_ALL, self.region2)
+
+        self.login(self.admin)
+
+        response = self.url_get('unicef', url)
+        self.assertEqual(list(response.context['object_list']), [msg3, msg2, msg1])
+
+        self.switch_region(self.region1)
+
+        # should still include message sent to all regions
+        response = self.url_get('unicef', url)
+        self.assertEqual(list(response.context['object_list']), [msg2, msg1])

@@ -19,23 +19,17 @@ class MessageCRUDL(SmartCRUDL):
                         'cohort': {'label': _("Recipients")},
                         'issue': {'label': _("Poll Issue")}}
         title = _("Message Log")
-        default_order = ('-sent_on',)
+        default_order = ('-pk',)
         link_fields = ('issue',)
 
-        def derive_fields(self):
-            fields = ['sent_on', 'sent_by', 'text', 'issue', 'cohort']
-            if not self.request.region:
-                fields.append('region')
-            return fields
-
         def derive_queryset(self, **kwargs):
-            if self.request.region:
-                return self.request.region.messages.all()
-            else:
-                return self.request.org.messages.all()
+            return Message.get_all(self.request.org, self.request.region)
 
         def get_cohort(self, obj):
             return obj.get_cohort_display()
+
+        def get_region(self, obj):
+            return obj.region if obj.region else _("All")
 
         def lookup_field_link(self, context, field, obj):
             if field == 'issue':
