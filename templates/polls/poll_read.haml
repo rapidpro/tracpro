@@ -29,7 +29,7 @@
     %h3
       {{ question.order }}. {{ question.text }}
 
-    .chart{ data-chart-type:"trend", data-question-id:"{{ question.pk }}", data-window-min:"{{ window_min }}", data-window-max:"{{ window_max }}" }
+    .chart{ data-chart-type:"trend", data-question-id:"{{ question.pk }}", data-window-min:"{{ window_min }}", data-window-max:"{{ window_max }}", dir:"ltr" }
 
     %script{ type:"text/javascript" }
       var chart_{{ question.pk }}_series = {{ question.chart_data }};

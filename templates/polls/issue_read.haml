@@ -11,7 +11,7 @@
     %h3
       {{ question.order }}. {{ question.text }}
 
-    .chart{ data-chart-type:"pie", data-question-id:"{{ question.pk }}" }
+    .chart{ data-chart-type:"pie", data-question-id:"{{ question.pk }}", dir:"ltr" }
 
     %script{ type:"text/javascript" }
       var chart_{{ question.pk }}_data = {{ question.chart_data }};
