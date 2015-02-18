@@ -223,7 +223,6 @@ INSTALLED_APPS = (
     'tracpro.orgs_ext',
     'tracpro.polls',
     'tracpro.profiles',
-    'tracpro.trac',
 )
 
 LOGGING = {

@@ -4,7 +4,7 @@ import pytz
 
 from collections import Counter
 from dash.orgs.models import Org
-from dash.utils import get_cacheable
+from dash.utils import get_cacheable, get_month_range
 from dateutil.relativedelta import relativedelta
 from django.contrib.auth.models import User
 from django.core.cache import cache
@@ -15,7 +15,6 @@ from django.utils.translation import ugettext_lazy as _
 from enum import Enum
 from tracpro.contacts.models import Contact
 from tracpro.groups.models import Region
-from tracpro.trac import get_month_range
 from .tasks import issue_start
 
 
