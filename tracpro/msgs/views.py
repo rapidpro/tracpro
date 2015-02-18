@@ -1,41 +1,39 @@
 from __future__ import absolute_import, unicode_literals
 
 from dash.orgs.views import OrgPermsMixin
+from dash.utils import get_obj_cacheable
 from django.core.urlresolvers import reverse
 from django.http import JsonResponse
 from django.utils.translation import ugettext_lazy as _
 from smartmin.users.views import SmartCRUDL, SmartListView, SmartCreateView
+from tracpro.contacts.models import Contact
 from tracpro.polls.models import Issue
 from .models import Message
 
 
+class MessageListMixin(object):
+    field_config = {'text': {'class': 'italicized'},
+                    'cohort': {'label': _("Recipients")},
+                    'issue': {'label': _("Poll Issue")}}
+    default_order = ('-pk',)
+    link_fields = ('issue',)
+
+    def get_cohort(self, obj):
+        return obj.get_cohort_display()
+
+    def get_region(self, obj):
+        return obj.region if obj.region else _("All")
+
+    def lookup_field_link(self, context, field, obj):
+        if field == 'issue':
+            return reverse('polls.issue_read', args=[obj.issue.pk])
+
+        return super(MessageListMixin, self).lookup_field_link(context, field, obj)
+
+
 class MessageCRUDL(SmartCRUDL):
     model = Message
-    actions = ('list', 'send')
-
-    class List(OrgPermsMixin, SmartListView):
-        fields = ('sent_on', 'sent_by', 'issue', 'cohort', 'region', 'text')
-        field_config = {'text': {'class': 'italicized'},
-                        'cohort': {'label': _("Recipients")},
-                        'issue': {'label': _("Poll Issue")}}
-        title = _("Message Log")
-        default_order = ('-pk',)
-        link_fields = ('issue',)
-
-        def derive_queryset(self, **kwargs):
-            return Message.get_all(self.request.org, self.request.region)
-
-        def get_cohort(self, obj):
-            return obj.get_cohort_display()
-
-        def get_region(self, obj):
-            return obj.region if obj.region else _("All")
-
-        def lookup_field_link(self, context, field, obj):
-            if field == 'issue':
-                return reverse('polls.issue_read', args=[obj.issue.pk])
-
-            return super(MessageCRUDL.List, self).lookup_field_link(context, field, obj)
+    actions = ('list', 'send', 'by_contact')
 
     class Send(OrgPermsMixin, SmartCreateView):
         def post(self, request, *args, **kwargs):
@@ -47,3 +45,39 @@ class MessageCRUDL(SmartCRUDL):
 
             msg = Message.create(org, self.request.user, text, issue, cohort, region)
             return JsonResponse(msg.as_json())
+
+    class List(OrgPermsMixin, MessageListMixin, SmartListView):
+        fields = ('sent_on', 'sent_by', 'issue', 'cohort', 'region', 'text')
+        title = _("Message Log")
+
+        def derive_queryset(self, **kwargs):
+            return Message.get_all(self.request.org, self.request.region)
+
+        def lookup_field_link(self, context, field, obj):
+            return super(MessageCRUDL.List, self).lookup_field_link(context, field, obj)
+
+    class ByContact(OrgPermsMixin, MessageListMixin, SmartListView):
+        fields = ('sent_on', 'sent_by', 'issue', 'cohort', 'text')
+        field_config = {'text': {'class': 'italicized'},
+                        'cohort': {'label': _("Recipients")},
+                        'issue': {'label': _("Poll Issue")}}
+
+        @classmethod
+        def derive_url_pattern(cls, path, action):
+            return r'^%s/%s/(?P<contact>\d+)/$' % (path, action)
+
+        def derive_contact(self):
+            def fetch():
+                return Contact.objects.get(pk=self.kwargs['contact'], org=self.request.org)
+            return get_obj_cacheable(self, '_contact', fetch)
+
+        def derive_queryset(self, **kwargs):
+            return self.derive_contact().messages.all()
+
+        def lookup_field_link(self, context, field, obj):
+            return super(MessageCRUDL.ByContact, self).lookup_field_link(context, field, obj)
+
+        def get_context_data(self, **kwargs):
+            context = super(MessageCRUDL.ByContact, self).get_context_data(**kwargs)
+            context['contact'] = self.derive_contact()
+            return context

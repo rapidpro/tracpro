@@ -299,7 +299,7 @@ PERMISSIONS = {
 
     'groups.region': ('list', 'most_active', 'select'),
 
-    'msgs.message': ('list', 'send'),
+    'msgs.message': ('list', 'send', 'by_contact'),
 
     'polls.poll': ('read', 'list', 'select'),
 
@@ -331,6 +331,7 @@ GROUP_PERMISSIONS = {
         'groups.group_most_active',
         'groups.region_most_active',
         'msgs.message_send',
+        'msgs.message_by_contact',
         'polls.poll_read',
         'polls.issue_create',
         'polls.issue_restart',

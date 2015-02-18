@@ -12,3 +12,6 @@
   %li{ class:"{% if_url 'polls.response_by_contact' 'active' '' %}" }
     %a{ href:"{% url 'polls.response_by_contact' contact.pk %}" }
       - trans "Responses"
+  %li{ class:"{% if_url 'msgs.message_by_contact' 'active' '' %}" }
+    %a{ href:"{% url 'msgs.message_by_contact' contact.pk %}" }
+      - trans "Messages"
