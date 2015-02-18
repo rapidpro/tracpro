@@ -420,8 +420,7 @@ class ResponseCRUDL(SmartCRUDL):
             return get_obj_cacheable(self, '_contact', fetch)
 
         def derive_queryset(self, **kwargs):
-            # only show partial and complete responses
-            qs = self.derive_contact().get_responses(include_empty=False)
+            qs = self.derive_contact().get_responses(include_empty=True)
 
             return qs.select_related('issue__poll').prefetch_related('answers')
 
