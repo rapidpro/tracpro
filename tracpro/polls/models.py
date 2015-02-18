@@ -1,11 +1,10 @@
 from __future__ import absolute_import, unicode_literals
 
-import json
 import pytz
 
 from collections import Counter
 from dash.orgs.models import Org
-from dash.utils import get_sys_cacheable
+from dash.utils import get_cacheable
 from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.db import models
@@ -211,7 +210,7 @@ class Issue(models.Model):
             return Counter([answer.category for answer in answers])
 
         cache_key = self._answer_cache_key(question, region, 'category_counts')
-        return get_sys_cacheable(cache_key, ANSWER_CACHE_TTL, calculate)
+        return get_cacheable(cache_key, ANSWER_CACHE_TTL, calculate)
 
     def clear_answer_cache(self, question, region):
         """
