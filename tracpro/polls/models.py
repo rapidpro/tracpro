@@ -6,6 +6,7 @@ from collections import Counter
 from dash.orgs.models import Org
 from dash.utils import get_cacheable, get_month_range
 from dateutil.relativedelta import relativedelta
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.db import models
@@ -263,7 +264,7 @@ class Issue(models.Model):
                     responses=self.get_response_counts(region))
 
     def __unicode__(self):
-        return "%s (%s)" % (self.poll.name, self.conducted_on.strftime("%b %d, %Y"))
+        return "%s (%s)" % (self.poll.name, self.conducted_on.strftime(settings.SITE_DATE_FORMAT))
 
 
 class Response(models.Model):

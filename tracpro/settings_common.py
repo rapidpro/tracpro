@@ -55,6 +55,8 @@ TIME_ZONE = 'GMT'
 USER_TIME_ZONE = 'GMT'
 USE_TZ = True
 
+SITE_DATE_FORMAT = r'%b %d, %Y'
+
 MODELTRANSLATION_TRANSLATION_REGISTRY = "translation"
 
 # Language code for this installation. All choices can be found here:

@@ -8,6 +8,7 @@ from collections import OrderedDict, defaultdict
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from dash.utils import datetime_to_ms, get_obj_cacheable
 from django import forms
+from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect, JsonResponse
 from django.utils import timezone
@@ -145,6 +146,9 @@ class PollCRUDL(SmartCRUDL):
 
 class IssueListMixin(object):
     default_order = ('-conducted_on',)
+
+    def get_conducted_on(self, obj):
+        return obj.conducted_on.strftime(settings.SITE_DATE_FORMAT)
 
     def get_participants(self, obj):
             counts = get_obj_cacheable(obj, '_response_counts', lambda: obj.get_response_counts(self.request.region))
