@@ -57,7 +57,7 @@ def fetch_org_new_runs(org):
         # convert flow runs into poll responses
         for run in runs:
             poll = polls_by_flow_uuids[run.flow]
-            Response.get_or_create(org, run, poll=poll)
+            Response.from_run(org, run, poll=poll)
 
     if newest_run:
         r.set(last_time_key, format_iso8601(newest_run.created_on))
@@ -82,7 +82,7 @@ def fetch_org_updated_runs(org):
 
         for run in runs:
             poll = polls_by_flow_uuids[run.flow]
-            Response.get_or_create(org, run, poll=poll)
+            Response.from_run(org, run, poll=poll)
     else:
         logger.info("No incomplete responses to update")
 

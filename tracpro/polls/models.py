@@ -270,9 +270,9 @@ class Response(models.Model):
                                        status=RESPONSE_EMPTY)
 
     @classmethod
-    def get_or_create(cls, org, run, poll=None):
+    def from_run(cls, org, run, poll=None):
         """
-        Gets or creates a response from a Temba flow run. If response is not up-to-date with provided run, then it is
+        Gets or creates a response from a flow run. If response is not up-to-date with provided run, then it is
         updated. If the run doesn't match with an existing poll issue, it's assumed to be non-regional.
         """
         response = Response.objects.filter(issue__poll__org=org, flow_run_id=run.id).select_related('issue').first()
@@ -287,19 +287,13 @@ class Response(models.Model):
 
         contact = Contact.get_or_fetch(poll.org, uuid=run.contact)
 
-        # organize values by ruleset UUID
-        questions = poll.get_questions()
-        valuesets_by_ruleset = {valueset.node: valueset for valueset in run.values}
-        valuesets_by_question = {q: valuesets_by_ruleset.get(q.ruleset_uuid, None) for q in questions}
-
-        # categorize response completeness
-        completed_questions = sum(1 for v in valuesets_by_question.values() if v is not None)
-        if completed_questions == 0:
-            status = RESPONSE_EMPTY
-        elif completed_questions < len(questions):
+        # categorize completeness
+        if run.completed:
+            status = RESPONSE_COMPLETE
+        elif run.values:
             status = RESPONSE_PARTIAL
         else:
-            status = RESPONSE_COMPLETE
+            status = RESPONSE_EMPTY
 
         if response:
             # clear existing answers which will be replaced
@@ -318,6 +312,11 @@ class Response(models.Model):
             response = Response.objects.create(flow_run_id=run.id, issue=issue, contact=contact,
                                                created_on=run.created_on, updated_on=run_updated_on,
                                                status=status)
+
+        # organize values by ruleset UUID
+        questions = poll.get_questions()
+        valuesets_by_ruleset = {valueset.node: valueset for valueset in run.values}
+        valuesets_by_question = {q: valuesets_by_ruleset.get(q.ruleset_uuid, None) for q in questions}
 
         # convert valuesets to answers
         for question, valueset in valuesets_by_question.iteritems():

@@ -203,11 +203,12 @@ class IssueTest(TracProTest):
 
 
 class ResponseTest(TracProTest):
-    def test_get_or_create(self):
+    def test_from_run(self):
         # a complete run
         run = Run.create(id=1234,
                          flow='F-001',  # flow UUID for poll #1
                          contact='C-001',
+                         completed=True,
                          values=[RunValueSet.create(category="1 - 50",
                                                     node='RS-001',
                                                     text="6",
@@ -223,7 +224,7 @@ class ResponseTest(TracProTest):
                          steps=[],  # not used
                          created_on=datetime.datetime(2013, 1, 2, 3, 4, 5, 6, pytz.UTC))
 
-        response1 = Response.get_or_create(self.unicef, run)
+        response1 = Response.from_run(self.unicef, run)
         self.assertEqual(response1.contact, self.contact1)
         self.assertEqual(response1.created_on, datetime.datetime(2013, 1, 2, 3, 4, 5, 6, pytz.UTC))
         self.assertEqual(response1.updated_on, datetime.datetime(2015, 1, 2, 3, 4, 5, 6, pytz.UTC))
@@ -243,6 +244,7 @@ class ResponseTest(TracProTest):
         run = Run.create(id=2345,
                          flow='F-001',  # flow UUID for poll #1
                          contact='C-002',
+                         completed=False,
                          values=[RunValueSet.create(category="1 - 50",
                                                     node='RS-001',
                                                     text="6",
@@ -252,7 +254,7 @@ class ResponseTest(TracProTest):
                          steps=[],  # not used
                          created_on=datetime.datetime(2013, 1, 2, 3, 4, 5, 6, pytz.UTC))
 
-        response2 = Response.get_or_create(self.unicef, run)
+        response2 = Response.from_run(self.unicef, run)
         self.assertEqual(response2.contact, self.contact2)
         self.assertEqual(response2.created_on, datetime.datetime(2013, 1, 2, 3, 4, 5, 6, pytz.UTC))
         self.assertEqual(response2.updated_on, datetime.datetime(2014, 1, 2, 3, 4, 5, 6, pytz.UTC))
@@ -263,6 +265,7 @@ class ResponseTest(TracProTest):
         run = Run.create(id=2345,
                          flow='F-001',  # flow UUID for poll #1
                          contact='C-002',
+                         completed=True,
                          values=[RunValueSet.create(category="1 - 50",
                                                     node='RS-001',
                                                     text="6",
@@ -278,7 +281,7 @@ class ResponseTest(TracProTest):
                          steps=[],  # not used
                          created_on=datetime.datetime(2013, 1, 2, 3, 4, 5, 6, pytz.UTC))
 
-        response3 = Response.get_or_create(self.unicef, run)
+        response3 = Response.from_run(self.unicef, run)
         self.assertEqual(response3.contact, self.contact2)
         self.assertEqual(response3.created_on, datetime.datetime(2013, 1, 2, 3, 4, 5, 6, pytz.UTC))
         self.assertEqual(response3.updated_on, datetime.datetime(2015, 1, 2, 3, 4, 5, 6, pytz.UTC))
@@ -289,11 +292,12 @@ class ResponseTest(TracProTest):
         run = Run.create(id=3456,
                          flow='F-001',  # flow UUID for poll #1
                          contact='C-003',
+                         completed=False,
                          values=[],
                          steps=[],  # not used
                          created_on=datetime.datetime(2013, 1, 2, 3, 4, 5, 6, pytz.UTC))
 
-        response4 = Response.get_or_create(self.unicef, run)
+        response4 = Response.from_run(self.unicef, run)
         self.assertEqual(response4.contact, self.contact3)
         self.assertEqual(response4.created_on, datetime.datetime(2013, 1, 2, 3, 4, 5, 6, pytz.UTC))
         self.assertEqual(response4.updated_on, datetime.datetime(2013, 1, 2, 3, 4, 5, 6, pytz.UTC))
@@ -304,16 +308,17 @@ class ResponseTest(TracProTest):
         run = Run.create(id=4567,
                          flow='F-001',  # flow UUID for poll #1
                          contact='C-003',
+                         completed=False,
                          values=[],
                          steps=[],  # not used
                          created_on=datetime.datetime(2013, 1, 2, 3, 0, 0, 0, pytz.UTC))
 
-        response5 = Response.get_or_create(self.unicef, run)
+        response5 = Response.from_run(self.unicef, run)
         self.assertFalse(Response.objects.get(pk=response4.pk).is_active)
         self.assertEqual(response5.contact, self.contact3)
 
         # same run if we call again
-        self.assertEqual(Response.get_or_create(self.unicef, run), response5)
+        self.assertEqual(Response.from_run(self.unicef, run), response5)
 
 
 class AnswerTest(TracProTest):
