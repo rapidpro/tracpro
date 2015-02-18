@@ -29,7 +29,7 @@
     %h3
       {{ question.order }}. {{ question.text }}
 
-    .chart{ data-chart-type:"trend", data-question-id:"{{ question.pk }}" }
+    .chart{ data-chart-type:"trend", data-question-id:"{{ question.pk }}", data-window-min:"{{ window_min }}", data-window-max:"{{ window_max }}" }
 
     %script{ type:"text/javascript" }
       var chart_{{ question.pk }}_series = {{ question.chart_data }};
@@ -42,11 +42,13 @@
         var container = $(this);
         var chart_type = container.data('chart-type');
         var question_id = container.data('question-id');
+        var window_min = container.data('window-min');
+        var window_max = container.data('window-max');
         var series = eval('chart_' + question_id + '_series');
 
         if (series && series.length > 0) {
           if (chart_type == 'trend') {
-            init_chart_trend(container, series);
+            init_chart_trend(container, series, window_min, window_max);
           }
         }
         else {
@@ -55,13 +57,15 @@
       });
     });
 
-    function init_chart_trend(container, series) {
+    function init_chart_trend(container, series, window_min, window_max) {
       container.highcharts({
         chart: { type: 'area' },
         title: null,
         xAxis: {
             type: 'datetime',
-            title: { enabled: false }
+            title: { enabled: false },
+            min: window_min,
+            max: window_max
         },
         yAxis: {
             title: {

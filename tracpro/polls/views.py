@@ -7,7 +7,6 @@ import json
 from collections import OrderedDict, defaultdict
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from dash.utils import datetime_to_ms, get_obj_cacheable
-from dateutil.relativedelta import relativedelta
 from django import forms
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect, JsonResponse
@@ -47,10 +46,10 @@ class PollCRUDL(SmartCRUDL):
                 issues = issues.filter(region=None)
 
             window = self.request.REQUEST.get('window', None)
-            window = Window[window] if window else Window.last_60_days
-            time_min, time_max = window.to_range()
+            window = Window[window] if window else Window.last_30_days
+            window_min, window_max = window.to_range()
 
-            issues = issues.filter(conducted_on__gte=time_min, conducted_on__lt=time_max)
+            issues = issues.filter(conducted_on__gte=window_min, conducted_on__lt=window_max)
             issues = issues.order_by('-pk')
 
             for question in questions:
@@ -78,6 +77,8 @@ class PollCRUDL(SmartCRUDL):
                 question.chart_data = mark_safe(json.dumps(chart_data, cls=ChartJsonEncoder))
 
             context['window'] = window
+            context['window_min'] = datetime_to_ms(window_min)
+            context['window_max'] = datetime_to_ms(window_max)
             context['window_options'] = Window.__members__.values()
             context['questions'] = questions
             return context
