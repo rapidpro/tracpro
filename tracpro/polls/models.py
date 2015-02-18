@@ -5,15 +5,46 @@ import pytz
 from collections import Counter
 from dash.orgs.models import Org
 from dash.utils import get_cacheable
+from dateutil.relativedelta import relativedelta
 from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.db import models
 from django.db.models import Q, Count
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
+from enum import Enum
 from tracpro.contacts.models import Contact
 from tracpro.groups.models import Region
+from tracpro.trac import get_month_range
 from .tasks import issue_start
+
+
+UNIT_NAMES = {'d': 'days', 'm': 'months'}
+
+
+class Window(Enum):
+    """
+    Data window
+    """
+    this_month = (0, 'm', _("This month"))
+    last_30_days = (30, 'd', _("Last 30 days"))
+    last_60_days = (60, 'd', _("Last 60 days"))
+    last_90_days = (90, 'd', _("Last 90 days"))
+
+    def __init__(self, ordinal, unit, label):
+        self.ordinal = ordinal
+        self.unit = unit
+        self.label = label
+
+    def to_range(self, now=None):
+        if not now:
+            now = timezone.now()
+
+        if self.ordinal == 0:
+            return get_month_range(now)
+        else:
+            since = now - relativedelta(**{UNIT_NAMES[self.unit]: self.ordinal})
+            return since, now
 
 
 RESPONSE_EMPTY = 'E'

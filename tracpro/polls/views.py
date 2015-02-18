@@ -17,17 +17,8 @@ from django.utils.translation import ugettext_lazy as _
 from smartmin.views import SmartCRUDL, SmartCreateView, SmartReadView, SmartListView, SmartFormView
 from tracpro.contacts.models import Contact
 from tracpro.groups.models import Group
-from .models import Poll, Issue, Response, RESPONSE_EMPTY, RESPONSE_PARTIAL, RESPONSE_COMPLETE
+from .models import Poll, Issue, Response, Window, RESPONSE_EMPTY, RESPONSE_PARTIAL, RESPONSE_COMPLETE
 from .tasks import issue_restart_participants
-
-
-WINDOW_LAST_1_MONTH = '1-mo'
-WINDOW_LAST_3_MONTHS = '3-mo'
-WINDOW_LAST_6_MONTHS = '6-mo'
-WINDOW_LAST_12_MONTHS = '12-mo'
-WINDOW_OPTIONS = ((WINDOW_LAST_3_MONTHS, _("Last 3 months")),
-                  (WINDOW_LAST_6_MONTHS, _("Last 6 months")),
-                  (WINDOW_LAST_12_MONTHS, _("Last 12 months")))
 
 
 class ChartJsonEncoder(json.JSONEncoder):
@@ -48,22 +39,19 @@ class PollCRUDL(SmartCRUDL):
 
         def get_context_data(self, **kwargs):
             context = super(PollCRUDL.Read, self).get_context_data(**kwargs)
-            window = self.request.REQUEST.get('window', WINDOW_LAST_6_MONTHS)
             questions = self.object.get_questions()
-
             issues = self.object.get_issues(self.request.region)
 
             # if we're viewing "All Regions" don't include regional only issues
             if not self.request.region:
                 issues = issues.filter(region=None)
 
-            window_val, window_unit = window.split('-', 1)
-            if window_unit == 'mo':
-                since = timezone.now() - relativedelta(months=int(window_val))
-            else:  # pragma: no cover
-                raise ValueError("Unsupported window unit: %s" % window_unit)
+            window = self.request.REQUEST.get('window', None)
+            window = Window[window] if window else Window.last_60_days
+            time_min, time_max = window.to_range()
 
-            issues = issues.filter(conducted_on__gte=since).order_by('-conducted_on')
+            issues = issues.filter(conducted_on__gte=time_min, conducted_on__lt=time_max)
+            issues = issues.order_by('-pk')
 
             for question in questions:
                 categories = set()
@@ -90,7 +78,7 @@ class PollCRUDL(SmartCRUDL):
                 question.chart_data = mark_safe(json.dumps(chart_data, cls=ChartJsonEncoder))
 
             context['window'] = window
-            context['window_options'] = WINDOW_OPTIONS
+            context['window_options'] = Window.__members__.values()
             context['questions'] = questions
             return context
 
