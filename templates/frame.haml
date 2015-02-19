@@ -185,18 +185,7 @@
     .footer-container
       .container
         %footer
-          %ul.lang-switcher
-            -for lang in LANGUAGES
-              %li
-                -if lang.0 == request.LANGUAGE_CODE
-                  {{ lang.1 }}
-                -else
-                  %form{ action:"/i18n/setlang/", method:"POST" }
-                    %input{ type:"hidden", name:"next", value:"/" }
-                    %input{ type:"hidden", name:"language", value:"{{ lang.0 }}" }
-                    {% csrf_token %}
-                    %a.lang-submit{ href:"javascript:void(0);" }
-                      {{ lang.1 }}
+          {% include 'lang_switcher.haml' %}
 
     <!-- JavaScript at the bottom for fast page loading -->
     <script type="text/javascript" src="{{ STATIC_URL }}js/libs/jquery.1.11.1.min.js"></script>
@@ -213,10 +202,6 @@
 
     <script type="text/javascript">
       $(function(){
-        $('.lang-submit').on('click', function() {
-          $(this).closest('form').submit();
-        });
-
         /* TODO figure out conflict with Angular that's breaking all submit buttons */
         $('button[type="submit"]').on('click', function() {
           $(this).closest('form').submit();
