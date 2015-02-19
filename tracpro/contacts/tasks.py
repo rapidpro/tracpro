@@ -2,7 +2,9 @@ from __future__ import absolute_import, unicode_literals
 
 from celery.utils.log import get_task_logger
 from dash.orgs.models import Org
+from dash.utils import datetime_to_ms
 from dash.utils.sync import sync_pull_contacts, sync_push_contact
+from django.utils import timezone
 from djcelery_transactions import task
 
 logger = get_task_logger(__name__)
@@ -32,16 +34,24 @@ def sync_org_contacts(org_id):
     """
     Syncs all contacts for the given org
     """
+    from tracpro.orgs_ext import TaskType
     from .models import Contact
 
     org = Org.objects.get(pk=org_id)
 
     logger.info('Starting contact sync task for org #%d' % org.id)
 
-    created, updated, deleted, errored = sync_pull_contacts(org, Contact, ())
+    created, updated, deleted, failed = sync_pull_contacts(org, Contact, ())
 
-    logger.info("Finished contact sync for org #%d (%d created, %d updated, %d deleted, %d errored)"
-                % (org.id, len(created), len(updated), len(deleted), len(errored)))
+    task_result = dict(time=datetime_to_ms(timezone.now()),
+                       counts=dict(created=len(created),
+                                   updated=len(updated),
+                                   deleted=len(deleted),
+                                   failed=len(failed)))
+    org.set_task_result(TaskType.sync_contacts, task_result)
+
+    logger.info("Finished contact sync for org #%d (%d created, %d updated, %d deleted, %d failed)"
+                % (org.id, len(created), len(updated), len(deleted), len(failed)))
 
 
 @task
