@@ -2,7 +2,7 @@ from __future__ import absolute_import, unicode_literals
 
 import json
 
-from datetime import timedelta
+from dateutil.relativedelta import relativedelta
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.test.utils import override_settings
@@ -110,27 +110,27 @@ class RegionCRUDLTest(TracProTest):
     def test_most_active(self):
         url = reverse('groups.region_most_active')
 
-        five_days_ago = timezone.now() - timedelta(days=5)
-        five_hours_ago = timezone.now() - timedelta(hours=5)
-        issue = Issue.objects.create(poll=self.poll1, conducted_on=five_days_ago)
+        five_weeks_ago = timezone.now() - relativedelta(weeks=5)
+        five_days_ago = timezone.now() - relativedelta(days=5)
+        issue = Issue.objects.create(poll=self.poll1, conducted_on=five_weeks_ago)
 
-        # empty response in last 24 hours for contact in region #1
+        # empty response in last month for contact in region #1
         Response.objects.create(flow_run_id=123, issue=issue, contact=self.contact1,
-                                created_on=five_hours_ago, updated_on=five_hours_ago, status=RESPONSE_EMPTY)
+                                created_on=five_days_ago, updated_on=five_days_ago, status=RESPONSE_EMPTY)
 
-        # partial response not in last 24 hours for contact in region #2
+        # partial response not in last month for contact in region #2
         Response.objects.create(flow_run_id=234, issue=issue, contact=self.contact4,
+                                created_on=five_weeks_ago, updated_on=five_weeks_ago, status=RESPONSE_PARTIAL)
+
+        # partial response in last month for contact in region #2
+        Response.objects.create(flow_run_id=345, issue=issue, contact=self.contact4,
                                 created_on=five_days_ago, updated_on=five_days_ago, status=RESPONSE_PARTIAL)
 
-        # partial response in last 24 hours for contact in region #2
-        Response.objects.create(flow_run_id=345, issue=issue, contact=self.contact4,
-                                created_on=five_hours_ago, updated_on=five_hours_ago, status=RESPONSE_PARTIAL)
-
-        # 2 complete responses in last 24 hours for contact in region #3
+        # 2 complete responses in last month for contact in region #3
         Response.objects.create(flow_run_id=456, issue=issue, contact=self.contact5,
-                                created_on=five_hours_ago, updated_on=five_hours_ago, status=RESPONSE_COMPLETE)
+                                created_on=five_days_ago, updated_on=five_days_ago, status=RESPONSE_COMPLETE)
         Response.objects.create(flow_run_id=567, issue=issue, contact=self.contact5,
-                                created_on=five_hours_ago, updated_on=five_hours_ago, status=RESPONSE_COMPLETE)
+                                created_on=five_days_ago, updated_on=five_days_ago, status=RESPONSE_COMPLETE)
 
         # log in as a non-administrator
         self.login(self.user1)
@@ -166,27 +166,27 @@ class GroupCRUDLTest(TracProTest):
     def test_most_active(self):
         url = reverse('groups.group_most_active')
 
-        five_days_ago = timezone.now() - timedelta(days=5)
-        five_hours_ago = timezone.now() - timedelta(hours=5)
-        issue = Issue.objects.create(poll=self.poll1, conducted_on=five_days_ago)
+        five_weeks_ago = timezone.now() - relativedelta(weeks=5)
+        five_days_ago = timezone.now() - relativedelta(days=5)
+        issue = Issue.objects.create(poll=self.poll1, conducted_on=five_weeks_ago)
 
-        # empty response in last 24 hours for contact in group #1
+        # empty response in last month for contact in group #1
         Response.objects.create(flow_run_id=123, issue=issue, contact=self.contact1,
-                                created_on=five_hours_ago, updated_on=five_hours_ago, status=RESPONSE_EMPTY)
+                                created_on=five_days_ago, updated_on=five_days_ago, status=RESPONSE_EMPTY)
 
-        # partial response not in last 24 hours for contact in group #2
+        # partial response not in last month for contact in group #2
         Response.objects.create(flow_run_id=234, issue=issue, contact=self.contact3,
+                                created_on=five_weeks_ago, updated_on=five_weeks_ago, status=RESPONSE_PARTIAL)
+
+        # partial response in last month for contact in group #2
+        Response.objects.create(flow_run_id=345, issue=issue, contact=self.contact3,
                                 created_on=five_days_ago, updated_on=five_days_ago, status=RESPONSE_PARTIAL)
 
-        # partial response in last 24 hours for contact in group #2
-        Response.objects.create(flow_run_id=345, issue=issue, contact=self.contact3,
-                                created_on=five_hours_ago, updated_on=five_hours_ago, status=RESPONSE_PARTIAL)
-
-        # 2 complete responses in last 24 hours for contact in group #3
+        # 2 complete responses in last month for contact in group #3
         Response.objects.create(flow_run_id=456, issue=issue, contact=self.contact5,
-                                created_on=five_hours_ago, updated_on=five_hours_ago, status=RESPONSE_COMPLETE)
+                                created_on=five_days_ago, updated_on=five_days_ago, status=RESPONSE_COMPLETE)
         Response.objects.create(flow_run_id=567, issue=issue, contact=self.contact5,
-                                created_on=five_hours_ago, updated_on=five_hours_ago, status=RESPONSE_COMPLETE)
+                                created_on=five_days_ago, updated_on=five_days_ago, status=RESPONSE_COMPLETE)
 
         # log in as a non-administrator
         self.login(self.user1)

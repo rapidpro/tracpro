@@ -46,6 +46,8 @@ class AbstractGroup(models.Model):
             else:
                 cls.create(org, group_names[group_uuid], group_uuid)
 
+        sync_org_contacts.delay(org.id)
+
     @classmethod
     def get_all(cls, org):
         return cls.objects.filter(org=org, is_active=True)
@@ -99,15 +101,6 @@ class Region(AbstractGroup):
     """
     users = models.ManyToManyField(User, verbose_name=_("Users"), related_name='regions',
                                    help_text=_("Users who can access this region"))
-
-    @classmethod
-    def sync_with_groups(cls, org, group_uuids):
-        """
-        Updates an org's regions based on the selected groups UUIDs
-        """
-        super(Region, cls).sync_with_groups(org, group_uuids)
-
-        sync_org_contacts.delay(org.id)
 
     def get_users(self):
         return self.users.filter(is_active=True).select_related('profile')
