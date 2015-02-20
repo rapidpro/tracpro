@@ -335,7 +335,7 @@ class Response(models.Model):
             response.save(update_fields=('updated_on', 'status'))
         else:
             # if we don't have an existing response, then this poll started in RapidPro and is non-regional
-            issue = Issue.get_or_create_non_regional(org, poll)
+            issue = Issue.get_or_create_non_regional(org, poll, for_date=run.created_on)
 
             # if contact has an older response for this issue, retire it
             Response.objects.filter(issue=issue, contact=contact).update(is_active=False)
@@ -343,6 +343,7 @@ class Response(models.Model):
             response = Response.objects.create(flow_run_id=run.id, issue=issue, contact=contact,
                                                created_on=run.created_on, updated_on=run_updated_on,
                                                status=status)
+            response.is_new = True
 
         # organize values by ruleset UUID
         questions = poll.get_questions()
