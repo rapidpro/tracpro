@@ -41,10 +41,16 @@ Link up the development settings file
 % ln -s tracpro/settings.py.postgres tracpro/settings.py
 ```
 
-Sync the database, add all our models and create our superuser
+Sync the database adding all the models:
 
 ```
 % python manage.py syncdb
+```
+
+Create our superuser account. Note that TracPro forces a user's username to be always be the same as their email 
+address, so for simplicity it's best to ensure this is true also for the superuser:
+
+```
 % python manage.py createsuperuser
 ```
 
