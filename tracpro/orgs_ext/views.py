@@ -1,7 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
 from dash.orgs.models import Org
-from dash.orgs.views import OrgCRUDL, InferOrgMixin, OrgPermsMixin, SmartUpdateView
+from dash.orgs.views import OrgCRUDL, OrgForm, InferOrgMixin, OrgPermsMixin, SmartUpdateView
 from dash.utils import ms_to_datetime
 from django.utils.translation import ugettext_lazy as _
 from smartmin.templatetags.smartmin import format_datetime
@@ -28,7 +28,7 @@ class OrgExtCRUDL(SmartCRUDL):
         pass
 
     class Home(OrgCRUDL.Home):
-        fields = ('name', 'api_token', 'last_contact_sync')
+        fields = ('name', 'timezone', 'api_token', 'last_contact_sync')
         field_config = {'api_token': {'label': _("RapidPro API Token")}}
         permission = 'orgs.org_home'
 
@@ -47,7 +47,8 @@ class OrgExtCRUDL(SmartCRUDL):
                 return None
 
     class Edit(InferOrgMixin, OrgPermsMixin, SmartUpdateView):
-        fields = ('name',)
+        fields = ('name', 'timezone')
         permission = 'orgs.org_edit'
         title = _("Edit My Organization")
         success_url = '@orgs_ext.org_home'
+        form_class = OrgForm
