@@ -34,6 +34,7 @@ def sync_org_contacts(org_id):
     """
     Syncs all contacts for the given org
     """
+    from tracpro.groups.models import Region, Group
     from tracpro.orgs_ext import TaskType
     from .models import Contact
 
@@ -41,7 +42,9 @@ def sync_org_contacts(org_id):
 
     logger.info('Starting contact sync task for org #%d' % org.id)
 
-    created, updated, deleted, failed = sync_pull_contacts(org, Contact, ())
+    sync_groups = [r.uuid for r in Region.get_all(org)] + [g.uuid for g in Group.get_all(org)]
+
+    created, updated, deleted, failed = sync_pull_contacts(org, Contact, fields=(), groups=sync_groups)
 
     task_result = dict(time=datetime_to_ms(timezone.now()),
                        counts=dict(created=len(created),

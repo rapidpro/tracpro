@@ -1,5 +1,5 @@
 Django==1.7.2
-Markdown==2.5.2
+Markdown==2.6
 Pillow==2.7.0
 Pygments==2.0.2
 -e git+https://github.com/rapidpro/rapidpro-python@89597b7cd899a44a9bdb6cd04efba9d60561cf1e#egg=rapidpro-python
@@ -10,7 +10,7 @@ boto==2.36.0
 celery==3.1.17
 celery-with-redis==3.0
 coverage==3.7.1
--e git+https://github.com/rapidpro/dash.git@4dd17e1d612a64dab57b1f47ac6c3f1df15bcc00#egg=dash-master
+-e git+https://github.com/rapidpro/dash.git@bf10f2ec121e97cf5c9278e53a0f4f648c65e57f#egg=dash-master
 dj-database-url==0.3.0
 django-appconf==0.6
 django-celery==3.1.16
