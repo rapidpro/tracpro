@@ -172,6 +172,11 @@ class ContactCRUDLTest(TracProTest):
         self.assertEqual(len(response.context['object_list']), 5)
         self.assertNotContains(response, "Farm Poll")  # no poll issues shown in "All Regions" view
 
+        response = self.url_get('unicef', '%s?search=an' % reverse('contacts.contact_list'))
+        self.assertEqual(len(response.context['object_list']), 2)
+        self.assertContains(response, "Ann")
+        self.assertContains(response, "Dan")
+
         self.login(self.user1)
 
         response = self.url_get('unicef', reverse('contacts.contact_list'))

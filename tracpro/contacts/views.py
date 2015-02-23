@@ -179,6 +179,7 @@ class ContactCRUDL(SmartCRUDL):
 
     class List(OrgPermsMixin, ContactFieldsMixin, SmartListView):
         default_order = ('name',)
+        search_fields = ('name__icontains', 'urn__icontains')
 
         def derive_fields(self):
             base_fields = ['name', 'urn', 'group']
@@ -218,10 +219,13 @@ class ContactCRUDL(SmartCRUDL):
             return get_obj_cacheable(self, '_issues', fetch)
 
         def derive_queryset(self, **kwargs):
+            qs = super(ContactCRUDL.List, self).derive_queryset(**kwargs)
+            qs = qs.filter(org=self.request.org, is_active=True)
+
             if self.request.region:
-                return self.request.region.get_contacts()
-            else:
-                return Contact.get_all(self.request.org)
+                qs = qs.filter(region=self.request.region)
+
+            return qs
 
     class Delete(OrgObjPermsMixin, SmartDeleteView):
         cancel_url = '@contacts.contact_list'
