@@ -1,15 +1,14 @@
 - extends "smartmin/list.html"
 - load smartmin i18n
 
-- block pre-content
-  .page-header
-    %h2
-      -trans "Regions"
-  - blocktrans
-    Each region is a contact group in RapidPro.
+- block table-controls
+  .clearfix
+    .pull-back
+      - blocktrans
+        Each region is a contact group in RapidPro.
 
-- block table-buttons
-  - if org_perms.groups.region_select
-    %a.btn.btn-default.pull-right{ href:"{% url 'groups.region_select' %}" }
-      %span.glyphicon.glyphicon-download
-      - trans "Select Groups"
+    .pull-away.buttons
+      - if org_perms.groups.region_select
+        %a.btn.btn-default.pull-right{ href:"{% url 'groups.region_select' %}" }
+          %span.glyphicon.glyphicon-download
+          - trans "Select Groups"

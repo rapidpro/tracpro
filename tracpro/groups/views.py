@@ -72,6 +72,7 @@ class GroupCRUDL(SmartCRUDL):
     class List(OrgPermsMixin, SmartListView):
         fields = ('name', 'contacts')
         default_order = ('name',)
+        title = _("Reporter Groups")
 
         def derive_queryset(self, **kwargs):
             return Group.get_all(self.request.org)

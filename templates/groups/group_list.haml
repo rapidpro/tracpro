@@ -1,15 +1,14 @@
 - extends "smartmin/list.html"
 - load smartmin i18n
 
-- block pre-content
-  .page-header
-    %h2
-      -trans "Reporter Groups"
-  - blocktrans
-    Each reporter group is a contact group in RapidPro.
+- block table-controls
+  .clearfix
+    .pull-back
+      - blocktrans
+        Each reporter group is a contact group in RapidPro.
 
-- block table-buttons
-  - if org_perms.groups.group_select
-    %a.btn.btn-default.pull-right{ href:"{% url 'groups.group_select' %}" }
-      %span.glyphicon.glyphicon-download
-      - trans "Select Groups"
+    .pull-away.buttons
+      - if org_perms.groups.group_select
+        %a.btn.btn-default.pull-right{ href:"{% url 'groups.group_select' %}" }
+          %span.glyphicon.glyphicon-download
+          - trans "Select Groups"
