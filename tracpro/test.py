@@ -62,8 +62,10 @@ class TracProTest(TestCase):
         self.poll2_question1 = Question.create(self.poll2, "Number of bugs", 'N', 1, 'RS-003')
 
     def create_org(self, name, timezone, subdomain):
-        return Org.objects.create(name=name, timezone=timezone, subdomain=subdomain, api_token=unicode(uuid4()),
+        org = Org.objects.create(name=name, timezone=timezone, subdomain=subdomain, api_token=unicode(uuid4()),
                                   created_by=self.superuser, modified_by=self.superuser)
+        org.set_config('facility_code_field', 'facility_code')
+        return org
 
     def create_region(self, org, name, uuid):
         return Region.create(org, name, uuid)
@@ -81,7 +83,7 @@ class TracProTest(TestCase):
 
     def create_contact(self, org, name, urn, region, group, uuid):
         user = org.administrators.first()
-        return Contact.create(org, user, name, urn, region, group, uuid)
+        return Contact.create(org, user, name, urn, region, group, 'FC123', 'eng', uuid)
 
     def login(self, user):
         result = self.client.login(username=user.username, password=user.username)

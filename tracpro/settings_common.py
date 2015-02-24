@@ -172,7 +172,8 @@ CACHES = {
     }
 }
 
-ORG_CONFIG_FIELDS = []
+ORG_CONFIG_FIELDS = [dict(name='facility_code_field',
+                          field=dict(help_text=_("Contact field to use as the facility code"), required=True))]
 
 INSTALLED_APPS = (
     'django.contrib.auth',

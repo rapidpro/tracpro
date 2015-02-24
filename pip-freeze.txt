@@ -45,6 +45,7 @@ six==1.9.0
 -e git+https://github.com/nyaruka/smartmin.git@5b203cb9b6491b5856ffb8e2762593e0a3e79ad8#egg=smartmin-master
 sorl-thumbnail==11.12.1b
 sqlparse==0.1.14
+stop-words==2015.2.23.1
 wsgiref==0.1.2
 xlrd==0.9.3
 xlutils==1.7.1

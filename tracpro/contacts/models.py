@@ -30,6 +30,12 @@ class Contact(models.Model):
 
     group = models.ForeignKey(Group, null=True, verbose_name=_("Reporter group"), related_name='contacts')
 
+    facility_code = models.CharField(max_length=16, verbose_name=_("Facility Code"), null=True, blank=True,
+                                     help_text=_("Facility code for this contact"))
+
+    language = models.CharField(max_length=3, verbose_name=_("Language"), null=True, blank=True,
+                                help_text=_("Language for this contact"))
+
     is_active = models.BooleanField(default=True, help_text=_("Whether this contact is active"))
 
     created_by = models.ForeignKey(User, null=True, related_name="contact_creations",
@@ -45,7 +51,7 @@ class Contact(models.Model):
                                        help_text="When this item was last modified")
 
     @classmethod
-    def create(cls, org, user, name, urn, region, group, uuid=None):
+    def create(cls, org, user, name, urn, region, group, facility_code, language, uuid=None):
         if org.id != region.org_id or org.id != group.org_id:  # pragma: no cover
             raise ValueError("Region or group does not belong to org")
 
@@ -57,8 +63,9 @@ class Contact(models.Model):
             do_push = False
 
         # create contact
-        contact = cls.objects.create(org=org, name=name, urn=urn, region=region, group=group, uuid=uuid,
-                                     created_by=user, modified_by=user)
+        contact = cls.objects.create(org=org, name=name, urn=urn, region=region, group=group,
+                                     facility_code=facility_code, language=language,
+                                     uuid=uuid, created_by=user, modified_by=user)
 
         if do_push:
             contact.push(ChangeType.created)
@@ -94,8 +101,11 @@ class Contact(models.Model):
         group_uuids = intersection(org_group_uuids, temba_contact.groups)
         group = Group.objects.get(org=org, uuid=group_uuids[0]) if group_uuids else None
 
+        facility_code = temba_contact.fields.get(org.get_facility_code_field(), None)
+
         return dict(org=org, name=temba_contact.name, urn=temba_contact.urns[0],
-                    region=region, group=group, uuid=temba_contact.uuid)
+                    region=region, group=group, language=temba_contact.language, facility_code=facility_code,
+                    uuid=temba_contact.uuid)
 
     def as_temba(self):
         groups = [self.region.uuid]
@@ -105,8 +115,9 @@ class Contact(models.Model):
         temba_contact = TembaContact()
         temba_contact.name = self.name
         temba_contact.urns = [self.urn]
-        temba_contact.fields = {}
+        temba_contact.fields = {self.org.get_facility_code_field(): self.facility_code}
         temba_contact.groups = groups
+        temba_contact.language = self.language
         temba_contact.uuid = self.uuid
         return temba_contact
 

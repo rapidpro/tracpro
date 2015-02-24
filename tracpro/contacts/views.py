@@ -1,5 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
+import pycountry
+
 from collections import OrderedDict
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from dash.utils import get_obj_cacheable
@@ -7,7 +9,7 @@ from dash.utils.sync import ChangeType
 from django.core.exceptions import PermissionDenied
 from django.core.urlresolvers import reverse
 from django import forms
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, JsonResponse
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 from smartmin.users.views import SmartListView, SmartCreateView, SmartReadView, SmartUpdateView, SmartDeleteView
@@ -69,6 +71,10 @@ class ContactForm(forms.ModelForm):
     group = forms.ModelChoiceField(label=_("Reporter Group"), queryset=Group.objects.filter(pk=-1),
                                    help_text=_("Reporter Group to which this contact belongs."))
 
+    facility_code = forms.CharField(max_length=16, label=_("Facility Code"), required=False)
+
+    language = forms.CharField(label=_("Language"), required=False)
+
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user')
         org = self.user.get_org()
@@ -110,7 +116,7 @@ class ContactCRUDL(SmartCRUDL):
     actions = ('create', 'read', 'update', 'delete', 'list')
 
     class Create(OrgPermsMixin, ContactFormMixin, SmartCreateView):
-        fields = ('name', 'urn', 'region', 'group')
+        fields = ('name', 'urn', 'region', 'group', 'facility_code', 'language')
         form_class = ContactForm
 
         def derive_initial(self):
@@ -120,10 +126,11 @@ class ContactCRUDL(SmartCRUDL):
 
         def save(self, obj):
             org = self.request.user.get_org()
-            self.object = Contact.create(org, self.request.user, obj.name, obj.urn, obj.region, obj.group)
+            self.object = Contact.create(org, self.request.user, obj.name, obj.urn,
+                                         obj.region, obj.group, obj.facility_code, obj.language)
 
     class Update(OrgObjPermsMixin, ContactFormMixin, SmartUpdateView):
-        fields = ('name', 'urn', 'region', 'group')
+        fields = ('name', 'urn', 'region', 'group', 'facility_code', 'language')
         form_class = ContactForm
 
         def dispatch(self, request, *args, **kwargs):
@@ -134,9 +141,31 @@ class ContactCRUDL(SmartCRUDL):
             obj.push(ChangeType.updated)
             return obj
 
+        def get(self, request, *args, **kwargs):
+            if 'search' in self.request.REQUEST or 'initial' in self.request.REQUEST:
+                initial = self.request.REQUEST.get('initial', '').split(',')
+                matches = []
+
+                if len(initial) > 0:
+                    for iso_code in initial:
+                        if iso_code:
+                            lang = pycountry.languages.get(bibliographic=iso_code)
+                            name = lang.name.split(';')[0]
+                            matches.append(dict(id=lang.bibliographic, text=name))
+
+                if len(matches) == 0:
+                    search = self.request.REQUEST.get('search', '').strip().lower()
+                    for lang in pycountry.languages:
+                        if len(search) == 0 or search in lang.name.lower():
+                            matches.append(dict(id=lang.bibliographic, text=lang.name))
+
+                return JsonResponse(dict(results=matches))
+
+            return super(ContactCRUDL.Update, self).get(request, *args, **kwargs)
+
     class Read(OrgPermsMixin, SmartReadView):
         def derive_fields(self):
-            fields = ['name', 'urn', 'region', 'group', 'last_response']
+            fields = ['name', 'urn', 'region', 'group', 'facility_code', 'language', 'last_response']
             if self.object.created_by_id:
                 fields.append('created_by')
             return fields
@@ -163,6 +192,9 @@ class ContactCRUDL(SmartCRUDL):
 
         def get_urn(self, obj):
             return obj.get_urn()[1]
+
+        def get_language(self, obj):
+            return pycountry.languages.get(bibliographic=obj.language).name if obj.language else None
 
         def get_last_response(self, obj):
             last_response = obj.responses.order_by('-updated_on').first()

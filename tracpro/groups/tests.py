@@ -18,7 +18,7 @@ from tracpro.test import TracProTest
 class RegionTest(TracProTest):
     def test_create(self):
         zabul = Region.create(self.unicef, "Zabul", 'G-101')
-        jan = Contact.create(self.unicef, self.admin, "Jan", 'tel:1234', zabul, self.group1, 'C-101')
+        jan = self.create_contact(self.unicef, "Jan", 'tel:1234', zabul, self.group1, 'C-101')
         bob = User.create(self.unicef, "Bob", "bob@unicef.org", "pass", False, [zabul])
 
         self.assertEqual(zabul.org, self.unicef)
