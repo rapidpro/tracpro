@@ -302,7 +302,7 @@ PERMISSIONS = {
 
     'msgs.message': ('list', 'send', 'by_contact'),
 
-    'polls.poll': ('read', 'list', 'select'),
+    'polls.poll': ('read', 'update', 'list', 'select'),
 
     'polls.issue': ('create', 'restart', 'read', 'participation', 'list', 'by_poll', 'latest'),
 

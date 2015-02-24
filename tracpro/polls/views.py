@@ -14,10 +14,10 @@ from django.http import HttpResponseRedirect, JsonResponse
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
-from smartmin.views import SmartCRUDL, SmartCreateView, SmartReadView, SmartListView, SmartFormView
+from smartmin.views import SmartCRUDL, SmartCreateView, SmartReadView, SmartListView, SmartFormView, SmartUpdateView
 from tracpro.contacts.models import Contact
 from tracpro.groups.models import Group
-from .models import Poll, Issue, Response, Window, RESPONSE_EMPTY, RESPONSE_PARTIAL, RESPONSE_COMPLETE
+from .models import Poll, Question, Issue, Response, Window, RESPONSE_EMPTY, RESPONSE_PARTIAL, RESPONSE_COMPLETE
 from .tasks import issue_restart_participants
 
 
@@ -31,9 +31,27 @@ class ChartJsonEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 
+class PollForm(forms.ModelForm):
+    """
+    Form for contacts
+    """
+    name = forms.CharField(label=_("Name"))
+
+    def __init__(self, *args, **kwargs):
+        super(PollForm, self).__init__(*args, **kwargs)
+
+        for question in self.instance.get_questions():
+            field_key = '__question__%d__text' % question.pk
+            self.fields[field_key] = forms.CharField(max_length=255, initial=question.text,
+                                                     label=_("Question #%d") % question.order)
+
+    class Meta:
+        model = Poll
+
+
 class PollCRUDL(SmartCRUDL):
     model = Poll
-    actions = ('read', 'list', 'select')
+    actions = ('read', 'update', 'list', 'select')
 
     class Read(OrgObjPermsMixin, SmartReadView):
 
@@ -83,6 +101,16 @@ class PollCRUDL(SmartCRUDL):
             context['window_options'] = Window.__members__.values()
             context['questions'] = questions
             return context
+
+    class Update(OrgObjPermsMixin, SmartUpdateView):
+        exclude = ('is_active', 'flow_uuid', 'org')
+        form_class = PollForm
+
+        def post_save(self, obj):
+            for field_key, value in self.form.cleaned_data.iteritems():
+                if field_key.startswith('__question__'):
+                    question_id = field_key.split('__')[2]
+                    Question.objects.filter(pk=question_id, poll=self.object).update(text=value)
 
     class List(OrgPermsMixin, SmartListView):
         fields = ('name', 'questions', 'issues', 'last_conducted')

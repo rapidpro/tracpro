@@ -5,10 +5,16 @@
   %h2
     {{ poll }}
 
-%ul.nav.nav-tabs{ style:"margin-bottom: 1em" }
-  %li{ class:"{% if_url 'polls.poll_read' 'active' '' %}" }
-    %a{ href:"{% url 'polls.poll_read' poll.pk %}" }
-      - trans "Summary"
-  %li{ class:"{% if_url 'polls.issue_by_poll' 'active' '' %}" }
-    %a{ href:"{% url 'polls.issue_by_poll' poll.pk %}" }
-      - trans "Dates"
+.clearfix
+  %a.btn.btn-default.pull-right{ href:"{% url 'polls.poll_update' poll.pk %}" }
+    %span.glyphicon.glyphicon-pencil
+    - trans "Edit"
+
+  %ul.nav.nav-tabs{ style:"margin-bottom: 1em" }
+    %li{ class:"{% if_url 'polls.poll_read' 'active' '' %}" }
+      %a{ href:"{% url 'polls.poll_read' poll.pk %}" }
+        - trans "Summary"
+    %li{ class:"{% if_url 'polls.issue_by_poll' 'active' '' %}" }
+      %a{ href:"{% url 'polls.issue_by_poll' poll.pk %}" }
+        - trans "Dates"
+
