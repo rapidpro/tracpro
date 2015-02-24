@@ -11,7 +11,7 @@
     %h3
       {{ question.order }}. {{ question.text }}
 
-    .chart{ data-chart-type:"pie", data-question-id:"{{ question.pk }}", dir:"ltr" }
+    .chart{ data-question-id:"{{ question.pk }}", data-question-type:"{{ question.type }}", dir:"ltr" }
 
     %script{ type:"text/javascript" }
       var chart_{{ question.pk }}_data = {{ question.chart_data }};
@@ -22,14 +22,13 @@
     $(function() {
       $('.chart').each(function() {
         var container = $(this);
-        var chart_type = container.data('chart-type');
         var question_id = container.data('question-id');
+        var question_type = container.data('question-type');
         var data = eval('chart_' + question_id + '_data');
 
         if (data && data.length > 0) {
-          if (chart_type == 'pie') {
-            init_chart_pie(container, data);
-          }
+          /* TODO vary chart type based on question type */
+          init_chart_pie(container, data);
         }
         else {
           init_chart_nodata(container);

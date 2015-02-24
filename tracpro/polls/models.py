@@ -18,6 +18,14 @@ from tracpro.contacts.models import Contact
 from tracpro.groups.models import Region
 from .tasks import issue_start
 
+QUESTION_TYPE_OPEN = 'O'
+QUESTION_TYPE_MULTIPLE_CHOICE = 'C'
+QUESTION_TYPE_NUMERIC = 'N'
+
+QUESTION_TYPE_CHOICES = ((QUESTION_TYPE_OPEN, _("Open Ended")),
+                         (QUESTION_TYPE_MULTIPLE_CHOICE, _("Multiple Choice")),
+                         (QUESTION_TYPE_NUMERIC, _("Numeric")))
+
 
 UNIT_NAMES = {'d': 'days', 'm': 'months'}
 
@@ -79,7 +87,7 @@ class Poll(models.Model):
         org.polls.exclude(flow_uuid=flow_uuids).update(is_active=False)
 
         # fetch flow details
-        flows_by_uuid = {flow.uuid: flow for flow in org.get_temba_client().get_flows()}
+        flows_by_uuid = {flow.uuid: flow for flow in org.get_temba_client().get_flows(uuids=flow_uuids)}
 
         for flow_uuid in flow_uuids:
             flow = flows_by_uuid[flow_uuid]
@@ -103,11 +111,12 @@ class Poll(models.Model):
             question = self.questions.filter(ruleset_uuid=ruleset.uuid).first()
             if question:
                 question.text = ruleset.label
-                question.is_active = True
+                question.type = ruleset.response_type
                 question.order = order
+                question.is_active = True
                 question.save()
             else:
-                Question.create(self, ruleset.label, order, ruleset.uuid)
+                Question.create(self, ruleset.label, ruleset.response_type, order, ruleset.uuid)
             order += 1
 
     @classmethod
@@ -132,15 +141,17 @@ class Question(models.Model):
 
     poll = models.ForeignKey(Poll, related_name='questions')
 
-    text = models.CharField(max_length=64)  # taken from RuleSet label
+    text = models.CharField(max_length=64)
 
-    is_active = models.BooleanField(default=True, help_text="Whether this item is active")
+    type = models.CharField(max_length=1, choices=QUESTION_TYPE_CHOICES)
 
     order = models.IntegerField()
 
+    is_active = models.BooleanField(default=True, help_text="Whether this item is active")
+
     @classmethod
-    def create(cls, poll, text, order, ruleset_uuid):
-        return cls.objects.create(poll=poll, text=text, order=order, ruleset_uuid=ruleset_uuid)
+    def create(cls, poll, text, _type, order, ruleset_uuid):
+        return cls.objects.create(poll=poll, text=text, type=_type, order=order, ruleset_uuid=ruleset_uuid)
 
 
 class Issue(models.Model):

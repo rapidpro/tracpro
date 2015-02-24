@@ -16,15 +16,15 @@ class PollTest(TracProTest):
     def test_sync_with_flows(self, mock_get_flows):
         mock_get_flows.return_value = [
             Flow.create(name="Poll #3", uuid='F-003', rulesets=[
-                FlowRuleSet.create(uuid='RS-004', label='How old are you'),
-                FlowRuleSet.create(uuid='RS-005', label='Where do you live')
+                FlowRuleSet.create(uuid='RS-004', label='How old are you', response_type='C'),
+                FlowRuleSet.create(uuid='RS-005', label='Where do you live', response_type='O')
             ]),
             Flow.create(name="Poll #4", uuid='F-004', rulesets=[
-                FlowRuleSet.create(uuid='RS-006', label='How many goats'),
-                FlowRuleSet.create(uuid='RS-007', label='How many sheep')
+                FlowRuleSet.create(uuid='RS-006', label='How many goats', response_type='N'),
+                FlowRuleSet.create(uuid='RS-007', label='How many sheep', response_type='N')
             ]),
             Flow.create(name="Poll #5", uuid='F-005', rulesets=[
-                FlowRuleSet.create(uuid='RS-008', label='What time is it')
+                FlowRuleSet.create(uuid='RS-008', label='What time is it', response_type='O')
             ])
         ]
         Poll.sync_with_flows(self.unicef, ['F-003', 'F-004'])
@@ -42,8 +42,8 @@ class PollTest(TracProTest):
         # switch back to flow #1
         mock_get_flows.return_value = [
             Flow.create(name="Poll #1", uuid='F-001', rulesets=[
-                FlowRuleSet.create(uuid='RS-001', label='Number of sheep'),
-                FlowRuleSet.create(uuid='RS-002', label='Number of goats')
+                FlowRuleSet.create(uuid='RS-001', label='Number of sheep', response_type='N'),
+                FlowRuleSet.create(uuid='RS-002', label='Number of goats', response_type='N')
             ])
         ]
 
