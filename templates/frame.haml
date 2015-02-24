@@ -200,7 +200,7 @@
     %script{ type:"text/coffeescript", src:"{{ STATIC_URL }}coffee/filters.coffee" }
     {% endcompress %}
 
-    <script type="text/javascript">
+    :javascript
       $(function(){
         /* TODO figure out conflict with Angular that's breaking all submit buttons */
         $('button[type="submit"]').on('click', function() {
@@ -211,7 +211,20 @@
       function display_alert(type, text) {
         $('.content').prepend('<div class="alert alert-' + type + '"><a class="close" data-dismiss="alert">×</a>' + text + '</div>');
       }
-    </script>
+
+    - if lang_direction == 'rtl'
+      :javascript
+        $(function() {
+          // Smartmin forms use Bootstrap grids which don't change in RTL mode. This is a workaround to switch the order
+          // of the control labels and fields if we're in RTL.
+          $('.smartmin-form .form-group').each(function() {
+            var label = $(this).find('label.control-label');
+            var field = $(this).find('.smartmin-form-field');
+            if (label && field) {
+              field.after(label);
+            }
+          });
+        });
 
     {# media associated with any form we are displaying #}
     {% if form %}
