@@ -36,6 +36,7 @@ phonenumbers==7.0.2
 pisa==3.0.33
 polib==1.0.4
 psycopg2==2.6
+pycountry==1.10
 python-dateutil==2.4.0
 pytz==2014.10
 raven==5.2.0
