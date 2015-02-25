@@ -70,14 +70,14 @@ class PollCRUDL(SmartCRUDL):
             window_min, window_max = window.to_range()
 
             issues = issues.filter(conducted_on__gte=window_min, conducted_on__lt=window_max)
-            issues = issues.order_by('-pk')
+            issues = issues.order_by('conducted_on')
 
             for question in questions:
                 categories = set()
                 counts_by_issue = OrderedDict()
 
                 # fetch category counts for all issues, keeping track of all found categories
-                for issue in reversed(issues):
+                for issue in issues:
                     category_counts = issue.get_answer_category_counts(question, self.request.region)
                     counts_by_issue[issue] = category_counts
 
