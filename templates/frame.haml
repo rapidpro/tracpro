@@ -33,6 +33,7 @@
         %link{ type:"text/css", rel:"stylesheet", href:"{{ STATIC_URL }}css/bootstrap-theme.css"}
         %link{ type:"text/css", rel:"stylesheet", href:"{{ STATIC_URL }}css/smartmin_styles.css"}
         %link{ type:"text/css", rel:"stylesheet", href:"{{ STATIC_URL }}css/select2.css"}
+        %link{ type:"text/css", rel:"stylesheet", href:"{{ STATIC_URL }}css/jqcloud.css"}
         %link{ type:"text/less", rel:"stylesheet", href:"{{ STATIC_URL }}less/trac.less"}
 
     - block extra-less
@@ -194,6 +195,7 @@
     <script type="text/javascript" src="{{ STATIC_URL }}js/angular.min.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/highcharts.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/select2.min.js"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}js/jqcloud-1.0.4.min.js"></script>
 
     {% compress js %}
     %script{ type:"text/coffeescript", src:"{{ STATIC_URL }}coffee/trac.coffee" }

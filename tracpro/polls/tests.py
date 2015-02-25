@@ -201,6 +201,21 @@ class IssueTest(TracProTest):
 
         self.assertEqual(issue.get_answer_category_counts(self.poll1_question1, self.region2), {"6 - 10": 1})
 
+    def test_get_answer_word_counts(self):
+        issue = Issue.objects.create(poll=self.poll1, region=None, conducted_on=timezone.now())
+        response1 = Response.create_empty(self.unicef, issue,
+                                          Run.create(id=123, contact='C-001', created_on=timezone.now()))
+        Answer.create(response1, self.poll1_question2, "It's very rainy", "All Responses", timezone.now())
+        response2 = Response.create_empty(self.unicef, issue,
+                                          Run.create(id=234, contact='C-002', created_on=timezone.now()))
+        Answer.create(response2, self.poll1_question2, "rainy rainy and cloudy", "All Responses", timezone.now())
+        response3 = Response.create_empty(self.unicef, issue,
+                                          Run.create(id=345, contact='C-004', created_on=timezone.now()))
+        Answer.create(response3, self.poll1_question2, "Sunny sunny", "All Responses", timezone.now())
+
+        self.assertEqual(issue.get_answer_word_counts(self.poll1_question2),
+                         [("rainy", 3), ("sunny", 2), ('cloudy', 1)])
+
 
 class ResponseTest(TracProTest):
     def test_from_run(self):
@@ -386,7 +401,7 @@ class ResponseCRUDLTest(TracProTest):
         # view responses for issue #1
         response = self.url_get('unicef', reverse('polls.response_by_issue', args=[self.issue1.pk]))
         self.assertContains(response, "Number of sheep", status_code=200)
-        self.assertContains(response, "Number of goats")
+        self.assertContains(response, "How is the weather?")
 
         responses = list(response.context['object_list'])
         self.assertEqual(len(responses), 2)

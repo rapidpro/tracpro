@@ -1,8 +1,12 @@
 from __future__ import absolute_import, unicode_literals
 
+import operator
+import pycountry
 import pytz
+import re
+import stop_words
 
-from collections import Counter
+from collections import Counter, defaultdict
 from dash.orgs.models import Org
 from dash.utils import get_cacheable, get_month_range
 from dateutil.relativedelta import relativedelta
@@ -28,6 +32,14 @@ QUESTION_TYPE_CHOICES = ((QUESTION_TYPE_OPEN, _("Open Ended")),
 
 
 UNIT_NAMES = {'d': 'days', 'm': 'months'}
+
+
+def get_stop_words(iso_code):
+    code = pycountry.languages.get(bibliographic=iso_code).alpha2
+    try:
+        return stop_words.get_stop_words(code)
+    except stop_words.StopWordError:
+        return []
 
 
 class Window(Enum):
@@ -244,7 +256,7 @@ class Issue(models.Model):
         if region:
             qs = qs.filter(response__contact__region=region)
 
-        return qs
+        return qs.select_related('response__contact')
 
     def get_answer_category_counts(self, question, region=None):
         def calculate():
@@ -254,12 +266,34 @@ class Issue(models.Model):
         cache_key = self._answer_cache_key(question, region, 'category_counts')
         return get_cacheable(cache_key, ANSWER_CACHE_TTL, calculate)
 
+    def get_answer_word_counts(self, question, region=None):
+        def calculate():
+            answers = self.get_answers_to(question, region)
+            word_counts = defaultdict(int)
+            for answer in answers:
+                contact = answer.response.contact
+                words = re.split(r"[^\w'-]", answer.value.lower())
+
+                ignore_words = get_stop_words(contact.language) if contact.language else []
+
+                significant_words = [w for w in words if w not in ignore_words and len(w) > 1]
+
+                for w in significant_words:
+                    word_counts[w] += 1
+
+            sorted_counts = sorted(word_counts.items(), key=operator.itemgetter(1), reverse=True)
+            return sorted_counts[:100]
+
+        cache_key = self._answer_cache_key(question, region, 'word_counts')
+        return get_cacheable(cache_key, ANSWER_CACHE_TTL, calculate)
+
     def clear_answer_cache(self, question, region):
         """
         Clears an answer cache for this issue for the given region. A None region means to clear the multi-regional
         answers rather than clear the cache for all regions.
         """
-        cache.delete(self._answer_cache_key(question, region, 'category_counts'))
+        for item in ('category_counts', 'word_counts'):
+            cache.delete(self._answer_cache_key(question, region, item))
 
     def _answer_cache_key(self, question, region, item):
         region_id = region.pk if region else 0

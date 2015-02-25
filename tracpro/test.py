@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 import datetime
 import pytz
+import redis
 
 from dash.orgs.models import Org
 from django.contrib.auth.models import User
@@ -17,6 +18,8 @@ class TracProTest(TestCase):
     Base class for all test cases in TracPro
     """
     def setUp(self):
+        self.clear_cache()
+
         self.superuser = User.objects.create_superuser(username="root", email="super@user.com", password="root")
 
         # some orgs
@@ -55,11 +58,17 @@ class TracProTest(TestCase):
         # a poll with some questions
         self.poll1 = Poll.create(self.unicef, "Farm Poll", 'F-001')
         self.poll1_question1 = Question.create(self.poll1, "Number of sheep", 'N', 1, 'RS-001')
-        self.poll1_question2 = Question.create(self.poll1, "Number of goats", 'N', 2, 'RS-002')
+        self.poll1_question2 = Question.create(self.poll1, "How is the weather?", 'O', 2, 'RS-002')
 
         # and a poll for the other org
         self.poll2 = Poll.create(self.nyaruka, "Code Poll", 'F-002')
         self.poll2_question1 = Question.create(self.poll2, "Number of bugs", 'N', 1, 'RS-003')
+
+    def clear_cache(self):
+        # we are extra paranoid here and actually hardcode redis to 'localhost' and '10'
+        # Redis 10 is our testing redis db
+        r = redis.StrictRedis(host='localhost', db=10)
+        r.flushdb()
 
     def create_org(self, name, timezone, subdomain):
         org = Org.objects.create(name=name, timezone=timezone, subdomain=subdomain, api_token=unicode(uuid4()),

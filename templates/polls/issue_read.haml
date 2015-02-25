@@ -27,16 +27,20 @@
         var data = eval('chart_' + question_id + '_data');
 
         if (data && data.length > 0) {
-          /* TODO vary chart type based on question type */
-          init_chart_pie(container, data);
+          if (question_type == 'O') {
+            init_word_cloud(container, data);
+          }
+          else {
+            init_pie_chart(container, data);
+          }
         }
         else {
-          init_chart_nodata(container);
+          init_nodata(container);
         }
       });
     });
 
-    function init_chart_pie(container, data) {
+    function init_pie_chart(container, data) {
       container.highcharts({
         title: null,
         tooltip: { enabled: false },
@@ -56,8 +60,12 @@
       });
     }
 
-    function init_chart_nodata(container) {
-      container.addClass('chart-no-data');
+    function init_word_cloud(container, data) {
+      container.jQCloud(data);
+    }
+
+    function init_nodata(container) {
+      container.addClass('no-data');
       container.text("No data")
     }
 
@@ -70,7 +78,7 @@
         height: 320px;
         margin: 0 auto
       }
-      .chart-no-data {
+      .no-data {
         border: 2px dashed #DDDDDD;
         padding: 1em;
         height: auto !important;

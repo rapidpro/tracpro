@@ -17,7 +17,8 @@ from django.utils.translation import ugettext_lazy as _
 from smartmin.views import SmartCRUDL, SmartCreateView, SmartReadView, SmartListView, SmartFormView, SmartUpdateView
 from tracpro.contacts.models import Contact
 from tracpro.groups.models import Group
-from .models import Poll, Question, Issue, Response, Window, RESPONSE_EMPTY, RESPONSE_PARTIAL, RESPONSE_COMPLETE
+from .models import Poll, Question, Issue, Response, Window
+from .models import QUESTION_TYPE_OPEN, RESPONSE_EMPTY, RESPONSE_PARTIAL, RESPONSE_COMPLETE
 from .tasks import issue_restart_participants
 
 
@@ -236,13 +237,12 @@ class IssueCRUDL(SmartCRUDL):
             questions = self.object.poll.get_questions()
 
             for question in questions:
-                category_counts = self.object.get_answer_category_counts(question, self.request.region)
-
-                # TODO what to do for questions that are open-ended. Do we also need to expose some more information
-                # from flows.json to determine which questions are open-ended?
-                # is_open_ended = len(category_counts.keys()) == 1
-
-                chart_data = [[cgi.escape(category), count] for category, count in category_counts.iteritems()]
+                if question.type == QUESTION_TYPE_OPEN:
+                    word_counts = self.object.get_answer_word_counts(question, self.request.region)
+                    chart_data = [{'text': word, 'weight': count} for word, count in word_counts]
+                else:
+                    category_counts = self.object.get_answer_category_counts(question, self.request.region)
+                    chart_data = [[cgi.escape(category), count] for category, count in category_counts.iteritems()]
 
                 question.chart_data = mark_safe(json.dumps(chart_data))
 
