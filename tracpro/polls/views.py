@@ -450,12 +450,23 @@ class ResponseCRUDL(SmartCRUDL):
             return obj.issue.poll
 
         def get_answers(self, obj):
-            answers_by_q_id = {a.question_id: a.category for a in obj.answers.all()}
+            answers_by_q_id = {a.question_id: a for a in obj.answers.all()}
             answers = []
+
+            if not answers_by_q_id:
+                return '<i>%s</i>' % _("No response")
 
             questions = obj.issue.poll.get_questions()
             for question in questions:
-                answers.append("%d. %s: <em>%s</em>" % (question.order, question.text, answers_by_q_id.get(question.pk, "")))
+                answer = answers_by_q_id.get(question.pk, None)
+                if not answer:
+                    answer_display = ""
+                elif question.type == QUESTION_TYPE_OPEN:
+                    answer_display = answer.value
+                else:
+                    answer_display = answer.category
+
+                answers.append("%d. %s: <em>%s</em>" % (question.order, question.text, answer_display))
 
             return "<br/>".join(answers)
 
