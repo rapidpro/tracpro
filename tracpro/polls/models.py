@@ -74,6 +74,11 @@ RESPONSE_STATUS_CHOICES = ((RESPONSE_EMPTY, _("Empty")),
                            (RESPONSE_PARTIAL, _("Partial")),
                            (RESPONSE_COMPLETE, _("Complete")))
 
+
+class AnswerCache(Enum):
+    category_counts = 1
+    word_counts = 2
+
 ANSWER_CACHE_TTL = 60 * 60 * 24 * 7  # 1 week
 
 
@@ -263,7 +268,7 @@ class Issue(models.Model):
             answers = self.get_answers_to(question, region)
             return Counter([answer.category for answer in answers])
 
-        cache_key = self._answer_cache_key(question, region, 'category_counts')
+        cache_key = self._answer_cache_key(question, region, AnswerCache.category_counts)
         return get_cacheable(cache_key, ANSWER_CACHE_TTL, calculate)
 
     def get_answer_word_counts(self, question, region=None):
@@ -284,20 +289,22 @@ class Issue(models.Model):
             sorted_counts = sorted(word_counts.items(), key=operator.itemgetter(1), reverse=True)
             return sorted_counts[:100]
 
-        cache_key = self._answer_cache_key(question, region, 'word_counts')
+        cache_key = self._answer_cache_key(question, region, AnswerCache.word_counts)
         return get_cacheable(cache_key, ANSWER_CACHE_TTL, calculate)
 
     def clear_answer_cache(self, question, region):
         """
-        Clears an answer cache for this issue for the given region. A None region means to clear the multi-regional
-        answers rather than clear the cache for all regions.
+        Clears an answer cache for this issue for the given region and the non-regional (0) cache
         """
-        for item in ('category_counts', 'word_counts'):
-            cache.delete(self._answer_cache_key(question, region, item))
+        for item in AnswerCache.__members__.values():
+            # always clear the non-regional cache
+            cache.delete(self._answer_cache_key(question, None, item))
+            if region:
+                cache.delete(self._answer_cache_key(question, region, item))
 
     def _answer_cache_key(self, question, region, item):
         region_id = region.pk if region else 0
-        return 'issue:%d:answer_cache:%d:%d:%s' % (self.pk, question.pk, region_id, item)
+        return 'issue:%d:answer_cache:%d:%d:%s' % (self.pk, question.pk, region_id, item.name)
 
     def as_json(self, region=None):
         region_as_json = dict(id=self.region.pk, name=self.region.name) if self.region else None
