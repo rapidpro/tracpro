@@ -1,3 +1,4 @@
+# coding=utf-8
 from __future__ import absolute_import, unicode_literals
 
 import datetime
@@ -8,7 +9,7 @@ from django.utils import timezone
 from mock import patch
 from temba.types import Flow, FlowRuleSet, Run, RunValueSet
 from tracpro.test import TracProTest
-from .models import Poll, Issue, Response, Answer, RESPONSE_EMPTY, RESPONSE_PARTIAL, RESPONSE_COMPLETE
+from .models import Poll, Issue, Response, Answer, RESPONSE_EMPTY, RESPONSE_PARTIAL, RESPONSE_COMPLETE, extract_words
 
 
 class PollTest(TracProTest):
@@ -202,19 +203,25 @@ class IssueTest(TracProTest):
         self.assertEqual(issue.get_answer_category_counts(self.poll1_question1, self.region2), {"6 - 10": 1})
 
     def test_get_answer_word_counts(self):
+        self.contact5.language = 'ara'
+        self.contact5.save()
+
         issue = Issue.objects.create(poll=self.poll1, region=None, conducted_on=timezone.now())
         response1 = Response.create_empty(self.unicef, issue,
                                           Run.create(id=123, contact='C-001', created_on=timezone.now()))
         Answer.create(response1, self.poll1_question2, "It's very rainy", "All Responses", timezone.now())
         response2 = Response.create_empty(self.unicef, issue,
                                           Run.create(id=234, contact='C-002', created_on=timezone.now()))
-        Answer.create(response2, self.poll1_question2, "rainy rainy and cloudy", "All Responses", timezone.now())
+        Answer.create(response2, self.poll1_question2, "rainy and rainy", "All Responses", timezone.now())
         response3 = Response.create_empty(self.unicef, issue,
                                           Run.create(id=345, contact='C-004', created_on=timezone.now()))
         Answer.create(response3, self.poll1_question2, "Sunny sunny", "All Responses", timezone.now())
+        response4 = Response.create_empty(self.unicef, issue,
+                                          Run.create(id=456, contact='C-005', created_on=timezone.now()))
+        Answer.create(response4, self.poll1_question2, "مطر", "All Responses", timezone.now())
 
         self.assertEqual(issue.get_answer_word_counts(self.poll1_question2),
-                         [("rainy", 3), ("sunny", 2), ('cloudy', 1)])
+                         [("rainy", 3), ("sunny", 2), ('مطر', 1)])
 
 
 class ResponseTest(TracProTest):
@@ -380,7 +387,7 @@ class ResponseCRUDLTest(TracProTest):
         self.issue1_r1 = Response.objects.create(flow_run_id=123, issue=self.issue1, contact=self.contact1,
                                                  created_on=date1, updated_on=date1, status=RESPONSE_COMPLETE)
         Answer.create(self.issue1_r1, self.poll1_question1, "5.0000", "1 - 10", date1)
-        Answer.create(self.issue1_r1, self.poll1_question2, "3.0000", "1 - 10", date1)
+        Answer.create(self.issue1_r1, self.poll1_question2, "Sunny", "All Responses", date1)
 
         self.issue1_r2 = Response.objects.create(flow_run_id=234, issue=self.issue1, contact=self.contact2,
                                                  created_on=date2, updated_on=date2, status=RESPONSE_PARTIAL)
@@ -421,3 +428,21 @@ class ResponseCRUDLTest(TracProTest):
         # can restart as this is the latest issue of this poll in region #2
         response = self.url_get('unicef', reverse('polls.response_by_issue', args=[self.issue1.pk]))
         self.assertTrue(response.context['can_restart'])
+
+    def test_by_contact(self):
+        # log in as admin
+        self.login(self.admin)
+
+        # view responses for contact #1
+        response = self.url_get('unicef', reverse('polls.response_by_contact', args=[self.contact1.pk]))
+
+        responses = list(response.context['object_list'])
+        self.assertEqual(len(responses), 2)
+        self.assertEqual(responses, [self.issue2_r1, self.issue1_r1])  # newest non-empty first
+
+
+class ExtractWordsTest(TracProTest):
+    def test_extract_words(self):
+        self.assertEqual(extract_words("I think it's good", "eng"), ['think', 'good'])  # I and it's are stop words
+        self.assertEqual(extract_words("I think it's good", "kin"), ['think', "it's", 'good'])  # no stop words for kin
+        self.assertEqual(extract_words("قلم رصاص", "ara"), ['قلم', 'رصاص'])

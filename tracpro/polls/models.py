@@ -34,14 +34,6 @@ QUESTION_TYPE_CHOICES = ((QUESTION_TYPE_OPEN, _("Open Ended")),
 UNIT_NAMES = {'d': 'days', 'm': 'months'}
 
 
-def get_stop_words(iso_code):
-    code = pycountry.languages.get(bibliographic=iso_code).alpha2
-    try:
-        return stop_words.get_stop_words(code)
-    except stop_words.StopWordError:
-        return []
-
-
 class Window(Enum):
     """
     Data window
@@ -277,13 +269,7 @@ class Issue(models.Model):
             word_counts = defaultdict(int)
             for answer in answers:
                 contact = answer.response.contact
-                words = re.split(r"[^\w'-]", answer.value.lower())
-
-                ignore_words = get_stop_words(contact.language) if contact.language else []
-
-                significant_words = [w for w in words if w not in ignore_words and len(w) > 1]
-
-                for w in significant_words:
+                for w in extract_words(answer.value, contact.language):
                     word_counts[w] += 1
 
             sorted_counts = sorted(word_counts.items(), key=operator.itemgetter(1), reverse=True)
@@ -460,3 +446,20 @@ class Answer(models.Model):
 
         return Answer.objects.create(response=response, question=question,
                                      value=value, category=category, submitted_on=submitted_on)
+
+
+def get_stop_words(iso_code):
+    code = pycountry.languages.get(bibliographic=iso_code).alpha2
+    try:
+        return stop_words.get_stop_words(code)
+    except stop_words.StopWordError:
+        return []
+
+
+def extract_words(text, language):
+    """
+    Extracts significant words from the given text (i.e. words we want to include in a word cloud)
+    """
+    words = re.split(r"[^\w'-]", text.lower(), flags=re.UNICODE)
+    ignore_words = get_stop_words(language) if language else []
+    return [w for w in words if w not in ignore_words and len(w) > 1]

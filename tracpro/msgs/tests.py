@@ -31,10 +31,12 @@ class MessageTest(TracProTest):
         self.assertEqual(msg1.org, self.unicef)
         self.assertEqual(msg1.sent_by, self.admin)
         self.assertIsNotNone(msg1.sent_on)
+        self.assertEqual(msg1.text, "Test #1")
         self.assertEqual(msg1.issue, issue1)
         self.assertEqual(msg1.cohort, COHORT_ALL)
         self.assertEqual(msg1.region, None)
         self.assertEqual(list(msg1.recipients.order_by('pk')), [self.contact1, self.contact2, self.contact4])
+        self.assertEqual(unicode(msg1), "Test #1")
 
         self.assertEqual(msg1.as_json(), dict(id=msg1.pk, recipients=3))
 

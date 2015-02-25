@@ -7,7 +7,7 @@ from django.test.utils import override_settings
 from django.utils import timezone
 from mock import patch
 from temba.types import Contact as TembaContact, Run
-from tracpro.polls.models import Issue, Response
+from tracpro.polls.models import Issue, Response, Answer, RESPONSE_COMPLETE, RESPONSE_EMPTY
 from tracpro.test import TracProTest
 from .models import Contact
 
@@ -75,6 +75,23 @@ class ContactTest(TracProTest):
         self.assertEqual(temba_contact.fields, {'facility_code': 'FC123'})
         self.assertEqual(temba_contact.groups, ['G-001', 'G-005'])
         self.assertEqual(temba_contact.uuid, 'C-001')
+
+    def test_get_all(self):
+        self.assertEqual(len(Contact.get_all(self.unicef)), 5)
+        self.assertEqual(len(Contact.get_all(self.nyaruka)), 1)
+
+    def test_get_responses(self):
+        date1 = self.datetime(2014, 1, 1, 7, 0)
+        date2 = self.datetime(2014, 1, 1, 8, 0)
+        issue1 = Issue.objects.create(poll=self.poll1, region=None, conducted_on=date1)
+        issue1_r1 = Response.objects.create(flow_run_id=123, issue=issue1, contact=self.contact1,
+                                            created_on=date1, updated_on=date1, status=RESPONSE_COMPLETE)
+        issue2 = Issue.objects.create(poll=self.poll1, region=self.region1, conducted_on=date2)
+        issue2_r1 = Response.objects.create(flow_run_id=456, issue=issue2, contact=self.contact1,
+                                            created_on=date2, updated_on=date2, status=RESPONSE_EMPTY)
+
+        self.assertEqual(list(self.contact1.get_responses().order_by('pk')), [issue1_r1, issue2_r1])
+        self.assertEqual(list(self.contact1.get_responses(include_empty=False).order_by('pk')), [issue1_r1])
 
     @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
     @patch('dash.orgs.models.TembaClient.delete_contact')
