@@ -287,7 +287,7 @@ class Issue(models.Model):
                     word_counts[w] += 1
 
             sorted_counts = sorted(word_counts.items(), key=operator.itemgetter(1), reverse=True)
-            return sorted_counts[:100]
+            return sorted_counts[:50]  # only keep top 50
 
         cache_key = self._answer_cache_key(question, region, AnswerCache.word_counts)
         return get_cacheable(cache_key, ANSWER_CACHE_TTL, calculate)

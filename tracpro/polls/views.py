@@ -1,10 +1,6 @@
 from __future__ import absolute_import, unicode_literals
 
-import cgi
-import datetime
-import json
-
-from collections import OrderedDict, defaultdict
+from collections import OrderedDict
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from dash.utils import datetime_to_ms, get_obj_cacheable
 from django import forms
@@ -12,24 +8,14 @@ from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect, JsonResponse
 from django.utils import timezone
-from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 from smartmin.views import SmartCRUDL, SmartCreateView, SmartReadView, SmartListView, SmartFormView, SmartUpdateView
 from tracpro.contacts.models import Contact
 from tracpro.groups.models import Group
+from .charts import multiple_issues, single_issue
 from .models import Poll, Question, Issue, Response, Window
 from .models import QUESTION_TYPE_OPEN, RESPONSE_EMPTY, RESPONSE_PARTIAL, RESPONSE_COMPLETE
 from .tasks import issue_restart_participants
-
-
-class ChartJsonEncoder(json.JSONEncoder):
-    """
-    JSON Encoder which encodes datetime objects millisecond timestamps. Used for highcharts.js data.
-    """
-    def default(self, obj):
-        if isinstance(obj, datetime.datetime):
-            return datetime_to_ms(obj)
-        return json.JSONEncoder.default(self, obj)
 
 
 class PollForm(forms.ModelForm):
@@ -73,28 +59,7 @@ class PollCRUDL(SmartCRUDL):
             issues = issues.order_by('conducted_on')
 
             for question in questions:
-                categories = set()
-                counts_by_issue = OrderedDict()
-
-                # fetch category counts for all issues, keeping track of all found categories
-                for issue in issues:
-                    category_counts = issue.get_answer_category_counts(question, self.request.region)
-                    counts_by_issue[issue] = category_counts
-
-                    for category in category_counts.keys():
-                        categories.add(category)
-
-                categories = list(categories)
-                category_series = defaultdict(list)
-
-                for issue, category_counts in counts_by_issue.iteritems():
-                    for category in categories:
-                        count = category_counts.get(category, 0)
-                        category_series[category].append((issue.conducted_on, count))
-
-                chart_data = [dict(name=cgi.escape(category), data=data) for category, data in category_series.iteritems()]
-
-                question.chart_data = mark_safe(json.dumps(chart_data, cls=ChartJsonEncoder))
+                question.chart_data = multiple_issues(issues, question, self.request.region)
 
             context['window'] = window
             context['window_min'] = datetime_to_ms(window_min)
@@ -237,14 +202,7 @@ class IssueCRUDL(SmartCRUDL):
             questions = self.object.poll.get_questions()
 
             for question in questions:
-                if question.type == QUESTION_TYPE_OPEN:
-                    word_counts = self.object.get_answer_word_counts(question, self.request.region)
-                    chart_data = [{'text': word, 'weight': count} for word, count in word_counts]
-                else:
-                    category_counts = self.object.get_answer_category_counts(question, self.request.region)
-                    chart_data = [[cgi.escape(category), count] for category, count in category_counts.iteritems()]
-
-                question.chart_data = mark_safe(json.dumps(chart_data))
+                question.chart_data = single_issue(self.object, question, self.request.region)
 
             context['questions'] = questions
             return context

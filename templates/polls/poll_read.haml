@@ -32,7 +32,7 @@
     .chart{ data-question-id:"{{ question.pk }}", data-question-type:"{{ question.type }}", data-window-min:"{{ window_min }}", data-window-max:"{{ window_max }}", dir:"ltr" }
 
     %script{ type:"text/javascript" }
-      var chart_{{ question.pk }}_series = {{ question.chart_data }};
+      var chart_{{ question.pk }}_data = {{ question.chart_data }};
 
 
 - block extra-script
@@ -44,19 +44,23 @@
         var question_type = container.data('question-type');
         var window_min = container.data('window-min');
         var window_max = container.data('window-max');
-        var series = eval('chart_' + question_id + '_series');
+        var data = eval('chart_' + question_id + '_data');
 
-        if (series && series.length > 0) {
-          /* TODO vary chart type based on question type */
-          init_chart_trend(container, series, window_min, window_max);
+        if (data && data.length > 0) {
+          if (question_type == 'O') {
+            init_word_cloud(container, data);
+          }
+          else {
+            init_trend_chart(container, data, window_min, window_max);
+          }
         }
         else {
-          init_chart_nodata(container);
+          init_no_data(container);
         }
       });
     });
 
-    function init_chart_trend(container, series, window_min, window_max) {
+    function init_trend_chart(container, series, window_min, window_max) {
       container.highcharts({
         chart: { type: 'area' },
         title: null,
@@ -92,8 +96,12 @@
       });
     }
 
-    function init_chart_nodata(container) {
-      container.addClass('chart-no-data');
+    function init_word_cloud(container, data) {
+      container.jQCloud(data);
+    }
+
+    function init_nodata(container) {
+      container.addClass('no-data');
       container.text("No data")
     }
 
@@ -110,7 +118,7 @@
         height: 320px;
         margin: 0 auto
       }
-      .chart-no-data {
+      .no-data {
         border: 2px dashed #DDDDDD;
         padding: 1em;
         height: auto !important;
