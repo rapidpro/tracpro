@@ -1,5 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
+import json
+
 from django.core.urlresolvers import reverse
 from django.test.utils import override_settings
 from django.utils import timezone
@@ -107,7 +109,8 @@ class ContactCRUDLTest(TracProTest):
         self.assertFormError(response, 'form', 'region', 'This field is required.')
 
         # submit again with all fields
-        data = dict(name="Mo Polls", urn_0="tel", urn_1="5678", region=self.region1.pk, group=self.group1.pk)
+        data = dict(name="Mo Polls", urn_0="tel", urn_1="5678",
+                    region=self.region1.pk, group=self.group1.pk, facility_code='FC678', language='eng')
         response = self.url_post('unicef', url, data)
         self.assertEqual(response.status_code, 302)
 
@@ -115,6 +118,9 @@ class ContactCRUDLTest(TracProTest):
         contact = Contact.objects.get(urn='tel:5678')
         self.assertEqual(contact.name, "Mo Polls")
         self.assertEqual(contact.region, self.region1)
+        self.assertEqual(contact.group, self.group1)
+        self.assertEqual(contact.facility_code, 'FC678')
+        self.assertEqual(contact.language, 'eng')
 
         # log in as a user
         self.login(self.user1)
@@ -130,6 +136,21 @@ class ContactCRUDLTest(TracProTest):
         response = self.url_post('unicef', url, data)
         self.assertEqual(response.status_code, 302)
 
+        # test ajax querying for languages
+        response = self.url_get('unicef', '%s?initial=' % url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(json.loads(response.content), dict(results=[]))
+        response = self.url_get('unicef', '%s?initial=eng' % url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(json.loads(response.content), dict(results=[dict(id='eng', text='English')]))
+
+        response = self.url_get('unicef', '%s?search=' % url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(json.loads(response.content)['results']), 10)
+        response = self.url_get('unicef', '%s?search=Kin' % url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(json.loads(response.content), dict(results=[dict(id='kin', text='Kinyarwanda')]))
+
     def test_update(self):
         # log in as an org administrator
         self.login(self.admin)
@@ -137,7 +158,8 @@ class ContactCRUDLTest(TracProTest):
         response = self.url_get('unicef', reverse('contacts.contact_update', args=[self.contact1.pk]))
         self.assertEqual(response.status_code, 200)
 
-        data = dict(name="Morris", urn_0="tel", urn_1="6789", region=self.region2.pk, group=self.group2.pk)
+        data = dict(name="Morris", urn_0="tel", urn_1="6789",
+                    region=self.region2.pk, group=self.group2.pk, facility_code='FC678', language='kin')
         response = self.url_post('unicef', reverse('contacts.contact_update', args=[self.contact1.pk]), data)
         self.assertEqual(response.status_code, 302)
 
@@ -147,6 +169,8 @@ class ContactCRUDLTest(TracProTest):
         self.assertEqual(contact.urn, 'tel:6789')
         self.assertEqual(contact.region, self.region2)
         self.assertEqual(contact.group, self.group2)
+        self.assertEqual(contact.facility_code, 'FC678')
+        self.assertEqual(contact.language, 'kin')
 
     def test_read(self):
         # log in as a user

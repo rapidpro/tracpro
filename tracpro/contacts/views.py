@@ -98,6 +98,28 @@ class ContactFormMixin(object):
         kwargs['user'] = self.request.user
         return kwargs
 
+    def get(self, request, *args, **kwargs):
+        if 'initial' in self.request.REQUEST:
+            initial = self.request.REQUEST['initial']
+            results = []
+            if initial:
+                lang = pycountry.languages.get(bibliographic=initial)
+                name = lang.name.split(';')[0]
+                results.append(dict(id=lang.bibliographic, text=name))
+            return JsonResponse(dict(results=results))
+
+        if 'search' in self.request.REQUEST:
+            search = self.request.REQUEST['search'].strip().lower()
+            results = []
+            for lang in pycountry.languages:
+                if len(results) == 10:
+                    break
+                if len(search) == 0 or search in lang.name.lower():
+                    results.append(dict(id=lang.bibliographic, text=lang.name))
+            return JsonResponse(dict(results=results))
+
+        return super(ContactFormMixin, self).get(request, *args, **kwargs)
+
 
 class ContactFieldsMixin(object):
     def get_urn(self, obj):
@@ -141,31 +163,9 @@ class ContactCRUDL(SmartCRUDL):
             obj.push(ChangeType.updated)
             return obj
 
-        def get(self, request, *args, **kwargs):
-            if 'search' in self.request.REQUEST or 'initial' in self.request.REQUEST:
-                initial = self.request.REQUEST.get('initial', '').split(',')
-                matches = []
-
-                if len(initial) > 0:
-                    for iso_code in initial:
-                        if iso_code:
-                            lang = pycountry.languages.get(bibliographic=iso_code)
-                            name = lang.name.split(';')[0]
-                            matches.append(dict(id=lang.bibliographic, text=name))
-
-                if len(matches) == 0:
-                    search = self.request.REQUEST.get('search', '').strip().lower()
-                    for lang in pycountry.languages:
-                        if len(search) == 0 or search in lang.name.lower():
-                            matches.append(dict(id=lang.bibliographic, text=lang.name))
-
-                return JsonResponse(dict(results=matches))
-
-            return super(ContactCRUDL.Update, self).get(request, *args, **kwargs)
-
     class Read(OrgPermsMixin, SmartReadView):
         def derive_fields(self):
-            fields = ['name', 'urn', 'region', 'group', 'facility_code', 'language', 'last_response']
+            fields = ['urn', 'region', 'group', 'facility_code', 'language', 'last_response']
             if self.object.created_by_id:
                 fields.append('created_by')
             return fields

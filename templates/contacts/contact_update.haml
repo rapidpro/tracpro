@@ -5,39 +5,5 @@
   {{ block.super }}
   :javascript
     $(function(){
-      /* Django won't let us output a hidden input with a visible label - so we output a char control and switch it out with a dynamic hidden input */
-      var lang_ctrl = $('#id_language');
-      var initial = lang_ctrl.val();
-      lang_ctrl.hide();
-      lang_ctrl.prop('name', '');
-      lang_ctrl.after('<input type="hidden" id="id_language_s2" name="language" style="width: 300px" value="' + initial + '" />');
-
-      $('#id_language_s2').select2({
-        selectOnBlur: false,
-        multiple: false,
-        quietMillis: 200,
-        minimumInputLength: 0,
-        ajax: {
-            url: "{% url 'contacts.contact_update' object.pk %}",
-            dataType: 'json',
-            data: function (term, page, context) {
-                return {
-                    search: term,
-                    page: page
-                };
-            },
-            results: function (response, page, context) {
-                return response;
-            }
-        },
-        initSelection: function(element, callback) {
-          var codes = $(element).val();
-          if (codes !== "") {
-            $.getJSON("{% url 'contacts.contact_update' object.pk %}", {initial: codes}).done(function(data) {
-              callback(data.results[0]);
-            });
-          }
-        },
-        containerCssClass: 'select2-tracpro-field'
-      });
+      init_language_select('id_language', "{% url 'contacts.contact_update' object.pk %}");
     });
