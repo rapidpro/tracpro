@@ -353,7 +353,8 @@ class ResponseCRUDL(SmartCRUDL):
     actions = ('by_issue', 'by_contact')
 
     class ByIssue(OrgPermsMixin, SmartListView):
-        default_order = ('-created_on',)
+        default_order = ('-updated_on',)
+        field_config = {'updated_on': {'label': _("Date")}}
         link_fields = ('contact',)
 
         @classmethod
@@ -375,7 +376,7 @@ class ResponseCRUDL(SmartCRUDL):
             return get_obj_cacheable(self, '_questions', fetch)
 
         def derive_fields(self):
-            base_fields = ['created_on', 'contact']
+            base_fields = ['updated_on', 'contact']
             if not self.request.region:
                 base_fields.append('region')
             return base_fields + ['group'] + self.derive_questions().keys()
@@ -426,10 +427,10 @@ class ResponseCRUDL(SmartCRUDL):
             return context
 
     class ByContact(OrgPermsMixin, SmartListView):
-        fields = ('created_on', 'poll', 'answers')
-        field_config = {'created_on': {'label': _("Date")}}
-        link_fields = ('created_on', 'poll')
-        default_order = ('-created_on',)
+        fields = ('updated_on', 'poll', 'answers')
+        field_config = {'updated_on': {'label': _("Date")}}
+        link_fields = ('updated_on', 'poll')
+        default_order = ('-updated_on',)
 
         @classmethod
         def derive_url_pattern(cls, path, action):
@@ -459,7 +460,7 @@ class ResponseCRUDL(SmartCRUDL):
             return "<br/>".join(answers)
 
         def lookup_field_link(self, context, field, obj):
-            if field == 'created_on':
+            if field == 'updated_on':
                 return reverse('polls.issue_read', args=[obj.issue_id])
             elif field == 'poll':
                 return reverse('polls.poll_read', args=[obj.issue.poll_id])
