@@ -184,7 +184,7 @@ class ContactCRUDLTest(TracProTest):
         contact = Contact.objects.get(pk=self.contact1.pk)
         self.assertEqual(contact.name, "Morris")
         self.assertEqual(contact.urn, 'tel:6789')
-        self.assertEqual(contact.region, self.region2)
+        self.assertEqual(contact.region, self.region1)
         self.assertEqual(contact.group, self.group2)
         self.assertEqual(contact.facility_code, 'FC678')
         self.assertEqual(contact.language, 'kin')

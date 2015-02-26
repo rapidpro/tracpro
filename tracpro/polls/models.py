@@ -1,15 +1,17 @@
 from __future__ import absolute_import, unicode_literals
 
+import math
 import operator
 import pycountry
 import pytz
 import re
 import stop_words
 
-from collections import Counter, defaultdict
+from collections import Counter, defaultdict, OrderedDict
 from dash.orgs.models import Org
 from dash.utils import get_cacheable, get_month_range
 from dateutil.relativedelta import relativedelta
+from decimal import Decimal
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.cache import cache
@@ -65,11 +67,6 @@ RESPONSE_COMPLETE = 'C'
 RESPONSE_STATUS_CHOICES = ((RESPONSE_EMPTY, _("Empty")),
                            (RESPONSE_PARTIAL, _("Partial")),
                            (RESPONSE_COMPLETE, _("Complete")))
-
-
-class AnswerCache(Enum):
-    category_counts = 1
-    word_counts = 2
 
 ANSWER_CACHE_TTL = 60 * 60 * 24 * 7  # 1 week
 
@@ -255,42 +252,52 @@ class Issue(models.Model):
 
         return qs.select_related('response__contact')
 
-    def get_answer_category_counts(self, question, region=None):
+    def get_answer_aggregates(self, question, region=None):
         def calculate():
-            answers = self.get_answers_to(question, region)
-            return Counter([answer.category for answer in answers])
+            if question.type == QUESTION_TYPE_OPEN:
+                return self.calculate_answer_word_counts(question, region)
+            elif question.type == QUESTION_TYPE_MULTIPLE_CHOICE:
+                return self.calculate_answer_category_counts(question, region)
+            elif question.type == QUESTION_TYPE_NUMERIC:
+                return self.calculate_answer_numeric_counts(question, region)
+            else:
+                return []
 
-        cache_key = self._answer_cache_key(question, region, AnswerCache.category_counts)
+        cache_key = self._answer_cache_key(question, region)
         return get_cacheable(cache_key, ANSWER_CACHE_TTL, calculate)
 
-    def get_answer_word_counts(self, question, region=None):
-        def calculate():
-            answers = self.get_answers_to(question, region)
-            word_counts = defaultdict(int)
-            for answer in answers:
-                contact = answer.response.contact
-                for w in extract_words(answer.value, contact.language):
-                    word_counts[w] += 1
+    def calculate_answer_word_counts(self, question, region=None):
+        answers = self.get_answers_to(question, region)
+        word_counts = defaultdict(int)
+        for answer in answers:
+            contact = answer.response.contact
+            for w in extract_words(answer.value, contact.language):
+                word_counts[w] += 1
 
-            sorted_counts = sorted(word_counts.items(), key=operator.itemgetter(1), reverse=True)
-            return sorted_counts[:50]  # only keep top 50
+        sorted_counts = sorted(word_counts.items(), key=operator.itemgetter(1), reverse=True)
+        return sorted_counts[:50]  # only return top 50
 
-        cache_key = self._answer_cache_key(question, region, AnswerCache.word_counts)
-        return get_cacheable(cache_key, ANSWER_CACHE_TTL, calculate)
+    def calculate_answer_category_counts(self, question, region=None):
+        answers = self.get_answers_to(question, region)
+        category_counts = Counter([answer.category for answer in answers])
+        return sorted(category_counts.items(), key=operator.itemgetter(1), reverse=True)
+
+    def calculate_answer_numeric_counts(self, question, region=None):
+        answers = self.get_answers_to(question, region)
+        return auto_categorize_numbers([answer.value for answer in answers], 5).items()
 
     def clear_answer_cache(self, question, region):
         """
         Clears an answer cache for this issue for the given region and the non-regional (0) cache
         """
-        for item in AnswerCache.__members__.values():
-            # always clear the non-regional cache
-            cache.delete(self._answer_cache_key(question, None, item))
-            if region:
-                cache.delete(self._answer_cache_key(question, region, item))
+        # always clear the non-regional cache
+        cache.delete(self._answer_cache_key(question, None))
+        if region:
+            cache.delete(self._answer_cache_key(question, region))
 
-    def _answer_cache_key(self, question, region, item):
+    def _answer_cache_key(self, question, region):
         region_id = region.pk if region else 0
-        return 'issue:%d:answer_cache:%d:%d:%s' % (self.pk, question.pk, region_id, item.name)
+        return 'issue:%d:answer_cache:%d:%d' % (self.pk, question.pk, region_id)
 
     def as_json(self, region=None):
         region_as_json = dict(id=self.region.pk, name=self.region.name) if self.region else None
@@ -463,3 +470,59 @@ def extract_words(text, language):
     words = re.split(r"[^\w'-]", text.lower(), flags=re.UNICODE)
     ignore_words = get_stop_words(language) if language else []
     return [w for w in words if w not in ignore_words and len(w) > 1]
+
+
+def auto_categorize_numbers(raw_values, num_categories):
+    """
+    Creates automatic range categories for a given set of numbers and returns the count of values in each category
+    """
+    if not raw_values:
+        return {}
+
+    # convert to integers and find minimum and maximum
+    values = []
+    value_min = None
+    value_max = None
+    for value in raw_values:
+        try:
+            value = int(Decimal(value))
+            if value < value_min or value_min is None:
+                value_min = value
+            if value > value_max or value_max is None:
+                value_max = value
+            values.append(value)
+        except ValueError:
+            continue
+
+    # pick best fitting categories
+    value_range = value_max - value_min
+    category_step = int(math.ceil(float(value_range) / num_categories)) if value_range else 1
+    category_range = category_step * num_categories
+    category_min = value_min - (category_range - value_range) / 2
+
+    # don't start categories in negative if min value isn't negative
+    if category_min < 0 and not value_min < 0:
+        category_min = 0
+
+    # create category labels and initialize counts
+    category_counts = OrderedDict()
+    category_labels = {}
+
+    for cat in range(0, num_categories):
+        cat_min = category_min + cat * category_step
+        if category_step > 1:
+            cat_max = (category_min + (cat + 1) * category_step) - 1
+            cat_label = '%d - %d' % (cat_min, cat_max)
+        else:
+            cat_label = unicode(cat_min)
+
+        category_labels[cat] = cat_label
+        category_counts[cat_label] = 0
+
+    # count categorized values
+    for value in values:
+        category = int(num_categories * (value - category_min) / category_range)
+        label = category_labels[category]
+        category_counts[label] += 1
+
+    return category_counts

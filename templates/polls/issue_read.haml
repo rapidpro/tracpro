@@ -30,6 +30,9 @@
           if (question_type == 'O') {
             init_word_cloud(container, data);
           }
+          else if (question_type == 'N') {
+            init_bar_chart(container, data);
+          }
           else {
             init_pie_chart(container, data);
           }
@@ -39,6 +42,10 @@
         }
       });
     });
+
+    function init_word_cloud(container, data) {
+      container.jQCloud(data);
+    }
 
     function init_pie_chart(container, data) {
       container.highcharts({
@@ -60,8 +67,21 @@
       });
     }
 
-    function init_word_cloud(container, data) {
-      container.jQCloud(data);
+    function init_bar_chart(container, data) {
+      container.highcharts({
+        chart: { type: 'column' },
+        title: null,
+        tooltip: { enabled: false },
+        xAxis: {
+          categories: data[0]
+        },
+        yAxis: { title: null },
+        legend: { enabled: false },
+        series: [{
+            data: data[1]
+        }],
+        credits: { enabled: false }
+    });
     }
 
     function init_no_data(container) {
