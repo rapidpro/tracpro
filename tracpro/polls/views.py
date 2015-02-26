@@ -411,7 +411,7 @@ class ResponseCRUDL(SmartCRUDL):
                     answers_by_question_id = {a.question_id: a for a in resp.answers.all()}
                     for question in questions:
                         answer = answers_by_question_id.get(question.pk, None)
-                        answer_cols.append(answer.value if answer else '--')
+                        answer_cols.append(answer.value if answer else '')
 
                     writer.writerow(resp_cols + contact_cols + answer_cols)
 
