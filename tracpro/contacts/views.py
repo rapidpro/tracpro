@@ -155,15 +155,16 @@ class ContactCRUDL(SmartCRUDL):
         fields = ('name', 'urn', 'region', 'group', 'facility_code', 'language')
         form_class = ContactForm
 
-        def dispatch(self, request, *args, **kwargs):
-            return super(ContactCRUDL.Update, self).dispatch(request, *args, **kwargs)
+        def get_queryset(self):
+            queryset = super(ContactCRUDL.Update, self).get_queryset()
+            return queryset.filter(org=self.request.org, is_active=True, region__in=self.request.user.get_regions(self.request.org))
 
         def post_save(self, obj):
             obj = super(ContactCRUDL.Update, self).post_save(obj)
             obj.push(ChangeType.updated)
             return obj
 
-    class Read(OrgPermsMixin, SmartReadView):
+    class Read(OrgObjPermsMixin, SmartReadView):
         def derive_fields(self):
             fields = ['urn', 'region', 'group', 'facility_code', 'language', 'last_response']
             if self.object.created_by_id:
@@ -172,23 +173,7 @@ class ContactCRUDL(SmartCRUDL):
 
         def get_queryset(self):
             queryset = super(ContactCRUDL.Read, self).get_queryset()
-            return queryset.filter(org=self.request.org, is_active=True)
-
-        def get_context_data(self, **kwargs):
-            context = super(ContactCRUDL.Read, self).get_context_data(**kwargs)
-            edit_button_url = None
-            delete_button_url = None
-
-            region = self.object.region
-            if self.request.user.has_region_access(region):
-                if self.has_org_perm('contacts.contact_update'):
-                    edit_button_url = reverse('contacts.contact_update', args=[self.object.pk])
-                if self.has_org_perm('contacts.contact_delete'):
-                    delete_button_url = reverse('contacts.contact_delete', args=[self.object.pk])
-
-            context['edit_button_url'] = edit_button_url
-            context['delete_button_url'] = delete_button_url
-            return context
+            return queryset.filter(org=self.request.org, is_active=True, region__in=self.request.user.get_regions(self.request.org))
 
         def get_urn(self, obj):
             return obj.get_urn()[1]

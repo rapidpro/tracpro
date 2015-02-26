@@ -169,14 +169,14 @@ class ContactCRUDLTest(TracProTest):
         self.assertEqual(json.loads(response.content), dict(results=[dict(id='kin', text='Kinyarwanda')]))
 
     def test_update(self):
-        # log in as an org administrator
-        self.login(self.admin)
+        # log in as a user
+        self.login(self.user1)
 
         response = self.url_get('unicef', reverse('contacts.contact_update', args=[self.contact1.pk]))
         self.assertEqual(response.status_code, 200)
 
         data = dict(name="Morris", urn_0="tel", urn_1="6789",
-                    region=self.region2.pk, group=self.group2.pk, facility_code='FC678', language='kin')
+                    region=self.region1.pk, group=self.group2.pk, facility_code='FC678', language='kin')
         response = self.url_post('unicef', reverse('contacts.contact_update', args=[self.contact1.pk]), data)
         self.assertEqual(response.status_code, 302)
 
@@ -189,6 +189,14 @@ class ContactCRUDLTest(TracProTest):
         self.assertEqual(contact.facility_code, 'FC678')
         self.assertEqual(contact.language, 'kin')
 
+        # try to update contact in a region we don't have access to
+        response = self.url_get('unicef', reverse('contacts.contact_read', args=[self.contact5.pk]))
+        self.assertEqual(response.status_code, 404)
+
+        # try to update contact from other org
+        response = self.url_get('unicef', reverse('contacts.contact_read', args=[self.contact6.pk]))
+        self.assertEqual(response.status_code, 404)
+
     def test_read(self):
         # log in as a user
         self.login(self.user1)
@@ -196,14 +204,11 @@ class ContactCRUDLTest(TracProTest):
         # view contact in a region we have access to
         response = self.url_get('unicef', reverse('contacts.contact_read', args=[self.contact3.pk]))
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context['edit_button_url'], reverse('contacts.contact_update', args=[self.contact3.pk]))
         self.assertContains(response, "Phone")
 
-        # view contact in a region we don't have access to
+        # try to view contact in a region we don't have access to
         response = self.url_get('unicef', reverse('contacts.contact_read', args=[self.contact5.pk]))
-        self.assertEqual(response.status_code, 200)
-        self.assertIsNone(response.context['edit_button_url'])
-        self.assertContains(response, "Twitter")
+        self.assertEqual(response.status_code, 404)
 
         # try to view contact from other org
         response = self.url_get('unicef', reverse('contacts.contact_read', args=[self.contact6.pk]))
