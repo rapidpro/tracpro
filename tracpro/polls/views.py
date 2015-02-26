@@ -123,7 +123,7 @@ class PollCRUDL(SmartCRUDL):
                     choices.append((flow.uuid, flow.name))
 
                 self.fields['flows'].choices = choices
-                self.fields['flows'].initial = Poll.get_all(org).order_by('name')
+                self.fields['flows'].initial = [p.flow_uuid for p in Poll.get_all(org)]
 
         title = _("Poll Flows")
         form_class = FlowsForm
@@ -395,7 +395,7 @@ class ResponseCRUDL(SmartCRUDL):
                 response = HttpResponse(content_type='text/csv', status=200)
                 response['Content-Disposition'] = 'attachment; filename="responses.csv"'
                 writer = unicodecsv.writer(response)
-                
+
                 questions = self.derive_questions().values()
 
                 resp_headers = ['Date']
