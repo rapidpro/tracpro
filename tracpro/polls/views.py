@@ -1,14 +1,17 @@
 from __future__ import absolute_import, unicode_literals
 
+import unicodecsv
+
 from collections import OrderedDict
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from dash.utils import datetime_to_ms, get_obj_cacheable
 from django import forms
 from django.conf import settings
 from django.core.urlresolvers import reverse
-from django.http import HttpResponseRedirect, JsonResponse
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
+from smartmin.templatetags.smartmin import format_datetime
 from smartmin.views import SmartCRUDL, SmartCreateView, SmartReadView, SmartListView, SmartFormView, SmartUpdateView
 from tracpro.contacts.models import Contact
 from tracpro.groups.models import Group
@@ -371,18 +374,50 @@ class ResponseCRUDL(SmartCRUDL):
         def get_context_data(self, **kwargs):
             context = super(ResponseCRUDL.ByIssue, self).get_context_data(**kwargs)
             issue = self.derive_issue()
-
-            # can only restart regional polls and if they're the last issue
-            can_restart = self.request.region and issue.is_last_for_region(self.request.region)
-
-            counts = issue.get_response_counts(self.request.region)
-
             context['issue'] = issue
-            context['can_restart'] = can_restart
-            context['response_count'] = counts[RESPONSE_EMPTY] + counts[RESPONSE_PARTIAL] + counts[RESPONSE_COMPLETE]
-            context['complete_response_count'] = counts[RESPONSE_COMPLETE]
-            context['incomplete_response_count'] = counts[RESPONSE_EMPTY] + counts[RESPONSE_PARTIAL]
+
+            if '_format' not in self.request.REQUEST:
+                # can only restart regional polls and if they're the last issue
+                can_restart = self.request.region and issue.is_last_for_region(self.request.region)
+
+                counts = issue.get_response_counts(self.request.region)
+
+                context['can_restart'] = can_restart
+                context['response_count'] = counts[RESPONSE_EMPTY] + counts[RESPONSE_PARTIAL] + counts[RESPONSE_COMPLETE]
+                context['complete_response_count'] = counts[RESPONSE_COMPLETE]
+                context['incomplete_response_count'] = counts[RESPONSE_EMPTY] + counts[RESPONSE_PARTIAL]
             return context
+
+        def render_to_response(self, context, **response_kwargs):
+            _format = self.request.REQUEST.get('_format', None)
+
+            if _format == 'csv':
+                response = HttpResponse(content_type='text/csv', status=200)
+                response['Content-Disposition'] = 'attachment; filename="responses.csv"'
+                writer = unicodecsv.writer(response)
+                
+                questions = self.derive_questions().values()
+
+                resp_headers = ['Date']
+                contact_headers = ['Name', 'URN', 'Region', 'Group']
+                question_headers = [q.text for q in questions]
+                writer.writerow(resp_headers + contact_headers + question_headers)
+
+                for resp in context['object_list']:
+                    resp_cols = [format_datetime(resp.updated_on)]
+                    contact_cols = [resp.contact.name, resp.contact.urn, resp.contact.region, resp.contact.group]
+                    answer_cols = []
+
+                    answers_by_question_id = {a.question_id: a for a in resp.answers.all()}
+                    for question in questions:
+                        answer = answers_by_question_id.get(question.pk, None)
+                        answer_cols.append(answer.value if answer else '--')
+
+                    writer.writerow(resp_cols + contact_cols + answer_cols)
+
+                return response
+            else:
+                return super(ResponseCRUDL.ByIssue, self).render_to_response(context, **response_kwargs)
 
     class ByContact(OrgPermsMixin, SmartListView):
         fields = ('updated_on', 'poll', 'answers')

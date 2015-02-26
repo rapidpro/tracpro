@@ -5,6 +5,12 @@
 
   {% include 'polls/issue_header.haml' with issue=issue %}
 
-  - if request.region and not issue.region
-    - blocktrans with region=request.region
-      These are the responses for <strong>{{ region }}</strong>
+  .clearfix
+    - if request.region and not issue.region
+      - blocktrans with region=request.region
+        These are the responses for <strong>{{ region }}</strong>
+
+    .buttons.pull-away
+      %a.btn.btn-default{ href:"{{ request.path }}?_format=csv" }
+        %span.glyphicon.glyphicon-download
+        - trans "Download"
