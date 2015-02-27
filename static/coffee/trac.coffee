@@ -18,6 +18,7 @@ app.config [ '$interpolateProvider', '$httpProvider', ($interpolateProvider, $ht
 #
 $ ->
   init_language_fields()
+  init_audio_answers()
   init_charts()
 
 
@@ -57,6 +58,43 @@ init_language_fields = () ->
     })
 
 
+init_audio_answers = () ->
+  $('a.answer-audio').each ->
+    answer_link = $(this)
+    answer_id = answer_link.data('answer-id')
+    audio_url = answer_link.prop('href')
+
+    # add icons inside
+    answer_link.html('<span class="glyphicon glyphicon-play" />')
+
+    # add audio element after
+    audio_id = 'answer_audio_' + answer_id
+    answer_link.after('<audio id="' + audio_id + '"><source src="' + audio_url + '" />Your browser does not support HTML5 audio</audio>')
+    audio = answer_link.parent(null).find('#' + audio_id)
+
+    on_playback_start = () ->
+      answer_link.find('span').removeClass('glyphicon-play').addClass('glyphicon-pause')
+
+    on_playback_stop = () ->
+      answer_link.find('span').removeClass('glyphicon-pause').addClass('glyphicon-play')
+
+    audio.on 'play', on_playback_start
+    audio.on 'pause', on_playback_stop
+    audio.on 'ended', on_playback_stop
+
+    answer_link.addClass('btn btn-default')
+    answer_link.prop('href', '#')
+    answer_link.on 'click', () ->
+      audio_elem = $('#' + audio_id).get(0)
+      if audio_elem.paused
+        audio_elem.play()
+      else
+        audio_elem.pause()
+
+
+#
+# Chart initialization
+#
 init_charts = () ->
   $('.chart').each ->
     container = $(this)

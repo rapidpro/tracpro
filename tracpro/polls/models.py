@@ -27,10 +27,16 @@ from .tasks import issue_start
 QUESTION_TYPE_OPEN = 'O'
 QUESTION_TYPE_MULTIPLE_CHOICE = 'C'
 QUESTION_TYPE_NUMERIC = 'N'
+QUESTION_TYPE_MENU = 'M'
+QUESTION_TYPE_KEYPAD = 'K'
+QUESTION_TYPE_RECORDING = 'R'
 
 QUESTION_TYPE_CHOICES = ((QUESTION_TYPE_OPEN, _("Open Ended")),
                          (QUESTION_TYPE_MULTIPLE_CHOICE, _("Multiple Choice")),
-                         (QUESTION_TYPE_NUMERIC, _("Numeric")))
+                         (QUESTION_TYPE_NUMERIC, _("Numeric")),
+                         (QUESTION_TYPE_MENU, _("Menu")),
+                         (QUESTION_TYPE_KEYPAD, _("Keypad")),
+                         (QUESTION_TYPE_RECORDING, _("Recording")))
 
 
 UNIT_NAMES = {'d': 'days', 'm': 'months'}

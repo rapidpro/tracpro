@@ -17,7 +17,7 @@ from tracpro.contacts.models import Contact
 from tracpro.groups.models import Group
 from .charts import multiple_issues, single_issue
 from .models import Poll, Question, Issue, Response, Window
-from .models import QUESTION_TYPE_OPEN, RESPONSE_EMPTY, RESPONSE_PARTIAL, RESPONSE_COMPLETE
+from .models import QUESTION_TYPE_OPEN, QUESTION_TYPE_RECORDING, RESPONSE_EMPTY, RESPONSE_PARTIAL, RESPONSE_COMPLETE
 from .tasks import issue_restart_participants
 
 
@@ -361,7 +361,13 @@ class ResponseCRUDL(SmartCRUDL):
             elif field.startswith('question_'):
                 question = self.derive_questions()[field]
                 answer = obj.answers.filter(question=question).first()
-                return answer.value if answer else '--'
+                if answer:
+                    if question.type == QUESTION_TYPE_RECORDING:
+                        return '<a class="answer answer-audio" href="%s" data-answer-id="%d">Play</a>' % (answer.value, answer.pk)
+                    else:
+                        return answer.value
+                else:
+                    return '--'
             else:
                 return super(ResponseCRUDL.ByIssue, self).lookup_field_value(context, obj, field)
 
