@@ -109,8 +109,11 @@ def pie_chart_data(category_counts):
 
 def column_chart_data(range_counts):
     # highcharts needs the category labels and values separate for column charts
-    labels, counts = zip(*range_counts)
-    return [cgi.escape(l) for l in labels], counts
+    if range_counts:
+        labels, counts = zip(*range_counts)
+        return [cgi.escape(l) for l in labels], counts
+    else:
+        return [], []
 
 
 def render_data(chart_data):
