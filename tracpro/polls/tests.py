@@ -10,7 +10,7 @@ from mock import patch
 from temba.types import Flow, FlowRuleSet, Run, RunValueSet
 from tracpro.test import TracProTest
 from .models import Poll, Issue, Response, Answer, RESPONSE_EMPTY, RESPONSE_PARTIAL, RESPONSE_COMPLETE
-from .models import extract_words, auto_categorize_numbers
+from .models import extract_words, auto_range_categorize
 
 
 class PollTest(TracProTest):
@@ -178,47 +178,67 @@ class IssueTest(TracProTest):
         self.assertFalse(issue2.is_last_for_region(self.region2))  # issue #3 covers region #2 and is newer
         self.assertTrue(issue3.is_last_for_region(self.region2))
 
-    def test_calculate_answer_category_counts(self):
-        issue = Issue.objects.create(poll=self.poll1, region=None, conducted_on=timezone.now())
-        response1 = Response.create_empty(self.unicef, issue,
-                                          Run.create(id=123, contact='C-001', created_on=timezone.now()))
-        Answer.create(response1, self.poll1_question1, "4.00000", "1 - 5", timezone.now())
-        response2 = Response.create_empty(self.unicef, issue,
-                                          Run.create(id=234, contact='C-002', created_on=timezone.now()))
-        Answer.create(response2, self.poll1_question1, "3.00000", "1 - 5", timezone.now())
-        response3 = Response.create_empty(self.unicef, issue,
-                                          Run.create(id=345, contact='C-004', created_on=timezone.now()))
-        Answer.create(response3, self.poll1_question1, "8.00000", "6 - 10", timezone.now())
-
-        self.assertEqual(issue.calculate_answer_category_counts(self.poll1_question1), [("1 - 5", 2), ("6 - 10", 1)])
-        self.assertEqual(issue.calculate_answer_category_counts(self.poll1_question1, self.region1), [("1 - 5", 2)])
-        self.assertEqual(issue.calculate_answer_category_counts(self.poll1_question1, self.region2), [("6 - 10", 1)])
-
-    def test_calculate_answer_word_counts(self):
+    def test_answer_aggregation(self):
         self.contact5.language = 'ara'
         self.contact5.save()
 
         issue = Issue.objects.create(poll=self.poll1, region=None, conducted_on=timezone.now())
+
         response1 = Response.create_empty(self.unicef, issue,
                                           Run.create(id=123, contact='C-001', created_on=timezone.now()))
+        Answer.create(response1, self.poll1_question1, "4.00000", "1 - 5", timezone.now())
         Answer.create(response1, self.poll1_question2, "It's very rainy", "All Responses", timezone.now())
+
         response2 = Response.create_empty(self.unicef, issue,
                                           Run.create(id=234, contact='C-002', created_on=timezone.now()))
+        Answer.create(response2, self.poll1_question1, "3.00000", "1 - 5", timezone.now())
         Answer.create(response2, self.poll1_question2, "rainy and rainy", "All Responses", timezone.now())
+
         response3 = Response.create_empty(self.unicef, issue,
                                           Run.create(id=345, contact='C-004', created_on=timezone.now()))
+        Answer.create(response3, self.poll1_question1, "8.00000", "6 - 10", timezone.now())
         Answer.create(response3, self.poll1_question2, "Sunny sunny", "All Responses", timezone.now())
+
         response4 = Response.create_empty(self.unicef, issue,
                                           Run.create(id=456, contact='C-005', created_on=timezone.now()))
         Answer.create(response4, self.poll1_question2, "مطر", "All Responses", timezone.now())
 
-        self.assertEqual(issue.calculate_answer_word_counts(self.poll1_question2),
+        # category counts for question #1
+        self.assertEqual(issue.get_answer_category_counts(self.poll1_question1), [("1 - 5", 2), ("6 - 10", 1)])
+        self.assertEqual(issue.get_answer_category_counts(self.poll1_question1, self.region1), [("1 - 5", 2)])
+        self.assertEqual(issue.get_answer_category_counts(self.poll1_question1, self.region2), [("6 - 10", 1)])
+        self.assertEqual(issue.get_answer_category_counts(self.poll1_question1, self.region3), [])
+
+        # and from cache... (lists rather than tuples due to JSON serialization)
+        with self.assertNumQueries(0):
+            self.assertEqual(issue.get_answer_category_counts(self.poll1_question1), [["1 - 5", 2], ["6 - 10", 1]])
+            self.assertEqual(issue.get_answer_category_counts(self.poll1_question1, self.region1), [["1 - 5", 2]])
+            self.assertEqual(issue.get_answer_category_counts(self.poll1_question1, self.region2), [["6 - 10", 1]])
+            self.assertEqual(issue.get_answer_category_counts(self.poll1_question1, self.region3), [])
+
+        # auto-range category counts for question #1
+        self.assertEqual(issue.get_answer_range_counts(self.poll1_question1),
+                         [(u'1 - 2', 0), (u'3 - 4', 2), (u'5 - 6', 0), (u'7 - 8', 1), (u'9 - 10', 0)])
+        self.assertEqual(issue.get_answer_range_counts(self.poll1_question1, self.region1),
+                         [(u'2', 0), (u'3', 1), (u'4', 1), (u'5', 0), (u'6', 0)])
+        self.assertEqual(issue.get_answer_range_counts(self.poll1_question1, self.region2),
+                         [(u'6', 0), (u'7', 0), (u'8', 1), (u'9', 0), (u'10', 0)])
+        self.assertEqual(issue.get_answer_range_counts(self.poll1_question1, self.region3), [])
+
+        # numeric averages for question #1
+        self.assertEqual(issue.get_answer_numeric_average(self.poll1_question1), 5.0)
+        self.assertEqual(issue.get_answer_numeric_average(self.poll1_question1, self.region1), 3.5)
+        self.assertEqual(issue.get_answer_numeric_average(self.poll1_question1, self.region2), 8.0)
+        self.assertEqual(issue.get_answer_numeric_average(self.poll1_question1, self.region3), 0.0)
+
+        # word counts for question #2
+        self.assertEqual(issue.get_answer_word_counts(self.poll1_question2),
                          [("rainy", 3), ("sunny", 2), ('مطر', 1)])
-        self.assertEqual(issue.calculate_answer_word_counts(self.poll1_question2, self.region1),
+        self.assertEqual(issue.get_answer_word_counts(self.poll1_question2, self.region1),
                          [("rainy", 3)])
-        self.assertEqual(issue.calculate_answer_word_counts(self.poll1_question2, self.region2),
+        self.assertEqual(issue.get_answer_word_counts(self.poll1_question2, self.region2),
                          [("sunny", 2)])
-        self.assertEqual(issue.calculate_answer_word_counts(self.poll1_question2, self.region3),
+        self.assertEqual(issue.get_answer_word_counts(self.poll1_question2, self.region3),
                          [('مطر', 1)])
 
 
@@ -445,11 +465,11 @@ class PollFuncsTest(TracProTest):
         self.assertEqual(extract_words("I think it's good", "kin"), ['think', "it's", 'good'])  # no stop words for kin
         self.assertEqual(extract_words("قلم رصاص", "ara"), ['قلم', 'رصاص'])
 
-    def test_auto_categorize_numbers(self):
-        self.assertEqual(auto_categorize_numbers([], 5), {})
-        self.assertEqual(auto_categorize_numbers([1], 5),
+    def test_auto_range_categorize(self):
+        self.assertEqual(auto_range_categorize([], 5), {})
+        self.assertEqual(auto_range_categorize([1], 5),
                          {'0': 0, '1': 1, '2': 0, '3': 0, '4': 0})
-        self.assertEqual(auto_categorize_numbers([1, 2, 2, 3], 5),
+        self.assertEqual(auto_range_categorize([1, 2, 2, 3], 5),
                          {'0': 0, '1': 1, '2': 2, '3': 1, '4': 0})
-        self.assertEqual(auto_categorize_numbers([1, 2, 6, 6, 13], 5),
+        self.assertEqual(auto_range_categorize([1, 2, 6, 6, 13], 5),
                          {'0 - 2': 2, '3 - 5': 0, '6 - 8': 2, '9 - 11': 0, '12 - 14': 1})

@@ -6,10 +6,9 @@
   {% include 'polls/poll_header.haml' with poll=object %}
 
 - block content
-
   .
     - if not request.region
-      - trans "Charts only include data from non-regional issues"
+      - trans "Charts only include data from non-regional poll issues"
 
     .pull-away
       %form.form-inline{ method:"get" }
@@ -29,7 +28,7 @@
     %h3
       {{ question.order }}. {{ question.text }}
 
-    .chart{ data-question-id:"{{ question.pk }}", data-question-type:"{{ question.type }}", data-window-min:"{{ window_min }}", data-window-max:"{{ window_max }}", dir:"ltr" }
+    .chart{ data-question-id:"{{ question.pk }}", data-chart-type:"{{ question.chart_type }}", data-window-min:"{{ window_min }}", data-window-max:"{{ window_max }}", dir:"ltr" }
 
     %script{ type:"text/javascript" }
       var chart_{{ question.pk }}_data = {{ question.chart_data }};
@@ -37,92 +36,6 @@
 
 - block extra-script
   :javascript
-    $(function() {
-      $('.chart').each(function() {
-        var container = $(this);
-        var question_id = container.data('question-id');
-        var question_type = container.data('question-type');
-        var window_min = container.data('window-min');
-        var window_max = container.data('window-max');
-        var data = eval('chart_' + question_id + '_data');
-
-        if (data && data.length > 0) {
-          if (question_type == 'O') {
-            init_word_cloud(container, data);
-          }
-          else {
-            init_trend_chart(container, data, window_min, window_max);
-          }
-        }
-        else {
-          init_no_data(container);
-        }
-      });
-    });
-
-    function init_trend_chart(container, series, window_min, window_max) {
-      container.highcharts({
-        chart: { type: 'area' },
-        title: null,
-        xAxis: {
-            type: 'datetime',
-            title: { enabled: false },
-            min: window_min,
-            max: window_max
-        },
-        yAxis: {
-            title: {
-                text: 'Percent'
-            }
-        },
-        tooltip: {
-            xDateFormat: '%b %d, %Y',
-            pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.percentage:.1f}%</b> ({point.y:,.0f})<br/>',
-            shared: true
-        },
-        plotOptions: {
-            area: {
-                stacking: 'percent',
-                lineColor: '#ffffff',
-                lineWidth: 1,
-                marker: {
-                    lineWidth: 1,
-                    lineColor: '#ffffff'
-                }
-            }
-        },
-        series: series,
-        credits: { enabled: false }
-      });
-    }
-
-    function init_word_cloud(container, data) {
-      container.jQCloud(data);
-    }
-
-    function init_no_data(container) {
-      container.addClass('no-data');
-      container.text("No data")
-    }
-
     function onChartWindowChange(ctrl) {
       ctrl.form.submit();
     }
-
-- block extra-style
-    {{ block.super }}
-    :css
-      .chart {
-        min-width: 320px;
-        max-width: 700px;
-        height: 320px;
-        margin: 0 auto
-      }
-      .no-data {
-        border: 2px dashed #DDDDDD;
-        padding: 1em;
-        height: auto !important;
-        font-size: 20px;
-        color: #DDDDDD;
-        text-align: center;
-      }

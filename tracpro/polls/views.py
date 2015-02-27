@@ -62,7 +62,7 @@ class PollCRUDL(SmartCRUDL):
             issues = issues.order_by('conducted_on')
 
             for question in questions:
-                question.chart_data = multiple_issues(issues, question, self.request.region)
+                question.chart_type, question.chart_data = multiple_issues(issues, question, self.request.region)
 
             context['window'] = window
             context['window_min'] = datetime_to_ms(window_min)
@@ -205,7 +205,7 @@ class IssueCRUDL(SmartCRUDL):
             questions = self.object.poll.get_questions()
 
             for question in questions:
-                question.chart_data = single_issue(self.object, question, self.request.region)
+                question.chart_type, question.chart_data = single_issue(self.object, question, self.request.region)
 
             context['questions'] = questions
             return context

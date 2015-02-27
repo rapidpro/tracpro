@@ -68,6 +68,15 @@ RESPONSE_STATUS_CHOICES = ((RESPONSE_EMPTY, _("Empty")),
                            (RESPONSE_PARTIAL, _("Partial")),
                            (RESPONSE_COMPLETE, _("Complete")))
 
+
+class AnswerCache(Enum):
+    word_counts = 1
+    category_counts = 2
+    range_counts = 3
+    average = 4
+
+
+ANSWER_CACHE_KEY = 'issue:%d:question:%d:%s:%d'
 ANSWER_CACHE_TTL = 60 * 60 * 24 * 7  # 1 week
 
 
@@ -252,52 +261,74 @@ class Issue(models.Model):
 
         return qs.select_related('response__contact')
 
-    def get_answer_aggregates(self, question, region=None):
+    def get_answer_word_counts(self, question, region=None):
+        """
+        Gets word counts for answers to the given question, sorted from most frequent, e.g.
+            [("zombies", 2), ("floods", 1)]
+        """
         def calculate():
-            if question.type == QUESTION_TYPE_OPEN:
-                return self.calculate_answer_word_counts(question, region)
-            elif question.type == QUESTION_TYPE_MULTIPLE_CHOICE:
-                return self.calculate_answer_category_counts(question, region)
-            elif question.type == QUESTION_TYPE_NUMERIC:
-                return self.calculate_answer_numeric_counts(question, region)
-            else:
-                return []
+            answers = self.get_answers_to(question, region)
+            word_counts = defaultdict(int)
+            for answer in answers:
+                contact = answer.response.contact
+                for w in extract_words(answer.value, contact.language):
+                    word_counts[w] += 1
 
-        cache_key = self._answer_cache_key(question, region)
+            sorted_counts = sorted(word_counts.items(), key=operator.itemgetter(1), reverse=True)
+            return sorted_counts[:50]  # only return top 50
+
+        cache_key = self._answer_cache_key(question, AnswerCache.word_counts, region)
         return get_cacheable(cache_key, ANSWER_CACHE_TTL, calculate)
 
-    def calculate_answer_word_counts(self, question, region=None):
-        answers = self.get_answers_to(question, region)
-        word_counts = defaultdict(int)
-        for answer in answers:
-            contact = answer.response.contact
-            for w in extract_words(answer.value, contact.language):
-                word_counts[w] += 1
+    def get_answer_category_counts(self, question, region=None):
+        """
+        Gets category counts for answers to the given question, sorted from most frequent, e.g.
+            [("Rainy", 2), ("Sunny", 1)]
+        """
+        def calculate():
+            answers = self.get_answers_to(question, region)
+            category_counts = Counter([answer.category for answer in answers])
+            return sorted(category_counts.items(), key=operator.itemgetter(1), reverse=True)
 
-        sorted_counts = sorted(word_counts.items(), key=operator.itemgetter(1), reverse=True)
-        return sorted_counts[:50]  # only return top 50
+        cache_key = self._answer_cache_key(question, AnswerCache.category_counts, region)
+        return get_cacheable(cache_key, ANSWER_CACHE_TTL, calculate)
 
-    def calculate_answer_category_counts(self, question, region=None):
-        answers = self.get_answers_to(question, region)
-        category_counts = Counter([answer.category for answer in answers])
-        return sorted(category_counts.items(), key=operator.itemgetter(1), reverse=True)
+    def get_answer_range_counts(self, question, region=None):
+        """
+        Gets automatic numeric range counts for answers to the given question, sorted from most frequent, e.g.
+            [("0 - 9", 2), ("10 - 19", 1)]
+        """
+        def calculate():
+            answers = self.get_answers_to(question, region)
+            return auto_range_categorize([answer.value for answer in answers], 5).items()
 
-    def calculate_answer_numeric_counts(self, question, region=None):
-        answers = self.get_answers_to(question, region)
-        return auto_categorize_numbers([answer.value for answer in answers], 5).items()
+        cache_key = self._answer_cache_key(question, AnswerCache.range_counts, region)
+        return get_cacheable(cache_key, ANSWER_CACHE_TTL, calculate)
+
+    def get_answer_numeric_average(self, question, region=None):
+        """
+        Gets the numeric average of answers to the given question
+        """
+        def calculate():
+            answers = self.get_answers_to(question, region)
+            return average([answer.value for answer in answers])
+
+        cache_key = self._answer_cache_key(question, AnswerCache.average, region)
+        return get_cacheable(cache_key, ANSWER_CACHE_TTL, calculate)
 
     def clear_answer_cache(self, question, region):
         """
-        Clears an answer cache for this issue for the given region and the non-regional (0) cache
+        Clears all answer cache for the given question for the given region and the non-regional (0) cache
         """
-        # always clear the non-regional cache
-        cache.delete(self._answer_cache_key(question, None))
-        if region:
-            cache.delete(self._answer_cache_key(question, region))
+        for item in AnswerCache.__members__.values():
+            # always clear the non-regional cache
+            cache.delete(self._answer_cache_key(question, item, None))
+            if region:
+                cache.delete(self._answer_cache_key(question, item, region))
 
-    def _answer_cache_key(self, question, region):
+    def _answer_cache_key(self, question, item, region):
         region_id = region.pk if region else 0
-        return 'issue:%d:answer_cache:%d:%d' % (self.pk, question.pk, region_id)
+        return ANSWER_CACHE_KEY % (self.pk, question.pk, item.name, region_id)
 
     def as_json(self, region=None):
         region_as_json = dict(id=self.region.pk, name=self.region.name) if self.region else None
@@ -472,7 +503,24 @@ def extract_words(text, language):
     return [w for w in words if w not in ignore_words and len(w) > 1]
 
 
-def auto_categorize_numbers(raw_values, num_categories):
+def average(raw_values):
+    """
+    Parses decimals out of a list of values and returns the average. Returns zero if no valid numbers are found.
+    """
+    total = Decimal(0)
+    count = 0
+    for value in raw_values:
+        try:
+            value = Decimal(value)
+            total += value
+            count += 1
+        except ValueError:
+            continue
+
+    return float(total / count) if count else 0
+
+
+def auto_range_categorize(raw_values, num_categories):
     """
     Creates automatic range categories for a given set of numbers and returns the count of values in each category
     """
@@ -495,7 +543,7 @@ def auto_categorize_numbers(raw_values, num_categories):
             continue
 
     # pick best fitting categories
-    value_range = value_max - value_min
+    value_range = 1 + value_max - value_min
     category_step = int(math.ceil(float(value_range) / num_categories)) if value_range else 1
     category_range = category_step * num_categories
     category_min = value_min - (category_range - value_range) / 2
