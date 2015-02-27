@@ -9,7 +9,7 @@ from collections import defaultdict, OrderedDict
 from dash.utils import datetime_to_ms
 from decimal import Decimal
 from django.utils.safestring import mark_safe
-from .models import QUESTION_TYPE_OPEN, QUESTION_TYPE_MULTIPLE_CHOICE, QUESTION_TYPE_NUMERIC
+from .models import QUESTION_TYPE_OPEN, QUESTION_TYPE_MULTIPLE_CHOICE, QUESTION_TYPE_NUMERIC, QUESTION_TYPE_KEYPAD, QUESTION_TYPE_MENU
 
 
 class ChartJsonEncoder(json.JSONEncoder):
@@ -33,7 +33,7 @@ def single_issue(issue, question, region):
         word_counts = issue.get_answer_word_counts(question, region)
         chart_type = 'word'
         chart_data = word_cloud_data(word_counts)
-    elif question.type == QUESTION_TYPE_MULTIPLE_CHOICE:
+    elif question.type in (QUESTION_TYPE_MULTIPLE_CHOICE, QUESTION_TYPE_KEYPAD, QUESTION_TYPE_MENU):
         category_counts = issue.get_answer_category_counts(question, region)
         chart_type = 'pie'
         chart_data = pie_chart_data(category_counts)
