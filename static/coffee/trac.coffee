@@ -72,7 +72,10 @@ init_column_chart = (container, data) ->
     xAxis: {
       categories: data[0]
     },
-    yAxis: { title: null },
+    yAxis: {
+      title: null,
+      allowDecimals: false
+    },
     series: [{
       data: data[1]
     }],
