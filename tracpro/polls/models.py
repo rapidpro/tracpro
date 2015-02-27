@@ -267,15 +267,7 @@ class Issue(models.Model):
             [("zombies", 2), ("floods", 1)]
         """
         def calculate():
-            answers = self.get_answers_to(question, region)
-            word_counts = defaultdict(int)
-            for answer in answers:
-                contact = answer.response.contact
-                for w in extract_words(answer.value, contact.language):
-                    word_counts[w] += 1
-
-            sorted_counts = sorted(word_counts.items(), key=operator.itemgetter(1), reverse=True)
-            return sorted_counts[:50]  # only return top 50
+            return Answer.word_counts(self.get_answers_to(question, region))
 
         cache_key = self._answer_cache_key(question, AnswerCache.word_counts, region)
         return get_cacheable(cache_key, ANSWER_CACHE_TTL, calculate)
@@ -286,21 +278,18 @@ class Issue(models.Model):
             [("Rainy", 2), ("Sunny", 1)]
         """
         def calculate():
-            answers = self.get_answers_to(question, region)
-            category_counts = Counter([answer.category for answer in answers])
-            return sorted(category_counts.items(), key=operator.itemgetter(1), reverse=True)
+            return Answer.category_counts(self.get_answers_to(question, region))
 
         cache_key = self._answer_cache_key(question, AnswerCache.category_counts, region)
         return get_cacheable(cache_key, ANSWER_CACHE_TTL, calculate)
 
-    def get_answer_range_counts(self, question, region=None):
+    def get_answer_auto_range_counts(self, question, region=None):
         """
         Gets automatic numeric range counts for answers to the given question, sorted from most frequent, e.g.
             [("0 - 9", 2), ("10 - 19", 1)]
         """
         def calculate():
-            answers = self.get_answers_to(question, region)
-            return auto_range_categorize([answer.value for answer in answers], 5).items()
+            return Answer.auto_range_counts(self.get_answers_to(question, region), 5).items()
 
         cache_key = self._answer_cache_key(question, AnswerCache.range_counts, region)
         return get_cacheable(cache_key, ANSWER_CACHE_TTL, calculate)
@@ -310,8 +299,7 @@ class Issue(models.Model):
         Gets the numeric average of answers to the given question
         """
         def calculate():
-            answers = self.get_answers_to(question, region)
-            return average([answer.value for answer in answers])
+            return Answer.numeric_average(self.get_answers_to(question, region))
 
         cache_key = self._answer_cache_key(question, AnswerCache.average, region)
         return get_cacheable(cache_key, ANSWER_CACHE_TTL, calculate)
@@ -482,95 +470,116 @@ class Answer(models.Model):
             else:
                 category = category.itervalues().next()
 
+        if category == 'All Responses':
+            category = None
+
         return Answer.objects.create(response=response, question=question,
                                      value=value, category=category, submitted_on=submitted_on)
 
+    @classmethod
+    def word_counts(cls, answers):
+        word_counts = defaultdict(int)
+        for answer in answers:
+            contact = answer.response.contact
+            for w in extract_words(answer.value, contact.language):
+                word_counts[w] += 1
 
-def get_stop_words(iso_code):
-    code = pycountry.languages.get(bibliographic=iso_code).alpha2
-    try:
-        return stop_words.get_stop_words(code)
-    except stop_words.StopWordError:
-        return []
+        sorted_counts = sorted(word_counts.items(), key=operator.itemgetter(1), reverse=True)
+        return sorted_counts[:50]  # only return top 50
+
+    @classmethod
+    def category_counts(cls, answers):
+        category_counts = Counter([answer.category for answer in answers])
+        return sorted(category_counts.items(), key=operator.itemgetter(1), reverse=True)
+
+    @classmethod
+    def numeric_average(cls, answers):
+        """
+        Parses decimals out of a set of answers and returns the average. Returns zero if no valid numbers are found.
+        """
+        total = Decimal(0)
+        count = 0
+        for answer in answers:
+            if answer.category is not None:  # ignore answers with no category as they weren't in the required range
+                try:
+                    value = Decimal(answer.value)
+                    total += value
+                    count += 1
+                except ValueError:
+                    continue
+
+        return float(total / count) if count else 0
+
+    @classmethod
+    def auto_range_counts(cls, answers, num_categories):
+        """
+        Creates automatic range "categories" for a given set of answers and returns the count of values in each range
+        """
+        # convert to integers and find minimum and maximum
+        values = []
+        value_min = None
+        value_max = None
+        for answer in answers:
+            if answer.category is not None:  # ignore answers with no category as they weren't in the required range
+                try:
+                    value = int(Decimal(answer.value))
+                    if value < value_min or value_min is None:
+                        value_min = value
+                    if value > value_max or value_max is None:
+                        value_max = value
+                    values.append(value)
+                except ValueError:
+                    continue
+
+        if not values:
+            return {}
+
+        # pick best fitting categories
+        value_range = 1 + value_max - value_min
+        category_step = int(math.ceil(float(value_range) / num_categories)) if value_range else 1
+        category_range = category_step * num_categories
+        category_min = value_min - (category_range - value_range) / 2
+
+        # don't start categories in negative if min value isn't negative
+        if category_min < 0 and not value_min < 0:
+            category_min = 0
+
+        # create category labels and initialize counts
+        category_counts = OrderedDict()
+        category_labels = {}
+
+        for cat in range(0, num_categories):
+            cat_min = category_min + cat * category_step
+            if category_step > 1:
+                cat_max = (category_min + (cat + 1) * category_step) - 1
+                cat_label = '%d - %d' % (cat_min, cat_max)
+            else:
+                cat_label = unicode(cat_min)
+
+            category_labels[cat] = cat_label
+            category_counts[cat_label] = 0
+
+        # count categorized values
+        for value in values:
+            category = int(num_categories * (value - category_min) / category_range)
+            label = category_labels[category]
+            category_counts[label] += 1
+
+        return category_counts
 
 
 def extract_words(text, language):
     """
     Extracts significant words from the given text (i.e. words we want to include in a word cloud)
     """
+    ignore_words = []
+    if language:
+        code = pycountry.languages.get(bibliographic=language).alpha2
+        try:
+            ignore_words = stop_words.get_stop_words(code)
+        except stop_words.StopWordError:
+            pass
+
     words = re.split(r"[^\w'-]", text.lower(), flags=re.UNICODE)
-    ignore_words = get_stop_words(language) if language else []
+    ignore_words = ignore_words
     return [w for w in words if w not in ignore_words and len(w) > 1]
-
-
-def average(raw_values):
-    """
-    Parses decimals out of a list of values and returns the average. Returns zero if no valid numbers are found.
-    """
-    total = Decimal(0)
-    count = 0
-    for value in raw_values:
-        try:
-            value = Decimal(value)
-            total += value
-            count += 1
-        except ValueError:
-            continue
-
-    return float(total / count) if count else 0
-
-
-def auto_range_categorize(raw_values, num_categories):
-    """
-    Creates automatic range categories for a given set of numbers and returns the count of values in each category
-    """
-    if not raw_values:
-        return {}
-
-    # convert to integers and find minimum and maximum
-    values = []
-    value_min = None
-    value_max = None
-    for value in raw_values:
-        try:
-            value = int(Decimal(value))
-            if value < value_min or value_min is None:
-                value_min = value
-            if value > value_max or value_max is None:
-                value_max = value
-            values.append(value)
-        except ValueError:
-            continue
-
-    # pick best fitting categories
-    value_range = 1 + value_max - value_min
-    category_step = int(math.ceil(float(value_range) / num_categories)) if value_range else 1
-    category_range = category_step * num_categories
-    category_min = value_min - (category_range - value_range) / 2
-
-    # don't start categories in negative if min value isn't negative
-    if category_min < 0 and not value_min < 0:
-        category_min = 0
-
-    # create category labels and initialize counts
-    category_counts = OrderedDict()
-    category_labels = {}
-
-    for cat in range(0, num_categories):
-        cat_min = category_min + cat * category_step
-        if category_step > 1:
-            cat_max = (category_min + (cat + 1) * category_step) - 1
-            cat_label = '%d - %d' % (cat_min, cat_max)
-        else:
-            cat_label = unicode(cat_min)
-
-        category_labels[cat] = cat_label
-        category_counts[cat_label] = 0
-
-    # count categorized values
-    for value in values:
-        category = int(num_categories * (value - category_min) / category_range)
-        label = category_labels[category]
-        category_counts[label] += 1
-
-    return category_counts

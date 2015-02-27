@@ -38,7 +38,7 @@ def single_issue(issue, question, region):
         chart_type = 'pie'
         chart_data = pie_chart_data(category_counts)
     elif question.type == QUESTION_TYPE_NUMERIC:
-        range_counts = issue.get_answer_range_counts(question, region)
+        range_counts = issue.get_answer_auto_range_counts(question, region)
         chart_type = 'column'
         chart_data = column_chart_data(range_counts)
     else:

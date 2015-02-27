@@ -10,7 +10,7 @@ from mock import patch
 from temba.types import Flow, FlowRuleSet, Run, RunValueSet
 from tracpro.test import TracProTest
 from .models import Poll, Issue, Response, Answer, RESPONSE_EMPTY, RESPONSE_PARTIAL, RESPONSE_COMPLETE
-from .models import extract_words, auto_range_categorize
+from .models import extract_words
 
 
 class PollTest(TracProTest):
@@ -217,13 +217,13 @@ class IssueTest(TracProTest):
             self.assertEqual(issue.get_answer_category_counts(self.poll1_question1, self.region3), [])
 
         # auto-range category counts for question #1
-        self.assertEqual(issue.get_answer_range_counts(self.poll1_question1),
+        self.assertEqual(issue.get_answer_auto_range_counts(self.poll1_question1),
                          [(u'1 - 2', 0), (u'3 - 4', 2), (u'5 - 6', 0), (u'7 - 8', 1), (u'9 - 10', 0)])
-        self.assertEqual(issue.get_answer_range_counts(self.poll1_question1, self.region1),
+        self.assertEqual(issue.get_answer_auto_range_counts(self.poll1_question1, self.region1),
                          [(u'2', 0), (u'3', 1), (u'4', 1), (u'5', 0), (u'6', 0)])
-        self.assertEqual(issue.get_answer_range_counts(self.poll1_question1, self.region2),
+        self.assertEqual(issue.get_answer_auto_range_counts(self.poll1_question1, self.region2),
                          [(u'6', 0), (u'7', 0), (u'8', 1), (u'9', 0), (u'10', 0)])
-        self.assertEqual(issue.get_answer_range_counts(self.poll1_question1, self.region3), [])
+        self.assertEqual(issue.get_answer_auto_range_counts(self.poll1_question1, self.region3), [])
 
         # numeric averages for question #1
         self.assertEqual(issue.get_answer_numeric_average(self.poll1_question1), 5.0)
@@ -379,6 +379,29 @@ class AnswerTest(TracProTest):
         answer3 = Answer.create(response, self.poll1_question1, "rain", dict(eng="Yes"), timezone.now())
         self.assertEqual(answer3.category, "Yes")
 
+    def test_auto_range_counts(self):
+        self.assertEqual(Answer.auto_range_counts([], 5), {})
+        self.assertEqual(Answer.auto_range_counts([Answer(value=1, category=None)], 5), {})
+        self.assertEqual(Answer.auto_range_counts([Answer(value=1, category="1 - 100")], 5),
+                         {'0': 0, '1': 1, '2': 0, '3': 0, '4': 0})
+        self.assertEqual(Answer.auto_range_counts([Answer(value=1, category="1 - 100"),
+                                                   Answer(value=2, category="1 - 100"),
+                                                   Answer(value=2, category="1 - 100"),
+                                                   Answer(value=3, category="1 - 100")], 5),
+                         {'0': 0, '1': 1, '2': 2, '3': 1, '4': 0})
+        self.assertEqual(Answer.auto_range_counts([Answer(value=1, category="1 - 100"),
+                                                   Answer(value=2, category="1 - 100"),
+                                                   Answer(value=6, category="1 - 100"),
+                                                   Answer(value=6, category="1 - 100"),
+                                                   Answer(value=13, category="1 - 100")], 5),
+                         {'0 - 2': 2, '3 - 5': 0, '6 - 8': 2, '9 - 11': 0, '12 - 14': 1})
+
+    def test_numeric_average(self):
+        self.assertEqual(Answer.numeric_average([]), 0)
+        self.assertEqual(Answer.numeric_average([Answer(value=1, category=None)]), 0)
+        self.assertEqual(Answer.numeric_average([Answer(value=1, category="1 - 100"),
+                                                 Answer(value=2, category="1 - 100")]), 1.5)
+
 
 class PollCRUDLTest(TracProTest):
     def test_list(self):
@@ -464,12 +487,3 @@ class PollFuncsTest(TracProTest):
         self.assertEqual(extract_words("I think it's good", "eng"), ['think', 'good'])  # I and it's are stop words
         self.assertEqual(extract_words("I think it's good", "kin"), ['think', "it's", 'good'])  # no stop words for kin
         self.assertEqual(extract_words("قلم رصاص", "ara"), ['قلم', 'رصاص'])
-
-    def test_auto_range_categorize(self):
-        self.assertEqual(auto_range_categorize([], 5), {})
-        self.assertEqual(auto_range_categorize([1], 5),
-                         {'0': 0, '1': 1, '2': 0, '3': 0, '4': 0})
-        self.assertEqual(auto_range_categorize([1, 2, 2, 3], 5),
-                         {'0': 0, '1': 1, '2': 2, '3': 1, '4': 0})
-        self.assertEqual(auto_range_categorize([1, 2, 6, 6, 13], 5),
-                         {'0 - 2': 2, '3 - 5': 0, '6 - 8': 2, '9 - 11': 0, '12 - 14': 1})
