@@ -62,6 +62,9 @@ class Contact(models.Model):
         else:
             do_push = False
 
+        if name is None:  # RapidPro can send us blank or null names
+            name = ""
+
         # create contact
         contact = cls.objects.create(org=org, name=name, urn=urn, region=region, group=group,
                                      facility_code=facility_code, language=language,
@@ -90,6 +93,8 @@ class Contact(models.Model):
 
     @classmethod
     def kwargs_from_temba(cls, org, temba_contact):
+        name = temba_contact.name if temba_contact.name is not None else ""
+
         org_region_uuids = [r.uuid for r in Region.get_all(org)]
         region_uuids = intersection(org_region_uuids, temba_contact.groups)
         region = Region.objects.get(org=org, uuid=region_uuids[0]) if region_uuids else None
@@ -103,7 +108,7 @@ class Contact(models.Model):
 
         facility_code = temba_contact.fields.get(org.get_facility_code_field(), None)
 
-        return dict(org=org, name=temba_contact.name, urn=temba_contact.urns[0],
+        return dict(org=org, name=name, urn=temba_contact.urns[0],
                     region=region, group=group, language=temba_contact.language, facility_code=facility_code,
                     uuid=temba_contact.uuid)
 
