@@ -64,7 +64,12 @@ class Command(BaseCommand):
         updated = 0
         for run in runs:
             poll = polls_by_flow_uuids[run.flow]
-            response = Response.from_run(org, run, poll=poll)
+            try:
+                response = Response.from_run(org, run, poll=poll)
+            except ValueError, e:
+                self.stderr.write("Unable to save run #%d due to error: %s" % (run.id, e.message))
+                continue
+
             if getattr(response, 'is_new', False):
                 created += 1
             else:

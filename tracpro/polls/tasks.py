@@ -57,7 +57,11 @@ def fetch_org_new_runs(org):
         # convert flow runs into poll responses
         for run in runs:
             poll = polls_by_flow_uuids[run.flow]
-            Response.from_run(org, run, poll=poll)
+            try:
+                Response.from_run(org, run, poll=poll)
+            except ValueError, e:
+                logger.error("Unable to save run #%d due to error: %s" % (run.id, e.message))
+                continue
 
     if newest_run:
         r.set(last_time_key, format_iso8601(newest_run.created_on))
