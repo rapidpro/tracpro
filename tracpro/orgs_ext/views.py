@@ -29,7 +29,7 @@ class OrgExtCRUDL(SmartCRUDL):
         pass
 
     class Home(OrgCRUDL.Home):
-        fields = ('name', 'timezone', 'facility_code_field', 'api_token', 'last_contact_sync')
+        fields = ('name', 'timezone', 'facility_code_field', 'api_token', 'last_contact_sync', 'last_flow_run_fetch')
         field_config = {'api_token': {'label': _("RapidPro API Token")}}
         permission = 'orgs.org_home'
 
@@ -47,6 +47,13 @@ class OrgExtCRUDL(SmartCRUDL):
                                                                                result['counts']['updated'],
                                                                                result['counts']['deleted'],
                                                                                result['counts']['failed'])
+            else:
+                return None
+
+        def get_last_flow_run_fetch(self, obj):
+            result = obj.get_task_result(TaskType.fetch_runs)
+            if result:
+                return format_datetime(ms_to_datetime(result['time']))
             else:
                 return None
 

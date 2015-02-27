@@ -395,8 +395,8 @@ CELERYBEAT_SCHEDULE = {
         'schedule': datetime.timedelta(minutes=30),
         'args': ()
     },
-    'fetch-new-runs': {
-        'task': 'tracpro.polls.tasks.fetch_all_new_runs',
+    'fetch-runs': {
+        'task': 'tracpro.polls.tasks.fetch_all_runs',
         'schedule': datetime.timedelta(minutes=5),
         'args': ()
     }

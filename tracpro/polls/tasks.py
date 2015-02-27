@@ -2,6 +2,8 @@ from __future__ import absolute_import, unicode_literals
 
 from celery.utils.log import get_task_logger
 from dash.orgs.models import Org
+from dash.utils import datetime_to_ms
+from django.utils import timezone
 from djcelery_transactions import task
 from redis_cache import get_redis_connection
 from temba.utils import parse_iso8601, format_iso8601
@@ -12,15 +14,27 @@ LAST_FETCHED_RUN_TIME_KEY = 'org:%d:last_fetched_run_time'
 
 
 @task
-def fetch_all_new_runs():
+def fetch_all_runs():
     """
-    Fetches new flow runs for all orgs
+    Fetches flow runs for all orgs
     """
     logger.info("Starting flow run fetch for all orgs...")
 
     for org in Org.objects.filter(is_active=True).prefetch_related('polls'):
-        fetch_org_new_runs(org)
-        fetch_org_updated_runs(org)
+        fetch_org_runs(org)
+
+
+def fetch_org_runs(org):
+    """
+    Fetches flow runs for the given org
+    """
+    from tracpro.orgs_ext import TaskType
+
+    fetch_org_new_runs(org)
+    fetch_org_updated_runs(org)
+
+    task_result = dict(time=datetime_to_ms(timezone.now()))
+    org.set_task_result(TaskType.fetch_runs, task_result)
 
 
 def fetch_org_new_runs(org):
