@@ -113,7 +113,7 @@ def column_chart_data(range_counts):
         labels, counts = zip(*range_counts)
         return [cgi.escape(l) for l in labels], counts
     else:
-        return [], []
+        return []
 
 
 def render_data(chart_data):
