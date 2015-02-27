@@ -495,7 +495,7 @@ class Answer(models.Model):
 
     @classmethod
     def category_counts(cls, answers):
-        category_counts = Counter([answer.category for answer in answers])
+        category_counts = Counter([answer.category for answer in answers if answer.category])
         return sorted(category_counts.items(), key=operator.itemgetter(1), reverse=True)
 
     @classmethod
