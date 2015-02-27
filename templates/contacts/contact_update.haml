@@ -1,9 +1,0 @@
-- extends "smartmin/update.html"
-- load smartmin i18n
-
-- block extra-script
-  {{ block.super }}
-  :javascript
-    $(function(){
-      init_language_select('id_language', "{% url 'contacts.contact_update' object.pk %}");
-    });

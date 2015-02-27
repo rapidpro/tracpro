@@ -73,7 +73,8 @@ class ContactForm(forms.ModelForm):
 
     facility_code = forms.CharField(max_length=16, label=_("Facility Code"), required=False)
 
-    language = forms.CharField(label=_("Language"), required=False)
+    language = forms.CharField(label=_("Language"), required=False,
+                               widget=forms.TextInput(attrs={'class': 'language-field'}))
 
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user')

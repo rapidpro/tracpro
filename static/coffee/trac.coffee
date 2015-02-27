@@ -14,9 +14,50 @@ app.config [ '$interpolateProvider', '$httpProvider', ($interpolateProvider, $ht
 ]
 
 #
-# Charting
+# Page initialization
 #
 $ ->
+  init_language_fields()
+  init_charts()
+
+
+init_language_fields = () ->
+  $('.language-field').each ->
+    # Django won't let us output a hidden input with a visible label - so we output a char control and switch it out
+    # with a dynamic hidden input... which then select2.js converts to a swanky select box.
+    text_ctrl = $(this)
+    initial = text_ctrl.val()
+    hidden_ctrl_id = text_ctrl.prop('id') + '_select2'
+    text_ctrl.hide()
+    text_ctrl.prop('name', '')
+    text_ctrl.after('<input type="hidden" id="' + hidden_ctrl_id + '" name="language" style="width: 300px" value="' + initial + '" />')
+
+    data_url = '/contact/create/'  # move to own languages view?
+
+    data_callback = (term, page, context) -> return { search: term, page: page }
+    results_callback = (response, page, context) -> return response
+    init_sel_callback = (element, callback) ->
+      codes = $(element).val()
+      if codes != ""
+        $.getJSON(data_url, {initial: codes}).done (data) ->
+            callback(data.results[0])
+
+    $('#' + hidden_ctrl_id).select2({
+        selectOnBlur: false,
+        multiple: false,
+        quietMillis: 200,
+        minimumInputLength: 0,
+        ajax: {
+            url: data_url,
+            dataType: 'json',
+            data: data_callback,
+            results: results_callback
+        },
+        initSelection: init_sel_callback
+    })
+
+
+init_charts = () ->
   $('.chart').each ->
     container = $(this)
     question_id = container.data('question-id')
