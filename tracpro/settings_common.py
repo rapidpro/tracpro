@@ -64,7 +64,7 @@ MODELTRANSLATION_TRANSLATION_REGISTRY = "translation"
 LANGUAGE_CODE = 'en'
 
 # Available languages for translation
-LANGUAGES = (('en', _("English")), ('fr', _("French")), ('ps', _("Pashto")), ('fa', _("Persian")))
+LANGUAGES = (('en', _("English")), ('fr', _("French")), ('es', _("Spanish")), ('ps', _("Pashto")), ('fa', _("Persian")))
 RTL_LANGUAGES = {'ps', 'fa'}
 DEFAULT_LANGUAGE = "en"
 
