@@ -76,14 +76,14 @@ DATABASES['default']['ENGINE'] = 'django.db.backends.postgresql_psycopg2'
 # no debug toolbar in prod
 MIDDLEWARE_CLASSES = (
     'raven.contrib.django.raven_compat.middleware.SentryResponseErrorIdMiddleware',
-    'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
+    'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'reversion.middleware.RevisionMiddleware',
     'smartmin.middleware.AjaxRedirect',
-    'django.middleware.locale.LocaleMiddleware',
     'dash.orgs.middleware.SetOrgMiddleware',
     'tracpro.profiles.middleware.ForcePasswordChangeMiddleware',
     'tracpro.groups.middleware.UserRegionsMiddleware'
