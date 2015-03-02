@@ -295,7 +295,7 @@ class Issue(models.Model):
             [("0 - 9", 2), ("10 - 19", 1)]
         """
         def calculate():
-            return Answer.auto_range_counts(self.get_answers_to(question, region), 5).items()
+            return Answer.auto_range_counts(self.get_answers_to(question, region)).items()
 
         cache_key = self._answer_cache_key(question, AnswerCache.range_counts, region)
         return get_cacheable(cache_key, ANSWER_CACHE_TTL, calculate)
@@ -517,7 +517,7 @@ class Answer(models.Model):
         return float(total / count) if count else 0
 
     @classmethod
-    def auto_range_counts(cls, answers, num_categories):
+    def auto_range_counts(cls, answers):
         """
         Creates automatic range "categories" for a given set of answers and returns the count of values in each range
         """
@@ -541,37 +541,57 @@ class Answer(models.Model):
             return {}
 
         # pick best fitting categories
-        value_range = 1 + value_max - value_min
-        category_step = int(math.ceil(float(value_range) / num_categories)) if value_range else 1
-        category_range = category_step * num_categories
-        category_min = value_min - (category_range - value_range) / 2
-
-        # don't start categories in negative if min value isn't negative
-        if category_min < 0 and not value_min < 0:
-            category_min = 0
+        category_min, category_max, category_step = auto_range_categories(value_min, value_max)
 
         # create category labels and initialize counts
         category_counts = OrderedDict()
         category_labels = {}
 
-        for cat in range(0, num_categories):
-            cat_min = category_min + cat * category_step
+        cat_index = 0
+        for cat_min in range(category_min, category_max, category_step):
             if category_step > 1:
-                cat_max = (category_min + (cat + 1) * category_step) - 1
+                cat_max = cat_min + category_step - 1
                 cat_label = '%d - %d' % (cat_min, cat_max)
             else:
                 cat_label = unicode(cat_min)
 
-            category_labels[cat] = cat_label
+            category_labels[cat_index] = cat_label
             category_counts[cat_label] = 0
+            cat_index += 1
 
         # count categorized values
         for value in values:
-            category = int(num_categories * (value - category_min) / category_range)
+            category = int((value - category_min) / category_step)
             label = category_labels[category]
             category_counts[label] += 1
 
         return category_counts
+
+
+def auto_range_categories(value_min, value_max):
+    """
+    Tries to pick sensible numerical range categories for the given range of values
+    """
+    value_range = value_max - value_min
+    if value_range > 1:
+        category_range = int(math.pow(10, math.ceil(math.log10(value_range))))  # 10, 100, etc
+
+        if value_range < category_range / 2:
+            category_range /= 2  # 5, 10, 50, 100 etc
+    else:
+        category_range = 5
+
+    category_step = category_range / 5  # aim for 5 categories
+
+    category_min = value_min - (value_min % category_step)
+
+    category_max = category_min + category_step * 5
+
+    # may need an extra category to hold max value
+    while category_max <= value_max:
+        category_max += category_step
+
+    return category_min, category_max, category_step
 
 
 def extract_words(text, language):

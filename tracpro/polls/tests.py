@@ -218,11 +218,11 @@ class IssueTest(TracProTest):
 
         # auto-range category counts for question #1
         self.assertEqual(issue.get_answer_auto_range_counts(self.poll1_question1),
-                         [(u'1 - 2', 0), (u'3 - 4', 2), (u'5 - 6', 0), (u'7 - 8', 1), (u'9 - 10', 0)])
+                         [(u'2 - 3', 1), (u'4 - 5', 1), (u'6 - 7', 0), (u'8 - 9', 1), (u'10 - 11', 0)])
         self.assertEqual(issue.get_answer_auto_range_counts(self.poll1_question1, self.region1),
-                         [(u'2', 0), (u'3', 1), (u'4', 1), (u'5', 0), (u'6', 0)])
+                         [(u'3', 1), (u'4', 1), (u'5', 0), (u'6', 0), (u'7', 0)])
         self.assertEqual(issue.get_answer_auto_range_counts(self.poll1_question1, self.region2),
-                         [(u'6', 0), (u'7', 0), (u'8', 1), (u'9', 0), (u'10', 0)])
+                         [(u'8', 1), (u'9', 0), (u'10', 0), (u'11', 0), (u'12', 0)])
         self.assertEqual(issue.get_answer_auto_range_counts(self.poll1_question1, self.region3), [])
 
         # numeric averages for question #1
@@ -380,21 +380,21 @@ class AnswerTest(TracProTest):
         self.assertEqual(answer3.category, "Yes")
 
     def test_auto_range_counts(self):
-        self.assertEqual(Answer.auto_range_counts([], 5), {})
-        self.assertEqual(Answer.auto_range_counts([Answer(value=1, category=None)], 5), {})
-        self.assertEqual(Answer.auto_range_counts([Answer(value=1, category="1 - 100")], 5),
-                         {'0': 0, '1': 1, '2': 0, '3': 0, '4': 0})
+        self.assertEqual(Answer.auto_range_counts([]), {})
+        self.assertEqual(Answer.auto_range_counts([Answer(value=1, category=None)]), {})
+        self.assertEqual(Answer.auto_range_counts([Answer(value=1, category="1 - 100")]),
+                         {'1': 1, '2': 0, '3': 0, '4': 0, '5': 0})
         self.assertEqual(Answer.auto_range_counts([Answer(value=1, category="1 - 100"),
                                                    Answer(value=2, category="1 - 100"),
                                                    Answer(value=2, category="1 - 100"),
-                                                   Answer(value=3, category="1 - 100")], 5),
-                         {'0': 0, '1': 1, '2': 2, '3': 1, '4': 0})
+                                                   Answer(value=3, category="1 - 100")]),
+                         {'1': 1, '2': 2, '3': 1, '4': 0, '5': 0})
         self.assertEqual(Answer.auto_range_counts([Answer(value=1, category="1 - 100"),
                                                    Answer(value=2, category="1 - 100"),
                                                    Answer(value=6, category="1 - 100"),
                                                    Answer(value=6, category="1 - 100"),
-                                                   Answer(value=13, category="1 - 100")], 5),
-                         {'0 - 2': 2, '3 - 5': 0, '6 - 8': 2, '9 - 11': 0, '12 - 14': 1})
+                                                   Answer(value=13, category="1 - 100")]),
+                         {'0 - 9': 4, '10 - 19': 1, '20 - 29': 0, '30 - 39': 0, '40 - 49': 0})
 
     def test_numeric_average(self):
         self.assertEqual(Answer.numeric_average([]), 0)
