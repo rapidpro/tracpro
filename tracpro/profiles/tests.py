@@ -262,6 +262,19 @@ class UserCRUDLTest(TracProTest):
         self.assertNotEqual(user.password, old_password_hash)
 
 
+class DashUserCRUDLTest(TracProTest):
+    def test_login(self):
+        url = reverse('users.user_login')
+
+        # login without org subdomain
+        response = self.url_post(None, url, dict(username='sam@unicef.org', password='sam@unicef.org'))
+        self.assertRedirects(response, 'http://testserver/')
+
+        # login with org subdomain
+        response = self.url_post('unicef', url, dict(username='sam@unicef.org', password='sam@unicef.org'))
+        self.assertRedirects(response, 'http://unicef.localhost/')
+
+
 class ForcePasswordChangeMiddlewareTest(TracProTest):
     def test_process_view(self):
         self.user1.profile.change_password = True
