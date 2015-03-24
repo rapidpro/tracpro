@@ -30,7 +30,7 @@ class Contact(models.Model):
 
     group = models.ForeignKey(Group, null=True, verbose_name=_("Reporter group"), related_name='contacts')
 
-    facility_code = models.CharField(max_length=16, verbose_name=_("Facility Code"), null=True, blank=True,
+    facility_code = models.CharField(max_length=160, verbose_name=_("Facility Code"), null=True, blank=True,
                                      help_text=_("Facility code for this contact"))
 
     language = models.CharField(max_length=3, verbose_name=_("Language"), null=True, blank=True,
