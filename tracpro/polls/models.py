@@ -12,6 +12,7 @@ from dash.orgs.models import Org
 from dash.utils import get_cacheable, get_month_range
 from dateutil.relativedelta import relativedelta
 from decimal import Decimal
+from decimal import InvalidOperation
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.cache import cache
@@ -511,7 +512,7 @@ class Answer(models.Model):
                     value = Decimal(answer.value)
                     total += value
                     count += 1
-                except ValueError:
+                except (ValueError, InvalidOperation):
                     continue
 
         return float(total / count) if count else 0
