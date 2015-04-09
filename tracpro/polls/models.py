@@ -535,7 +535,7 @@ class Answer(models.Model):
                     if value > value_max or value_max is None:
                         value_max = value
                     values.append(value)
-                except ValueError:
+                except (ValueError, InvalidOperation):
                     continue
 
         if not values:
