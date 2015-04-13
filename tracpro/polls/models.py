@@ -209,10 +209,13 @@ class Issue(models.Model):
         org_timezone = pytz.timezone(org.timezone)
         for_local_date = for_date.astimezone(org_timezone).date()
 
-        # if the last non-regional issue of this poll was on same day, return that
-        last = poll.issues.filter(region=None).order_by('-conducted_on').first()
-        if last and last.conducted_on.astimezone(org_timezone).date() == for_local_date:
-            return last
+        # look for a non-regional issue on that date
+        sql = 'SELECT * FROM polls_issue WHERE poll_id = %s AND DATE(conducted_on AT TIME ZONE %s) = %s'
+        params = [poll.pk, org_timezone.zone, for_local_date]
+        existing = list(Issue.objects.raw(sql, params))
+
+        if existing:
+            return existing[0]
 
         return cls.objects.create(poll=poll, conducted_on=for_date)
 
