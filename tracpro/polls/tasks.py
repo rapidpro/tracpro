@@ -94,7 +94,7 @@ def fetch_org_updated_runs(org):
     if incomplete_responses:
         runs = []
         for i in range(0, len(incomplete_responses), 15):
-            runs += client.get_runs(ids=[r.flow_run_id for r in incomplete_responses[i:i+15]])
+            runs += client.get_runs(ids=map(lambda r: r.flow_run_id, incomplete_responses[i:i+15]))
 
         logger.info("Fetched %d runs for incomplete responses" % len(runs))
 
