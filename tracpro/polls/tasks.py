@@ -92,7 +92,9 @@ def fetch_org_updated_runs(org):
     incomplete_responses = Response.get_update_required(org)
 
     if incomplete_responses:
-        runs = client.get_runs(ids=[r.flow_run_id for r in incomplete_responses])
+        runs = []
+        for i in range(0, len(incomplete_responses), 15):
+            runs += client.get_runs(ids=[r.flow_run_id for r in incomplete_responses[i:i+15]])
 
         logger.info("Fetched %d runs for incomplete responses" % len(runs))
 
