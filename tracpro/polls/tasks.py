@@ -91,10 +91,13 @@ def fetch_org_updated_runs(org):
 
     incomplete_responses = Response.get_update_required(org)
 
+    max_number_fetchable_runs = 50  # Not yet sure what the optimum can be in order to make the smallest number of requests.
+
     if incomplete_responses:
         runs = []
-        for i in range(0, len(incomplete_responses), 15):
-            runs += client.get_runs(ids=map(lambda r: r.flow_run_id, incomplete_responses[i:i+15]))
+        for i in range(0, len(incomplete_responses), max_number_fetchable_runs):
+            runs += client.get_runs(
+                ids=map(lambda r: r.flow_run_id, incomplete_responses[i:i + max_number_fetchable_runs]))
 
         logger.info("Fetched %d runs for incomplete responses" % len(runs))
 
