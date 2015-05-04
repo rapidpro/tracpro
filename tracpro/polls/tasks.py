@@ -2,7 +2,7 @@ from __future__ import absolute_import, unicode_literals
 
 from celery.utils.log import get_task_logger
 from dash.orgs.models import Org
-from dash.utils import datetime_to_ms
+from dash.utils import datetime_to_ms, chunks
 from django.utils import timezone
 from djcelery_transactions import task
 from redis_cache import get_redis_connection
@@ -95,9 +95,8 @@ def fetch_org_updated_runs(org):
 
     if incomplete_responses:
         runs = []
-        for i in range(0, len(incomplete_responses), max_number_fetchable_runs):
-            runs += client.get_runs(
-                ids=map(lambda r: r.flow_run_id, incomplete_responses[i:i + max_number_fetchable_runs]))
+        for resp_chunk in chunks(list(incomplete_responses), max_number_fetchable_runs):
+            runs += client.get_runs(ids=[r.flow_run_id for r in resp_chunk])
 
         logger.info("Fetched %d runs for incomplete responses" % len(runs))
 
