@@ -268,11 +268,11 @@ class DashUserCRUDLTest(TracProTest):
 
         # login without org subdomain
         response = self.url_post(None, url, dict(username='sam@unicef.org', password='sam@unicef.org'))
-        self.assertRedirects(response, 'http://testserver/')
+        self.assertRedirects(response, 'http://testserver/', fetch_redirect_response=False)
 
         # login with org subdomain
         response = self.url_post('unicef', url, dict(username='sam@unicef.org', password='sam@unicef.org'))
-        self.assertRedirects(response, 'http://unicef.localhost/')
+        self.assertRedirects(response, 'http://unicef.localhost/', fetch_redirect_response=False)
 
 
 class ForcePasswordChangeMiddlewareTest(TracProTest):
@@ -283,7 +283,7 @@ class ForcePasswordChangeMiddlewareTest(TracProTest):
         self.login(self.user1)
 
         response = self.url_get('unicef', reverse('home.home'))
-        self.assertRedirects(response, 'http://unicef.localhost/profile/self/')
+        self.assertRedirects(response, 'http://unicef.localhost/profile/self/', fetch_redirect_response=False)
 
         response = self.url_get('unicef', reverse('profiles.user_self'))
         self.assertEqual(response.status_code, 200)

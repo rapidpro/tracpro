@@ -16,7 +16,7 @@ def org_ext_context_processor(request):
 
 
 class OrgExtCRUDL(SmartCRUDL):
-    actions = ('create', 'update', 'list', 'home', 'edit')
+    actions = ('create', 'update', 'list', 'home', 'edit', 'chooser', 'choose')
     model = Org
 
     class Create(OrgCRUDL.Create):
@@ -92,3 +92,9 @@ class OrgExtCRUDL(SmartCRUDL):
             obj = super(OrgExtCRUDL.Edit, self).pre_save(obj)
             obj.set_config(ORG_CONFIG_FACILITY_CODE_FIELD, self.form.cleaned_data['facility_code_field'])
             return obj
+
+    class Chooser(OrgCRUDL.Chooser):
+        pass
+
+    class Choose(OrgCRUDL.Choose):
+        pass
