@@ -515,7 +515,7 @@ class Answer(models.Model):
                     value = Decimal(answer.value)
                     total += value
                     count += 1
-                except (ValueError, InvalidOperation):
+                except (TypeError, ValueError, InvalidOperation):
                     continue
 
         return float(total / count) if count else 0
@@ -538,7 +538,7 @@ class Answer(models.Model):
                     if value > value_max or value_max is None:
                         value_max = value
                     values.append(value)
-                except (ValueError, InvalidOperation):
+                except (TypeError, ValueError, InvalidOperation):
                     continue
 
         if not values:
