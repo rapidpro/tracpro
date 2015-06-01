@@ -1,6 +1,6 @@
 #TracPro
 
-![Build Status](https://travis-ci.org/rapidpro/casepro.svg?branch=master)
+![Build Status](https://travis-ci.org/rapidpro/tracpro.svg?branch=master)
 
 Dashboard for managing polls hosted in [RapidPro](http://rapidpro.io), built for UNICEF by [Nyaruka](http://nyaruka.com).
 
