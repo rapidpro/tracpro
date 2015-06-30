@@ -41,6 +41,7 @@ EMAIL_HOST_PASSWORD = 'NOTREAL'
 EMAIL_USE_TLS = True
 
 SITE_API_HOST = 'http://localhost:8001/api/v1'
+SITE_API_USER_AGENT = 'tracpro/1.0'
 SITE_HOST_PATTERN = 'http://%s.localhost:8000'
 SITE_CHOOSER_URL_NAME = 'orgs_ext.org_chooser'
 SITE_CHOOSER_TEMPLATE = 'org_chooser.haml'

@@ -7,7 +7,7 @@ import pytz
 from django.core.urlresolvers import reverse
 from django.utils import timezone
 from mock import patch
-from temba.types import Flow, FlowRuleSet, Run, RunValueSet
+from temba.types import Flow, RuleSet, Run, RunValueSet
 from tracpro.test import TracProTest
 from .models import Poll, Issue, Response, Answer, RESPONSE_EMPTY, RESPONSE_PARTIAL, RESPONSE_COMPLETE
 from .models import extract_words
@@ -18,15 +18,15 @@ class PollTest(TracProTest):
     def test_sync_with_flows(self, mock_get_flows):
         mock_get_flows.return_value = [
             Flow.create(name="Poll #3", uuid='F-003', rulesets=[
-                FlowRuleSet.create(uuid='RS-004', label='How old are you', response_type='C'),
-                FlowRuleSet.create(uuid='RS-005', label='Where do you live', response_type='O')
+                RuleSet.create(uuid='RS-004', label='How old are you', response_type='C'),
+                RuleSet.create(uuid='RS-005', label='Where do you live', response_type='O')
             ]),
             Flow.create(name="Poll #4", uuid='F-004', rulesets=[
-                FlowRuleSet.create(uuid='RS-006', label='How many goats', response_type='N'),
-                FlowRuleSet.create(uuid='RS-007', label='How many sheep', response_type='N')
+                RuleSet.create(uuid='RS-006', label='How many goats', response_type='N'),
+                RuleSet.create(uuid='RS-007', label='How many sheep', response_type='N')
             ]),
             Flow.create(name="Poll #5", uuid='F-005', rulesets=[
-                FlowRuleSet.create(uuid='RS-008', label='What time is it', response_type='O')
+                RuleSet.create(uuid='RS-008', label='What time is it', response_type='O')
             ])
         ]
         Poll.sync_with_flows(self.unicef, ['F-003', 'F-004'])
@@ -44,8 +44,8 @@ class PollTest(TracProTest):
         # switch back to flow #1
         mock_get_flows.return_value = [
             Flow.create(name="Poll #1", uuid='F-001', rulesets=[
-                FlowRuleSet.create(uuid='RS-001', label='Number of sheep', response_type='N'),
-                FlowRuleSet.create(uuid='RS-002', label='Number of goats', response_type='N')
+                RuleSet.create(uuid='RS-001', label='Number of sheep', response_type='N'),
+                RuleSet.create(uuid='RS-002', label='Number of goats', response_type='N')
             ])
         ]
 
