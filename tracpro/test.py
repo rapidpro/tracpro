@@ -72,7 +72,7 @@ class TracProTest(TestCase):
 
     def create_org(self, name, timezone, subdomain):
         org = Org.objects.create(name=name, timezone=timezone, subdomain=subdomain, api_token=unicode(uuid4()),
-                                  created_by=self.superuser, modified_by=self.superuser)
+                                 created_by=self.superuser, modified_by=self.superuser)
         org.set_config('facility_code_field', 'facility_code')
         return org
 
