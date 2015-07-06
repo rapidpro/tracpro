@@ -5,7 +5,7 @@ from dash.orgs.models import Org
 from dash.utils import datetime_to_ms, chunks
 from django.utils import timezone
 from djcelery_transactions import task
-from redis_cache import get_redis_connection
+from django_redis import get_redis_connection
 from temba.utils import parse_iso8601, format_iso8601
 
 logger = get_task_logger(__name__)
