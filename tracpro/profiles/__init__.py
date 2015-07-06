@@ -8,7 +8,7 @@ from tracpro.groups.models import Region
 from .models import Profile
 
 
-######################### Monkey patching for the User class #########################
+# === Monkey patching for the User class === #
 
 def _user_create(cls, org, full_name, email, password, change_password=False, regions=()):
     """

@@ -16,7 +16,7 @@ LAST_TASK_CACHE_KEY = 'org:%d:task_result:%s'
 LAST_TASK_CACHE_TTL = 60 * 60 * 24 * 7  # 1 week
 
 
-######################### Monkey patching for the Org class #########################
+# === Monkey patching for the Org class === #
 
 ORG_CONFIG_FACILITY_CODE_FIELD = 'facility_code_field'
 
