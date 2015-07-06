@@ -27,6 +27,10 @@ class PollForm(forms.ModelForm):
     """
     name = forms.CharField(label=_("Name"))
 
+    class Meta:
+        model = Poll
+        fields = forms.ALL_FIELDS
+
     def __init__(self, *args, **kwargs):
         super(PollForm, self).__init__(*args, **kwargs)
 
@@ -34,9 +38,6 @@ class PollForm(forms.ModelForm):
             field_key = '__question__%d__text' % question.pk
             self.fields[field_key] = forms.CharField(max_length=255, initial=question.text,
                                                      label=_("Question #%d") % question.order)
-
-    class Meta:
-        model = Poll
 
 
 class PollCRUDL(SmartCRUDL):

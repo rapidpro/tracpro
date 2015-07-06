@@ -40,6 +40,10 @@ class UserForm(forms.ModelForm):
                                              required=False,
                                              help_text=_("Regions which this user can access."))
 
+    class Meta:
+        model = User
+        fields = forms.ALL_FIELDS
+
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user')
 
@@ -56,10 +60,6 @@ class UserForm(forms.ModelForm):
             confirm_password = cleaned_data.get('confirm_password', '')
             if password != confirm_password:
                 self.add_error('confirm_password', _("Passwords don't match."))
-
-    class Meta:
-        model = User
-        exclude = ()
 
 
 class UserFormMixin(object):

@@ -76,6 +76,10 @@ class ContactForm(forms.ModelForm):
     language = forms.CharField(label=_("Language"), required=False,
                                widget=forms.TextInput(attrs={'class': 'language-field'}))
 
+    class Meta:
+        model = Contact
+        fields = forms.ALL_FIELDS
+
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user')
         org = self.user.get_org()
@@ -84,10 +88,6 @@ class ContactForm(forms.ModelForm):
 
         self.fields['region'].queryset = self.user.get_regions(org).order_by('name')
         self.fields['group'].queryset = Group.get_all(org).order_by('name')
-
-    class Meta:
-        model = Contact
-        exclude = ()
 
 
 class ContactFormMixin(object):

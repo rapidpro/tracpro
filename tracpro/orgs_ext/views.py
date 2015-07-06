@@ -77,6 +77,7 @@ class OrgExtCRUDL(SmartCRUDL):
 
             class Meta:
                 model = Org
+                fields = forms.ALL_FIELDS
 
         fields = ('name', 'timezone', 'facility_code_field')
         permission = 'orgs.org_edit'
