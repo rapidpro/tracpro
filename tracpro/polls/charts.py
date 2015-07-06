@@ -118,4 +118,3 @@ def column_chart_data(range_counts):
 
 def render_data(chart_data):
     return mark_safe(json.dumps(chart_data, cls=ChartJsonEncoder))
-

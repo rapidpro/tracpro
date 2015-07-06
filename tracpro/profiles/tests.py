@@ -255,7 +255,7 @@ class UserCRUDLTest(TracProTest):
         data = dict(full_name="Morris", email="mo2@trac.com", password="Qwerty123", confirm_password="Qwerty123")
         response = self.url_post('unicef', url, data)
         self.assertEqual(response.status_code, 302)
-        
+
         # check password has changed and no longer has to be changed
         user = User.objects.get(pk=self.user1.pk)
         self.assertFalse(user.profile.change_password)

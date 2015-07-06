@@ -1,4 +1,4 @@
-config = dict(    
+config = dict(
     port='8027',
     app_dir='tracpro',
     friendly_name='TracPro',
