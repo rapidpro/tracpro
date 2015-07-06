@@ -100,8 +100,8 @@ class ContactFormMixin(object):
         return kwargs
 
     def get(self, request, *args, **kwargs):
-        if 'initial' in self.request.REQUEST:
-            initial = self.request.REQUEST['initial']
+        if 'initial' in self.request.POST or 'initial' in self.request.GET:
+            initial = self.request.POST.get('initial', self.request.GET.get('initial'))
             results = []
             if initial:
                 lang = pycountry.languages.get(bibliographic=initial)
@@ -109,8 +109,9 @@ class ContactFormMixin(object):
                 results.append(dict(id=lang.bibliographic, text=name))
             return JsonResponse(dict(results=results))
 
-        if 'search' in self.request.REQUEST:
-            search = self.request.REQUEST['search'].strip().lower()
+        if 'search' in self.request.GET or 'search' in self.request.POST:
+            search = self.request.POST.get('search', self.request.GET.get('search'))
+            search = search.strip().lower()
             results = []
             for lang in pycountry.languages:
                 if len(results) == 10:

@@ -54,7 +54,7 @@ class PollCRUDL(SmartCRUDL):
             if not self.request.region:
                 issues = issues.filter(region=None)
 
-            window = self.request.REQUEST.get('window', None)
+            window = self.request.POST.get('window', self.request.GET.get('window', None))
             window = Window[window] if window else Window.last_30_days
             window_min, window_max = window.to_range()
 
@@ -385,7 +385,7 @@ class ResponseCRUDL(SmartCRUDL):
             issue = self.derive_issue()
             context['issue'] = issue
 
-            if '_format' not in self.request.REQUEST:
+            if '_format' not in self.request.POST and '_format' not in self.request.GET:
                 # can only restart regional polls and if they're the last issue
                 can_restart = self.request.region and issue.is_last_for_region(self.request.region)
 
@@ -405,7 +405,7 @@ class ResponseCRUDL(SmartCRUDL):
             return context
 
         def render_to_response(self, context, **response_kwargs):
-            _format = self.request.REQUEST.get('_format', None)
+            _format = self.request.POST.get('_format', self.request.GET.get('_format', None))
 
             if _format == 'csv':
                 response = HttpResponse(content_type='text/csv', status=200)
