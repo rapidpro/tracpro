@@ -1,6 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
 import datetime
+import os
 import sys
 
 from django.utils.translation import ugettext_lazy as _
@@ -265,7 +266,6 @@ LOGGING = {
 # ----------------------------------------------------------------------------
 # Directory Configuration
 # ----------------------------------------------------------------------------
-import os
 
 PROJECT_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)))
 RESOURCES_DIR = os.path.join(PROJECT_DIR, '../resources')
@@ -382,7 +382,8 @@ INTERNAL_IPS = ('127.0.0.1',)
 # ----------------------------------------------------------------------------
 # Django-celery
 # ----------------------------------------------------------------------------
-import djcelery
+import djcelery  # noqa
+
 djcelery.setup_loader()
 
 BROKER_URL = 'redis://localhost:6379/%d' % (10 if TESTING else 4)

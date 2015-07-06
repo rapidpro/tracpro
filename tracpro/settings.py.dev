@@ -38,13 +38,12 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
         'NAME': 'tracpro',
-        'USER': 'tracpro',
-        'PASSWORD': 'nyaruka',
-        'HOST': 'localhost',
+        'USER': '',
+        'PASSWORD': '',
+        'HOST': '',
         'PORT': '',
         'ATOMIC_REQUESTS': True,
         'OPTIONS': {
         }
     }
 }
-

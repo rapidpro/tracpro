@@ -5,7 +5,6 @@ from dateutil.relativedelta import relativedelta
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 from optparse import make_option
-from temba.utils import format_iso8601
 from tracpro.polls.models import Poll, Response
 
 

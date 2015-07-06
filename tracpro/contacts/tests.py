@@ -7,7 +7,7 @@ from django.test.utils import override_settings
 from django.utils import timezone
 from mock import patch
 from temba.types import Contact as TembaContact, Run
-from tracpro.polls.models import Issue, Response, Answer, RESPONSE_COMPLETE, RESPONSE_EMPTY
+from tracpro.polls.models import Issue, Response, RESPONSE_COMPLETE, RESPONSE_EMPTY
 from tracpro.test import TracProTest
 from .models import Contact
 
