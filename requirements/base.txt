@@ -31,7 +31,7 @@ hamlpy==0.82.2
   Pygments==2.0.2
 phonenumbers==7.0.7
 pisa==3.0.33
-psycopg2==2.6
+psycopg2==2.6.1
 pycountry==1.10
 python-dateutil==2.4.2
 pytz==2015.2
