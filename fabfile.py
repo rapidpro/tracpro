@@ -1,1 +1,1 @@
-from deploy.fabfile import *
+from deploy.fabfile import *  # noqa
