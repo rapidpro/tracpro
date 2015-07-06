@@ -5,7 +5,6 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
 from tracpro.groups.models import Region
-from .models import Profile
 
 
 # === Monkey patching for the User class === #
@@ -20,6 +19,7 @@ def _user_create(cls, org, full_name, email, password, change_password=False, re
     user.save()
 
     # add profile
+    from .models import Profile
     Profile.objects.create(user=user, full_name=full_name, change_password=change_password)
 
     # setup as org editor with limited region access
@@ -41,6 +41,7 @@ def _user_clean(user):
 
 
 def _user_has_profile(user):
+    from .models import Profile
     try:
         return bool(user.profile)
     except Profile.DoesNotExist:
