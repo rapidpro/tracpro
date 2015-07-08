@@ -20,5 +20,3 @@ PASSWORD_HASHERS = [
 ]
 
 SECRET_KEY = 'secret-key' * 5
-
-TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
