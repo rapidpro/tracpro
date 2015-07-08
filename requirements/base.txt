@@ -21,7 +21,7 @@ django-redis==3.8.4
   redis==2.10.3
 django-reversion==1.8.7
 django-rosetta==0.7.6
-  microsofttranslator==0.5
+  microsofttranslator==0.7
   polib==1.0.6
 django-storages==1.1.8
 django-timezones==0.2
