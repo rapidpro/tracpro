@@ -1,165 +1,65 @@
 from __future__ import unicode_literals
 
-import os
-
 from .base import *  # noqa
 
 
-DEBUG = False
-TEMPLATE_DEBUG = DEBUG
-COMPRESS_ENABLED = True
+WEBSERVER_ROOT = '/var/www/tracpro/'
 
-SITE_API_HOST = 'http://textit.staging.nyaruka.com/api/v1'
-SITE_HOST_PATTERN = 'http://%s.tracpro.staging.nyaruka.com'
+ENVIRONMENT = os.environ.get('ENVIRONMENT', '').lower()
+
+ADMINS = [
+    ('Caktus Website Team', 'website-team@caktusgroup.com'),
+]
+
+ALLOWED_HOSTS = os.environ['ALLOWED_HOSTS'].split(';')
+
+CACHES['default']['LOCATION'] = 'localhost:6379:4'
+
+CELERY_SEND_TASK_ERROR_EMAILS = True
+
+COMPRESS_CSS_HASHING_METHOD = 'content'
+
+COMPRESS_OFFLINE = True
+
+COMPRESS_OFFLINE_CONTEXT = {
+    'STATIC_URL': STATIC_URL,
+    'base_template': 'frame.html',
+    'debug': False,
+    'testing': False,
+}
+
+DATABASES['default'].update({
+    'NAME': 'tracpro_{}'.format(ENVIRONMENT),
+    'USER': 'tracpro_{}'.format(ENVIRONMENT),
+    'HOST': os.environ.get('DB_HOST', ''),
+    'PORT': os.environ.get('DB_PORT', ''),
+    'PASSWORD': os.environ.get('DB_PASSWORD', ''),
+})
+
+DEFAULT_FROM_EMAIL = 'no-reply@caktusgroup.com'
+
+# EMAIL_SUBJECT_PREFIX = '[Edutrac] '
 
 HOSTNAME = 'tracpro.staging.nyaruka.com'
-ALLOWED_HOSTS = ['tracpro.staging.nyaruka.com', '.tracpro.staging.nyaruka.com']
-SESSION_COOKIE_DOMAIN = 'tracpro.staging.nyaruka.com'
-SESSION_COOKIE_SECURE = False
 
-# these guys will get email from sentry
-ADMINS = ()
+LOGGING['handlers']['file']['filename'] = os.path.join(WEBSERVER_ROOT, 'log', 'tracpro.log')
 
-# set the mail settings, we send through gmail
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_HOST_USER = '${gmail_user}'
-DEFAULT_FROM_EMAIL = '${gmail_user}'
-EMAIL_HOST_PASSWORD = '${gmail_password}'
-EMAIL_USE_TLS = True
+MEDIA_ROOT = os.path.join(WEBSERVER_ROOT, 'public', 'media')
 
-MANAGERS = ADMINS
+SECRET_KEY = os.environ.get('SECRET_KEY', '')
 
-# add gunicorn
-INSTALLED_APPS = INSTALLED_APPS + ('gunicorn', 'raven.contrib.django.raven_compat',)
-
-RAVEN_CONFIG = {
-    'dsn': os.environ.get('RAVEN_DSN', 'MISSING_RAVEN_DSN')
-}
-
-# static dir is different for staging
-STATIC_URL = '/sitestatic/'
-COMPRESS_URL = '/sitestatic/'
-
-# our media is all on S3
-MEDIA_URL = 'http://dl-trac.s3.amazonaws.com/'
-
-# we store files on S3 on prod boxes
-AWS_ACCESS_KEY_ID=os.environ.get('AWS_ACCESS_KEY_ID', 'MISSING_AWS_ACCESS_KEY_ID')
-AWS_SECRET_ACCESS_KEY=os.environ.get('AWS_SECRET_ACCESS_KEY', 'MISSING_AWS_SECRET_ACCESS_KEY')
-AWS_STORAGE_BUCKET_NAME='dl-trac'
-DEFAULT_FILE_STORAGE = 'storages.backends.s3boto.S3BotoStorage'
-
-# these two settings will cause our aws files to never expire
-# see http://developer.yahoo.com/performance/rules.html#expires
-AWS_QUERYSTRING_AUTH = False
-AWS_HEADERS = {
-    'Expires': 'Wed, 1 Jan 2020 20:00:00 GMT',
-    'Cache-Control': 'max-age=86400',
-}
-
-# List of finder classes that know how to find static files in
-# various locations.
-STATICFILES_FINDERS = (
-    'django.contrib.staticfiles.finders.FileSystemFinder',
-    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
-    'compressor.finders.CompressorFinder',
-)
-
-import dj_database_url
-DATABASES = {}
-DATABASES['default'] = dj_database_url.config()
-
-# reuse our connections for up to 60 seconds
-DATABASES['default']['CONN_MAX_AGE'] = 60
-DATABASES['default']['ATOMIC_REQUESTS'] = True
-DATABASES['default']['ENGINE'] = 'django.db.backends.postgresql_psycopg2'
-
-# no debug toolbar in prod
-MIDDLEWARE_CLASSES = (
-    'raven.contrib.django.raven_compat.middleware.SentryResponseErrorIdMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.locale.LocaleMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'reversion.middleware.RevisionMiddleware',
-    'smartmin.middleware.AjaxRedirect',
-    'dash.orgs.middleware.SetOrgMiddleware',
-    'tracpro.profiles.middleware.ForcePasswordChangeMiddleware',
-    'tracpro.groups.middleware.UserRegionsMiddleware'
-)
-
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': True,
-    'root': {
-        'level': 'INFO',
-        'handlers': ['console', 'sentry'],
-    },
-    'formatters': {
-        'verbose': {
-            'format': '%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s'
-        },
-    },
-    'handlers': {
-        'sentry': {
-            'level': 'ERROR',
-            'class': 'raven.contrib.django.raven_compat.handlers.SentryHandler',
-        },
-        'console': {
-            'level': 'DEBUG',
-            'class': 'logging.StreamHandler',
-            'formatter': 'verbose'
-        }
-    },
-    'loggers': {
-        'django.db.backends': {
-            'level': 'ERROR',
-            'handlers': ['console'],
-            'propagate': False,
-        },
-        'raven': {
-            'level': 'DEBUG',
-            'handlers': ['console'],
-            'propagate': False,
-        },
-        'sentry.errors': {
-            'level': 'DEBUG',
-            'handlers': ['console'],
-            'propagate': False,
-        },
-        'celery.task': {
-            'level': 'INFO',
-            'handlers': ['console', 'sentry'],
-            'propagate': False,
-        },
-        'tracpro': {
-            'level': 'INFO',
-            'handlers': ['console', 'sentry'],
-            'propagate': False,
-        },
-    },
-}
-
-# use our cache backend for sessions
-SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
-SESSION_CACHE_ALIAS = "default"
-
-# trust connections that are coming in on this protocol
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'HTTPS')
 
-# compress arguments
-COMPRESS_CSS_HASHING_METHOD = 'content'
-COMPRESS_OFFLINE = True
-COMPRESS_OFFLINE_CONTEXT = dict(STATIC_URL=STATIC_URL, base_template='frame.html', debug=False, testing=False)
+SESSION_CACHE_ALIAS = "default"
 
-CACHES = {
-    'default': {
-        'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': 'localhost:6379:4',
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-        }
-    }
-}
+SESSION_COOKIE_DOMAIN = 'tracpro.staging.nyaruka.com'
+
+SESSION_COOKIE_SECURE = False
+
+SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
+
+SITE_API_HOST = 'http://textit.staging.nyaruka.com/api/v1'
+
+SITE_HOST_PATTERN = 'http://%s.tracpro.staging.nyaruka.com'
+
+STATIC_ROOT = os.path.join(WEBSERVER_ROOT, 'public', 'static')
