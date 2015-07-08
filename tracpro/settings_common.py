@@ -276,8 +276,8 @@ FIXTURE_DIRS = (os.path.join(PROJECT_DIR, '../fixtures'),)
 TESTFILES_DIR = os.path.join(PROJECT_DIR, '../testfiles')
 TEMPLATE_DIRS = (os.path.join(PROJECT_DIR, '../templates'),)
 STATICFILES_DIRS = (os.path.join(PROJECT_DIR, '../static'), os.path.join(PROJECT_DIR, '../media'), )
-STATIC_ROOT = os.path.join(PROJECT_DIR, '../sitestatic')
-MEDIA_ROOT = os.path.join(PROJECT_DIR, '../media')
+STATIC_ROOT = os.path.join(PROJECT_DIR, '../public/static')
+MEDIA_ROOT = os.path.join(PROJECT_DIR, '../public/media')
 MEDIA_URL = "/media/"
 
 # ----------------------------------------------------------------------------
