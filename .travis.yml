@@ -10,7 +10,7 @@ cache:
   directories:
     - $HOME/.cache/pip
 env:
-  - DJANGO_SETTINGS_MODULE="tracpro.settings"
+  - DJANGO_SETTINGS_MODULE="tracpro.settings.tests"
 install:
   - pip install --upgrade pip
   - pip install -r requirements/tests.txt
@@ -20,7 +20,6 @@ before_script:
   - psql -U postgres -c "CREATE USER tracpro WITH PASSWORD 'nyaruka';"
   - psql -U postgres -c "ALTER ROLE tracpro WITH SUPERUSER;"
   - psql -U tracpro postgres -c "CREATE DATABASE tracpro;"
-  - ln -s $TRAVIS_BUILD_DIR/tracpro/settings.py.dev $TRAVIS_BUILD_DIR/tracpro/settings.py
 script:
   - coverage run manage.py test
   - coverage report -m --fail-under 80
