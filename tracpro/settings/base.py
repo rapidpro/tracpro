@@ -78,6 +78,18 @@ INSTALLED_APPS = [
 
 LANGUAGE_CODE = 'en'
 
+LANGUAGES = [
+    ('en', _("English")),
+    ('fr', _("French")),
+    ('es', _("Spanish")),
+    ('ps', _("Pashto")),
+    ('fa', _("Persian")),
+]
+
+LOCALE_PATHS = [
+    os.path.join(PROJECT_ROOT, 'locale'),
+]
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -282,6 +294,8 @@ PERMISSIONS = {
     # can't create profiles.user.* permissions because we don't own User
     'profiles.profile': ('user_create', 'user_read', 'user_update', 'user_list'),
 }
+
+RTL_LANGUAGES = ['ps', 'fa']
 
 SITE_ALLOW_NO_ORG = (
     'orgs_ext.org_create',
