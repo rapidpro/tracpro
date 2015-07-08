@@ -1,3 +1,6 @@
+.. image:: https://magnum.travis-ci.com/caktus/edutrac.svg?token=ovs4nx5Qvj8dsgTrCdLz
+    :target: https://magnum.travis-ci.com/caktus/edutrac
+
 Tracpro
 =======
 
