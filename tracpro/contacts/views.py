@@ -157,8 +157,9 @@ class ContactCRUDL(SmartCRUDL):
         form_class = ContactForm
 
         def get_queryset(self):
+            regions = self.request.user.get_regions(self.request.org)
             queryset = super(ContactCRUDL.Update, self).get_queryset()
-            return queryset.filter(org=self.request.org, is_active=True, region__in=self.request.user.get_regions(self.request.org))
+            return queryset.filter(org=self.request.org, is_active=True, region__in=regions)
 
         def post_save(self, obj):
             obj = super(ContactCRUDL.Update, self).post_save(obj)
@@ -173,8 +174,9 @@ class ContactCRUDL(SmartCRUDL):
             return fields
 
         def get_queryset(self):
+            regions = self.request.user.get_regions(self.request.org)
             queryset = super(ContactCRUDL.Read, self).get_queryset()
-            return queryset.filter(org=self.request.org, is_active=True, region__in=self.request.user.get_regions(self.request.org))
+            return queryset.filter(org=self.request.org, is_active=True, region__in=regions)
 
         def get_urn(self, obj):
             return obj.get_urn()[1]

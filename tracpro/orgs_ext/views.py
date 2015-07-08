@@ -42,11 +42,13 @@ class OrgExtCRUDL(SmartCRUDL):
         def get_last_contact_sync(self, obj):
             result = obj.get_task_result(TaskType.sync_contacts)
             if result:
-                return "%s (%d created, %d updated, %d deleted, %d failed)" % (format_datetime(ms_to_datetime(result['time'])),
-                                                                               result['counts']['created'],
-                                                                               result['counts']['updated'],
-                                                                               result['counts']['deleted'],
-                                                                               result['counts']['failed'])
+                return "%s (%d created, %d updated, %d deleted, %d failed)" % (
+                    format_datetime(ms_to_datetime(result['time'])),
+                    result['counts']['created'],
+                    result['counts']['updated'],
+                    result['counts']['deleted'],
+                    result['counts']['failed'],
+                )
             else:
                 return None
 

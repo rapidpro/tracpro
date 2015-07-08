@@ -64,12 +64,18 @@ class PollTest(TracProTest):
         self.assertEqual(Response.get_update_required(self.unicef).count(), 0)
 
         # add an empty, a partial and a complete response
-        response1 = Response.objects.create(flow_run_id=123, issue=issue1, contact=self.contact1,
-                                            created_on=timezone.now(), updated_on=timezone.now(), status=RESPONSE_EMPTY)
-        response2 = Response.objects.create(flow_run_id=234, issue=issue1, contact=self.contact2,
-                                            created_on=timezone.now(), updated_on=timezone.now(), status=RESPONSE_PARTIAL)
-        Response.objects.create(flow_run_id=345, issue=issue1, contact=self.contact3,
-                                created_on=timezone.now(), updated_on=timezone.now(), status=RESPONSE_COMPLETE)
+        response1 = Response.objects.create(
+            flow_run_id=123, issue=issue1, contact=self.contact1,
+            created_on=timezone.now(), updated_on=timezone.now(),
+            status=RESPONSE_EMPTY)
+        response2 = Response.objects.create(
+            flow_run_id=234, issue=issue1, contact=self.contact2,
+            created_on=timezone.now(), updated_on=timezone.now(),
+            status=RESPONSE_PARTIAL)
+        Response.objects.create(
+            flow_run_id=345, issue=issue1, contact=self.contact3,
+            created_on=timezone.now(), updated_on=timezone.now(),
+            status=RESPONSE_COMPLETE)
 
         self.assertEqual(list(Response.get_update_required(self.unicef).order_by('pk')), [response1, response2])
 

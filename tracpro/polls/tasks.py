@@ -91,7 +91,8 @@ def fetch_org_updated_runs(org):
 
     incomplete_responses = Response.get_update_required(org)
 
-    max_number_fetchable_runs = 50  # Not yet sure what the optimum can be in order to make the smallest number of requests.
+    # Not yet sure what the optimum can be in order to make the smallest number of requests.
+    max_number_fetchable_runs = 50
 
     if incomplete_responses:
         runs = []

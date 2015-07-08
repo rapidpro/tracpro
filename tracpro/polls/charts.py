@@ -9,7 +9,10 @@ from collections import defaultdict, OrderedDict
 from dash.utils import datetime_to_ms
 from decimal import Decimal
 from django.utils.safestring import mark_safe
-from .models import QUESTION_TYPE_OPEN, QUESTION_TYPE_MULTIPLE_CHOICE, QUESTION_TYPE_NUMERIC, QUESTION_TYPE_KEYPAD, QUESTION_TYPE_MENU
+
+from .models import (
+    QUESTION_TYPE_OPEN, QUESTION_TYPE_MULTIPLE_CHOICE, QUESTION_TYPE_NUMERIC,
+    QUESTION_TYPE_KEYPAD, QUESTION_TYPE_MENU)
 
 
 class ChartJsonEncoder(json.JSONEncoder):

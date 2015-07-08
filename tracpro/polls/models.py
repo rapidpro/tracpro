@@ -210,7 +210,8 @@ class Issue(models.Model):
         for_local_date = for_date.astimezone(org_timezone).date()
 
         # look for a non-regional issue on that date
-        sql = 'SELECT * FROM polls_issue WHERE poll_id = %s AND region_id IS NULL AND DATE(conducted_on AT TIME ZONE %s) = %s'
+        sql = ('SELECT * FROM polls_issue WHERE poll_id = %s AND '
+               'region_id IS NULL AND DATE(conducted_on AT TIME ZONE %s) = %s')
         params = [poll.pk, org_timezone.zone, for_local_date]
         existing = list(Issue.objects.raw(sql, params))
 

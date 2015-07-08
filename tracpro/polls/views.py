@@ -363,7 +363,10 @@ class ResponseCRUDL(SmartCRUDL):
                 answer = obj.answers.filter(question=question).first()
                 if answer:
                     if question.type == QUESTION_TYPE_RECORDING:
-                        return '<a class="answer answer-audio" href="%s" data-answer-id="%d">Play</a>' % (answer.value, answer.pk)
+                        return '<a class="answer answer-audio" href="%s" data-answer-id="%d">Play</a>' % (
+                            answer.value,
+                            answer.pk,
+                        )
                     else:
                         return answer.value
                 else:
@@ -389,9 +392,16 @@ class ResponseCRUDL(SmartCRUDL):
                 counts = issue.get_response_counts(self.request.region)
 
                 context['can_restart'] = can_restart
-                context['response_count'] = counts[RESPONSE_EMPTY] + counts[RESPONSE_PARTIAL] + counts[RESPONSE_COMPLETE]
+                context['response_count'] = sum([
+                    counts[RESPONSE_EMPTY],
+                    counts[RESPONSE_PARTIAL],
+                    counts[RESPONSE_COMPLETE],
+                ])
                 context['complete_response_count'] = counts[RESPONSE_COMPLETE]
-                context['incomplete_response_count'] = counts[RESPONSE_EMPTY] + counts[RESPONSE_PARTIAL]
+                context['incomplete_response_count'] = sum([
+                    counts[RESPONSE_EMPTY],
+                    counts[RESPONSE_PARTIAL],
+                ])
             return context
 
         def render_to_response(self, context, **response_kwargs):
