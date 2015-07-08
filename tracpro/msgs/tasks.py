@@ -10,7 +10,7 @@ logger = get_task_logger(__name__)
 def send_message(message_id):
     from .models import Message, STATUS_SENT, STATUS_FAILED
 
-    message = Message.objects.select_related('org', 'user').get(pk=message_id)
+    message = Message.objects.select_related('org').get(pk=message_id)
 
     client = message.org.get_temba_client()
 
