@@ -1,8 +1,9 @@
 from __future__ import unicode_literals
 
-# import our default settings
-from settings_common import *
 import os
+
+from .base import *  # noqa
+
 
 DEBUG = False
 TEMPLATE_DEBUG = DEBUG

@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 
-# import our default settings
-from settings_common import *  # noqa
+from .base import *  # noqa
+
 
 INSTALLED_APPS = INSTALLED_APPS + ('django_nose',)
 

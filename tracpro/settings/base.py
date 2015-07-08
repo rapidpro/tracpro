@@ -6,7 +6,8 @@ import sys
 
 from django.utils.translation import ugettext_lazy as _
 
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
 
 # ----------------------------------------------------------------------------
 # Sets TESTING to True if this configuration is read during a unit test
