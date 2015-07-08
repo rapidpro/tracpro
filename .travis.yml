@@ -1,26 +1,27 @@
 language: python
 python:
-- '2.7'
+  - '2.7'
 services:
-- redis-server
+  - redis-server
 addons:
   postgresql: '9.3'
 sudo: false
 cache:
   directories:
-  - $HOME/.cache/pip
+    - $HOME/.cache/pip
+env:
+  - DJANGO_SETTINGS_MODULE="tracpro.settings"
 install:
-- pip install --upgrade pip
-- pip install -r pip-freeze.txt --upgrade
-- pip install coveralls
-- npm install less
-- npm install coffee-script
+  - pip install --upgrade pip
+  - pip install -r requirements/tests.txt
+  - npm install less
+  - npm install coffee-script
 before_script:
-- psql -U postgres -c "CREATE USER tracpro WITH PASSWORD 'nyaruka';"
-- psql -U postgres -c "ALTER ROLE tracpro WITH SUPERUSER;"
-- psql -U tracpro postgres -c "CREATE DATABASE tracpro;"
-- ln -s $TRAVIS_BUILD_DIR/tracpro/settings.py.dev $TRAVIS_BUILD_DIR/tracpro/settings.py
+  - psql -U postgres -c "CREATE USER tracpro WITH PASSWORD 'nyaruka';"
+  - psql -U postgres -c "ALTER ROLE tracpro WITH SUPERUSER;"
+  - psql -U tracpro postgres -c "CREATE DATABASE tracpro;"
+  - ln -s $TRAVIS_BUILD_DIR/tracpro/settings.py.dev $TRAVIS_BUILD_DIR/tracpro/settings.py
 script:
-- coverage run --source="." manage.py test tracpro/contacts tracpro/groups tracpro/home tracpro/msgs tracpro/orgs_ext tracpro/polls tracpro/profiles --verbosity=2 --noinput
-after_success:
-- coveralls
+  - coverage run manage.py test
+  - coverage report -m --fail-under 80
+  - flake8 .
