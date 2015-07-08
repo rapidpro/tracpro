@@ -22,5 +22,5 @@ before_script:
   - psql -U tracpro postgres -c "CREATE DATABASE tracpro;"
 script:
   - coverage run manage.py test
-  - coverage report -m --fail-under 80
+  - coverage report --fail-under=75
   - flake8 .
