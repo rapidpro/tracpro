@@ -6,6 +6,8 @@ import sys
 
 from django.utils.translation import ugettext_lazy as _
 
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+
 # ----------------------------------------------------------------------------
 # Sets TESTING to True if this configuration is read during a unit test
 # ----------------------------------------------------------------------------
@@ -267,17 +269,14 @@ LOGGING = {
 # Directory Configuration
 # ----------------------------------------------------------------------------
 
-PROJECT_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)))
-RESOURCES_DIR = os.path.join(PROJECT_DIR, '../resources')
-
-LOCALE_PATHS = (os.path.join(PROJECT_DIR, '../locale'),)
-RESOURCES_DIR = os.path.join(PROJECT_DIR, '../resources')
-FIXTURE_DIRS = (os.path.join(PROJECT_DIR, '../fixtures'),)
-TESTFILES_DIR = os.path.join(PROJECT_DIR, '../testfiles')
-TEMPLATE_DIRS = (os.path.join(PROJECT_DIR, 'templates'),)
-STATICFILES_DIRS = (os.path.join(PROJECT_DIR, 'static'),)
-STATIC_ROOT = os.path.join(PROJECT_DIR, '../public/static')
-MEDIA_ROOT = os.path.join(PROJECT_DIR, '../public/media')
+LOCALE_PATHS = (os.path.join(PROJECT_ROOT, 'locale'),)
+RESOURCES_DIR = os.path.join(PROJECT_ROOT, 'resources')
+FIXTURE_DIRS = (os.path.join(PROJECT_ROOT, 'fixtures'),)
+TESTFILES_DIR = os.path.join(PROJECT_ROOT, 'testfiles')
+TEMPLATE_DIRS = (os.path.join(PROJECT_ROOT, 'tracpro', 'templates'),)
+STATICFILES_DIRS = (os.path.join(PROJECT_ROOT, 'tracpro', 'static'),)
+STATIC_ROOT = os.path.join(PROJECT_ROOT, 'public', 'static')
+MEDIA_ROOT = os.path.join(PROJECT_ROOT, 'public', 'media')
 MEDIA_URL = "/media/"
 
 # ----------------------------------------------------------------------------
