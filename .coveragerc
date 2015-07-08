@@ -1,0 +1,8 @@
+[run]
+source = tracpro
+omit =
+    */migrations/*,
+    *settings*,
+    */tests/*,
+    tracpro/celery.py,
+    tracpro/wsgi.py
