@@ -5,15 +5,18 @@ import time
 
 import yaml
 
-from fabric.api import env, execute, get, hide, lcd, local, put, require, run, settings, sudo, task
-from fabric.colors import red
+from fabric.api import (
+    env, execute, get, hide, local, put, require, run, settings, sudo, task)
 from fabric.contrib import files, project
-from fabric.contrib.console import confirm
 from fabric.utils import abort
 
+
 DEFAULT_SALT_LOGLEVEL = 'info'
+
 SALT_VERSION = '2015.5.2'
+
 PROJECT_ROOT = os.path.dirname(__file__)
+
 CONF_ROOT = os.path.join(PROJECT_ROOT, 'conf')
 
 VALID_ROLES = (
@@ -75,11 +78,13 @@ def install_salt(version, master=False, minion=False, restart=True):
     """
     Install or upgrade Salt minion and/or master if needed.
 
-    :param version: Version string, just numbers and dots, no leading 'v'.  E.g. "2015.5.0".
-      THERE IS NO DEFAULT, you must pick a version.
+    :param version: Version string, just numbers and dots, no leading 'v'.
+                    E.g. "2015.5.0".
+                    THERE IS NO DEFAULT, you must pick a version.
     :param master: If True, include master in the install.
     :param minion: If True, include minion in the install.
-    :param restart: If we don't need to reinstall a salt package, restart its server anyway.
+    :param restart: If we don't need to reinstall a salt package, restart its
+                    server anyway.
     :returns: True if any changes were made, False if nothing was done.
     """
     master_version = None
@@ -88,8 +93,8 @@ def install_salt(version, master=False, minion=False, restart=True):
         master_version = get_salt_version("salt")
         install_master = master_version != version
         if install_master and master_version:
-            # Already installed - if Ubuntu package, uninstall current version first
-            # because we're going to do a git install later
+            # Already installed - if Ubuntu package, uninstall current version
+            # first because we're going to do a git install later
             sudo("apt-get remove salt-master -yq")
         if restart and not install_master:
             sudo("service salt-master restart")
@@ -100,8 +105,8 @@ def install_salt(version, master=False, minion=False, restart=True):
         minion_version = get_salt_version('salt-minion')
         install_minion = minion_version != version
         if install_minion and minion_version:
-            # Already installed - if Ubuntu package, uninstall current version first
-            # because we're going to do a git install later
+            # Already installed - if Ubuntu package, uninstall current version
+            # first because we're going to do a git install later
             sudo("apt-get remove salt-minion -yq")
         if restart and not install_minion:
             sudo("service salt-minion restart")
@@ -113,10 +118,14 @@ def install_salt(version, master=False, minion=False, restart=True):
         if not install_minion:
             args.append('-N')
         args = ' '.join(args)
-        # To update local install_salt.sh: wget -O install_salt.sh https://bootstrap.saltstack.com
+        # To update local install_salt.sh:
+        #   wget -O install_salt.sh https://bootstrap.saltstack.com
         # then inspect it
         put(local_path="install_salt.sh", remote_path="install_salt.sh")
-        sudo("sh install_salt.sh -D {args} git v{version}".format(args=args, version=version))
+        sudo("sh install_salt.sh -D {args} git v{version}".format(
+            args=args,
+            version=version,
+        ))
         return True
     return False
 
@@ -127,10 +136,12 @@ def setup_master():
     require('environment')
     with settings(host_string=env.master):
         sudo('apt-get update -qq')
-        sudo('apt-get install python-pip git-core python-git python-gnupg haveged -qq -y')
+        sudo('apt-get install python-pip git-core python-git '
+             'python-gnupg haveged -qq -y')
         put(local_path='conf/master.conf',
             remote_path="/etc/salt/master", use_sudo=True)
-        # install salt master if it's not there already, or restart to pick up config changes
+        # install salt master if it's not there already, or restart to pick up
+        # config changes
         install_salt(master=True, restart=True, version=SALT_VERSION)
     generate_gpg_key()
     fetch_gpg_key()
@@ -138,8 +149,9 @@ def setup_master():
 
 @task
 def sync():
-    """Rysnc local states and pillar data to the master.,
-    and update our checkout of margarita
+    """
+    Rysnc local states and pillar data to the master and update our checkout of
+    margarita.
     """
     # project.rsync_project fails if host is not set
     with settings(host=env.master, host_string=env.master):
@@ -174,7 +186,8 @@ def setup_minion(*roles):
     with open(path, 'w') as f:
         yaml.dump(config, f, default_flow_style=False)
     put(local_path=path, remote_path="/etc/salt/minion", use_sudo=True)
-    # install salt minion if it's not there already, or restart to pick up config changes
+    # install salt minion if it's not there already, or restart to pick up
+    # config changes
     install_salt(SALT_VERSION, minion=True, restart=True)
     # queries server for its fully qualified domain name to get minion id
     key_name = run('python -c "import socket; print socket.getfqdn()"')
@@ -252,7 +265,10 @@ def delete_key(name):
 
 @task
 def deploy(loglevel=DEFAULT_SALT_LOGLEVEL):
-    """Deploy to a given environment by pushing the latest states and executing the highstate."""
+    """
+    Deploy to a given environment by pushing the latest states and executing
+    the highstate.
+    """
     require('environment')
     with settings(host_string=env.master):
         if env.environment != "local":
@@ -286,7 +302,8 @@ def fetch_gpg_key():
     gpg_public = '/tmp/public.gpg'
     with settings(host_string=env.master):
         with hide('running', 'stdout', 'stderr'):
-            sudo('gpg --armor --homedir {} --armor --export > {}'.format(gpg_home, gpg_public))
+            sudo('gpg --armor --homedir {} --armor --export > {}'.format(
+                gpg_home, gpg_public))
             get(gpg_public, env.gpg_key)
 
 
