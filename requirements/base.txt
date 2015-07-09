@@ -36,7 +36,7 @@ python-dateutil==2.4.2
 pytz==2015.4
 requests==2.7.0
 six==1.9.0
-sorl-thumbnail==12.2
+sorl-thumbnail==12.3
 stop-words==2015.2.23.1
 unicodecsv==0.13.0
 wsgiref==0.1.2
