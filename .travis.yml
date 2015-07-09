@@ -25,3 +25,5 @@ script:
 after_success:
   - coverage report --fail-under=75
   - flake8 .
+notifications:
+    hipchat:  259913064a0a577b61d874d51dfbc2@Edutrac
