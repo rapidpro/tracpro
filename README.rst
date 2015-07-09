@@ -26,9 +26,9 @@ First clone the repository from Github and switch to the new directory::
 To setup your local environment you should create a virtualenv and install the
 necessary requirements::
 
-    # Check that you have python3.4 installed
-    $ which python3.4
-    $ mkvirtualenv tracpro -p `which python3.4`
+    # Check that you have python2.7 installed
+    $ which python2.7
+    $ mkvirtualenv tracpro -p `which python2.7`
     (tracpro)$ $VIRTUAL_ENV/bin/pip install -r $PWD/requirements/dev.txt
 
 Then create a local settings file and set your ``DJANGO_SETTINGS_MODULE`` to use it::
