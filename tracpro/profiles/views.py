@@ -251,7 +251,7 @@ class ManageUserCRUDL(SmartCRUDL):
     class List(UserFieldsMixin, SmartListView):
         fields = ('full_name', 'email', 'orgs')
         default_order = ('profile__full_name',)
-        select_related = ('profile', 'org_admins', 'org_editors')
+        select_related = ('profile',)
 
         def derive_queryset(self, **kwargs):
             qs = super(ManageUserCRUDL.List, self).derive_queryset(**kwargs)
