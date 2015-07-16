@@ -1,30 +1,31 @@
 from __future__ import absolute_import, unicode_literals
 
+from collections import Counter, defaultdict, OrderedDict
+from decimal import Decimal, InvalidOperation
 import math
 import operator
+import re
+
+from dateutil.relativedelta import relativedelta
+from enum import Enum
 import pycountry
 import pytz
-import re
 import stop_words
 
-from collections import Counter, defaultdict, OrderedDict
-from dash.orgs.models import Org
-from dash.utils import get_cacheable, get_month_range
-from dateutil.relativedelta import relativedelta
-from decimal import Decimal
-from decimal import InvalidOperation
 from django.conf import settings
-from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.db import models
 from django.db.models import Q, Count
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
-from enum import Enum
+
+from dash.utils import get_cacheable, get_month_range
+
 from tracpro.contacts.models import Contact
-from tracpro.groups.models import Region
+
 from .tasks import issue_start
+
 
 QUESTION_TYPE_OPEN = 'O'
 QUESTION_TYPE_MULTIPLE_CHOICE = 'C'
@@ -95,7 +96,7 @@ class Poll(models.Model):
     """
     flow_uuid = models.CharField(max_length=36, unique=True)
 
-    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='polls')
+    org = models.ForeignKey('orgs.Org', verbose_name=_("Organization"), related_name='polls')
 
     name = models.CharField(max_length=64, verbose_name=_("Name"))  # taken from flow name
 
@@ -163,7 +164,7 @@ class Question(models.Model):
     """
     ruleset_uuid = models.CharField(max_length=36, unique=True)
 
-    poll = models.ForeignKey(Poll, related_name='questions')
+    poll = models.ForeignKey('polls.Poll', related_name='questions')
 
     text = models.CharField(max_length=64)
 
@@ -183,13 +184,15 @@ class Issue(models.Model):
     """
     Associates polls conducted on the same day
     """
-    poll = models.ForeignKey(Poll, related_name='issues')
+    poll = models.ForeignKey('polls.Poll', related_name='issues')
 
-    region = models.ForeignKey(Region, null=True, related_name='issues', help_text="Region where poll was conducted")
+    region = models.ForeignKey(
+        'groups.Region', null=True, related_name='issues',
+        help_text="Region where poll was conducted")
 
     conducted_on = models.DateTimeField(help_text=_("When the poll was conducted"))
 
-    created_by = models.ForeignKey(User, null=True, related_name="issues_created")
+    created_by = models.ForeignKey('auth.User', null=True, related_name="issues_created")
 
     def __str__(self):
         return "%s (%s)" % (self.poll.name, self.conducted_on.strftime(settings.SITE_DATE_FORMAT))
@@ -351,9 +354,9 @@ class Response(models.Model):
     """
     flow_run_id = models.IntegerField(unique=True)
 
-    issue = models.ForeignKey(Issue, related_name='responses')
+    issue = models.ForeignKey('polls.Issue', related_name='responses')
 
-    contact = models.ForeignKey(Contact, related_name='responses')
+    contact = models.ForeignKey('contacts.Contact', related_name='responses')
 
     created_on = models.DateTimeField(help_text=_("When this response was created"))
 
@@ -465,9 +468,9 @@ class Answer(models.Model):
     """
     Corresponds to RapidPro FlowStep
     """
-    response = models.ForeignKey(Response, related_name='answers')
+    response = models.ForeignKey('polls.Response', related_name='answers')
 
-    question = models.ForeignKey(Question, related_name='answers')
+    question = models.ForeignKey('polls.Question', related_name='answers')
 
     value = models.CharField(max_length=640, null=True)
 

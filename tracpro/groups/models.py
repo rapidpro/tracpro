@@ -1,11 +1,11 @@
 from __future__ import absolute_import, unicode_literals
 
-from dash.orgs.models import Org
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import Count
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
+
 from tracpro.contacts.tasks import sync_org_contacts
 
 
@@ -16,7 +16,7 @@ class AbstractGroup(models.Model):
     """
     uuid = models.CharField(max_length=36, unique=True)
 
-    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="%(class)ss")
+    org = models.ForeignKey('orgs.Org', verbose_name=_("Organization"), related_name="%(class)ss")
 
     name = models.CharField(verbose_name=_("Name"), max_length=128, blank=True,
                             help_text=_("The name of this region"))

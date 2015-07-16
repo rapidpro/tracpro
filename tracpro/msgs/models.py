@@ -1,15 +1,15 @@
 from __future__ import absolute_import, unicode_literals
 
-from dash.orgs.models import Org
-from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import Q
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
+
 from tracpro.contacts.models import Contact
-from tracpro.groups.models import Region
-from tracpro.polls.models import Issue, RESPONSE_COMPLETE
+from tracpro.polls.models import RESPONSE_COMPLETE
+
 from .tasks import send_message
+
 
 MESSAGE_MAX_LEN = 640
 
@@ -34,9 +34,9 @@ class Message(models.Model):
     """
     Message sent to a cohort associated with an issue
     """
-    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="messages")
+    org = models.ForeignKey('orgs.Org', verbose_name=_("Organization"), related_name="messages")
 
-    sent_by = models.ForeignKey(User, related_name="messages")
+    sent_by = models.ForeignKey('auth.User', related_name="messages")
 
     sent_on = models.DateTimeField(auto_now_add=True, help_text=_("When the message was sent"))
 
@@ -45,11 +45,11 @@ class Message(models.Model):
     recipients = models.ManyToManyField(Contact, related_name='messages',
                                         help_text="Contacts to whom this message was sent")
 
-    issue = models.ForeignKey(Issue, verbose_name=_("Poll Issue"), related_name="messages")
+    issue = models.ForeignKey('polls.Issue', verbose_name=_("Poll Issue"), related_name="messages")
 
     cohort = models.CharField(max_length=1, verbose_name=_("Cohort"), choices=COHORT_CHOICES)
 
-    region = models.ForeignKey(Region, null=True, related_name="messages")
+    region = models.ForeignKey('groups.Region', null=True, related_name="messages")
 
     status = models.CharField(max_length=1, verbose_name=_("Status"), choices=STATUS_CHOICES,
                               help_text=_("Current status of this message"))

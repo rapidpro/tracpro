@@ -1,15 +1,18 @@
 from __future__ import absolute_import, unicode_literals
 
-from dash.orgs.models import Org
-from dash.utils import intersection
-from dash.utils.sync import ChangeType
-from django.contrib.auth.models import User
+from uuid import uuid4
+
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
+
+from dash.utils import intersection
+from dash.utils.sync import ChangeType
+
 from temba.types import Contact as TembaContact
+
 from tracpro.groups.models import Region, Group
-from uuid import uuid4
+
 from .tasks import push_contact_change
 
 
@@ -20,17 +23,17 @@ class Contact(models.Model):
     """
     uuid = models.CharField(max_length=36, unique=True)
 
-    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="contacts")
+    org = models.ForeignKey('orgs.Org', verbose_name=_("Organization"), related_name="contacts")
 
     name = models.CharField(verbose_name=_("Name"), max_length=128, blank=True,
                             help_text=_("The name of this contact"))
 
     urn = models.CharField(verbose_name=_("URN"), max_length=255)
 
-    region = models.ForeignKey(Region, verbose_name=_("Region"), related_name='contacts',
+    region = models.ForeignKey('groups.Region', verbose_name=_("Region"), related_name='contacts',
                                help_text=_("Region or state this contact lives in"))
 
-    group = models.ForeignKey(Group, null=True, verbose_name=_("Reporter group"), related_name='contacts')
+    group = models.ForeignKey('groups.Group', null=True, verbose_name=_("Reporter group"), related_name='contacts')
 
     facility_code = models.CharField(max_length=160, verbose_name=_("Facility Code"), null=True, blank=True,
                                      help_text=_("Facility code for this contact"))
@@ -40,13 +43,13 @@ class Contact(models.Model):
 
     is_active = models.BooleanField(default=True, help_text=_("Whether this contact is active"))
 
-    created_by = models.ForeignKey(User, null=True, related_name="contact_creations",
+    created_by = models.ForeignKey('auth.User', null=True, related_name="contact_creations",
                                    help_text="The user which originally created this item")
 
     created_on = models.DateTimeField(auto_now_add=True,
                                       help_text="When this item was originally created")
 
-    modified_by = models.ForeignKey(User, null=True, related_name="contact_modifications",
+    modified_by = models.ForeignKey('auth.User', null=True, related_name="contact_modifications",
                                     help_text="The user which last modified this item")
 
     modified_on = models.DateTimeField(auto_now=True,
