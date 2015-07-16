@@ -1,15 +1,18 @@
 from __future__ import absolute_import, unicode_literals
 
 from dash.orgs.views import OrgPermsMixin
+
 from django import forms
-from django.utils.encoding import force_text
-from django.utils.translation import ugettext_lazy as _
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.core.validators import MinLengthValidator
 from django.db.models import Q
 from django.http import Http404
-from smartmin.users.views import SmartCRUDL, SmartCreateView, SmartListView, SmartReadView, SmartUpdateView
+from django.utils.encoding import force_text
+from django.utils.translation import ugettext_lazy as _
+
+from smartmin.users.views import (
+    SmartCRUDL, SmartCreateView, SmartListView, SmartReadView, SmartUpdateView)
 from tracpro.groups.models import Region
 
 

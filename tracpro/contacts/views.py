@@ -1,35 +1,44 @@
 from __future__ import absolute_import, unicode_literals
 
+from collections import OrderedDict
+
 import pycountry
 
-from collections import OrderedDict
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from dash.utils import get_obj_cacheable
 from dash.utils.sync import ChangeType
+
+from django import forms
 from django.core.exceptions import PermissionDenied
 from django.core.urlresolvers import reverse
-from django import forms
 from django.http import HttpResponseRedirect, JsonResponse
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
-from smartmin.users.views import SmartListView, SmartCreateView, SmartReadView, SmartUpdateView, SmartDeleteView
-from smartmin.users.views import SmartCRUDL
+
+from smartmin.users.views import (
+    SmartListView, SmartCreateView, SmartReadView, SmartUpdateView,
+    SmartDeleteView, SmartCRUDL)
+
 from tracpro.groups.models import Region, Group
 from tracpro.polls.models import Issue, RESPONSE_COMPLETE
+
 from .models import Contact
 
 
 URN_SCHEME_TEL = 'tel'
 URN_SCHEME_TWITTER = 'twitter'
-URN_SCHEME_CHOICES = ((URN_SCHEME_TEL, _("Phone")), (URN_SCHEME_TWITTER, _("Twitter")))
+URN_SCHEME_CHOICES = (
+    (URN_SCHEME_TEL, _("Phone")),
+    (URN_SCHEME_TWITTER, _("Twitter")),
+)
 
 
 class URNField(forms.fields.MultiValueField):
+
     def __init__(self, *args, **kwargs):
         fields = (forms.ChoiceField(choices=URN_SCHEME_CHOICES),
                   forms.CharField(max_length=32))
         super(URNField, self).__init__(fields, *args, **kwargs)
-
         self.widget = URNWidget(scheme_choices=URN_SCHEME_CHOICES)
 
     def compress(self, values):
@@ -37,9 +46,9 @@ class URNField(forms.fields.MultiValueField):
 
 
 class URNWidget(forms.widgets.MultiWidget):
+
     def __init__(self, *args, **kwargs):
         scheme_choices = kwargs.pop('scheme_choices')
-
         widgets = (forms.Select(choices=scheme_choices),
                    forms.TextInput(attrs={'maxlength': 32}))
         super(URNWidget, self).__init__(widgets, *args, **kwargs)
@@ -94,6 +103,7 @@ class ContactFormMixin(object):
     """
     Mixin for views that use a contact form
     """
+
     def get_form_kwargs(self):
         kwargs = super(ContactFormMixin, self).get_form_kwargs()
         kwargs['user'] = self.request.user
@@ -124,6 +134,7 @@ class ContactFormMixin(object):
 
 
 class ContactFieldsMixin(object):
+
     def get_urn(self, obj):
         # TODO indicate different urn types with icon?
         return obj.get_urn()[1]
@@ -168,8 +179,10 @@ class ContactCRUDL(SmartCRUDL):
             return obj
 
     class Read(OrgObjPermsMixin, SmartReadView):
+
         def derive_fields(self):
-            fields = ['urn', 'region', 'group', 'facility_code', 'language', 'last_response']
+            fields = ['urn', 'region', 'group', 'facility_code', 'language',
+                      'last_response']
             if self.object.created_by_id:
                 fields.append('created_by')
             return fields

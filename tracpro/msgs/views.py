@@ -2,19 +2,25 @@ from __future__ import absolute_import, unicode_literals
 
 from dash.orgs.views import OrgPermsMixin
 from dash.utils import get_obj_cacheable
+
 from django.core.urlresolvers import reverse
 from django.http import JsonResponse
 from django.utils.translation import ugettext_lazy as _
+
 from smartmin.users.views import SmartCRUDL, SmartListView, SmartCreateView
+
 from tracpro.contacts.models import Contact
 from tracpro.polls.models import Issue
+
 from .models import Message
 
 
 class MessageListMixin(object):
-    field_config = {'text': {'class': 'italicized'},
-                    'cohort': {'label': _("Recipients")},
-                    'issue': {'label': _("Poll Issue")}}
+    field_config = {
+        'text': {'class': 'italicized'},
+        'cohort': {'label': _("Recipients")},
+        'issue': {'label': _("Poll Issue")},
+    }
     default_order = ('-pk',)
     link_fields = ('issue',)
 
@@ -58,9 +64,11 @@ class MessageCRUDL(SmartCRUDL):
 
     class ByContact(OrgPermsMixin, MessageListMixin, SmartListView):
         fields = ('sent_on', 'sent_by', 'issue', 'cohort', 'text')
-        field_config = {'text': {'class': 'italicized'},
-                        'cohort': {'label': _("Recipients")},
-                        'issue': {'label': _("Poll Issue")}}
+        field_config = {
+            'text': {'class': 'italicized'},
+            'cohort': {'label': _("Recipients")},
+            'issue': {'label': _("Poll Issue")},
+        }
 
         @classmethod
         def derive_url_pattern(cls, path, action):
