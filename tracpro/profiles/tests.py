@@ -41,13 +41,13 @@ class UserPatchTest(TracProTest):
         self.assertFalse(self.admin.is_admin_for(self.nyaruka))
         self.assertFalse(self.user1.is_admin_for(self.unicef))
 
-    def test_unicode(self):
-        self.assertEqual(unicode(self.superuser), "root")
+    def test_str(self):
+        self.assertEqual(str(self.superuser), "root")
 
-        self.assertEqual(unicode(self.user1), "Sam Sims")
+        self.assertEqual(str(self.user1), "Sam Sims")
         self.user1.profile.full_name = None
         self.user1.profile.save()
-        self.assertEqual(unicode(self.user1), "sam@unicef.org")
+        self.assertEqual(str(self.user1), "sam@unicef.org")
 
 
 class UserCRUDLTest(TracProTest):

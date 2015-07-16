@@ -2,6 +2,7 @@ from __future__ import absolute_import, unicode_literals
 
 from dash.orgs.views import OrgPermsMixin
 from django import forms
+from django.utils.encoding import force_text
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
@@ -96,7 +97,7 @@ class UserFieldsMixin(object):
         return obj.profile.full_name
 
     def get_regions(self, obj):
-        return ", ".join([unicode(r) for r in obj.regions.all()])
+        return ", ".join([force_text(r) for r in obj.regions.all()])
 
 
 class UserCRUDL(SmartCRUDL):
@@ -260,7 +261,7 @@ class ManageUserCRUDL(SmartCRUDL):
 
         def get_orgs(self, obj):
             orgs = set(obj.org_admins.all()) | set(obj.org_editors.all())
-            return ", ".join([unicode(o) for o in orgs])
+            return ", ".join([force_text(o) for o in orgs])
 
         def lookup_field_link(self, context, field, obj):
             return reverse('profiles.admin_update', args=[obj.pk])

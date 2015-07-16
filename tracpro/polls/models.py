@@ -19,6 +19,7 @@ from django.core.cache import cache
 from django.db import models
 from django.db.models import Q, Count
 from django.utils import timezone
+from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from enum import Enum
 from tracpro.contacts.models import Contact
@@ -87,6 +88,7 @@ ANSWER_CACHE_KEY = 'issue:%d:question:%d:%s:%d'
 ANSWER_CACHE_TTL = 60 * 60 * 24 * 7  # 1 week
 
 
+@python_2_unicode_compatible
 class Poll(models.Model):
     """
     Corresponds to a RapidPro Flow
@@ -98,6 +100,9 @@ class Poll(models.Model):
     name = models.CharField(max_length=64, verbose_name=_("Name"))  # taken from flow name
 
     is_active = models.BooleanField(default=True, help_text="Whether this item is active")
+
+    def __str__(self):
+        return self.name
 
     @classmethod
     def create(cls, org, name, flow_uuid):
@@ -151,9 +156,6 @@ class Poll(models.Model):
     def get_issues(self, region=None):
         return Issue.get_all(self.org, region).filter(poll=self)
 
-    def __unicode__(self):
-        return self.name
-
 
 class Question(models.Model):
     """
@@ -176,6 +178,7 @@ class Question(models.Model):
         return cls.objects.create(poll=poll, text=text, type=_type, order=order, ruleset_uuid=ruleset_uuid)
 
 
+@python_2_unicode_compatible
 class Issue(models.Model):
     """
     Associates polls conducted on the same day
@@ -187,6 +190,9 @@ class Issue(models.Model):
     conducted_on = models.DateTimeField(help_text=_("When the poll was conducted"))
 
     created_by = models.ForeignKey(User, null=True, related_name="issues_created")
+
+    def __str__(self):
+        return "%s (%s)" % (self.poll.name, self.conducted_on.strftime(settings.SITE_DATE_FORMAT))
 
     @classmethod
     def create_regional(cls, user, poll, region, conducted_on, do_start=False):
@@ -337,9 +343,6 @@ class Issue(models.Model):
                     conducted_on=self.conducted_on,
                     region=region_as_json,
                     responses=self.get_response_counts(region))
-
-    def __unicode__(self):
-        return "%s (%s)" % (self.poll.name, self.conducted_on.strftime(settings.SITE_DATE_FORMAT))
 
 
 class Response(models.Model):
@@ -558,7 +561,7 @@ class Answer(models.Model):
                 cat_max = cat_min + category_step - 1
                 cat_label = '%d - %d' % (cat_min, cat_max)
             else:
-                cat_label = unicode(cat_min)
+                cat_label = str(cat_min)
 
             category_labels[cat_index] = cat_label
             category_counts[cat_label] = 0

@@ -5,6 +5,7 @@ from dash.utils import intersection
 from dash.utils.sync import ChangeType
 from django.contrib.auth.models import User
 from django.db import models
+from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from temba.types import Contact as TembaContact
 from tracpro.groups.models import Region, Group
@@ -12,6 +13,7 @@ from uuid import uuid4
 from .tasks import push_contact_change
 
 
+@python_2_unicode_compatible
 class Contact(models.Model):
     """
     Corresponds to a RapidPro contact
@@ -50,6 +52,9 @@ class Contact(models.Model):
     modified_on = models.DateTimeField(auto_now=True,
                                        help_text="When this item was last modified")
 
+    def __str__(self):
+        return self.name if self.name else self.get_urn()[1]
+
     @classmethod
     def create(cls, org, user, name, urn, region, group, facility_code, language, uuid=None):
         if org.id != region.org_id or org.id != group.org_id:  # pragma: no cover
@@ -58,7 +63,7 @@ class Contact(models.Model):
         # if we don't have a UUID, then we created this contact
         if not uuid:
             do_push = True
-            uuid = unicode(uuid4())
+            uuid = str(uuid4())
         else:
             do_push = False
 
@@ -146,6 +151,3 @@ class Contact(models.Model):
         self.is_active = False
         self.save()
         self.push(ChangeType.deleted)
-
-    def __unicode__(self):
-        return self.name if self.name else self.get_urn()[1]

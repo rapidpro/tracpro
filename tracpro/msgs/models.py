@@ -4,6 +4,7 @@ from dash.orgs.models import Org
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import Q
+from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from tracpro.contacts.models import Contact
 from tracpro.groups.models import Region
@@ -28,6 +29,7 @@ STATUS_CHOICES = ((STATUS_PENDING, _("Pending")),
                   (STATUS_FAILED, _("Failed")))
 
 
+@python_2_unicode_compatible
 class Message(models.Model):
     """
     Message sent to a cohort associated with an issue
@@ -51,6 +53,9 @@ class Message(models.Model):
 
     status = models.CharField(max_length=1, verbose_name=_("Status"), choices=STATUS_CHOICES,
                               help_text=_("Current status of this message"))
+
+    def __str__(self):
+        return self.text
 
     @classmethod
     def create(cls, org, user, text, issue, cohort, region):
@@ -84,6 +89,3 @@ class Message(models.Model):
 
     def as_json(self):
         return dict(id=self.pk, recipients=self.recipients.count())
-
-    def __unicode__(self):
-        return self.text

@@ -39,7 +39,7 @@ class PollTest(TracProTest):
         poll3 = Poll.objects.get(flow_uuid='F-003')
         self.assertEqual(poll3.name, "Poll #3")
         self.assertEqual(poll3.questions.count(), 2)
-        self.assertEqual(unicode(poll3), "Poll #3")
+        self.assertEqual(str(poll3), "Poll #3")
 
         # switch back to flow #1
         mock_get_flows.return_value = [
@@ -224,11 +224,11 @@ class IssueTest(TracProTest):
 
         # auto-range category counts for question #1
         self.assertEqual(issue.get_answer_auto_range_counts(self.poll1_question1),
-                         [(u'2 - 3', 1), (u'4 - 5', 1), (u'6 - 7', 0), (u'8 - 9', 1), (u'10 - 11', 0)])
+                         [('2 - 3', 1), ('4 - 5', 1), ('6 - 7', 0), ('8 - 9', 1), ('10 - 11', 0)])
         self.assertEqual(issue.get_answer_auto_range_counts(self.poll1_question1, self.region1),
-                         [(u'3', 1), (u'4', 1), (u'5', 0), (u'6', 0), (u'7', 0)])
+                         [('3', 1), ('4', 1), ('5', 0), ('6', 0), ('7', 0)])
         self.assertEqual(issue.get_answer_auto_range_counts(self.poll1_question1, self.region2),
-                         [(u'8', 1), (u'9', 0), (u'10', 0), (u'11', 0), (u'12', 0)])
+                         [('8', 1), ('9', 0), ('10', 0), ('11', 0), ('12', 0)])
         self.assertEqual(issue.get_answer_auto_range_counts(self.poll1_question1, self.region3), [])
 
         # numeric averages for question #1
