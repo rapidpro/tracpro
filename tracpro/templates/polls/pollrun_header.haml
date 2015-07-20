@@ -1,0 +1,53 @@
+- load i18n
+- load utils
+
+.page-header
+  %h2
+    {{ pollrun }}
+  %ul.pollrun-details
+    %li
+      %strong><
+        - trans "Region"
+      :
+      - if pollrun.region
+        {{ pollrun.region }}
+      - else
+        - trans "All"
+    %li
+      %strong><
+        - trans "Poll"
+      :
+      %a{ href:"{% url 'polls.poll_read' pollrun.poll.pk %}" }
+        {{ pollrun.poll }}
+    %li
+      %strong><
+        - trans "Started by"
+      :
+      - if pollrun.created_by_id
+        {{ pollrun.created_by }}
+      - else
+        - trans "RapidPro"
+
+%ul.nav.nav-tabs{ style:"margin-bottom: 1em" }
+  %li{ class:"{% if_url 'polls.pollrun_read' 'active' '' %}" }
+    %a{ href:"{% url 'polls.pollrun_read' pollrun.pk %}" }
+      - trans "Summary"
+  %li{ class:"{% if_url 'polls.pollrun_participation' 'active' '' %}" }
+    %a{ href:"{% url 'polls.pollrun_participation' pollrun.pk %}" }
+      - trans "Participation"
+  %li{ class:"{% if_url 'polls.response_by_pollrun' 'active' '' %}" }
+    %a{ href:"{% url 'polls.response_by_pollrun' pollrun.pk %}" }
+      - trans "Responses"
+
+
+:css
+  ul.pollrun-details {
+    margin: 0;
+    padding: 0;
+  }
+  ul.pollrun-details li {
+    display: inline-block;
+    margin: 5px;
+    padding: 0;
+    list-style: none;
+  }

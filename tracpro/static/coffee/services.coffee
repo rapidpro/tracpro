@@ -17,14 +17,14 @@ services.factory 'PollService', ['$http', ($http) ->
   new class PollService
 
     #=====================================================================
-    # Fetches latest poll issues
+    # Fetches latest poll pollruns
     #=====================================================================
-    fetchLatestIssues: (callback) ->
-      $http.get('/issue/latest/')
+    fetchLatestPollRuns: (callback) ->
+      $http.get('/pollrun/latest/')
       .success (data) =>
-        for issue in data.results
+        for pollrun in data.results
           # parse datetime string
-          issue.conducted_on = parse_iso8601 issue.conducted_on
+          pollrun.conducted_on = parse_iso8601 pollrun.conducted_on
 
         callback(data.results)
 

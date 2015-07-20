@@ -15,7 +15,7 @@ from django.utils.translation import ugettext_lazy as _
 from smartmin.users.views import SmartListView, SmartCreateView, SmartReadView, SmartUpdateView, SmartDeleteView
 from smartmin.users.views import SmartCRUDL
 from tracpro.groups.models import Region, Group
-from tracpro.polls.models import Issue, RESPONSE_COMPLETE
+from tracpro.polls.models import PollRun, RESPONSE_COMPLETE
 from .models import Contact
 
 
@@ -205,39 +205,39 @@ class ContactCRUDL(SmartCRUDL):
         def derive_fields(self):
             base_fields = ['name', 'urn', 'group']
             if self.request.region:
-                return base_fields + self.derive_issues().keys()
+                return base_fields + self.derive_pollruns().keys()
             else:
                 return base_fields + ['region']
 
         def lookup_field_label(self, context, field, default=None):
-            if field.startswith('issue_'):
-                issue = self.derive_issues()[field]
-                return "%s (%s)" % (issue.poll.name, issue.conducted_on.date())
+            if field.startswith('pollrun_'):
+                pollrun = self.derive_pollruns()[field]
+                return "%s (%s)" % (pollrun.poll.name, pollrun.conducted_on.date())
 
             return super(ContactCRUDL.List, self).lookup_field_label(context, field, default)
 
         def lookup_field_value(self, context, obj, field):
-            if field.startswith('issue_'):
-                issue = self.derive_issues()[field]
-                has_completed = issue.responses.filter(contact=obj, status=RESPONSE_COMPLETE).exists()
+            if field.startswith('pollrun_'):
+                pollrun = self.derive_pollruns()[field]
+                has_completed = pollrun.responses.filter(contact=obj, status=RESPONSE_COMPLETE).exists()
                 return '<span class="glyphicon glyphicon-%s"></span>' % ('ok' if has_completed else 'time')
 
             return super(ContactCRUDL.List, self).lookup_field_value(context, obj, field)
 
         def lookup_field_class(self, field, obj=None, default=None):
-            if field.startswith('issue_'):
+            if field.startswith('pollrun_'):
                 return 'centered'
 
             return super(ContactCRUDL.List, self).lookup_field_class(field, obj, default)
 
-        def derive_issues(self):
+        def derive_pollruns(self):
             def fetch():
-                issues = OrderedDict()
-                for issue in Issue.get_all(self.request.org, self.request.region).order_by('-conducted_on')[0:3]:
-                    issues['issue_%d' % issue.pk] = issue
-                return issues
+                pollruns = OrderedDict()
+                for pollrun in PollRun.get_all(self.request.org, self.request.region).order_by('-conducted_on')[0:3]:
+                    pollruns['pollrun_%d' % pollrun.pk] = pollrun
+                return pollruns
 
-            return get_obj_cacheable(self, '_issues', fetch)
+            return get_obj_cacheable(self, '_pollruns', fetch)
 
         def derive_queryset(self, **kwargs):
             qs = super(ContactCRUDL.List, self).derive_queryset(**kwargs)

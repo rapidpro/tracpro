@@ -15,7 +15,7 @@
     %li{ class:"{% if_url 'polls.poll_read' 'active' '' %}" }
       %a{ href:"{% url 'polls.poll_read' poll.pk %}" }
         - trans "Summary"
-    %li{ class:"{% if_url 'polls.issue_by_poll' 'active' '' %}" }
-      %a{ href:"{% url 'polls.issue_by_poll' poll.pk %}" }
+    %li{ class:"{% if_url 'polls.pollrun_by_poll' 'active' '' %}" }
+      %a{ href:"{% url 'polls.pollrun_by_poll' poll.pk %}" }
         - trans "Dates"
 

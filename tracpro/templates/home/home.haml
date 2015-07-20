@@ -12,7 +12,7 @@
   - else
     .page-header
       .btn-group.pull-away
-        %a.btn.btn-default{ href:"{% url 'polls.issue_list' %}" }
+        %a.btn.btn-default{ href:"{% url 'polls.pollrun_list' %}" }
           %span.glyphicon.glyphicon-th-list
           - trans "View All"
         - if request.region
@@ -22,7 +22,7 @@
       %h2
         - trans "Latest Polling"
 
-    .row.ng-cloak{ ng-controller:"LatestIssuesController", ng-cloak:"", style:"margin-bottom: 1em" }
+    .row.ng-cloak{ ng-controller:"LatestPollRunsController", ng-cloak:"", style:"margin-bottom: 1em" }
       .col-md-12
         %table.table.table-striped{ style:"width: 100%" }
           %thead
@@ -38,29 +38,29 @@
               %th
                 - trans "Responses"
           %tbody
-            %tr{ ng-repeat:"issue in issues" }
+            %tr{ ng-repeat:"pollrun in pollruns" }
               %td
-                %a{ href:"/issue/read/[[ issue.id ]]/" }
-                  [[ issue.conducted_on | autodate ]]
+                %a{ href:"/pollrun/read/[[ pollrun.id ]]/" }
+                  [[ pollrun.conducted_on | autodate ]]
               %td
-                %a{ href:"/poll/read/[[ issue.poll.id ]]/" }
-                  [[ issue.poll.name ]]
+                %a{ href:"/poll/read/[[ pollrun.poll.id ]]/" }
+                  [[ pollrun.poll.name ]]
               %td
-                %span{ ng-if:"issue.region" }
-                  [[ issue.region.name ]]
-                %span{ ng-if:"!issue.region" }
+                %span{ ng-if:"pollrun.region" }
+                  [[ pollrun.region.name ]]
+                %span{ ng-if:"!pollrun.region" }
                   All
               %td
-                %a{ href:"/issue/participation/[[ issue.id ]]/" }
-                  [[ issue.responses.E + issue.responses.P + issue.responses.C ]]
+                %a{ href:"/pollrun/participation/[[ pollrun.id ]]/" }
+                  [[ pollrun.responses.E + pollrun.responses.P + pollrun.responses.C ]]
               %td
-                %a{ href:"/response/by_issue/[[ issue.id ]]/" }
-                  [[ issue.responses.C ]]
-                  %span{ ng-if:"issue.responses.P" }
-                    ([[ issue.responses.P ]])
+                %a{ href:"/response/by_pollrun/[[ pollrun.id ]]/" }
+                  [[ pollrun.responses.C ]]
+                  %span{ ng-if:"pollrun.responses.P" }
+                    ([[ pollrun.responses.P ]])
 
         .loading{ ng-if:"loading" }
-        .none{ ng-if:"!loading && issues.length == 0" }
+        .none{ ng-if:"!loading && pollruns.length == 0" }
           - trans "None"
 
     - if request.region
@@ -160,7 +160,7 @@
   :javascript
     function onPollCreate() {
       data = $('#start-poll-form').serialize();
-      $.post('{% url "polls.issue_create"  %}', data).success(function(data) {
+      $.post('{% url "polls.pollrun_create"  %}', data).success(function(data) {
         $('#start-poll-dialog').modal('hide')
         display_alert('success', 'Started new poll for contacts in {{ request.region }}')
       });
