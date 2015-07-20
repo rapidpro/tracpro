@@ -3,10 +3,13 @@ from __future__ import absolute_import, unicode_literals
 from dash.orgs.models import Org
 from dash.orgs.views import OrgCRUDL, OrgForm, InferOrgMixin, OrgPermsMixin, SmartUpdateView
 from dash.utils import ms_to_datetime
+
 from django import forms
 from django.utils.translation import ugettext_lazy as _
+
 from smartmin.templatetags.smartmin import format_datetime
 from smartmin.users.views import SmartCRUDL
+
 from tracpro.orgs_ext import TaskType
 
 
@@ -29,7 +32,9 @@ class OrgExtCRUDL(SmartCRUDL):
         pass
 
     class Home(OrgCRUDL.Home):
-        fields = ('name', 'timezone', 'facility_code_field', 'api_token', 'last_contact_sync', 'last_flow_run_fetch')
+        fields = (
+            'name', 'timezone', 'facility_code_field', 'api_token',
+            'last_contact_sync', 'last_flow_run_fetch')
         field_config = {'api_token': {'label': _("RapidPro API Token")}}
         permission = 'orgs.org_home'
 
@@ -60,9 +65,11 @@ class OrgExtCRUDL(SmartCRUDL):
                 return None
 
     class Edit(InferOrgMixin, OrgPermsMixin, SmartUpdateView):
+
         class OrgExtForm(OrgForm):
-            facility_code_field = forms.ChoiceField(choices=(), label=_("Facility code field"),
-                                                    help_text=_("Contact field to use as the facility code."))
+            facility_code_field = forms.ChoiceField(
+                choices=(), label=_("Facility code field"),
+                help_text=_("Contact field to use as the facility code."))
 
             def __init__(self, *args, **kwargs):
                 org = kwargs.pop('org')
@@ -93,7 +100,8 @@ class OrgExtCRUDL(SmartCRUDL):
         def pre_save(self, obj):
             from . import ORG_CONFIG_FACILITY_CODE_FIELD
             obj = super(OrgExtCRUDL.Edit, self).pre_save(obj)
-            obj.set_config(ORG_CONFIG_FACILITY_CODE_FIELD, self.form.cleaned_data['facility_code_field'])
+            obj.set_config(ORG_CONFIG_FACILITY_CODE_FIELD,
+                           self.form.cleaned_data['facility_code_field'])
             return obj
 
     class Chooser(OrgCRUDL.Chooser):

@@ -1,14 +1,14 @@
 from __future__ import absolute_import, unicode_literals
 
-from dash.orgs.models import Org
-from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import Q
+from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
+
 from tracpro.contacts.models import Contact
-from tracpro.groups.models import Region
 from tracpro.polls.models import PollRun, RESPONSE_COMPLETE
 from .tasks import send_message
+
 
 MESSAGE_MAX_LEN = 640
 
@@ -28,13 +28,14 @@ STATUS_CHOICES = ((STATUS_PENDING, _("Pending")),
                   (STATUS_FAILED, _("Failed")))
 
 
+@python_2_unicode_compatible
 class Message(models.Model):
     """
     Message sent to a cohort associated with an pollrun
     """
-    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="messages")
+    org = models.ForeignKey('orgs.Org', verbose_name=_("Organization"), related_name="messages")
 
-    sent_by = models.ForeignKey(User, related_name="messages")
+    sent_by = models.ForeignKey('auth.User', related_name="messages")
 
     sent_on = models.DateTimeField(auto_now_add=True, help_text=_("When the message was sent"))
 
@@ -43,14 +44,17 @@ class Message(models.Model):
     recipients = models.ManyToManyField(Contact, related_name='messages',
                                         help_text="Contacts to whom this message was sent")
 
-    pollrun = models.ForeignKey(PollRun, null=True, verbose_name=_("Poll Run"), related_name="messages")
+    pollrun = models.ForeignKey('polls.PollRun', null=True, verbose_name=_("Poll Run"), related_name="messages")
 
     cohort = models.CharField(max_length=1, verbose_name=_("Cohort"), choices=COHORT_CHOICES)
 
-    region = models.ForeignKey(Region, null=True, related_name="messages")
+    region = models.ForeignKey('groups.Region', null=True, related_name="messages")
 
     status = models.CharField(max_length=1, verbose_name=_("Status"), choices=STATUS_CHOICES,
                               help_text=_("Current status of this message"))
+
+    def __str__(self):
+        return self.text
 
     @classmethod
     def create(cls, org, user, text, pollrun, cohort, region):
@@ -84,6 +88,3 @@ class Message(models.Model):
 
     def as_json(self):
         return dict(id=self.pk, recipients=self.recipients.count())
-
-    def __unicode__(self):
-        return self.text

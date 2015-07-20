@@ -101,11 +101,11 @@ class ContactTest(TracProTest):
 
         self.assertEqual(mock_delete_contact.call_count, 1)
 
-    def test_unicode(self):
-        self.assertEqual(unicode(self.contact1), "Ann")
+    def test_str(self):
+        self.assertEqual(str(self.contact1), "Ann")
         self.contact1.name = ""
         self.contact1.save()
-        self.assertEqual(unicode(self.contact1), "1234")
+        self.assertEqual(str(self.contact1), "1234")
 
 
 class ContactCRUDLTest(TracProTest):

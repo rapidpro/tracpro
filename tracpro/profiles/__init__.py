@@ -109,4 +109,4 @@ User.get_regions = _user_get_regions
 User.update_regions = _user_update_regions
 User.has_region_access = _user_has_region_access
 User.is_admin_for = _user_is_admin_for
-User.__unicode__ = _user_unicode
+User.__unicode__ = User.__str__ = _user_unicode

@@ -1,23 +1,32 @@
 from __future__ import absolute_import, unicode_literals
 
+from collections import OrderedDict
+
 import unicodecsv
 
-from collections import OrderedDict
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from dash.utils import datetime_to_ms, get_obj_cacheable
+
 from django import forms
 from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
+
 from smartmin.templatetags.smartmin import format_datetime
-from smartmin.views import SmartCRUDL, SmartCreateView, SmartReadView, SmartListView, SmartFormView, SmartUpdateView
+from smartmin.views import (
+    SmartCRUDL, SmartCreateView, SmartReadView, SmartListView, SmartFormView,
+    SmartUpdateView)
+
 from tracpro.contacts.models import Contact
 from tracpro.groups.models import Group
+
 from .charts import multiple_pollruns, single_pollrun
-from .models import Poll, Question, PollRun, Response, Window
-from .models import QUESTION_TYPE_OPEN, QUESTION_TYPE_RECORDING, RESPONSE_EMPTY, RESPONSE_PARTIAL, RESPONSE_COMPLETE
+from .models import (
+    Poll, Question, PollRun, Response, Window,
+    QUESTION_TYPE_OPEN, QUESTION_TYPE_RECORDING, RESPONSE_EMPTY,
+    RESPONSE_PARTIAL, RESPONSE_COMPLETE)
 from .tasks import pollrun_restart_participants
 
 

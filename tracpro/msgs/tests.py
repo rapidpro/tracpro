@@ -36,7 +36,7 @@ class MessageTest(TracProTest):
         self.assertEqual(msg1.cohort, COHORT_ALL)
         self.assertEqual(msg1.region, None)
         self.assertEqual(list(msg1.recipients.order_by('pk')), [self.contact1, self.contact2, self.contact4])
-        self.assertEqual(unicode(msg1), "Test #1")
+        self.assertEqual(str(msg1), "Test #1")
 
         self.assertEqual(msg1.as_json(), dict(id=msg1.pk, recipients=3))
 
