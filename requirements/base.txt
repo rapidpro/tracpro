@@ -40,5 +40,5 @@ sorl-thumbnail==12.3
 stop-words==2015.2.23.1
 unicodecsv==0.13.0
 wsgiref==0.1.2
-xlrd==0.9.3
+xlrd==0.9.4
 xlwt==1.0.0
