@@ -143,7 +143,7 @@ class Contact(models.Model):
     def get_responses(self, include_empty=True):
         from tracpro.polls.models import RESPONSE_EMPTY
 
-        qs = self.responses.filter(issue__poll__is_active=True, is_active=True).select_related('issue')
+        qs = self.responses.filter(pollrun__poll__is_active=True, is_active=True).select_related('pollrun')
 
         if not include_empty:
             qs = qs.exclude(status=RESPONSE_EMPTY)

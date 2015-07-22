@@ -10,7 +10,7 @@ from django.utils.translation import ugettext_lazy as _
 from smartmin.users.views import SmartCRUDL, SmartListView, SmartCreateView
 
 from tracpro.contacts.models import Contact
-from tracpro.polls.models import Issue
+from tracpro.polls.models import PollRun
 
 from .models import Message
 
@@ -19,10 +19,10 @@ class MessageListMixin(object):
     field_config = {
         'text': {'class': 'italicized'},
         'cohort': {'label': _("Recipients")},
-        'issue': {'label': _("Poll Issue")},
+        'pollrun': {'label': _("Poll Run")},
     }
     default_order = ('-pk',)
-    link_fields = ('issue',)
+    link_fields = ('pollrun',)
 
     def get_cohort(self, obj):
         return obj.get_cohort_display()
@@ -31,8 +31,8 @@ class MessageListMixin(object):
         return obj.region if obj.region else _("All")
 
     def lookup_field_link(self, context, field, obj):
-        if field == 'issue':
-            return reverse('polls.issue_read', args=[obj.issue.pk])
+        if field == 'pollrun':
+            return reverse('polls.pollrun_read', args=[obj.pollrun.pk])
 
         return super(MessageListMixin, self).lookup_field_link(context, field, obj)
 
@@ -46,14 +46,14 @@ class MessageCRUDL(SmartCRUDL):
             org = self.derive_org()
             text = request.POST.get('text')
             cohort = request.POST.get('cohort')
-            issue = Issue.objects.get(poll__org=org, pk=request.POST.get('issue'))
+            pollrun = PollRun.objects.get(poll__org=org, pk=request.POST.get('pollrun'))
             region = self.request.region
 
-            msg = Message.create(org, self.request.user, text, issue, cohort, region)
+            msg = Message.create(org, self.request.user, text, pollrun, cohort, region)
             return JsonResponse(msg.as_json())
 
     class List(OrgPermsMixin, MessageListMixin, SmartListView):
-        fields = ('sent_on', 'sent_by', 'issue', 'cohort', 'region', 'text')
+        fields = ('sent_on', 'sent_by', 'pollrun', 'cohort', 'region', 'text')
         title = _("Message Log")
 
         def derive_queryset(self, **kwargs):
@@ -63,11 +63,11 @@ class MessageCRUDL(SmartCRUDL):
             return super(MessageCRUDL.List, self).lookup_field_link(context, field, obj)
 
     class ByContact(OrgPermsMixin, MessageListMixin, SmartListView):
-        fields = ('sent_on', 'sent_by', 'issue', 'cohort', 'text')
+        fields = ('sent_on', 'sent_by', 'pollrun', 'cohort', 'text')
         field_config = {
             'text': {'class': 'italicized'},
             'cohort': {'label': _("Recipients")},
-            'issue': {'label': _("Poll Issue")},
+            'pollrun': {'label': _("Poll Run")},
         }
 
         @classmethod

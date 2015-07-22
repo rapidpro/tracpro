@@ -6,8 +6,7 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 
 from tracpro.contacts.models import Contact
-from tracpro.polls.models import RESPONSE_COMPLETE
-
+from tracpro.polls.models import PollRun, RESPONSE_COMPLETE
 from .tasks import send_message
 
 
@@ -32,7 +31,7 @@ STATUS_CHOICES = ((STATUS_PENDING, _("Pending")),
 @python_2_unicode_compatible
 class Message(models.Model):
     """
-    Message sent to a cohort associated with an issue
+    Message sent to a cohort associated with an pollrun
     """
     org = models.ForeignKey('orgs.Org', verbose_name=_("Organization"), related_name="messages")
 
@@ -45,7 +44,7 @@ class Message(models.Model):
     recipients = models.ManyToManyField(Contact, related_name='messages',
                                         help_text="Contacts to whom this message was sent")
 
-    issue = models.ForeignKey('polls.Issue', verbose_name=_("Poll Issue"), related_name="messages")
+    pollrun = models.ForeignKey('polls.PollRun', null=True, verbose_name=_("Poll Run"), related_name="messages")
 
     cohort = models.CharField(max_length=1, verbose_name=_("Cohort"), choices=COHORT_CHOICES)
 
@@ -58,15 +57,15 @@ class Message(models.Model):
         return self.text
 
     @classmethod
-    def create(cls, org, user, text, issue, cohort, region):
-        message = cls.objects.create(org=org, sent_by=user, text=text, issue=issue, cohort=cohort, region=region)
+    def create(cls, org, user, text, pollrun, cohort, region):
+        message = cls.objects.create(org=org, sent_by=user, text=text, pollrun=pollrun, cohort=cohort, region=region)
 
         if cohort == COHORT_ALL:
-            responses = issue.get_responses(region)
+            responses = pollrun.get_responses(region)
         elif cohort == COHORT_RESPONDENTS:
-            responses = issue.get_responses(region).filter(status=RESPONSE_COMPLETE)
+            responses = pollrun.get_responses(region).filter(status=RESPONSE_COMPLETE)
         elif cohort == COHORT_NONRESPONDENTS:
-            responses = issue.get_responses(region).exclude(status=RESPONSE_COMPLETE)
+            responses = pollrun.get_responses(region).exclude(status=RESPONSE_COMPLETE)
         else:  # pragma: no cover
             raise ValueError("Invalid cohort code: %s" % cohort)
 

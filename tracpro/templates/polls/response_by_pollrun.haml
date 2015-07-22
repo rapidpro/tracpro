@@ -3,10 +3,10 @@
 
 - block pre-content
 
-  {% include 'polls/issue_header.haml' with issue=issue %}
+  {% include 'polls/pollrun_header.haml' with pollrun=pollrun %}
 
   .clearfix
-    - if request.region and not issue.region
+    - if request.region and not pollrun.region
       - blocktrans with region=request.region
         These are the responses for <strong>{{ region }}</strong>
 

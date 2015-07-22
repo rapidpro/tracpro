@@ -1,16 +1,16 @@
 controllers = angular.module('trac.controllers', ['trac.services']);
 
 #============================================================================
-# Latest poll issues controller
+# Latest poll runs controller
 #============================================================================
-controllers.controller 'LatestIssuesController', [ '$scope', '$timeout', 'PollService', ($scope, $timeout, PollService) ->
+controllers.controller 'LatestPollRunsController', [ '$scope', '$timeout', 'PollService', ($scope, $timeout, PollService) ->
 
   $scope.loading = true
-  $scope.issues = []
+  $scope.pollruns = []
 
   $scope.refresh = ->
-    PollService.fetchLatestIssues (issues) ->
-      $scope.issues = issues
+    PollService.fetchLatestPollRuns (pollruns) ->
+      $scope.pollruns = pollruns
       $scope.loading = false
       $timeout($scope.refresh, 5000)
 
