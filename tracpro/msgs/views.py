@@ -1,18 +1,17 @@
 from __future__ import absolute_import, unicode_literals
 
-from dash.orgs.views import OrgPermsMixin
-from dash.utils import get_obj_cacheable
-
 from django.core.urlresolvers import reverse
 from django.http import JsonResponse
 from django.utils.translation import ugettext_lazy as _
+
+from dash.orgs.views import OrgPermsMixin
+from dash.utils import get_obj_cacheable
 
 from smartmin.users.views import SmartCRUDL, SmartListView, SmartCreateView
 
 from tracpro.contacts.models import Contact
 from tracpro.polls.models import PollRun
-
-from .models import Message
+from .models import Message, InboxMessage
 
 
 class MessageListMixin(object):
@@ -89,3 +88,25 @@ class MessageCRUDL(SmartCRUDL):
             context = super(MessageCRUDL.ByContact, self).get_context_data(**kwargs)
             context['contact'] = self.derive_contact()
             return context
+
+#class InboxMessageListMixin(object):
+#    field_config = {
+#        'text': {'class': 'italicized'},
+#    }
+#    default_order = ('-pk',)
+#    link_fields = ('contact_from',)
+
+#    def lookup_field_link(self, context, field, obj):
+#        if field == 'contact_from':
+#            return reverse('contacts.read', args=[obj.contact_from.pk])
+
+#        return super(InboxMessageListMixin, self).lookup_field_link(context, field, obj)
+
+# https://smartmin.readthedocs.org/en/latest/quickstart.html#permissions
+class InboxMessageCRUDL(SmartCRUDL):
+    actions = ('read', 'list')
+    model = InboxMessage
+
+    class List(SmartListView):
+        fields = ('contact_from', 'text', 'archived', 'created_on', 'delivered_on', 'sent_on')
+        default_order = '-created_on'
