@@ -30,6 +30,19 @@ def send_message(message_id):
         logger.error("Sending message %d failed" % message.pk, exc_info=1)
 
 @task
+def send_unsolicited_message(org, text, contact):
+
+    client = org.get_temba_client()
+
+    try:
+        client.create_broadcast(text, contacts=[contact.uuid])
+
+        logger.info("Sent unsolicited message response to %s" % (contact.name))
+    except Exception:
+
+        logger.error("Error sending unsolicited message to %s failed" % (contact.name), exc_info=1)
+
+@task
 def fetch_all_inbox_messages():
     """
     Fetches all unsolicited inbox messages (type="I") into InboxMessage

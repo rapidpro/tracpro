@@ -101,7 +101,7 @@ class InboxMessage(models.Model):
 
     contact = models.ForeignKey("contacts.Contact", related_name="inbox_messages")
 
-    text = models.CharField(max_length=640, null=True)
+    text = models.CharField(max_length=MESSAGE_MAX_LEN, null=True)
 
     archived = models.BooleanField(default=False)
 

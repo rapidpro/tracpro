@@ -1,0 +1,62 @@
+
+{% extends "smartmin/list.html" %}
+
+
+{% block table-controls %}
+
+    <h4> 
+        Send a message to {{ contact }}
+    </h4>    
+
+    {% if form.errors %}
+        <p class="errorlabel">Please correct the errors below.</p>
+    {% endif %}
+    
+    <form action="." method="post" onsubmit="return checkFormAndSubmit();">
+    {% csrf_token %}
+
+        {{ form.text.label_tag }}
+        {{ form.text }}
+        {{ form.text.errors }}
+
+        <ul id="required_fields" style="display:none;" class="field-errors">
+            <li>Please fill in the message text field.</li>
+        </ul>
+
+        {% if form.non_field_errors %}
+            <ul class="field-errors">
+                <li>{{ form.non_field_errors }}</li>
+            </ul>
+        {% endif %}
+        
+
+        <div class="form-group smartmin-form-buttons">
+            <div class="col-sm-offset-1">
+                <button id="submit" type="submit" class="btn btn-primary">Send</button>
+        </div></div>
+
+
+    </form>
+    
+{% endblock table-controls %}
+
+
+{% block extra-script %}
+
+{{ block.super }}
+
+<script>
+    function checkFormAndSubmit() {
+        $("#submit").prop("disabled", true); //disable the Send button to prevent dbl-click
+        $("#required_fields").hide();
+        if ($("#id_text").val() == "") {
+            $("#required_fields").show();
+            $("#submit").prop("disabled", false);
+            return false;
+        }
+        else {
+            return true;
+        }
+    }
+</script>
+{% endblock extra-script %}
