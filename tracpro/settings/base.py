@@ -294,7 +294,7 @@ PERMISSIONS = {
     'groups.group': ('list', 'most_active', 'select'),
     'groups.region': ('list', 'most_active', 'select'),
     'msgs.message': ('list', 'send', 'by_contact'),
-    'msgs.inboxmessage': ('read', 'list'),
+    'msgs.inboxmessage': ('read', 'list', 'conversation'),
     'polls.poll': ('read', 'update', 'list', 'select'),
     'polls.pollrun': ('create', 'restart', 'read', 'participation', 'list', 'by_poll', 'latest'),
     'polls.response': ('by_pollrun', 'by_contact'),
