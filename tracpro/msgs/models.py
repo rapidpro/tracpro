@@ -89,6 +89,8 @@ class Message(models.Model):
     def as_json(self):
         return dict(id=self.pk, recipients=self.recipients.count())
 
+
+@python_2_unicode_compatible
 class InboxMessage(models.Model):
     """
     Unsolicited Inbox messages sent to RapidPro account
@@ -97,7 +99,7 @@ class InboxMessage(models.Model):
 
     rapidpro_message_id = models.IntegerField()
 
-    contact_from = models.ForeignKey("contacts.Contact", related_name="inbox_messages")
+    contact = models.ForeignKey("contacts.Contact", related_name="inbox_messages")
 
     text = models.CharField(max_length=640, null=True)
 
@@ -108,3 +110,13 @@ class InboxMessage(models.Model):
     delivered_on = models.DateTimeField(null=True)
 
     sent_on = models.DateTimeField(null=True)
+
+    direction = models.CharField(max_length=1, null=True)
+
+    @classmethod
+    def get_all(cls, org):
+        messages = cls.objects.filter(org=org)
+        return messages
+
+    def __str__(self):
+        return "%s: %s" % (self.contact, self.text)

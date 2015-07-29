@@ -7,7 +7,7 @@ from django.utils.translation import ugettext_lazy as _
 from dash.orgs.views import OrgPermsMixin
 from dash.utils import get_obj_cacheable
 
-from smartmin.users.views import SmartCRUDL, SmartListView, SmartCreateView
+from smartmin.users.views import SmartCRUDL, SmartListView, SmartCreateView, SmartReadView
 
 from tracpro.contacts.models import Contact
 from tracpro.polls.models import PollRun
@@ -89,24 +89,28 @@ class MessageCRUDL(SmartCRUDL):
             context['contact'] = self.derive_contact()
             return context
 
-#class InboxMessageListMixin(object):
-#    field_config = {
-#        'text': {'class': 'italicized'},
-#    }
-#    default_order = ('-pk',)
-#    link_fields = ('contact_from',)
 
-#    def lookup_field_link(self, context, field, obj):
-#        if field == 'contact_from':
-#            return reverse('contacts.read', args=[obj.contact_from.pk])
-
-#        return super(InboxMessageListMixin, self).lookup_field_link(context, field, obj)
-
-# https://smartmin.readthedocs.org/en/latest/quickstart.html#permissions
 class InboxMessageCRUDL(SmartCRUDL):
-    actions = ('read', 'list')
+    actions = ('read', 'list', 'conversation')
     model = InboxMessage
 
-    class List(SmartListView):
-        fields = ('contact_from', 'text', 'archived', 'created_on', 'delivered_on', 'sent_on')
-        default_order = '-created_on'
+    class List(OrgPermsMixin, SmartListView):
+        fields = ('contact', 'direction', 'text', 'archived', 'created_on', 'delivered_on', 'sent_on')
+        link_fields = ('contact', 'text')
+
+        def lookup_field_link(self, context, field, obj):
+        #    return reverse('msgs.msgs_conversationlist', kwargs=dict(pollrun=obj.pk))
+            return reverse('msgs.inboxmessage_conversation')
+
+        def derive_queryset(self, **kwargs):
+            return InboxMessage.get_all(self.request.org).order_by('contact', '-created_on').distinct('contact')
+
+    class Conversation(OrgPermsMixin, SmartListView):
+        fields = ('text', 'direction', 'created_on')
+
+        def derive_queryset(self, **kwargs):
+            contact = self.request.GET.get("contact", "")
+            return InboxMessage.get_all(self.request.org).filter(contact=Contact.objects.get(id=contact)).order_by('-created_on')
+    # http://caktus.localhost:8000/inboxmessage/conversation/?contact=2
+
+    # Create a new view based on SmartFormView() that has the conversation and a form for replying

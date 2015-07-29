@@ -58,21 +58,23 @@ def fetch_inbox_messages(org):
             if inbox_message_record:
                 inbox_message_record.update(
                     org=org,
-                    contact_from=contact,
+                    contact=contact,
                     text=inbox_message.text,
                     archived=inbox_message.archived,
                     created_on=inbox_message.created_on,
                     delivered_on=inbox_message.delivered_on,
-                    sent_on=inbox_message.sent_on
+                    sent_on=inbox_message.sent_on,
+                    direction=inbox_message.direction
                     )
             else:
                 InboxMessage.objects.create(
                     org=org,
                     rapidpro_message_id=inbox_message.id,
-                    contact_from=contact,
+                    contact=contact,
                     text=inbox_message.text,
                     archived=inbox_message.archived,
                     created_on=inbox_message.created_on,
                     delivered_on=inbox_message.delivered_on,
-                    sent_on=inbox_message.sent_on
+                    sent_on=inbox_message.sent_on,
+                    direction=inbox_message.direction
                     )
