@@ -119,4 +119,4 @@ class InboxMessage(models.Model):
         return messages
 
     def __str__(self):
-        return "%s: %s" % (self.contact, self.text)
+        return self.text
