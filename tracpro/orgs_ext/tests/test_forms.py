@@ -24,6 +24,9 @@ class TestOrgExtForm(TestCase):
             'timezone': 'UTC',
             'created_by': self.user.pk,
             'modified_by': self.user.pk,
+            'editors': [self.user.pk],
+            'viewers': [self.user.pk],
+            'administrators': [self.user.pk],
         }
 
     def test_available_languages_initial_for_create(self):
