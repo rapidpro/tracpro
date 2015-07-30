@@ -1,7 +1,48 @@
 from django import forms
+from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
 
 from dash.orgs.forms import OrgForm
+
+
+class OrgExtForm(OrgForm):
+    """Also configure available languages for this organization.
+
+    The motivation is that given a many-org (i.e., country) installation,
+    the global list of languages could get very long.
+    Each org is probably interested in seeing only a subset of those languages.
+    """
+
+    available_languages = forms.MultipleChoiceField(
+        choices=settings.LANGUAGES,
+        help_text=_("The languages used by administrators in your organization"))
+
+    def __init__(self, *args, **kwargs):
+        super(OrgExtForm, self).__init__(*args, **kwargs)
+
+        # Modify the language field to better match our usage.
+        language = self.fields['language']
+        language.required = True
+        language.label = _("Default language")
+        language.help_text = _("The default language for your organization")
+
+        # available_languages is a config field so must be set explicitly.
+        self.fields['available_languages'].initial = self.instance.available_languages
+
+    def clean(self):
+        """Ensure the default language is chosen from the available languages."""
+        language = self.cleaned_data.get('language')
+        available_languages = self.cleaned_data.get('available_languages')
+        if language and language not in available_languages:
+            raise forms.ValidationError(
+                _("Default language must be one of the languages available "
+                  "for this organization."))
+        return self.cleaned_data
+
+    def save(self, *args, **kwargs):
+        """Save the available languages config field."""
+        self.instance.available_languages = self.cleaned_data['available_languages']
+        return super(OrgExtForm, self).save(*args, **kwargs)
 
 
 class SimpleOrgEditForm(OrgForm):
