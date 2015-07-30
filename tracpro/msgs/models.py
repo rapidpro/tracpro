@@ -6,7 +6,7 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 
 from tracpro.contacts.models import Contact
-from tracpro.polls.models import PollRun, RESPONSE_COMPLETE
+from tracpro.polls.models import RESPONSE_COMPLETE
 from .tasks import send_message
 
 

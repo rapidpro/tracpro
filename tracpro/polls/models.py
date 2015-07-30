@@ -23,7 +23,6 @@ from django.utils.translation import ugettext_lazy as _
 from dash.utils import get_cacheable, get_month_range
 
 from tracpro.contacts.models import Contact
-from tracpro.groups.models import Region
 from .tasks import pollrun_start
 
 
