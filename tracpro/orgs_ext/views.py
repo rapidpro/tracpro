@@ -8,8 +8,8 @@ from django.utils.translation import ugettext_lazy as _
 from smartmin.templatetags.smartmin import format_datetime
 from smartmin.views import SmartUpdateView
 
-from . import ORG_CONFIG_FACILITY_CODE_FIELD, TaskType
-from .forms import OrgExtForm
+from . import TaskType
+from .forms import SimpleOrgEditForm
 
 
 class OrgExtCRUDL(OrgCRUDL):
@@ -53,19 +53,7 @@ class OrgExtCRUDL(OrgCRUDL):
                 return None
 
     class Edit(InferOrgMixin, OrgPermsMixin, SmartUpdateView):
-        fields = ('name', 'timezone', 'facility_code_field')
+        form_class = SimpleOrgEditForm
         permission = 'orgs.org_edit'
-        title = _("Edit My Organization")
         success_url = '@orgs_ext.org_home'
-        form_class = OrgExtForm
-
-        def get_form_kwargs(self):
-            kwargs = super(OrgExtCRUDL.Edit, self).get_form_kwargs()
-            kwargs['org'] = self.request.user.get_org()
-            return kwargs
-
-        def pre_save(self, obj):
-            obj = super(OrgExtCRUDL.Edit, self).pre_save(obj)
-            obj.set_config(ORG_CONFIG_FACILITY_CODE_FIELD,
-                           self.form.cleaned_data['facility_code_field'])
-            return obj
+        title = _("Edit My Organization")
