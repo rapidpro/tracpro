@@ -1,5 +1,5 @@
 <ul class="lang-switcher">
-  {% for code, language in LANGUAGES %}
+  {% for code, language in available_languages %}
     <li>
       {% if code == request.LANGUAGE_CODE %}
         {{ language }}
