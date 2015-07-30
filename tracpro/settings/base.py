@@ -64,7 +64,7 @@ INSTALLED_APPS = [
     'smartmin.csv_imports',
     'smartmin.users',
 
-    'tracpro.orgs_ext.app.DashOrgConfig',
+    'tracpro.orgs_ext.apps.DashOrgConfig',
     'dash.utils',
 
     'tracpro.contacts',
