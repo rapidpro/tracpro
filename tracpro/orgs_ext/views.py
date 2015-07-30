@@ -1,16 +1,15 @@
 from __future__ import absolute_import, unicode_literals
 
-from dash.orgs.models import Org
-from dash.orgs.views import OrgCRUDL, OrgForm, InferOrgMixin, OrgPermsMixin
+from dash.orgs.views import OrgCRUDL, InferOrgMixin, OrgPermsMixin
 from dash.utils import ms_to_datetime
 
-from django import forms
 from django.utils.translation import ugettext_lazy as _
 
 from smartmin.templatetags.smartmin import format_datetime
 from smartmin.views import SmartUpdateView
 
 from . import ORG_CONFIG_FACILITY_CODE_FIELD, TaskType
+from .forms import OrgExtForm
 
 
 class OrgExtCRUDL(OrgCRUDL):
@@ -54,27 +53,6 @@ class OrgExtCRUDL(OrgCRUDL):
                 return None
 
     class Edit(InferOrgMixin, OrgPermsMixin, SmartUpdateView):
-
-        class OrgExtForm(OrgForm):
-            facility_code_field = forms.ChoiceField(
-                choices=(), label=_("Facility code field"),
-                help_text=_("Contact field to use as the facility code."))
-
-            def __init__(self, *args, **kwargs):
-                org = kwargs.pop('org')
-                super(OrgExtCRUDL.Edit.OrgExtForm, self).__init__(*args, **kwargs)
-
-                field_choices = []
-                for field in org.get_temba_client().get_fields():
-                    field_choices.append((field.key, "%s (%s)" % (field.label, field.key)))
-
-                self.fields['facility_code_field'].choices = field_choices
-                self.fields['facility_code_field'].initial = org.get_facility_code_field()
-
-            class Meta:
-                model = Org
-                fields = forms.ALL_FIELDS
-
         fields = ('name', 'timezone', 'facility_code_field')
         permission = 'orgs.org_edit'
         title = _("Edit My Organization")
