@@ -8,7 +8,7 @@ from django.utils.translation import ugettext_lazy as _
 from smartmin.templatetags.smartmin import format_datetime
 from smartmin.views import SmartUpdateView
 
-from . import TaskType
+from .constants import TaskType
 from .forms import SimpleOrgEditForm
 
 
@@ -28,9 +28,6 @@ class OrgExtCRUDL(OrgCRUDL):
 
         def derive_title(self):
             return _("My Organization")
-
-        def get_facility_code_field(self, obj):
-            return obj.get_facility_code_field()
 
         def get_last_contact_sync(self, obj):
             result = obj.get_task_result(TaskType.sync_contacts)
