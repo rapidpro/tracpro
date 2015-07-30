@@ -25,3 +25,4 @@ class TestOrgExt(TestCase):
         org = models.Org()
         org.available_languages = ['en', 'es']
         self.assertEqual(org.config, json.dumps({'available_languages': ['en', 'es']}))
+        self.assertEqual(org.available_languages, ['en', 'es'])

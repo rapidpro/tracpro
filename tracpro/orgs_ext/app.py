@@ -6,6 +6,10 @@ from django.utils.functional import cached_property
 
 
 class settable_cached_property(cached_property):
+    """
+    Extension of Django's cached_property decorator class that also allows
+    the value of the property to be set.
+    """
 
     def __init__(self, get_func, set_func, name=None):
         self.set_func = set_func
