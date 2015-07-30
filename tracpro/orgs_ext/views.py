@@ -25,9 +25,7 @@ class OrgExtCRUDL(OrgCRUDL):
             },
         }
         permission = 'orgs.org_home'
-
-        def derive_title(self):
-            return _("My Organization")
+        title = _("My Organization")
 
         def get_last_contact_sync(self, obj):
             result = obj.get_task_result(TaskType.sync_contacts)

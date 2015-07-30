@@ -23,7 +23,8 @@ class DashOrgConfig(AppConfig):
             return org.get_config('facility_code_field')
 
         def _org_get_task_result(org, task_type):
-            result = cache.get(Org.LAST_TASK_CACHE_KEY % (org.pk, task_type.name))
+            cache_key = Org.LAST_TASK_CACHE_KEY % (org.pk, task_type.name)
+            result = cache.get(cache_key)
             return json.loads(result) if result is not None else None
 
         def _org_set_facility_code_field(org, value):
