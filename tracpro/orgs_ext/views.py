@@ -1,36 +1,30 @@
 from __future__ import absolute_import, unicode_literals
 
 from dash.orgs.models import Org
-from dash.orgs.views import OrgCRUDL, OrgForm, InferOrgMixin, OrgPermsMixin, SmartUpdateView
+from dash.orgs.views import OrgCRUDL, OrgForm, InferOrgMixin, OrgPermsMixin
 from dash.utils import ms_to_datetime
 
 from django import forms
 from django.utils.translation import ugettext_lazy as _
 
 from smartmin.templatetags.smartmin import format_datetime
-from smartmin.users.views import SmartCRUDL
+from smartmin.views import SmartUpdateView
 
-from tracpro.orgs_ext import TaskType
+from . import ORG_CONFIG_FACILITY_CODE_FIELD, TaskType
 
 
-class OrgExtCRUDL(SmartCRUDL):
-    actions = ('create', 'update', 'list', 'home', 'edit', 'chooser', 'choose')
-    model = Org
-
-    class Create(OrgCRUDL.Create):
-        pass
-
-    class Update(OrgCRUDL.Update):
-        pass
-
-    class List(OrgCRUDL.List):
-        pass
+class OrgExtCRUDL(OrgCRUDL):
+    actions = ('create', 'update', 'list', 'home', 'edit', 'chooser',
+               'choose')
 
     class Home(OrgCRUDL.Home):
-        fields = (
-            'name', 'timezone', 'facility_code_field', 'api_token',
-            'last_contact_sync', 'last_flow_run_fetch')
-        field_config = {'api_token': {'label': _("RapidPro API Token")}}
+        fields = ('name', 'timezone', 'facility_code_field', 'api_token',
+                  'last_contact_sync', 'last_flow_run_fetch')
+        field_config = {
+            'api_token': {
+                'label': _("RapidPro API Token"),
+            },
+        }
         permission = 'orgs.org_home'
 
         def derive_title(self):
@@ -93,14 +87,7 @@ class OrgExtCRUDL(SmartCRUDL):
             return kwargs
 
         def pre_save(self, obj):
-            from . import ORG_CONFIG_FACILITY_CODE_FIELD
             obj = super(OrgExtCRUDL.Edit, self).pre_save(obj)
             obj.set_config(ORG_CONFIG_FACILITY_CODE_FIELD,
                            self.form.cleaned_data['facility_code_field'])
             return obj
-
-    class Chooser(OrgCRUDL.Chooser):
-        pass
-
-    class Choose(OrgCRUDL.Choose):
-        pass
