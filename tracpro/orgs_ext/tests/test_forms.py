@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 
 from django.core.exceptions import NON_FIELD_ERRORS
-from django.forms.models import model_to_dict
 from django.test import override_settings, TestCase
 
 from .. import forms
@@ -116,7 +115,6 @@ class TestOrgExtForm(TestCase):
         org.refresh_from_db()
         self.assertEqual(org.available_languages, ['en', 'es', 'fr'])
         self.assertEqual(org.language, 'en')
-
 
     def test_remove_available_languages(self):
         """Form should allow removal of available language(s)."""

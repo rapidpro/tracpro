@@ -5,6 +5,16 @@ from django.core.cache import cache
 from django.utils.functional import cached_property
 
 
+class settable_cached_property(cached_property):
+
+    def __init__(self, get_func, set_func, name=None):
+        self.set_func = set_func
+        super(settable_cached_property, self).__init__(get_func, name)
+
+    def __set__(self, instance, value):
+        self.set_func(instance, value)
+
+
 class DashOrgConfig(AppConfig):
     # Must override config for dash.orgs or else Org model won't be available.
     name = "dash.orgs"
@@ -51,12 +61,13 @@ class DashOrgConfig(AppConfig):
         Org.add_to_class('set_facility_code_field', _org_set_facility_code_field)
         Org.add_to_class('set_task_result', _org_set_task_result)
 
-        # Allow config fields to be treated as properties.
-        Org.add_to_class('available_languages', cached_property(
+        # Never set config directly;
+        # allow config attributes to be set as if they were properties.
+        Org.add_to_class('available_languages', settable_cached_property(
             _org_get_available_languages,
             _org_set_available_languages,
         ))
-        Org.add_to_class('facility_code_field', cached_property(
+        Org.add_to_class('facility_code_field', settable_cached_property(
             _org_get_facility_code_field,
             _org_set_facility_code_field,
         ))

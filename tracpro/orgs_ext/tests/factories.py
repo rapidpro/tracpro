@@ -2,8 +2,6 @@ import factory
 import factory.django
 import factory.fuzzy
 
-from dash.orgs import models
-
 
 class SmartModelFactory(factory.django.DjangoModelFactory):
     created_by = factory.SubFactory("tracpro.orgs_ext.tests.factories.User")
