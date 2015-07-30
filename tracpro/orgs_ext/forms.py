@@ -32,16 +32,18 @@ class OrgExtForm(OrgForm):
     def clean(self):
         """Ensure the default language is chosen from the available languages."""
         language = self.cleaned_data.get('language')
-        available_languages = self.cleaned_data.get('available_languages')
-        if language and language not in available_languages:
-            raise forms.ValidationError(
-                _("Default language must be one of the languages available "
-                  "for this organization."))
+        available_languages = self.cleaned_data.get('available_languages') or []
+        if language and available_languages:  # otherwise, default errors are preferred
+            if language not in available_languages:
+                raise forms.ValidationError(
+                    _("Default language must be one of the languages available "
+                      "for this organization."))
         return self.cleaned_data
 
     def save(self, *args, **kwargs):
         """Save the available languages config field."""
-        self.instance.available_languages = self.cleaned_data['available_languages']
+        available_languages = self.cleaned_data['available_languages'] or []
+        self.instance.available_languages = available_languages
         return super(OrgExtForm, self).save(*args, **kwargs)
 
 

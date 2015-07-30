@@ -20,7 +20,7 @@ class DashOrgConfig(AppConfig):
                 org.facility_code_field = 'facility_code'
 
         def _org_get_available_languages(org):
-            return org.get_config('available_languages')
+            return org.get_config('available_languages') or []
 
         def _org_get_facility_code_field(org):
             return org.get_config('facility_code_field')
