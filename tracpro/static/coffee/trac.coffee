@@ -102,19 +102,20 @@ init_charts = () ->
     chart_type = container.data('chart-type')
     window_min = container.data('window-min')
     window_max = container.data('window-max')
+    unit_text = container.data('unit-text')
     data = eval('chart_' + question_id + '_data')
 
     if data && data.length > 0
       if chart_type == 'word'
         init_word_cloud(container, data)
       else if chart_type == 'pie'
-        init_pie_chart(container, data)
+        init_pie_chart(container, data, unit_text)
       else if chart_type == 'column'
-        init_column_chart(container, data)
+        init_column_chart(container, data, unit_text)
       else if chart_type == 'time-area'
-        init_time_area_chart(container, data, window_min, window_max)
+        init_time_area_chart(container, data, window_min, window_max, unit_text)
       else if chart_type == 'time-line'
-        init_time_line_chart(container, data, window_min, window_max)
+        init_time_line_chart(container, data, window_min, window_max, unit_text)
     else
       init_no_data(container)
 
@@ -123,7 +124,7 @@ init_word_cloud = (container, data) ->
   container.jQCloud(data)
 
 
-init_pie_chart = (container, data) ->
+init_pie_chart = (container, data, unit_text) ->
   container.highcharts({
     title: null,
     tooltip: { enabled: false },
@@ -131,7 +132,7 @@ init_pie_chart = (container, data) ->
       pie: {
         dataLabels: {
           enabled: true,
-          format: '<b>{point.name}</b>: {point.percentage:.1f} %',
+          format: '<b>' + unit_text + '</b><br/><b>{point.name}</b>: {point.percentage:.1f} %',
           style: {
             color: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
           }
@@ -143,12 +144,12 @@ init_pie_chart = (container, data) ->
   })
 
 
-init_column_chart = (container, data) ->
+init_column_chart = (container, data, unit_text) ->
   container.highcharts({
     chart: { type: 'column' },
     title: null,
-    tooltip: { enabled: false },
     xAxis: {
+      title: null,
       categories: data[0]
     },
     yAxis: {
@@ -159,11 +160,15 @@ init_column_chart = (container, data) ->
       data: data[1]
     }],
     legend: { enabled: false },
-    credits: { enabled: false }
+    credits: { enabled: false },
+    tooltip: {
+                formatter: ->
+                    '<b>' + unit_text + '</b> ' + @x +
+                    '<br />' + @y
+            },
   })
 
-
-init_time_area_chart = (container, series, window_min, window_max) ->
+init_time_area_chart = (container, series, window_min, window_max, unit_text) ->
   container.highcharts({
     chart: { type: 'area' },
     title: null,
@@ -179,7 +184,7 @@ init_time_area_chart = (container, series, window_min, window_max) ->
       }
     },
     tooltip: {
-      xDateFormat: '%b %d, %Y',
+      xDateFormat: '<b>' + unit_text + '</b><br />%b %d, %Y',
       pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.percentage:.1f}%</b> ({point.y:,.0f})<br/>',
       shared: true
     },
@@ -199,7 +204,7 @@ init_time_area_chart = (container, series, window_min, window_max) ->
   })
 
 
-init_time_line_chart = (container, data, window_min, window_max) ->
+init_time_line_chart = (container, data, window_min, window_max, unit_text) ->
   container.highcharts({
     chart: { type: 'spline' },
     title: null,
@@ -219,7 +224,10 @@ init_time_line_chart = (container, data, window_min, window_max) ->
     },
     series: [{ name: "Average", data: data }],
     legend: { enabled: false },
-    credits: { enabled: false }
+    credits: { enabled: false },
+    tooltip: {
+      valuePrefix: unit_text + ' '
+    }
   })
 
 

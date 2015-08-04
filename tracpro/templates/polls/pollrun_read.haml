@@ -11,7 +11,7 @@
     %h3
       {{ question.order }}. {{ question.text }}
 
-    .chart{ data-question-id:"{{ question.pk }}", data-chart-type:"{{ question.chart_type }}", dir:"ltr" }
+    .chart{ data-question-id:"{{ question.pk }}", data-chart-type:"{{ question.chart_type }}", dir:"ltr", data-unit-text:"{{ question.text }}" }
 
     %script{ type:"text/javascript" }
       var chart_{{ question.pk }}_data = {{ question.chart_data }};

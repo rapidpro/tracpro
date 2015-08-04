@@ -115,7 +115,8 @@ def fetch_org_updated_runs(org):
 @task
 def pollrun_start(pollrun_id):
     """
-    Starts a newly created pollrun by creating runs in RapidPro and creating empty responses for them.
+    Starts a newly created pollrun by creating runs in RapidPro and creating
+    empty responses for them.
     """
     from tracpro.polls.models import PollRun, Response
 
@@ -138,7 +139,8 @@ def pollrun_start(pollrun_id):
 @task
 def pollrun_restart_participants(pollrun_id, contact_uuids):
     """
-    Restarts the given contacts in the given poll pollrun by replacing any existing response they have with an empty one.
+    Restarts the given contacts in the given poll pollrun by replacing any
+    existing response they have with an empty one.
     """
     from tracpro.polls.models import PollRun, Response
 
