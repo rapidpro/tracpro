@@ -10,7 +10,6 @@ from temba.types import Broadcast
 from tracpro.msgs.models import Message, COHORT_ALL, COHORT_RESPONDENTS, COHORT_NONRESPONDENTS, InboxMessage
 from tracpro.polls.models import PollRun, Response, RESPONSE_COMPLETE, RESPONSE_PARTIAL, RESPONSE_EMPTY
 from tracpro.test import TracProTest
-from tracpro.contacts.models import Contact
 
 
 class MessageTest(TracProTest):
