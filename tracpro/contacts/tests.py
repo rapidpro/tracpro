@@ -85,10 +85,10 @@ class ContactTest(TracProTest):
         date2 = self.datetime(2014, 1, 1, 8, 0)
         pollrun1 = PollRun.objects.create(poll=self.poll1, region=None, conducted_on=date1)
         pollrun1_r1 = Response.objects.create(flow_run_id=123, pollrun=pollrun1, contact=self.contact1,
-                                            created_on=date1, updated_on=date1, status=RESPONSE_COMPLETE)
+                                              created_on=date1, updated_on=date1, status=RESPONSE_COMPLETE)
         pollrun2 = PollRun.objects.create(poll=self.poll1, region=self.region1, conducted_on=date2)
         pollrun2_r1 = Response.objects.create(flow_run_id=456, pollrun=pollrun2, contact=self.contact1,
-                                            created_on=date2, updated_on=date2, status=RESPONSE_EMPTY)
+                                              created_on=date2, updated_on=date2, status=RESPONSE_EMPTY)
 
         self.assertEqual(list(self.contact1.get_responses().order_by('pk')), [pollrun1_r1, pollrun2_r1])
         self.assertEqual(list(self.contact1.get_responses(include_empty=False).order_by('pk')), [pollrun1_r1])
