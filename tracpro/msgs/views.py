@@ -142,7 +142,6 @@ class InboxMessageCRUDL(SmartCRUDL):
 
             return super(InboxMessageCRUDL.Conversation, self).dispatch(request, *args, **kwargs)
 
-
         @classmethod
         def derive_url_pattern(cls, path, action):
             return r'^%s/%s/(?P<contact_id>\d+)/$' % (path, action)
