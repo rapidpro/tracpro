@@ -2,6 +2,7 @@ from django import forms
 
 from .models import InboxMessage
 
+
 class InboxMessageResponseForm(forms.ModelForm):
 
     class Meta:

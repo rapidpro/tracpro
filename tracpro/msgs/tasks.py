@@ -29,6 +29,7 @@ def send_message(message_id):
 
         logger.error("Sending message %d failed" % message.pk, exc_info=1)
 
+
 @task
 def send_unsolicited_message(org, text, contact):
 
@@ -42,6 +43,7 @@ def send_unsolicited_message(org, text, contact):
 
         logger.error("Error sending unsolicited message to %s failed" % (contact.name), exc_info=1)
 
+
 @task
 def fetch_all_inbox_messages():
     """
@@ -51,6 +53,7 @@ def fetch_all_inbox_messages():
 
     for org in Org.objects.filter(is_active=True):
         fetch_inbox_messages(org)
+
 
 def fetch_inbox_messages(org):
     from .models import InboxMessage
