@@ -114,7 +114,7 @@
                         %a{ href:"{% url 'msgs.message_list' %}" }
                           - trans "Message Log"
 
-                    {# - if org_perms.msgs.inboxmessage_list #}
+                    - if org_perms.msgs.inboxmessage_list
                       %li
                         %a{ href:"{% url 'msgs.inboxmessage_list' %}" }
                           - trans "Inbox Messages"
