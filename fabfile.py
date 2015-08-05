@@ -242,7 +242,7 @@ def state(name, target="'*'", loglevel=DEFAULT_SALT_LOGLEVEL):
 def margarita():
     require('environment')
     execute(state, 'margarita')
-    #sudo('service salt-master restart')
+    # sudo('service salt-master restart')
 
 
 @task
