@@ -60,7 +60,7 @@ SESSION_COOKIE_SECURE = False
 
 SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
 
-SITE_HOST_PATTERN = 'http://%s.edutrac-staging.cakt.us'
+SITE_HOST_PATTERN = 'https://%s.edutrac-staging.cakt.us'
 
 STATIC_ROOT = os.path.join(WEBSERVER_ROOT, 'public', 'static')
 
