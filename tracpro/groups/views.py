@@ -44,10 +44,15 @@ class RegionCRUDL(SmartCRUDL):
             return obj.get_contacts().count()
 
     class MostActive(OrgPermsMixin, SmartListView):
+
         def get(self, request, *args, **kwargs):
             regions = Region.get_most_active(self.request.org)[0:5]
-            results = [{'id': r.pk, 'name': r.name, 'response_count': r.response_count} for r in regions]
-            return JsonResponse({'count': len(results), 'results': results})
+            results = [{'id': r.pk, 'name': r.name, 'response_count': r.response_count}
+                       for r in regions]
+            return JsonResponse({
+                'count': len(results),
+                'results': results,
+            })
 
     class Select(OrgPermsMixin, SmartFormView):
         title = _("Region Groups")
@@ -84,10 +89,15 @@ class GroupCRUDL(SmartCRUDL):
             return obj.get_contacts().count()
 
     class MostActive(OrgPermsMixin, SmartListView):
+
         def get(self, request, *args, **kwargs):
             regions = Group.get_most_active(self.request.org)[0:5]
-            results = [{'id': r.pk, 'name': r.name, 'response_count': r.response_count} for r in regions]
-            return JsonResponse({'count': len(results), 'results': results})
+            results = [{'id': r.pk, 'name': r.name, 'response_count': r.response_count}
+                       for r in regions]
+            return JsonResponse({
+                'count': len(results),
+                'results': results,
+            })
 
     class Select(OrgPermsMixin, SmartFormView):
         title = _("Reporter Groups")
