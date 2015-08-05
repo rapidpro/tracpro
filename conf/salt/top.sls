@@ -31,3 +31,4 @@ base:
   'roles:cache':
     - match: grain
     - project.cache
+    - project.redis-master
