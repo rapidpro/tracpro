@@ -54,7 +54,7 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'HTTPS')
 
 SESSION_CACHE_ALIAS = "default"
 
-SESSION_COOKIE_DOMAIN = 'edutrac-staging.cakt.us'
+SESSION_COOKIE_DOMAIN = '.edutrac-staging.cakt.us'
 
 SESSION_COOKIE_SECURE = False
 
