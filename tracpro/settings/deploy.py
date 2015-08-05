@@ -40,7 +40,7 @@ DEFAULT_FROM_EMAIL = 'no-reply@caktusgroup.com'
 
 EMAIL_SUBJECT_PREFIX = '[Edutrac] '
 
-HOSTNAME = 'tracpro.staging.nyaruka.com'
+HOSTNAME = 'edutrac-staging.cakt.us'
 
 LOGGING['handlers']['file']['filename'] = os.path.join(WEBSERVER_ROOT, 'log', 'tracpro.log')
 
@@ -52,14 +52,12 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'HTTPS')
 
 SESSION_CACHE_ALIAS = "default"
 
-SESSION_COOKIE_DOMAIN = 'tracpro.staging.nyaruka.com'
+SESSION_COOKIE_DOMAIN = 'edutrac-staging.cakt.us'
 
 SESSION_COOKIE_SECURE = False
 
 SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
 
-SITE_API_HOST = 'http://textit.staging.nyaruka.com/api/v1'
-
-SITE_HOST_PATTERN = 'http://%s.tracpro.staging.nyaruka.com'
+SITE_HOST_PATTERN = 'http://%s.edutrac-staging.cakt.us'
 
 STATIC_ROOT = os.path.join(WEBSERVER_ROOT, 'public', 'static')
