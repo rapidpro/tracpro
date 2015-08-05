@@ -112,10 +112,6 @@ class InboxMessageCRUDL(SmartCRUDL):
         fields = ('text', 'direction', 'created_on')
         title = "Conversation"
 
-        def get(self, request, *args, **kwargs):
-            self.form = InboxMessageResponseForm(contact=self.contact)
-            return super(InboxMessageCRUDL.Conversation, self).get(request, *args, **kwargs)
-
         def get_context_data(self, **kwargs):
             context = super(InboxMessageCRUDL.Conversation, self).get_context_data(**kwargs)
             context['form'] = self.form
