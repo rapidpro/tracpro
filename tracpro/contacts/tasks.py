@@ -35,7 +35,7 @@ def sync_org_contacts(org_id):
     Syncs all contacts for the given org
     """
     from tracpro.groups.models import Region, Group
-    from tracpro.orgs_ext import TaskType
+    from tracpro.orgs_ext.constants import TaskType
     from .models import Contact
 
     org = Org.objects.get(pk=org_id)

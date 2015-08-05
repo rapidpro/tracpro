@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
-from .views import OrgExtCRUDL
+from . import views
 
-urlpatterns = OrgExtCRUDL().as_urlpatterns()
+
+urlpatterns = views.OrgExtCRUDL().as_urlpatterns()

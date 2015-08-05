@@ -64,7 +64,7 @@ INSTALLED_APPS = [
     'smartmin.csv_imports',
     'smartmin.users',
 
-    'dash.orgs',
+    'tracpro.orgs_ext.apps.DashOrgConfig',
     'dash.utils',
 
     'tracpro.contacts',
@@ -182,7 +182,8 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'dash.orgs.context_processors.user_group_perms_processor',
     'dash.orgs.context_processors.set_org_processor',
     'dash.context_processors.lang_direction',
-    'tracpro.orgs_ext.views.org_ext_context_processor',
+    'tracpro.orgs_ext.context_processors.user_is_admin',
+    'tracpro.orgs_ext.context_processors.available_languages',
 )
 
 TEMPLATE_DIRS = (

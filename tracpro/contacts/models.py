@@ -114,7 +114,7 @@ class Contact(models.Model):
         group_uuids = intersection(org_group_uuids, temba_contact.groups)
         group = Group.objects.get(org=org, uuid=group_uuids[0]) if group_uuids else None
 
-        facility_code = temba_contact.fields.get(org.get_facility_code_field(), None)
+        facility_code = temba_contact.fields.get(org.facility_code_field, None)
 
         return dict(org=org, name=name, urn=temba_contact.urns[0],
                     region=region, group=group, language=temba_contact.language, facility_code=facility_code,
@@ -128,7 +128,7 @@ class Contact(models.Model):
         temba_contact = TembaContact()
         temba_contact.name = self.name
         temba_contact.urns = [self.urn]
-        temba_contact.fields = {self.org.get_facility_code_field(): self.facility_code}
+        temba_contact.fields = {self.org.facility_code_field: self.facility_code}
         temba_contact.groups = groups
         temba_contact.language = self.language
         temba_contact.uuid = self.uuid

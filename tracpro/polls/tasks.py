@@ -31,7 +31,7 @@ def fetch_org_runs(org):
     """
     Fetches flow runs for the given org
     """
-    from tracpro.orgs_ext import TaskType
+    from tracpro.orgs_ext.constants import TaskType
 
     fetch_org_new_runs(org)
     fetch_org_updated_runs(org)

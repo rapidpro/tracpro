@@ -1,0 +1,10 @@
+{% extends "smartmin/read.html" %}
+
+{% load i18n %}
+
+{% block read-buttons %}
+  <a class="btn btn-default pull-right" href="{% url 'orgs_ext.org_edit' %}">
+    <span class="glyphicon glyphicon-pencil"></span>
+    {% trans "Edit" %}
+  </a>
+{% endblock read-buttons %}
