@@ -12,7 +12,7 @@ def add_available_languages(apps, schema_editor):
     all_languages = [l[0] for l in settings.LANGUAGES]
     for org in apps.get_model('orgs', 'Org').objects.all():
         updated = False
-        config = json.loads(org.config)
+        config = json.loads(org.config) if org.config else {}
         if not config.get('available_languages'):
             config['available_languages'] = all_languages
             org.config = json.dumps(config)
