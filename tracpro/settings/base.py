@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     'compressor',
     'djcelery',
     'guardian',
+    'mptt',
     'reversion',
     'sorl.thumbnail',
 
