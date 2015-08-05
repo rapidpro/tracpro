@@ -38,7 +38,7 @@ DATABASES['default'].update({
 
 DEFAULT_FROM_EMAIL = 'no-reply@caktusgroup.com'
 
-# EMAIL_SUBJECT_PREFIX = '[Edutrac] '
+EMAIL_SUBJECT_PREFIX = '[Edutrac] '
 
 HOSTNAME = 'tracpro.staging.nyaruka.com'
 

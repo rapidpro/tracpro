@@ -93,11 +93,16 @@ LOCALE_PATHS = [
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'filters': {
+        'require_debug_false': {
+            '()': 'django.utils.log.RequireDebugFalse',
+        },
+    },
     'formatters': {
         'verbose': {
             'format': '%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s'
         },
-        'simple': {
+        'basic': {
             'format': '%(levelname)s %(message)s'
         },
     },
@@ -106,23 +111,41 @@ LOGGING = {
             'level': 'INFO',
             'class': 'logging.StreamHandler',
             'formatter': 'verbose'
+        },
+        'mail_admins': {
+            'level': 'ERROR',
+            'filters': ['require_debug_false'],
+            'class': 'django.utils.log.AdminEmailHandler',
+        },
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'formatter': 'basic',
+            'filename': os.path.join(PROJECT_ROOT, 'edutrac.log'),
+            'maxBytes': 10 * 1024 * 1024,  # 10 Mb
+            'backupCount': 10,
         }
     },
     'loggers': {
         'httprouterthread': {
-            'handlers': ['console'],
+            'handlers': ['file'],
             'level': 'INFO',
         },
         'django.request': {
-            'handlers': ['console'],
+            'handlers': ['mail_admins'],
             'level': 'ERROR',
+            'propagate': True,
         },
         'django.db.backends': {
             'level': 'ERROR',
-            'handlers': ['console'],
+            'handlers': ['mail_admins'],
             'propagate': False,
         },
-    }
+        'tracpro': {
+            'handlers': ['file', 'mail_admins'],
+            'level': 'INFO',
+        },
+    },
 }
 
 LOGIN_REDIRECT_URL = reverse_lazy('home.home')
