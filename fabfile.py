@@ -72,6 +72,7 @@ def get_salt_version(command):
             if result.succeeded:
                 return re.search(r'([\d\.]+)', result).group(0)
 
+
 def service_enabled(name):
     """Check if an upstart service is enabled."""
     with settings(warn_only=True):
@@ -109,7 +110,7 @@ def install_salt(version, master=False, minion=False, restart=True):
     install_minion = False
     if minion:
         minion_version = get_salt_version('salt-minion')
-        install_minion = minion_version != version or not service_enabled('salt-minion') 
+        install_minion = minion_version != version or not service_enabled('salt-minion')
         if install_minion and minion_version:
             # Already installed - if Ubuntu package, uninstall current version
             # first because we're going to do a git install later
