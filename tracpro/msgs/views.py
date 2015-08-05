@@ -102,15 +102,34 @@ class InboxMessageCRUDL(SmartCRUDL):
         link_fields = ('contact', 'text')
         title = "Unsolicited message conversations by most recent message"
 
+        def derive_queryset(self, **kwargs):
+            return InboxMessage.get_all(self.request.org).order_by('contact', '-created_on').distinct('contact')
+
         def lookup_field_link(self, context, field, obj):
             return reverse('msgs.inboxmessage_conversation', kwargs={'contact_id': obj.contact.pk})
 
-        def derive_queryset(self, **kwargs):
-            return InboxMessage.get_all(self.request.org).order_by('contact', '-created_on').distinct('contact')
 
     class Conversation(OrgPermsMixin, SmartListView):
         fields = ('text', 'direction', 'created_on')
         title = "Conversation"
+
+        def derive_queryset(self, **kwargs):
+            return InboxMessage.get_all(self.request.org).filter(contact=self.contact).order_by('-created_on')
+
+        @classmethod
+        def derive_url_pattern(cls, path, action):
+            return r'^%s/%s/(?P<contact_id>\d+)/$' % (path, action)
+
+        def dispatch(self, request, contact_id, *args, **kwargs):
+            try:
+                self.contact = Contact.objects.get(pk=contact_id)
+                self.data = self.request.POST or None
+            except Contact.DoesNotExist:
+                raise Http404("Contact does not exist.")
+
+            self.form = InboxMessageResponseForm(contact=self.contact, data=self.data)
+
+            return super(InboxMessageCRUDL.Conversation, self).dispatch(request, *args, **kwargs)
 
         def get_context_data(self, **kwargs):
             context = super(InboxMessageCRUDL.Conversation, self).get_context_data(**kwargs)
@@ -129,20 +148,3 @@ class InboxMessageCRUDL(SmartCRUDL):
             else:
                 return self.get(request, *args, **kwargs)
 
-        def dispatch(self, request, contact_id, *args, **kwargs):
-            try:
-                self.contact = Contact.objects.get(pk=contact_id)
-                self.data = self.request.POST or None
-            except Contact.DoesNotExist:
-                raise Http404("Contact does not exist.")
-
-            self.form = InboxMessageResponseForm(contact=self.contact, data=self.data)
-
-            return super(InboxMessageCRUDL.Conversation, self).dispatch(request, *args, **kwargs)
-
-        @classmethod
-        def derive_url_pattern(cls, path, action):
-            return r'^%s/%s/(?P<contact_id>\d+)/$' % (path, action)
-
-        def derive_queryset(self, **kwargs):
-            return InboxMessage.get_all(self.request.org).filter(contact=self.contact).order_by('-created_on')
