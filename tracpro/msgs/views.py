@@ -127,14 +127,16 @@ class InboxMessageCRUDL(SmartCRUDL):
                 fetch_inbox_messages(self.request.org)
                 return redirect('msgs.inboxmessage_conversation', contact_id=self.contact.pk)
             else:
-                return self.render_to_response(self.get_context_data(form=form))
+                return self.get(request, *args, **kwargs)
 
         def dispatch(self, request, contact_id, *args, **kwargs):
             try:
                 self.contact = Contact.objects.get(pk=contact_id)
-                self.form = InboxMessageResponseForm(contact=self.contact)
+                data = self.request.POST or None
             except Contact.DoesNotExist:
                 raise Http404("Contact does not exist.")
+
+            self.form = InboxMessageResponseForm(contact=self.contact)
 
             return super(InboxMessageCRUDL.Conversation, self).dispatch(request, *args, **kwargs)
 
