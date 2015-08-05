@@ -28,6 +28,8 @@ COMPRESS_OFFLINE_CONTEXT = {
     'testing': False,
 }
 
+CSRF_COOKIE_DOMAIN = ".edutrac-staging.cakt.us"
+
 DATABASES['default'].update({
     'NAME': 'tracpro_{}'.format(ENVIRONMENT),
     'USER': 'tracpro_{}'.format(ENVIRONMENT),
