@@ -27,7 +27,7 @@ class OrgExtForm(OrgForm):
         language.help_text = _("The default language for your organization")
 
         # available_languages is a config field so must be set explicitly.
-        self.fields['available_languages'].initial = self.instance.available_languages
+        self.fields['available_languages'].initial = self.instance.available_languages or []
 
     def clean(self):
         """Ensure the default language is chosen from the available languages."""
