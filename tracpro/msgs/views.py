@@ -108,7 +108,6 @@ class InboxMessageCRUDL(SmartCRUDL):
         def lookup_field_link(self, context, field, obj):
             return reverse('msgs.inboxmessage_conversation', kwargs={'contact_id': obj.contact.pk})
 
-
     class Conversation(OrgPermsMixin, SmartListView):
         fields = ('text', 'direction', 'created_on')
         title = "Conversation"
@@ -147,4 +146,3 @@ class InboxMessageCRUDL(SmartCRUDL):
                 return redirect('msgs.inboxmessage_conversation', contact_id=self.contact.pk)
             else:
                 return self.get(request, *args, **kwargs)
-
