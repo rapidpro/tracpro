@@ -18,7 +18,7 @@ class InboxMessageResponseForm(forms.ModelForm):
         cleaned_data = super(InboxMessageResponseForm, self).clean()
         text = cleaned_data.get("text", "").strip()
 
-        if len(text) == 0:
+        if not text:
             raise forms.ValidationError("Please enter some message text.")
 
         return cleaned_data
