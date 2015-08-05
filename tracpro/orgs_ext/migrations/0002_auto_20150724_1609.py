@@ -17,8 +17,8 @@ def add_available_languages(apps, schema_editor):
             config['available_languages'] = all_languages
             org.config = json.dumps(config)
             updated = True
-        if not org.default_language:
-            org.default_language = settings.DEFAULT_LANGUAGE
+        if not org.language:
+            org.language = settings.DEFAULT_LANGUAGE
             updated = True
         if updated:
             org.save()
