@@ -8,7 +8,7 @@ WEBSERVER_ROOT = '/var/www/tracpro/'
 ENVIRONMENT = os.environ.get('ENVIRONMENT', '').lower()
 
 ADMINS = [
-    ('Caktus Website Team', 'website-team@caktusgroup.com'),
+    ('Caktus EduTrac Team', 'edutrac-team@caktusgroup.com'),
 ]
 
 ALLOWED_HOSTS = os.environ['ALLOWED_HOSTS'].split(';')
