@@ -1,5 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
+from mptt import models as mptt
+
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import Count
@@ -94,12 +96,13 @@ class AbstractGroup(models.Model):
         return self.contacts.filter(is_active=True)
 
 
-class Region(AbstractGroup):
+class Region(mptt.MPTTModel, AbstractGroup):
     """A geographical region modelled as a group."""
-
     users = models.ManyToManyField(
         User, verbose_name=_("Users"), related_name='regions',
         help_text=_("Users who can access this region"))
+    parent = mptt.TreeForeignKey(
+        'self', null=True, blank=True, related_name="children", db_index=True)
 
     def get_users(self):
         return self.users.filter(is_active=True).select_related('profile')
