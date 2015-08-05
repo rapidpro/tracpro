@@ -33,7 +33,7 @@ VALID_ROLES = (
 @task
 def staging():
     env.environment = 'staging'
-    env.master = 'CHANGEME'
+    env.master = '52.18.27.186'
     initialize_env()
 
 
@@ -72,6 +72,12 @@ def get_salt_version(command):
             if result.succeeded:
                 return re.search(r'([\d\.]+)', result).group(0)
 
+def service_enabled(name):
+    """Check if an upstart service is enabled."""
+    with settings(warn_only=True):
+        with hide('running', 'stdout', 'stderr'):
+            return sudo('service %s status' % name).succeeded
+
 
 @task
 def install_salt(version, master=False, minion=False, restart=True):
@@ -91,7 +97,7 @@ def install_salt(version, master=False, minion=False, restart=True):
     install_master = False
     if master:
         master_version = get_salt_version("salt")
-        install_master = master_version != version
+        install_master = master_version != version or not service_enabled('salt-master')
         if install_master and master_version:
             # Already installed - if Ubuntu package, uninstall current version
             # first because we're going to do a git install later
@@ -103,7 +109,7 @@ def install_salt(version, master=False, minion=False, restart=True):
     install_minion = False
     if minion:
         minion_version = get_salt_version('salt-minion')
-        install_minion = minion_version != version
+        install_minion = minion_version != version or not service_enabled('salt-minion') 
         if install_minion and minion_version:
             # Already installed - if Ubuntu package, uninstall current version
             # first because we're going to do a git install later
@@ -222,7 +228,7 @@ def add_role(name):
 def salt(cmd, target="'*'", loglevel=DEFAULT_SALT_LOGLEVEL):
     """Run arbitrary salt commands."""
     with settings(warn_only=True, host_string=env.master):
-        result = sudo("salt {0} -l{1} {2} ".format(target, loglevel, cmd))
+        result = sudo("salt -v {0} -l{1} {2} ".format(target, loglevel, cmd))
     return result
 
 
