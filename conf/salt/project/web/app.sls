@@ -70,6 +70,14 @@ less:
     - require:
       - pkg: node-pkgs
 
+coffee:
+  cmd.run:
+    - name: npm install coffee-script@{{ pillar['coffee_version'] }} -g
+    - user: root
+    - unless: "which coffee && coffee --version | grep {{ pillar['coffee_version'] }}"
+    - require:
+      - pkg: node-pkgs
+
 collectstatic:
   cmd.run:
     - name: "{{ vars.path_from_root('manage.sh') }} collectstatic --noinput"

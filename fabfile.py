@@ -13,7 +13,7 @@ from fabric.utils import abort
 
 DEFAULT_SALT_LOGLEVEL = 'info'
 
-SALT_VERSION = '2015.5.2'
+SALT_VERSION = '2014.7.6'
 
 PROJECT_ROOT = os.path.dirname(__file__)
 
@@ -41,6 +41,7 @@ def staging():
 def production():
     env.environment = 'production'
     env.master = 'CHANGEME'
+    host_string='edutrac-staging'
     initialize_env()
 
 
