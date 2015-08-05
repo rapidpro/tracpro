@@ -41,7 +41,6 @@ def staging():
 def production():
     env.environment = 'production'
     env.master = 'CHANGEME'
-    host_string='edutrac-staging'
     initialize_env()
 
 
