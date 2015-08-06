@@ -1,11 +1,13 @@
 from __future__ import absolute_import, unicode_literals
+from mock import patch
 
 from django.core.urlresolvers import reverse
 from django.test.utils import override_settings
 from django.utils import timezone
-from mock import patch
+
 from temba.types import Broadcast
-from tracpro.msgs.models import Message, COHORT_ALL, COHORT_RESPONDENTS, COHORT_NONRESPONDENTS
+
+from tracpro.msgs.models import Message, COHORT_ALL, COHORT_RESPONDENTS, COHORT_NONRESPONDENTS, InboxMessage
 from tracpro.polls.models import PollRun, Response, RESPONSE_COMPLETE, RESPONSE_PARTIAL, RESPONSE_EMPTY
 from tracpro.test import TracProTest
 
@@ -78,3 +80,50 @@ class MessageCRUDLTest(TracProTest):
         # should still include message sent to all regions
         response = self.url_get('unicef', url)
         self.assertEqual(list(response.context['object_list']), [msg2, msg1])
+
+
+class InboxMessageCRUDLTest(TracProTest):
+    def setUp(self):
+        super(InboxMessageCRUDLTest, self).setUp()
+        self.login(self.admin)
+
+        self.inboxmsg1 = InboxMessage.objects.create(
+                        org=self.unicef,
+                        rapidpro_message_id=1234,
+                        contact=self.contact1,
+                        text="Test message to contact1",
+                        archived=False,
+                        direction="O",
+                        created_on=timezone.now())
+
+        self.inboxmsg2 = InboxMessage.objects.create(
+                        org=self.unicef,
+                        rapidpro_message_id=4567,
+                        contact=self.contact1,
+                        text="A more recent test message to contact1",
+                        archived=False,
+                        direction="O",
+                        created_on=timezone.now())
+
+        self.inboxmsg3 = InboxMessage.objects.create(
+                        org=self.unicef,
+                        rapidpro_message_id=6789,
+                        contact=self.contact2,
+                        text="A message from contact2",
+                        archived=False,
+                        direction="I",
+                        created_on=timezone.now())
+
+    def test_list(self):
+        url = reverse('msgs.inboxmessage_list')
+
+        # Only the most recent message related per contact should display
+        response = self.url_get('unicef', url)
+        self.assertEqual(list(response.context['object_list']), [self.inboxmsg2, self.inboxmsg3])
+
+    def test_conversation(self):
+        url = reverse('msgs.inboxmessage_conversation', args=[self.contact1.pk])
+
+        # All messages should display for this contact
+        response = self.url_get('unicef', url)
+        self.assertEqual(list(response.context['object_list']), [self.inboxmsg2, self.inboxmsg1])

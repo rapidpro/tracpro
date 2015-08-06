@@ -2,14 +2,13 @@ from __future__ import absolute_import, unicode_literals
 
 from django.utils import timezone
 
-from dash.utils import datetime_to_ms, chunks
-from dash.orgs.models import Org
-
 from celery.utils.log import get_task_logger
 from djcelery_transactions import task
-
 from django_redis import get_redis_connection
 from temba.utils import parse_iso8601, format_iso8601
+
+from dash.utils import datetime_to_ms, chunks
+from dash.orgs.models import Org
 
 logger = get_task_logger(__name__)
 

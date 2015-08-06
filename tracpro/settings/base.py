@@ -246,6 +246,11 @@ CELERYBEAT_SCHEDULE = {
         'task': 'tracpro.polls.tasks.fetch_all_runs',
         'schedule': datetime.timedelta(minutes=5),
         'args': ()
+    },
+    'fetch-inbox-messages': {
+        'task': 'tracpro.msgs.tasks.fetch_all_inbox_messages',
+        'schedule': datetime.timedelta(minutes=5),
+        'args': ()
     }
 }
 
@@ -266,6 +271,7 @@ GROUP_PERMISSIONS = {
         'groups.group.*',
         'groups.region.*',
         'msgs.message.*',
+        'msgs.inboxmessage.*',
         'polls.poll.*',
         'polls.pollrun.*',
         'polls.response.*',
@@ -312,6 +318,7 @@ PERMISSIONS = {
     'groups.group': ('list', 'most_active', 'select'),
     'groups.region': ('list', 'most_active', 'select'),
     'msgs.message': ('list', 'send', 'by_contact'),
+    'msgs.inboxmessage': ('read', 'list', 'conversation'),
     'polls.poll': ('read', 'update', 'list', 'select'),
     'polls.pollrun': ('create', 'restart', 'read', 'participation', 'list', 'by_poll', 'latest'),
     'polls.response': ('by_pollrun', 'by_contact'),

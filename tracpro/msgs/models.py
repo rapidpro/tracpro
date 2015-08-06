@@ -88,3 +88,35 @@ class Message(models.Model):
 
     def as_json(self):
         return dict(id=self.pk, recipients=self.recipients.count())
+
+
+@python_2_unicode_compatible
+class InboxMessage(models.Model):
+    """
+    Unsolicited Inbox messages sent to RapidPro account
+    """
+    org = models.ForeignKey("orgs.Org", verbose_name=_("Organization"), related_name="inbox_messages")
+
+    rapidpro_message_id = models.IntegerField()
+
+    contact = models.ForeignKey("contacts.Contact", related_name="inbox_messages")
+
+    text = models.CharField(max_length=MESSAGE_MAX_LEN, null=True)
+
+    archived = models.BooleanField(default=False)
+
+    created_on = models.DateTimeField(null=True)
+
+    delivered_on = models.DateTimeField(null=True)
+
+    sent_on = models.DateTimeField(null=True)
+
+    direction = models.CharField(max_length=1, null=True)
+
+    @classmethod
+    def get_all(cls, org):
+        messages = cls.objects.filter(org=org)
+        return messages
+
+    def __str__(self):
+        return self.text

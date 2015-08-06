@@ -1,18 +1,20 @@
 from __future__ import absolute_import, unicode_literals
 
+from django.core.urlresolvers import reverse
+from django.http import JsonResponse, Http404
+from django.utils.translation import ugettext_lazy as _
+from django.shortcuts import redirect
+
 from dash.orgs.views import OrgPermsMixin
 from dash.utils import get_obj_cacheable
-
-from django.core.urlresolvers import reverse
-from django.http import JsonResponse
-from django.utils.translation import ugettext_lazy as _
 
 from smartmin.users.views import SmartCRUDL, SmartListView, SmartCreateView
 
 from tracpro.contacts.models import Contact
 from tracpro.polls.models import PollRun
-
-from .models import Message
+from .models import Message, InboxMessage
+from .forms import InboxMessageResponseForm
+from .tasks import send_unsolicited_message, fetch_inbox_messages
 
 
 class MessageListMixin(object):
@@ -89,3 +91,58 @@ class MessageCRUDL(SmartCRUDL):
             context = super(MessageCRUDL.ByContact, self).get_context_data(**kwargs)
             context['contact'] = self.derive_contact()
             return context
+
+
+class InboxMessageCRUDL(SmartCRUDL):
+    actions = ('read', 'list', 'conversation')
+    model = InboxMessage
+
+    class List(OrgPermsMixin, SmartListView):
+        fields = ('contact', 'direction', 'text', 'archived', 'created_on', 'delivered_on', 'sent_on')
+        link_fields = ('contact', 'text')
+        title = "Unsolicited message conversations by most recent message"
+
+        def derive_queryset(self, **kwargs):
+            return InboxMessage.get_all(self.request.org).order_by('contact', '-created_on').distinct('contact')
+
+        def lookup_field_link(self, context, field, obj):
+            return reverse('msgs.inboxmessage_conversation', kwargs={'contact_id': obj.contact.pk})
+
+    class Conversation(OrgPermsMixin, SmartListView):
+        fields = ('text', 'direction', 'created_on')
+        title = "Conversation"
+
+        def derive_queryset(self, **kwargs):
+            return InboxMessage.get_all(self.request.org).filter(contact=self.contact).order_by('-created_on')
+
+        @classmethod
+        def derive_url_pattern(cls, path, action):
+            return r'^%s/%s/(?P<contact_id>\d+)/$' % (path, action)
+
+        def dispatch(self, request, contact_id, *args, **kwargs):
+            try:
+                self.contact = Contact.objects.get(pk=contact_id)
+                self.data = self.request.POST or None
+            except Contact.DoesNotExist:
+                raise Http404("Contact does not exist.")
+
+            self.form = InboxMessageResponseForm(contact=self.contact, data=self.data)
+
+            return super(InboxMessageCRUDL.Conversation, self).dispatch(request, *args, **kwargs)
+
+        def get_context_data(self, **kwargs):
+            context = super(InboxMessageCRUDL.Conversation, self).get_context_data(**kwargs)
+            context['form'] = self.form
+            context['contact'] = self.contact
+            return context
+
+        def post(self, request, *args, **kwargs):
+            form = InboxMessageResponseForm(contact=self.contact, data=request.POST)
+            if form.is_valid():
+                # Send the new inbox message through the temba task
+                send_unsolicited_message.delay(self.request.org, request.POST.get('text'), self.contact)
+                # Run the task to pull all inbox messages for this org into the local InboxMessage table
+                fetch_inbox_messages(self.request.org)
+                return redirect('msgs.inboxmessage_conversation', contact_id=self.contact.pk)
+            else:
+                return self.get(request, *args, **kwargs)
