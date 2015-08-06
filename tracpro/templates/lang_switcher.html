@@ -8,7 +8,7 @@
           {% csrf_token %}
           <input type="hidden" name="next" value="{{ request.path }}" />
           <input type="hidden" name="language" value="{{ code }}" />
-          <a class="lang-submit" href="#" onclick="$(this).closest("form").submit();">
+          <a class="lang-submit" href="#" onclick="$(this).closest('form').submit();">
             {{ language }}
           </a>
         </form>
