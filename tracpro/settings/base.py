@@ -239,7 +239,7 @@ BROKER_URL = CELERY_RESULT_BACKEND = 'redis://localhost:6379/4'
 CELERYBEAT_SCHEDULE = {
     'sync-contacts': {
         'task': 'tracpro.contacts.tasks.sync_all_contacts',
-        'schedule': datetime.timedelta(minutes=30),
+        'schedule': datetime.timedelta(minutes=5),
         'args': ()
     },
     'fetch-runs': {
