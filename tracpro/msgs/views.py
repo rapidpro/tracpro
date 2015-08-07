@@ -3,7 +3,7 @@ from __future__ import absolute_import, unicode_literals
 from django.core.urlresolvers import reverse
 from django.http import JsonResponse, Http404
 from django.utils.translation import ugettext_lazy as _
-from django.shortcuts import redirect
+from django.shortcuts import redirect, get_object_or_404
 
 from dash.orgs.views import OrgPermsMixin
 from dash.utils import get_obj_cacheable
@@ -103,7 +103,7 @@ class InboxMessageCRUDL(SmartCRUDL):
         title = "Unsolicited message conversations by most recent message"
 
         def derive_queryset(self, **kwargs):
-            return InboxMessage.get_all(self.request.org).order_by('contact', '-created_on').distinct('contact')
+            return InboxMessage.get_all(self.request.org, self.request.region).order_by('contact', '-created_on').distinct('contact')
 
         def lookup_field_link(self, context, field, obj):
             return reverse('msgs.inboxmessage_conversation', kwargs={'contact_id': obj.contact.pk})
@@ -112,20 +112,17 @@ class InboxMessageCRUDL(SmartCRUDL):
         fields = ('text', 'direction', 'created_on')
         title = "Conversation"
 
-        def derive_queryset(self, **kwargs):
-            return InboxMessage.get_all(self.request.org).filter(contact=self.contact).order_by('-created_on')
+        def get_queryset(self, **kwargs):
+            return InboxMessage.objects.filter(contact=self.contact).order_by('-created_on')
 
         @classmethod
         def derive_url_pattern(cls, path, action):
             return r'^%s/%s/(?P<contact_id>\d+)/$' % (path, action)
 
         def dispatch(self, request, contact_id, *args, **kwargs):
-            try:
-                self.contact = Contact.objects.get(pk=contact_id)
-                self.data = self.request.POST or None
-            except Contact.DoesNotExist:
-                raise Http404("Contact does not exist.")
-
+            regions = self.request.user.get_regions(self.request.org)
+            self.data = self.request.POST or None
+            self.contact = get_object_or_404(Contact.objects.filter(region__in=regions), pk=contact_id)
             self.form = InboxMessageResponseForm(contact=self.contact, data=self.data)
 
             return super(InboxMessageCRUDL.Conversation, self).dispatch(request, *args, **kwargs)

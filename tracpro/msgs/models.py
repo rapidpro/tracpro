@@ -58,6 +58,7 @@ class Message(models.Model):
 
     @classmethod
     def create(cls, org, user, text, pollrun, cohort, region):
+
         message = cls.objects.create(org=org, sent_by=user, text=text, pollrun=pollrun, cohort=cohort, region=region)
 
         if cohort == COHORT_ALL:
@@ -114,8 +115,10 @@ class InboxMessage(models.Model):
     direction = models.CharField(max_length=1, null=True)
 
     @classmethod
-    def get_all(cls, org):
+    def get_all(cls, org, region=None):
         messages = cls.objects.filter(org=org)
+        if region:
+            messages = messages.filter(contact__region=region)
         return messages
 
     def __str__(self):
