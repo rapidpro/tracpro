@@ -11,7 +11,7 @@
         <p class="errorlabel">Please correct the errors below.</p>
     {% endif %}
     
-    <form action="." method="post" onsubmit="return checkFormAndSubmit();">
+    <form id="msgform" action="." method="post">
     {% csrf_token %}
 
         {{ form.text.label_tag }}
@@ -45,7 +45,7 @@
 {{ block.super }}
 
 <script>
-    function checkFormAndSubmit() {
+    $("#msgform").submit(function( event ) {
         $("#submit").prop("disabled", true); //disable the Send button to prevent dbl-click
         $("#required_fields").hide();
         if ($("#id_text").val() == "") {
@@ -56,6 +56,6 @@
         else {
             return true;
         }
-    }
+    });
 </script>
 {% endblock extra-script %}
