@@ -103,7 +103,8 @@ class InboxMessageCRUDL(SmartCRUDL):
         title = "Unsolicited message conversations by most recent message"
 
         def derive_queryset(self, **kwargs):
-            qs = InboxMessage.get_all(self.request.org, [self.request.region])
+            regions = [self.request.region] if self.request.region else None
+            qs = InboxMessage.get_all(self.request.org, regions)
             qs = qs.order_by('contact', '-created_on').distinct('contact')
             return qs
 
