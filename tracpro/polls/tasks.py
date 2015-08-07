@@ -75,7 +75,7 @@ def fetch_org_new_runs(org):
         for run in runs:
             # if this rapidpro flow has not been imported into the org, go to the next one in the loop
             if run.flow not in polls_by_flow_uuids:
-                logger.error("Unable to track new flow because flow %s has not been imported" % (run.flow))
+                logger.error("Unable to track new response because flow %s has not been imported" % (run.flow))
                 continue
 
             else:
