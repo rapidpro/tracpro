@@ -1,14 +1,14 @@
 from __future__ import absolute_import, unicode_literals
 
 from django.core.urlresolvers import reverse
-from django.http import JsonResponse, Http404
+from django.http import JsonResponse
 from django.utils.translation import ugettext_lazy as _
 from django.shortcuts import redirect, get_object_or_404
 
 from dash.orgs.views import OrgPermsMixin
 from dash.utils import get_obj_cacheable
 
-from smartmin.users.views import SmartCRUDL, SmartListView, SmartCreateView
+from smartmin.users.views import SmartCRUDL, SmartListView, SmartCreateView, SmartReadView
 
 from tracpro.contacts.models import Contact
 from tracpro.polls.models import PollRun
@@ -103,7 +103,9 @@ class InboxMessageCRUDL(SmartCRUDL):
         title = "Unsolicited message conversations by most recent message"
 
         def derive_queryset(self, **kwargs):
-            return InboxMessage.get_all(self.request.org, self.request.region).order_by('contact', '-created_on').distinct('contact')
+            qs = InboxMessage.get_all(self.request.org, [self.request.region])
+            qs = qs.order_by('contact', '-created_on').distinct('contact')
+            return qs
 
         def lookup_field_link(self, context, field, obj):
             return reverse('msgs.inboxmessage_conversation', kwargs={'contact_id': obj.contact.pk})
@@ -143,3 +145,9 @@ class InboxMessageCRUDL(SmartCRUDL):
                 return redirect('msgs.inboxmessage_conversation', contact_id=self.contact.pk)
             else:
                 return self.get(request, *args, **kwargs)
+
+    class Read(OrgPermsMixin, SmartReadView):
+
+        def derive_queryset(self, **kwargs):
+            regions = self.request.user.get_regions(self.request.org)
+            return InboxMessage.get_all(self.request.org, regions)

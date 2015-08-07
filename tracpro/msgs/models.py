@@ -115,10 +115,10 @@ class InboxMessage(models.Model):
     direction = models.CharField(max_length=1, null=True)
 
     @classmethod
-    def get_all(cls, org, region=None):
+    def get_all(cls, org, regions=None):
         messages = cls.objects.filter(org=org)
-        if region:
-            messages = messages.filter(contact__region=region)
+        if regions:
+            messages = messages.filter(contact__region__in=regions)
         return messages
 
     def __str__(self):
