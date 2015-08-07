@@ -140,7 +140,7 @@ class InboxMessageCRUDL(SmartCRUDL):
             form = InboxMessageResponseForm(contact=self.contact, data=request.POST)
             if form.is_valid():
                 # Send the new inbox message through the temba task
-                send_unsolicited_message.delay(self.request.org, request.POST.get('text'), self.contact)
+                send_unsolicited_message(self.request.org, request.POST.get('text'), self.contact)
                 # Run the task to pull all inbox messages for this org into the local InboxMessage table
                 fetch_inbox_messages(self.request.org)
                 return redirect('msgs.inboxmessage_conversation', contact_id=self.contact.pk)
