@@ -281,6 +281,7 @@ GROUP_PERMISSIONS = {
         'contacts.contact.*',
         'groups.group_most_active',
         'groups.region_most_active',
+        'msgs.inboxmessage.*',
         'msgs.message_send',
         'msgs.message_by_contact',
         'polls.poll_read',
