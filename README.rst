@@ -1,5 +1,5 @@
-.. image:: https://magnum.travis-ci.com/caktus/edutrac.svg?token=ovs4nx5Qvj8dsgTrCdLz
-    :target: https://magnum.travis-ci.com/caktus/edutrac
+.. image:: https://magnum.travis-ci.com/rapidpro/tracpro.svg?token=ovs4nx5Qvj8dsgTrCdLz
+    :target: https://magnum.travis-ci.com/rapidpro/tracpro
 
 Tracpro
 =======
