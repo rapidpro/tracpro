@@ -45,13 +45,12 @@ class RegionCRUDL(SmartCRUDL):
 
         def get_form_kwargs(self):
             kwargs = super(RegionCRUDL.Select, self).get_form_kwargs()
-            org = self.request.org
-            kwargs['org'] = org
-            kwargs['initial'] = [r.uuid for r in Region.get_all(org)]
+            kwargs.setdefault('model', RegionCRUDL.model)
+            kwargs.setdefault('org', self.request.org)
             return kwargs
 
         def form_valid(self, form):
-            Region.sync_with_groups(self.request.user.get_org(), form.cleaned_data['groups'])
+            form.sync_contacts()
             return HttpResponseRedirect(self.get_success_url())
 
 
@@ -90,11 +89,10 @@ class GroupCRUDL(SmartCRUDL):
 
         def get_form_kwargs(self):
             kwargs = super(GroupCRUDL.Select, self).get_form_kwargs()
-            org = self.request.org
-            kwargs['org'] = org
-            kwargs['initial'] = [r.uuid for r in Group.get_all(org)]
+            kwargs.setdefault('model', GroupCRUDL.model)
+            kwargs.setdefault('org', self.request.org)
             return kwargs
 
         def form_valid(self, form):
-            Group.sync_with_groups(self.request.user.get_org(), form.cleaned_data['groups'])
+            form.sync_contacts()
             return HttpResponseRedirect(self.get_success_url())
