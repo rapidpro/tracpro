@@ -1,11 +1,13 @@
 from __future__ import absolute_import, unicode_literals
 
+from django.utils import timezone
+
 from celery.utils.log import get_task_logger
+from djcelery_transactions import task
+
 from dash.orgs.models import Org
 from dash.utils import datetime_to_ms
 from dash.utils.sync import sync_pull_contacts, sync_push_contact
-from django.utils import timezone
-from djcelery_transactions import task
 
 logger = get_task_logger(__name__)
 
@@ -35,7 +37,7 @@ def sync_org_contacts(org_id):
     Syncs all contacts for the given org
     """
     from tracpro.groups.models import Region, Group
-    from tracpro.orgs_ext import TaskType
+    from tracpro.orgs_ext.constants import TaskType
     from .models import Contact
 
     org = Org.objects.get(pk=org_id)

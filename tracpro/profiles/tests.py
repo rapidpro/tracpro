@@ -41,13 +41,13 @@ class UserPatchTest(TracProTest):
         self.assertFalse(self.admin.is_admin_for(self.nyaruka))
         self.assertFalse(self.user1.is_admin_for(self.unicef))
 
-    def test_unicode(self):
-        self.assertEqual(unicode(self.superuser), "root")
+    def test_str(self):
+        self.assertEqual(str(self.superuser), "root")
 
-        self.assertEqual(unicode(self.user1), "Sam Sims")
+        self.assertEqual(str(self.user1), "Sam Sims")
         self.user1.profile.full_name = None
         self.user1.profile.save()
-        self.assertEqual(unicode(self.user1), "sam@unicef.org")
+        self.assertEqual(str(self.user1), "sam@unicef.org")
 
 
 class UserCRUDLTest(TracProTest):
@@ -255,7 +255,7 @@ class UserCRUDLTest(TracProTest):
         data = dict(full_name="Morris", email="mo2@trac.com", password="Qwerty123", confirm_password="Qwerty123")
         response = self.url_post('unicef', url, data)
         self.assertEqual(response.status_code, 302)
-        
+
         # check password has changed and no longer has to be changed
         user = User.objects.get(pk=self.user1.pk)
         self.assertFalse(user.profile.change_password)

@@ -1,12 +1,14 @@
 from __future__ import absolute_import, unicode_literals
 
-from celery.utils.log import get_task_logger
-from dash.orgs.models import Org
-from dash.utils import datetime_to_ms, chunks
 from django.utils import timezone
+
+from celery.utils.log import get_task_logger
 from djcelery_transactions import task
-from redis_cache import get_redis_connection
+from django_redis import get_redis_connection
 from temba.utils import parse_iso8601, format_iso8601
+
+from dash.utils import datetime_to_ms, chunks
+from dash.orgs.models import Org
 
 logger = get_task_logger(__name__)
 
@@ -28,7 +30,7 @@ def fetch_org_runs(org):
     """
     Fetches flow runs for the given org
     """
-    from tracpro.orgs_ext import TaskType
+    from tracpro.orgs_ext.constants import TaskType
 
     fetch_org_new_runs(org)
     fetch_org_updated_runs(org)
@@ -49,7 +51,7 @@ def fetch_org_new_runs(org):
     if last_time is not None:
         last_time = parse_iso8601(last_time)
     else:
-        newest_run = Response.objects.filter(issue__poll__org=org).order_by('-created_on').first()
+        newest_run = Response.objects.filter(pollrun__poll__org=org).order_by('-created_on').first()
         last_time = newest_run.created_on if newest_run else None
 
     polls_by_flow_uuids = {p.flow_uuid: p for p in Poll.get_all(org)}
@@ -70,12 +72,18 @@ def fetch_org_new_runs(org):
 
         # convert flow runs into poll responses
         for run in runs:
-            poll = polls_by_flow_uuids[run.flow]
-            try:
-                Response.from_run(org, run, poll=poll)
-            except ValueError, e:
-                logger.error("Unable to save run #%d due to error: %s" % (run.id, e.message))
+            # if this rapidpro flow has not been imported into the org, go to the next one in the loop
+            if run.flow not in polls_by_flow_uuids:
+                logger.error("Unable to track new response because flow %s has not been imported" % (run.flow))
                 continue
+
+            else:
+                poll = polls_by_flow_uuids[run.flow]
+                try:
+                    Response.from_run(org, run, poll=poll)
+                except ValueError, e:
+                    logger.error("Unable to save run #%d due to error: %s" % (run.id, e.message))
+                    continue
 
     if newest_run:
         r.set(last_time_key, format_iso8601(newest_run.created_on))
@@ -91,7 +99,8 @@ def fetch_org_updated_runs(org):
 
     incomplete_responses = Response.get_update_required(org)
 
-    max_number_fetchable_runs = 50  # Not yet sure what the optimum can be in order to make the smallest number of requests.
+    # Not yet sure what the optimum can be in order to make the smallest number of requests.
+    max_number_fetchable_runs = 50
 
     if incomplete_responses:
         runs = []
@@ -110,47 +119,49 @@ def fetch_org_updated_runs(org):
 
 
 @task
-def issue_start(issue_id):
+def pollrun_start(pollrun_id):
     """
-    Starts a newly created issue by creating runs in RapidPro and creating empty responses for them.
+    Starts a newly created pollrun by creating runs in RapidPro and creating
+    empty responses for them.
     """
-    from tracpro.polls.models import Issue, Response
+    from tracpro.polls.models import PollRun, Response
 
-    issue = Issue.objects.select_related('poll', 'region').get(pk=issue_id)
-    if not issue.region:
+    pollrun = PollRun.objects.select_related('poll', 'region').get(pk=pollrun_id)
+    if not pollrun.region:
         raise ValueError("Can't start non-regional poll")
 
-    org = issue.poll.org
+    org = pollrun.poll.org
     client = org.get_temba_client()
 
-    contact_uuids = [c.uuid for c in issue.region.get_contacts()]
+    contact_uuids = [c.uuid for c in pollrun.region.get_contacts()]
 
-    runs = client.create_runs(issue.poll.flow_uuid, contact_uuids, restart_participants=True)
+    runs = client.create_runs(pollrun.poll.flow_uuid, contact_uuids, restart_participants=True)
     for run in runs:
-        Response.create_empty(org, issue, run)
+        Response.create_empty(org, pollrun, run)
 
-    logger.info("Created %d new runs for new poll issue #%d" % (len(runs), issue.pk))
+    logger.info("Created %d new runs for new poll pollrun #%d" % (len(runs), pollrun.pk))
 
 
 @task
-def issue_restart_participants(issue_id, contact_uuids):
+def pollrun_restart_participants(pollrun_id, contact_uuids):
     """
-    Restarts the given contacts in the given poll issue by replacing any existing response they have with an empty one.
+    Restarts the given contacts in the given poll pollrun by replacing any
+    existing response they have with an empty one.
     """
-    from tracpro.polls.models import Issue, Response
+    from tracpro.polls.models import PollRun, Response
 
-    issue = Issue.objects.select_related('poll').get(pk=issue_id)
-    if not issue.region:
+    pollrun = PollRun.objects.select_related('poll').get(pk=pollrun_id)
+    if not pollrun.region:
         raise ValueError("Can't restart participants of a non-regional poll")
 
-    if not issue.is_last_for_region(issue.region):
-        raise ValueError("Can only restart last issue of poll for a region")
+    if not pollrun.is_last_for_region(pollrun.region):
+        raise ValueError("Can only restart last pollrun of poll for a region")
 
-    org = issue.poll.org
+    org = pollrun.poll.org
     client = org.get_temba_client()
 
-    runs = client.create_runs(issue.poll.flow_uuid, contact_uuids, restart_participants=True)
+    runs = client.create_runs(pollrun.poll.flow_uuid, contact_uuids, restart_participants=True)
     for run in runs:
-        Response.create_empty(org, issue, run)
+        Response.create_empty(org, pollrun, run)
 
-    logger.info("Created %d restart runs for poll issue #%d" % (len(runs), issue.pk))
+    logger.info("Created %d restart runs for poll pollrun #%d" % (len(runs), pollrun.pk))

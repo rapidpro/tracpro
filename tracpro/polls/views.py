@@ -1,24 +1,33 @@
 from __future__ import absolute_import, unicode_literals
 
+from collections import OrderedDict
+
 import unicodecsv
 
-from collections import OrderedDict
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from dash.utils import datetime_to_ms, get_obj_cacheable
+
 from django import forms
 from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
+
 from smartmin.templatetags.smartmin import format_datetime
-from smartmin.views import SmartCRUDL, SmartCreateView, SmartReadView, SmartListView, SmartFormView, SmartUpdateView
+from smartmin.views import (
+    SmartCRUDL, SmartCreateView, SmartReadView, SmartListView, SmartFormView,
+    SmartUpdateView)
+
 from tracpro.contacts.models import Contact
 from tracpro.groups.models import Group
-from .charts import multiple_issues, single_issue
-from .models import Poll, Question, Issue, Response, Window
-from .models import QUESTION_TYPE_OPEN, QUESTION_TYPE_RECORDING, RESPONSE_EMPTY, RESPONSE_PARTIAL, RESPONSE_COMPLETE
-from .tasks import issue_restart_participants
+
+from .charts import multiple_pollruns, single_pollrun
+from .models import (
+    Poll, Question, PollRun, Response, Window,
+    QUESTION_TYPE_OPEN, QUESTION_TYPE_RECORDING, RESPONSE_EMPTY,
+    RESPONSE_PARTIAL, RESPONSE_COMPLETE)
+from .tasks import pollrun_restart_participants
 
 
 class PollForm(forms.ModelForm):
@@ -27,6 +36,10 @@ class PollForm(forms.ModelForm):
     """
     name = forms.CharField(label=_("Name"))
 
+    class Meta:
+        model = Poll
+        fields = forms.ALL_FIELDS
+
     def __init__(self, *args, **kwargs):
         super(PollForm, self).__init__(*args, **kwargs)
 
@@ -34,9 +47,6 @@ class PollForm(forms.ModelForm):
             field_key = '__question__%d__text' % question.pk
             self.fields[field_key] = forms.CharField(max_length=255, initial=question.text,
                                                      label=_("Question #%d") % question.order)
-
-    class Meta:
-        model = Poll
 
 
 class PollCRUDL(SmartCRUDL):
@@ -48,21 +58,21 @@ class PollCRUDL(SmartCRUDL):
         def get_context_data(self, **kwargs):
             context = super(PollCRUDL.Read, self).get_context_data(**kwargs)
             questions = self.object.get_questions()
-            issues = self.object.get_issues(self.request.region)
+            pollruns = self.object.get_pollruns(self.request.region)
 
-            # if we're viewing "All Regions" don't include regional only issues
+            # if we're viewing "All Regions" don't include regional only pollruns
             if not self.request.region:
-                issues = issues.filter(region=None)
+                pollruns = pollruns.filter(region=None)
 
-            window = self.request.REQUEST.get('window', None)
+            window = self.request.POST.get('window', self.request.GET.get('window', None))
             window = Window[window] if window else Window.last_30_days
             window_min, window_max = window.to_range()
 
-            issues = issues.filter(conducted_on__gte=window_min, conducted_on__lt=window_max)
-            issues = issues.order_by('conducted_on')
+            pollruns = pollruns.filter(conducted_on__gte=window_min, conducted_on__lt=window_max)
+            pollruns = pollruns.order_by('conducted_on')
 
             for question in questions:
-                question.chart_type, question.chart_data = multiple_issues(issues, question, self.request.region)
+                question.chart_type, question.chart_data = multiple_pollruns(pollruns, question, self.request.region)
 
             context['window'] = window
             context['window_min'] = datetime_to_ms(window_min)
@@ -82,30 +92,30 @@ class PollCRUDL(SmartCRUDL):
                     Question.objects.filter(pk=question_id, poll=self.object).update(text=value)
 
     class List(OrgPermsMixin, SmartListView):
-        fields = ('name', 'questions', 'issues', 'last_conducted')
-        field_config = {'issues': {'label': _("Dates")}}
-        link_fields = ('name', 'issues')
+        fields = ('name', 'questions', 'pollruns', 'last_conducted')
+        field_config = {'pollruns': {'label': _("Dates")}}
+        link_fields = ('name', 'pollruns')
         default_order = ('name',)
 
         def derive_queryset(self, **kwargs):
             return Poll.get_all(self.request.org)
 
-        def derive_issues(self, obj):
-            return obj.get_issues(self.request.region)
+        def derive_pollruns(self, obj):
+            return obj.get_pollruns(self.request.region)
 
         def get_questions(self, obj):
             return obj.get_questions().count()
 
-        def get_issues(self, obj):
-            return self.derive_issues(obj).count()
+        def get_pollruns(self, obj):
+            return self.derive_pollruns(obj).count()
 
         def get_last_conducted(self, obj):
-            last_issue = self.derive_issues(obj).order_by('-conducted_on').first()
-            return last_issue.conducted_on if last_issue else _("Never")
+            last_pollrun = self.derive_pollruns(obj).order_by('-conducted_on').first()
+            return last_pollrun.conducted_on if last_pollrun else _("Never")
 
         def lookup_field_link(self, context, field, obj):
-            if field == 'issues':
-                return reverse('polls.issue_by_poll', args=[obj.pk])
+            if field == 'pollruns':
+                return reverse('polls.pollrun_by_poll', args=[obj.pk])
 
             return super(PollCRUDL.List, self).lookup_field_link(context, field, obj)
 
@@ -141,7 +151,7 @@ class PollCRUDL(SmartCRUDL):
             return HttpResponseRedirect(self.get_success_url())
 
 
-class IssueListMixin(object):
+class PollRunListMixin(object):
     default_order = ('-conducted_on',)
 
     def get_conducted_on(self, obj):
@@ -165,57 +175,57 @@ class IssueListMixin(object):
         if field == 'poll':
             return reverse('polls.poll_read', args=[obj.poll_id])
         if field == 'conducted_on':
-            return reverse('polls.issue_read', args=[obj.pk])
+            return reverse('polls.pollrun_read', args=[obj.pk])
         elif field == 'participants':
-            return reverse('polls.issue_participation', args=[obj.pk])
+            return reverse('polls.pollrun_participation', args=[obj.pk])
         elif field == 'responses':
-            return reverse('polls.response_by_issue', kwargs=dict(issue=obj.pk))
+            return reverse('polls.response_by_pollrun', kwargs=dict(pollrun=obj.pk))
 
 
-class IssueCRUDL(SmartCRUDL):
-    model = Issue
+class PollRunCRUDL(SmartCRUDL):
+    model = PollRun
     actions = ('create', 'restart', 'read', 'participation', 'list', 'by_poll', 'latest')
 
     class Create(OrgPermsMixin, SmartCreateView):
         def post(self, request, *args, **kwargs):
             org = self.derive_org()
             poll = Poll.objects.get(org=org, pk=request.POST.get('poll'))
-            issue = Issue.create_regional(self.request.user, poll, request.region, timezone.now(), do_start=True)
-            return JsonResponse(issue.as_json(request.region))
+            pollrun = PollRun.create_regional(self.request.user, poll, request.region, timezone.now(), do_start=True)
+            return JsonResponse(pollrun.as_json(request.region))
 
     class Restart(OrgPermsMixin, SmartFormView):
         def post(self, request, *args, **kwargs):
             org = self.derive_org()
-            issue = Issue.objects.get(poll__org=org, pk=request.POST.get('issue'))
+            pollrun = PollRun.objects.get(poll__org=org, pk=request.POST.get('pollrun'))
             region = request.region
 
-            incomplete_responses = issue.get_incomplete_responses(region)
+            incomplete_responses = pollrun.get_incomplete_responses(region)
             contact_uuids = [r.contact.uuid for r in incomplete_responses]
 
-            issue_restart_participants.delay(issue.pk, contact_uuids)
+            pollrun_restart_participants.delay(pollrun.pk, contact_uuids)
 
             return JsonResponse({'contacts': len(contact_uuids)})
 
     class Read(OrgPermsMixin, SmartReadView):
         def get_queryset(self):
-            return Issue.get_all(self.request.org, self.request.region)
+            return PollRun.get_all(self.request.org, self.request.region)
 
         def get_context_data(self, **kwargs):
-            context = super(IssueCRUDL.Read, self).get_context_data(**kwargs)
+            context = super(PollRunCRUDL.Read, self).get_context_data(**kwargs)
             questions = self.object.poll.get_questions()
 
             for question in questions:
-                question.chart_type, question.chart_data = single_issue(self.object, question, self.request.region)
+                question.chart_type, question.chart_data = single_pollrun(self.object, question, self.request.region)
 
             context['questions'] = questions
             return context
 
     class Participation(OrgPermsMixin, SmartReadView):
         def get_queryset(self):
-            return Issue.get_all(self.request.org, self.request.region)
+            return PollRun.get_all(self.request.org, self.request.region)
 
         def get_context_data(self, **kwargs):
-            context = super(IssueCRUDL.Participation, self).get_context_data(**kwargs)
+            context = super(PollRunCRUDL.Participation, self).get_context_data(**kwargs)
             reporting_groups = Group.get_all(self.request.org).order_by('name')
             responses = self.object.get_responses(self.request.region)
 
@@ -262,23 +272,23 @@ class IssueCRUDL(SmartCRUDL):
             context['complete_count'] = overall_counts['C']
             return context
 
-    class List(OrgPermsMixin, IssueListMixin, SmartListView):
+    class List(OrgPermsMixin, PollRunListMixin, SmartListView):
         """
-        All issues in current region
+        All pollruns in current region
         """
         fields = ('conducted_on', 'poll', 'region', 'participants', 'responses')
         link_fields = ('conducted_on', 'poll', 'participants', 'responses')
         add_button = False
 
         def derive_title(self):
-            return _("All Poll Issues")
+            return _("All Poll Runs")
 
         def derive_queryset(self, **kwargs):
-            return Issue.get_all(self.request.org, self.request.region)
+            return PollRun.get_all(self.request.org, self.request.region)
 
-    class ByPoll(OrgPermsMixin, IssueListMixin, SmartListView):
+    class ByPoll(OrgPermsMixin, PollRunListMixin, SmartListView):
         """
-        Issues filtered by poll
+        Poll Runs filtered by poll
         """
         fields = ('conducted_on', 'region', 'participants', 'responses')
         link_fields = ('conducted_on', 'participants', 'responses')
@@ -293,16 +303,16 @@ class IssueCRUDL(SmartCRUDL):
             return get_obj_cacheable(self, '_poll', fetch)
 
         def derive_queryset(self, **kwargs):
-            return self.derive_poll().get_issues(self.request.region)
+            return self.derive_poll().get_pollruns(self.request.region)
 
         def get_context_data(self, **kwargs):
-            context = super(IssueCRUDL.ByPoll, self).get_context_data(**kwargs)
+            context = super(PollRunCRUDL.ByPoll, self).get_context_data(**kwargs)
             context['poll'] = self.derive_poll()
             return context
 
     class Latest(OrgPermsMixin, SmartListView):
         def get_queryset(self):
-            return Issue.get_all(self.request.org, self.request.region).order_by('-conducted_on')[0:5]
+            return PollRun.get_all(self.request.org, self.request.region).order_by('-conducted_on')[0:5]
 
         def render_to_response(self, context, **response_kwargs):
             results = [i.as_json(self.request.region) for i in context['object_list']]
@@ -311,26 +321,26 @@ class IssueCRUDL(SmartCRUDL):
 
 class ResponseCRUDL(SmartCRUDL):
     model = Response
-    actions = ('by_issue', 'by_contact')
+    actions = ('by_pollrun', 'by_contact')
 
-    class ByIssue(OrgPermsMixin, SmartListView):
+    class ByPollrun(OrgPermsMixin, SmartListView):
         default_order = ('-updated_on',)
         field_config = {'updated_on': {'label': _("Date")}}
         link_fields = ('contact',)
 
         @classmethod
         def derive_url_pattern(cls, path, action):
-            return r'^%s/%s/(?P<issue>\d+)/$' % (path, action)
+            return r'^%s/%s/(?P<pollrun>\d+)/$' % (path, action)
 
-        def derive_issue(self):
+        def derive_pollrun(self):
             def fetch():
-                return Issue.objects.select_related('poll').get(pk=self.kwargs['issue'], poll__org=self.request.org)
-            return get_obj_cacheable(self, '_issue', fetch)
+                return PollRun.objects.select_related('poll').get(pk=self.kwargs['pollrun'], poll__org=self.request.org)
+            return get_obj_cacheable(self, '_pollrun', fetch)
 
         def derive_questions(self):
             def fetch():
                 questions = OrderedDict()
-                for question in self.derive_issue().poll.get_questions():
+                for question in self.derive_pollrun().poll.get_questions():
                     questions['question_%d' % question.pk] = question
                 return questions
 
@@ -344,14 +354,14 @@ class ResponseCRUDL(SmartCRUDL):
 
         def derive_queryset(self, **kwargs):
             # only show partial and complete responses
-            return self.derive_issue().get_responses(region=self.request.region, include_empty=False)
+            return self.derive_pollrun().get_responses(region=self.request.region, include_empty=False)
 
         def lookup_field_label(self, context, field, default=None):
             if field.startswith('question_'):
                 question = self.derive_questions()[field]
                 return question.text
             else:
-                return super(ResponseCRUDL.ByIssue, self).lookup_field_label(context, field, default)
+                return super(ResponseCRUDL.ByPollrun, self).lookup_field_label(context, field, default)
 
         def lookup_field_value(self, context, obj, field):
             if field == 'region':
@@ -363,39 +373,49 @@ class ResponseCRUDL(SmartCRUDL):
                 answer = obj.answers.filter(question=question).first()
                 if answer:
                     if question.type == QUESTION_TYPE_RECORDING:
-                        return '<a class="answer answer-audio" href="%s" data-answer-id="%d">Play</a>' % (answer.value, answer.pk)
+                        return '<a class="answer answer-audio" href="%s" data-answer-id="%d">Play</a>' % (
+                            answer.value,
+                            answer.pk,
+                        )
                     else:
                         return answer.value
                 else:
                     return '--'
             else:
-                return super(ResponseCRUDL.ByIssue, self).lookup_field_value(context, obj, field)
+                return super(ResponseCRUDL.ByPollrun, self).lookup_field_value(context, obj, field)
 
         def lookup_field_link(self, context, field, obj):
             if field == 'contact':
                 return reverse('contacts.contact_read', args=[obj.contact.pk])
 
-            return super(ResponseCRUDL.ByIssue, self).lookup_field_link(context, field, obj)
+            return super(ResponseCRUDL.ByPollrun, self).lookup_field_link(context, field, obj)
 
         def get_context_data(self, **kwargs):
-            context = super(ResponseCRUDL.ByIssue, self).get_context_data(**kwargs)
-            issue = self.derive_issue()
-            context['issue'] = issue
+            context = super(ResponseCRUDL.ByPollrun, self).get_context_data(**kwargs)
+            pollrun = self.derive_pollrun()
+            context['pollrun'] = pollrun
 
-            if '_format' not in self.request.REQUEST:
-                # can only restart regional polls and if they're the last issue
-                can_restart = self.request.region and issue.is_last_for_region(self.request.region)
+            if '_format' not in self.request.POST and '_format' not in self.request.GET:
+                # can only restart regional polls and if they're the last pollrun
+                can_restart = self.request.region and pollrun.is_last_for_region(self.request.region)
 
-                counts = issue.get_response_counts(self.request.region)
+                counts = pollrun.get_response_counts(self.request.region)
 
                 context['can_restart'] = can_restart
-                context['response_count'] = counts[RESPONSE_EMPTY] + counts[RESPONSE_PARTIAL] + counts[RESPONSE_COMPLETE]
+                context['response_count'] = sum([
+                    counts[RESPONSE_EMPTY],
+                    counts[RESPONSE_PARTIAL],
+                    counts[RESPONSE_COMPLETE],
+                ])
                 context['complete_response_count'] = counts[RESPONSE_COMPLETE]
-                context['incomplete_response_count'] = counts[RESPONSE_EMPTY] + counts[RESPONSE_PARTIAL]
+                context['incomplete_response_count'] = sum([
+                    counts[RESPONSE_EMPTY],
+                    counts[RESPONSE_PARTIAL],
+                ])
             return context
 
         def render_to_response(self, context, **response_kwargs):
-            _format = self.request.REQUEST.get('_format', None)
+            _format = self.request.POST.get('_format', self.request.GET.get('_format', None))
 
             if _format == 'csv':
                 response = HttpResponse(content_type='text/csv', status=200)
@@ -423,7 +443,7 @@ class ResponseCRUDL(SmartCRUDL):
 
                 return response
             else:
-                return super(ResponseCRUDL.ByIssue, self).render_to_response(context, **response_kwargs)
+                return super(ResponseCRUDL.ByPollrun, self).render_to_response(context, **response_kwargs)
 
     class ByContact(OrgPermsMixin, SmartListView):
         fields = ('updated_on', 'poll', 'answers')
@@ -443,10 +463,10 @@ class ResponseCRUDL(SmartCRUDL):
         def derive_queryset(self, **kwargs):
             qs = self.derive_contact().get_responses(include_empty=True)
 
-            return qs.select_related('issue__poll').prefetch_related('answers')
+            return qs.select_related('pollrun__poll').prefetch_related('answers')
 
         def get_poll(self, obj):
-            return obj.issue.poll
+            return obj.pollrun.poll
 
         def get_answers(self, obj):
             answers_by_q_id = {a.question_id: a for a in obj.answers.all()}
@@ -455,7 +475,7 @@ class ResponseCRUDL(SmartCRUDL):
             if not answers_by_q_id:
                 return '<i>%s</i>' % _("No response")
 
-            questions = obj.issue.poll.get_questions()
+            questions = obj.pollrun.poll.get_questions()
             for question in questions:
                 answer = answers_by_q_id.get(question.pk, None)
                 if not answer:
@@ -471,9 +491,9 @@ class ResponseCRUDL(SmartCRUDL):
 
         def lookup_field_link(self, context, field, obj):
             if field == 'updated_on':
-                return reverse('polls.issue_read', args=[obj.issue_id])
+                return reverse('polls.pollrun_read', args=[obj.pollrun_id])
             elif field == 'poll':
-                return reverse('polls.poll_read', args=[obj.issue.poll_id])
+                return reverse('polls.poll_read', args=[obj.pollrun.poll_id])
 
         def get_context_data(self, **kwargs):
             context = super(ResponseCRUDL.ByContact, self).get_context_data(**kwargs)

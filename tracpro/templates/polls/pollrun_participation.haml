@@ -1,0 +1,170 @@
+- extends "smartmin/base.html"
+- load smartmin i18n
+
+- block pre-content
+
+  {% include 'polls/pollrun_header.haml' with pollrun=object %}
+
+- block content
+
+  .row
+    .col-md-12.buttons
+      .btn-group.pull-right
+        %a.btn.btn-default{ type:"button", data-toggle:"modal", data-target:"#send-message-dialog" }
+          %span.glyphicon.glyphicon-comment
+          - trans "Send Message..."
+        - if can_restart
+          %a.btn.btn-default{ type:"button", data-toggle:"modal", data-target:"#restart-dialog" }
+            %span.glyphicon.glyphicon-repeat
+            - trans "Restart..."
+
+  .modal.fade{ role:"dialog", id:"send-message-dialog" }
+    .modal-dialog
+      .modal-content
+        .modal-header
+          %button.close{ type:"button", data-dismiss:"modal" }
+            &times;
+          %h4.modal-title
+            - trans "Send Message"
+        .modal-body
+          %form.form-horizontal{ id:"send-message-form" }
+            {% csrf_token %}
+            %input{ type:"hidden", name:"pollrun", value:"{{ pollrun.pk }}" }
+            .form-group
+              %label.col-sm-2.control-label{ for:"cohort" }
+                - trans "Recipients"
+              .col-sm-10
+                %select.form-control{ name:"cohort", style:"width: 100%" }
+                  %option{ value:"A" }
+                    - with count=all_participants_count
+                      - if request.region
+                        - blocktrans with region=request.region
+                          All participants in {{ region }} ({{ count }})
+                      - else
+                        - blocktrans
+                          All participants ({{ count }})
+                  %option{ value:"R" }
+                    - with count=complete_count
+                      - if request.region
+                        - blocktrans with region=request.region
+                          Respondents in {{ region }} ({{ count }})
+                      - else
+                        - blocktrans
+                          Respondents ({{ count }})
+                  %option{ value:"N" }
+                    - with count=incomplete_count
+                      - if request.region
+                        - blocktrans with region=request.region
+                          Non-respondents in {{ region }} ({{ count }})
+                      - else
+                        - blocktrans
+                          Non-respondents ({{ count }})
+            .form-group
+              %label.col-sm-2.control-label{ for:"message" }
+              .col-sm-10
+                %textarea.form-control{ name:"text", style:"width: 100%", placeholder:"Enter message" }
+        .modal-footer
+          %button.btn.btn-default{ type:"button", data-dismiss:"modal" }
+            -trans "Cancel"
+          %button.btn.btn-primary{ type:"button", onclick:"onMessageSend()" }
+            -trans "Send"
+
+  .modal.fade{ role:"dialog", id:"restart-dialog" }
+    .modal-dialog
+      .modal-content
+        .modal-header
+          %button.close{ type:"button", data-dismiss:"modal" }
+            &times;
+          %h4.modal-title
+            - trans "Restart Non-respondents"
+        .modal-body
+          %form{ id:"restart-form" }
+            {% csrf_token %}
+            %input{ type:"hidden", name:"pollrun", value:"{{ pollrun.pk }}" }
+          %p
+            - if request.region
+              - blocktrans with region=request.region count=incomplete_response_count
+                Restart poll for {{ count }} non-respondents in {{ region }}?
+            - else
+              - blocktrans with count=incomplete_response_count
+                Restart poll for {{ count }} non-respondents?
+        .modal-footer
+          %button.btn.btn-default{ type:"button", data-dismiss:"modal" }
+            -trans "Cancel"
+          %button.btn.btn-primary{ type:"button", onclick:"onRestart()" }
+            -trans "Restart"
+
+  .row
+    .col-md-12
+      %table.table.table-striped{ style:"width: 100%" }
+        %thead
+          %tr
+            %th
+              - trans "Reporter Group"
+            %th
+              - trans "No response"
+            %th
+              - trans "Partial response"
+            %th
+              - trans "Full response"
+            %th
+              - trans "Completion"
+        %tbody
+          - for group, counts in per_group_counts.iteritems
+            %tr
+              %td
+                {{ group }}
+              %td
+                {{ counts.E }}
+              %td
+                {{ counts.P }}
+              %td
+                {{ counts.C }}
+              %td
+                {{ counts.X }}
+          %tr
+            %td
+              %i
+                - trans "No group"
+            %td
+              {{ no_group_counts.E }}
+            %td
+              {{ no_group_counts.P }}
+            %td
+              {{ no_group_counts.C }}
+            %td
+              {{ no_group_counts.X }}
+          %tr
+            %td
+              %strong
+                - trans "Total"
+            %td
+              %strong
+                {{ overall_counts.E }}
+            %td
+              %strong
+                {{ overall_counts.P }}
+            %td
+              %strong
+                {{ overall_counts.C }}
+            %td
+              %strong
+                {{ overall_counts.X }}
+
+- block extra-script
+  :javascript
+    function onMessageSend() {
+      data = $('#send-message-form').serialize();
+      $.post('{% url "msgs.message_send"  %}', data).success(function(data) {
+        $('#send-message-dialog').modal('hide')
+        display_alert('success', "Sent message to " + data.recipients + " recipients")
+      });
+    }
+
+    function onRestart() {
+      data = $('#restart-form').serialize();
+      $.post('{% url "polls.pollrun_restart"  %}', data).success(function(data) {
+        $('#restart-dialog').modal('hide')
+        display_alert('success', "Restarted poll for " + data.contacts + " contacts")
+      });
+    }

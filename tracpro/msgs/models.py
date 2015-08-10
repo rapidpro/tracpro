@@ -1,14 +1,14 @@
 from __future__ import absolute_import, unicode_literals
 
-from dash.orgs.models import Org
-from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import Q
+from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
+
 from tracpro.contacts.models import Contact
-from tracpro.groups.models import Region
-from tracpro.polls.models import Issue, RESPONSE_COMPLETE
+from tracpro.polls.models import RESPONSE_COMPLETE
 from .tasks import send_message
+
 
 MESSAGE_MAX_LEN = 640
 
@@ -28,13 +28,14 @@ STATUS_CHOICES = ((STATUS_PENDING, _("Pending")),
                   (STATUS_FAILED, _("Failed")))
 
 
+@python_2_unicode_compatible
 class Message(models.Model):
     """
-    Message sent to a cohort associated with an issue
+    Message sent to a cohort associated with an pollrun
     """
-    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="messages")
+    org = models.ForeignKey('orgs.Org', verbose_name=_("Organization"), related_name="messages")
 
-    sent_by = models.ForeignKey(User, related_name="messages")
+    sent_by = models.ForeignKey('auth.User', related_name="messages")
 
     sent_on = models.DateTimeField(auto_now_add=True, help_text=_("When the message was sent"))
 
@@ -43,25 +44,29 @@ class Message(models.Model):
     recipients = models.ManyToManyField(Contact, related_name='messages',
                                         help_text="Contacts to whom this message was sent")
 
-    issue = models.ForeignKey(Issue, verbose_name=_("Poll Issue"), related_name="messages")
+    pollrun = models.ForeignKey('polls.PollRun', null=True, verbose_name=_("Poll Run"), related_name="messages")
 
     cohort = models.CharField(max_length=1, verbose_name=_("Cohort"), choices=COHORT_CHOICES)
 
-    region = models.ForeignKey(Region, null=True, related_name="messages")
+    region = models.ForeignKey('groups.Region', null=True, related_name="messages")
 
     status = models.CharField(max_length=1, verbose_name=_("Status"), choices=STATUS_CHOICES,
                               help_text=_("Current status of this message"))
 
+    def __str__(self):
+        return self.text
+
     @classmethod
-    def create(cls, org, user, text, issue, cohort, region):
-        message = cls.objects.create(org=org, sent_by=user, text=text, issue=issue, cohort=cohort, region=region)
+    def create(cls, org, user, text, pollrun, cohort, region):
+
+        message = cls.objects.create(org=org, sent_by=user, text=text, pollrun=pollrun, cohort=cohort, region=region)
 
         if cohort == COHORT_ALL:
-            responses = issue.get_responses(region)
+            responses = pollrun.get_responses(region)
         elif cohort == COHORT_RESPONDENTS:
-            responses = issue.get_responses(region).filter(status=RESPONSE_COMPLETE)
+            responses = pollrun.get_responses(region).filter(status=RESPONSE_COMPLETE)
         elif cohort == COHORT_NONRESPONDENTS:
-            responses = issue.get_responses(region).exclude(status=RESPONSE_COMPLETE)
+            responses = pollrun.get_responses(region).exclude(status=RESPONSE_COMPLETE)
         else:  # pragma: no cover
             raise ValueError("Invalid cohort code: %s" % cohort)
 
@@ -85,5 +90,36 @@ class Message(models.Model):
     def as_json(self):
         return dict(id=self.pk, recipients=self.recipients.count())
 
-    def __unicode__(self):
+
+@python_2_unicode_compatible
+class InboxMessage(models.Model):
+    """
+    Unsolicited Inbox messages sent to RapidPro account
+    """
+    org = models.ForeignKey("orgs.Org", verbose_name=_("Organization"), related_name="inbox_messages")
+
+    rapidpro_message_id = models.IntegerField()
+
+    contact = models.ForeignKey("contacts.Contact", related_name="inbox_messages")
+
+    text = models.CharField(max_length=MESSAGE_MAX_LEN, null=True)
+
+    archived = models.BooleanField(default=False)
+
+    created_on = models.DateTimeField(null=True)
+
+    delivered_on = models.DateTimeField(null=True)
+
+    sent_on = models.DateTimeField(null=True)
+
+    direction = models.CharField(max_length=1, null=True)
+
+    @classmethod
+    def get_all(cls, org, regions=None):
+        messages = cls.objects.filter(org=org)
+        if regions:
+            messages = messages.filter(contact__region__in=regions)
+        return messages
+
+    def __str__(self):
         return self.text

@@ -7,7 +7,7 @@ from django.test.utils import override_settings
 from django.utils import timezone
 from mock import patch
 from temba.types import Contact as TembaContact, Run
-from tracpro.polls.models import Issue, Response, Answer, RESPONSE_COMPLETE, RESPONSE_EMPTY
+from tracpro.polls.models import PollRun, Response, RESPONSE_COMPLETE, RESPONSE_EMPTY
 from tracpro.test import TracProTest
 from .models import Contact
 
@@ -83,15 +83,15 @@ class ContactTest(TracProTest):
     def test_get_responses(self):
         date1 = self.datetime(2014, 1, 1, 7, 0)
         date2 = self.datetime(2014, 1, 1, 8, 0)
-        issue1 = Issue.objects.create(poll=self.poll1, region=None, conducted_on=date1)
-        issue1_r1 = Response.objects.create(flow_run_id=123, issue=issue1, contact=self.contact1,
-                                            created_on=date1, updated_on=date1, status=RESPONSE_COMPLETE)
-        issue2 = Issue.objects.create(poll=self.poll1, region=self.region1, conducted_on=date2)
-        issue2_r1 = Response.objects.create(flow_run_id=456, issue=issue2, contact=self.contact1,
-                                            created_on=date2, updated_on=date2, status=RESPONSE_EMPTY)
+        pollrun1 = PollRun.objects.create(poll=self.poll1, region=None, conducted_on=date1)
+        pollrun1_r1 = Response.objects.create(flow_run_id=123, pollrun=pollrun1, contact=self.contact1,
+                                              created_on=date1, updated_on=date1, status=RESPONSE_COMPLETE)
+        pollrun2 = PollRun.objects.create(poll=self.poll1, region=self.region1, conducted_on=date2)
+        pollrun2_r1 = Response.objects.create(flow_run_id=456, pollrun=pollrun2, contact=self.contact1,
+                                              created_on=date2, updated_on=date2, status=RESPONSE_EMPTY)
 
-        self.assertEqual(list(self.contact1.get_responses().order_by('pk')), [issue1_r1, issue2_r1])
-        self.assertEqual(list(self.contact1.get_responses(include_empty=False).order_by('pk')), [issue1_r1])
+        self.assertEqual(list(self.contact1.get_responses().order_by('pk')), [pollrun1_r1, pollrun2_r1])
+        self.assertEqual(list(self.contact1.get_responses(include_empty=False).order_by('pk')), [pollrun1_r1])
 
     @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
     @patch('dash.orgs.models.TembaClient.delete_contact')
@@ -101,11 +101,11 @@ class ContactTest(TracProTest):
 
         self.assertEqual(mock_delete_contact.call_count, 1)
 
-    def test_unicode(self):
-        self.assertEqual(unicode(self.contact1), "Ann")
+    def test_str(self):
+        self.assertEqual(str(self.contact1), "Ann")
         self.contact1.name = ""
         self.contact1.save()
-        self.assertEqual(unicode(self.contact1), "1234")
+        self.assertEqual(str(self.contact1), "1234")
 
 
 class ContactCRUDLTest(TracProTest):
@@ -215,14 +215,14 @@ class ContactCRUDLTest(TracProTest):
         self.assertEqual(response.status_code, 404)
 
     def test_list(self):
-        issue1 = Issue.objects.create(poll=self.poll1, region=None, conducted_on=self.datetime(2014, 12, 1))
-        Response.create_empty(self.unicef, issue1, Run.create(id=123, contact='C-001', created_on=timezone.now()))
+        pollrun1 = PollRun.objects.create(poll=self.poll1, region=None, conducted_on=self.datetime(2014, 12, 1))
+        Response.create_empty(self.unicef, pollrun1, Run.create(id=123, contact='C-001', created_on=timezone.now()))
 
         self.login(self.admin)
         response = self.url_get('unicef', reverse('contacts.contact_list'))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context['object_list']), 5)
-        self.assertNotContains(response, "Farm Poll")  # no poll issues shown in "All Regions" view
+        self.assertNotContains(response, "Farm Poll")  # no poll pollruns shown in "All Regions" view
 
         response = self.url_get('unicef', '%s?search=an' % reverse('contacts.contact_list'))
         self.assertEqual(len(response.context['object_list']), 2)

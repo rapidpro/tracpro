@@ -11,7 +11,7 @@ from mock import patch
 from temba.types import Contact as TembaContact, Group as TembaGroup
 from tracpro.contacts.models import Contact
 from tracpro.groups.models import Region, Group
-from tracpro.polls.models import Issue, Response, RESPONSE_COMPLETE, RESPONSE_PARTIAL, RESPONSE_EMPTY
+from tracpro.polls.models import PollRun, Response, RESPONSE_COMPLETE, RESPONSE_PARTIAL, RESPONSE_EMPTY
 from tracpro.test import TracProTest
 
 
@@ -112,24 +112,24 @@ class RegionCRUDLTest(TracProTest):
 
         five_weeks_ago = timezone.now() - relativedelta(weeks=5)
         five_days_ago = timezone.now() - relativedelta(days=5)
-        issue = Issue.objects.create(poll=self.poll1, conducted_on=five_weeks_ago)
+        pollrun = PollRun.objects.create(poll=self.poll1, conducted_on=five_weeks_ago)
 
         # empty response in last month for contact in region #1
-        Response.objects.create(flow_run_id=123, issue=issue, contact=self.contact1,
+        Response.objects.create(flow_run_id=123, pollrun=pollrun, contact=self.contact1,
                                 created_on=five_days_ago, updated_on=five_days_ago, status=RESPONSE_EMPTY)
 
         # partial response not in last month for contact in region #2
-        Response.objects.create(flow_run_id=234, issue=issue, contact=self.contact4,
+        Response.objects.create(flow_run_id=234, pollrun=pollrun, contact=self.contact4,
                                 created_on=five_weeks_ago, updated_on=five_weeks_ago, status=RESPONSE_PARTIAL)
 
         # partial response in last month for contact in region #2
-        Response.objects.create(flow_run_id=345, issue=issue, contact=self.contact4,
+        Response.objects.create(flow_run_id=345, pollrun=pollrun, contact=self.contact4,
                                 created_on=five_days_ago, updated_on=five_days_ago, status=RESPONSE_PARTIAL)
 
         # 2 complete responses in last month for contact in region #3
-        Response.objects.create(flow_run_id=456, issue=issue, contact=self.contact5,
+        Response.objects.create(flow_run_id=456, pollrun=pollrun, contact=self.contact5,
                                 created_on=five_days_ago, updated_on=five_days_ago, status=RESPONSE_COMPLETE)
-        Response.objects.create(flow_run_id=567, issue=issue, contact=self.contact5,
+        Response.objects.create(flow_run_id=567, pollrun=pollrun, contact=self.contact5,
                                 created_on=five_days_ago, updated_on=five_days_ago, status=RESPONSE_COMPLETE)
 
         # log in as a non-administrator
@@ -168,24 +168,24 @@ class GroupCRUDLTest(TracProTest):
 
         five_weeks_ago = timezone.now() - relativedelta(weeks=5)
         five_days_ago = timezone.now() - relativedelta(days=5)
-        issue = Issue.objects.create(poll=self.poll1, conducted_on=five_weeks_ago)
+        pollrun = PollRun.objects.create(poll=self.poll1, conducted_on=five_weeks_ago)
 
         # empty response in last month for contact in group #1
-        Response.objects.create(flow_run_id=123, issue=issue, contact=self.contact1,
+        Response.objects.create(flow_run_id=123, pollrun=pollrun, contact=self.contact1,
                                 created_on=five_days_ago, updated_on=five_days_ago, status=RESPONSE_EMPTY)
 
         # partial response not in last month for contact in group #2
-        Response.objects.create(flow_run_id=234, issue=issue, contact=self.contact3,
+        Response.objects.create(flow_run_id=234, pollrun=pollrun, contact=self.contact3,
                                 created_on=five_weeks_ago, updated_on=five_weeks_ago, status=RESPONSE_PARTIAL)
 
         # partial response in last month for contact in group #2
-        Response.objects.create(flow_run_id=345, issue=issue, contact=self.contact3,
+        Response.objects.create(flow_run_id=345, pollrun=pollrun, contact=self.contact3,
                                 created_on=five_days_ago, updated_on=five_days_ago, status=RESPONSE_PARTIAL)
 
         # 2 complete responses in last month for contact in group #3
-        Response.objects.create(flow_run_id=456, issue=issue, contact=self.contact5,
+        Response.objects.create(flow_run_id=456, pollrun=pollrun, contact=self.contact5,
                                 created_on=five_days_ago, updated_on=five_days_ago, status=RESPONSE_COMPLETE)
-        Response.objects.create(flow_run_id=567, issue=issue, contact=self.contact5,
+        Response.objects.create(flow_run_id=567, pollrun=pollrun, contact=self.contact5,
                                 created_on=five_days_ago, updated_on=five_days_ago, status=RESPONSE_COMPLETE)
 
         # log in as a non-administrator

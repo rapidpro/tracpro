@@ -1,10 +1,13 @@
 from __future__ import absolute_import, unicode_literals
 
 from dash.orgs.views import OrgPermsMixin
+
 from django import forms
 from django.http import HttpResponseRedirect, JsonResponse
 from django.utils.translation import ugettext_lazy as _
+
 from smartmin.users.views import SmartCRUDL, SmartListView, SmartFormView
+
 from .models import Group, Region
 
 

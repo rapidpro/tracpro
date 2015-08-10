@@ -1,34 +1,39 @@
 from __future__ import absolute_import, unicode_literals
 
-from dash.orgs.models import Org
+from uuid import uuid4
+
+from django.db import models
+from django.utils.encoding import python_2_unicode_compatible
+from django.utils.translation import ugettext_lazy as _
+
 from dash.utils import intersection
 from dash.utils.sync import ChangeType
-from django.contrib.auth.models import User
-from django.db import models
-from django.utils.translation import ugettext_lazy as _
+
 from temba.types import Contact as TembaContact
+
 from tracpro.groups.models import Region, Group
-from uuid import uuid4
+
 from .tasks import push_contact_change
 
 
+@python_2_unicode_compatible
 class Contact(models.Model):
     """
     Corresponds to a RapidPro contact
     """
     uuid = models.CharField(max_length=36, unique=True)
 
-    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="contacts")
+    org = models.ForeignKey('orgs.Org', verbose_name=_("Organization"), related_name="contacts")
 
     name = models.CharField(verbose_name=_("Name"), max_length=128, blank=True,
                             help_text=_("The name of this contact"))
 
     urn = models.CharField(verbose_name=_("URN"), max_length=255)
 
-    region = models.ForeignKey(Region, verbose_name=_("Region"), related_name='contacts',
+    region = models.ForeignKey('groups.Region', verbose_name=_("Region"), related_name='contacts',
                                help_text=_("Region or state this contact lives in"))
 
-    group = models.ForeignKey(Group, null=True, verbose_name=_("Reporter group"), related_name='contacts')
+    group = models.ForeignKey('groups.Group', null=True, verbose_name=_("Reporter group"), related_name='contacts')
 
     facility_code = models.CharField(max_length=160, verbose_name=_("Facility Code"), null=True, blank=True,
                                      help_text=_("Facility code for this contact"))
@@ -38,17 +43,20 @@ class Contact(models.Model):
 
     is_active = models.BooleanField(default=True, help_text=_("Whether this contact is active"))
 
-    created_by = models.ForeignKey(User, null=True, related_name="contact_creations",
+    created_by = models.ForeignKey('auth.User', null=True, related_name="contact_creations",
                                    help_text="The user which originally created this item")
 
     created_on = models.DateTimeField(auto_now_add=True,
                                       help_text="When this item was originally created")
 
-    modified_by = models.ForeignKey(User, null=True, related_name="contact_modifications",
+    modified_by = models.ForeignKey('auth.User', null=True, related_name="contact_modifications",
                                     help_text="The user which last modified this item")
 
     modified_on = models.DateTimeField(auto_now=True,
                                        help_text="When this item was last modified")
+
+    def __str__(self):
+        return self.name if self.name else self.get_urn()[1]
 
     @classmethod
     def create(cls, org, user, name, urn, region, group, facility_code, language, uuid=None):
@@ -58,7 +66,7 @@ class Contact(models.Model):
         # if we don't have a UUID, then we created this contact
         if not uuid:
             do_push = True
-            uuid = unicode(uuid4())
+            uuid = str(uuid4())
         else:
             do_push = False
 
@@ -106,7 +114,7 @@ class Contact(models.Model):
         group_uuids = intersection(org_group_uuids, temba_contact.groups)
         group = Group.objects.get(org=org, uuid=group_uuids[0]) if group_uuids else None
 
-        facility_code = temba_contact.fields.get(org.get_facility_code_field(), None)
+        facility_code = temba_contact.fields.get(org.facility_code_field, None)
 
         return dict(org=org, name=name, urn=temba_contact.urns[0],
                     region=region, group=group, language=temba_contact.language, facility_code=facility_code,
@@ -120,7 +128,7 @@ class Contact(models.Model):
         temba_contact = TembaContact()
         temba_contact.name = self.name
         temba_contact.urns = [self.urn]
-        temba_contact.fields = {self.org.get_facility_code_field(): self.facility_code}
+        temba_contact.fields = {self.org.facility_code_field: self.facility_code}
         temba_contact.groups = groups
         temba_contact.language = self.language
         temba_contact.uuid = self.uuid
@@ -135,7 +143,7 @@ class Contact(models.Model):
     def get_responses(self, include_empty=True):
         from tracpro.polls.models import RESPONSE_EMPTY
 
-        qs = self.responses.filter(issue__poll__is_active=True, is_active=True).select_related('issue')
+        qs = self.responses.filter(pollrun__poll__is_active=True, is_active=True).select_related('pollrun')
 
         if not include_empty:
             qs = qs.exclude(status=RESPONSE_EMPTY)
@@ -146,6 +154,3 @@ class Contact(models.Model):
         self.is_active = False
         self.save()
         self.push(ChangeType.deleted)
-
-    def __unicode__(self):
-        return self.name if self.name else self.get_urn()[1]

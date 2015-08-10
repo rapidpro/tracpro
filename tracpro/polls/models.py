@@ -1,29 +1,30 @@
 from __future__ import absolute_import, unicode_literals
 
+from collections import Counter, defaultdict, OrderedDict
+from decimal import Decimal, InvalidOperation
 import math
 import operator
+import re
+
+from dateutil.relativedelta import relativedelta
+from enum import Enum
 import pycountry
 import pytz
-import re
 import stop_words
 
-from collections import Counter, defaultdict, OrderedDict
-from dash.orgs.models import Org
-from dash.utils import get_cacheable, get_month_range
-from dateutil.relativedelta import relativedelta
-from decimal import Decimal
-from decimal import InvalidOperation
 from django.conf import settings
-from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.db import models
 from django.db.models import Q, Count
 from django.utils import timezone
+from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
-from enum import Enum
+
+from dash.utils import get_cacheable, get_month_range
+
 from tracpro.contacts.models import Contact
-from tracpro.groups.models import Region
-from .tasks import issue_start
+from .tasks import pollrun_start
+
 
 QUESTION_TYPE_OPEN = 'O'
 QUESTION_TYPE_MULTIPLE_CHOICE = 'C'
@@ -83,21 +84,25 @@ class AnswerCache(Enum):
     average = 4
 
 
-ANSWER_CACHE_KEY = 'issue:%d:question:%d:%s:%d'
+ANSWER_CACHE_KEY = 'pollrun:%d:question:%d:%s:%d'
 ANSWER_CACHE_TTL = 60 * 60 * 24 * 7  # 1 week
 
 
+@python_2_unicode_compatible
 class Poll(models.Model):
     """
     Corresponds to a RapidPro Flow
     """
     flow_uuid = models.CharField(max_length=36, unique=True)
 
-    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='polls')
+    org = models.ForeignKey('orgs.Org', verbose_name=_("Organization"), related_name='polls')
 
     name = models.CharField(max_length=64, verbose_name=_("Name"))  # taken from flow name
 
     is_active = models.BooleanField(default=True, help_text="Whether this item is active")
+
+    def __str__(self):
+        return self.name
 
     @classmethod
     def create(cls, org, name, flow_uuid):
@@ -148,11 +153,8 @@ class Poll(models.Model):
     def get_questions(self):
         return self.questions.filter(is_active=True).order_by('order')
 
-    def get_issues(self, region=None):
-        return Issue.get_all(self.org, region).filter(poll=self)
-
-    def __unicode__(self):
-        return self.name
+    def get_pollruns(self, region=None):
+        return PollRun.get_all(self.org, region).filter(poll=self)
 
 
 class Question(models.Model):
@@ -161,7 +163,7 @@ class Question(models.Model):
     """
     ruleset_uuid = models.CharField(max_length=36, unique=True)
 
-    poll = models.ForeignKey(Poll, related_name='questions')
+    poll = models.ForeignKey('polls.Poll', related_name='questions')
 
     text = models.CharField(max_length=64)
 
@@ -176,31 +178,37 @@ class Question(models.Model):
         return cls.objects.create(poll=poll, text=text, type=_type, order=order, ruleset_uuid=ruleset_uuid)
 
 
-class Issue(models.Model):
+@python_2_unicode_compatible
+class PollRun(models.Model):
     """
     Associates polls conducted on the same day
     """
-    poll = models.ForeignKey(Poll, related_name='issues')
+    poll = models.ForeignKey('polls.Poll', related_name='pollruns')
 
-    region = models.ForeignKey(Region, null=True, related_name='issues', help_text="Region where poll was conducted")
+    region = models.ForeignKey(
+        'groups.Region', null=True, related_name='pollruns',
+        help_text="Region where poll was conducted")
 
     conducted_on = models.DateTimeField(help_text=_("When the poll was conducted"))
 
-    created_by = models.ForeignKey(User, null=True, related_name="issues_created")
+    created_by = models.ForeignKey('auth.User', null=True, related_name="pollruns_created")
+
+    def __str__(self):
+        return "%s (%s)" % (self.poll.name, self.conducted_on.strftime(settings.SITE_DATE_FORMAT))
 
     @classmethod
     def create_regional(cls, user, poll, region, conducted_on, do_start=False):
-        issue = cls.objects.create(poll=poll, region=region, conducted_on=conducted_on, created_by=user)
+        pollrun = cls.objects.create(poll=poll, region=region, conducted_on=conducted_on, created_by=user)
 
         if do_start:
-            issue_start.delay(issue.pk)
+            pollrun_start.delay(pollrun.pk)
 
-        return issue
+        return pollrun
 
     @classmethod
     def get_or_create_non_regional(cls, org, poll, for_date=None):
         """
-        Gets or creates an issue for a non-regional poll started in RapidPro
+        Gets or creates an pollrun for a non-regional poll started in RapidPro
         """
         if not for_date:
             for_date = timezone.now()
@@ -209,10 +217,11 @@ class Issue(models.Model):
         org_timezone = pytz.timezone(org.timezone)
         for_local_date = for_date.astimezone(org_timezone).date()
 
-        # look for a non-regional issue on that date
-        sql = 'SELECT * FROM polls_issue WHERE poll_id = %s AND region_id IS NULL AND DATE(conducted_on AT TIME ZONE %s) = %s'
+        # look for a non-regional pollrun on that date
+        sql = ('SELECT * FROM polls_pollrun WHERE poll_id = %s AND '
+               'region_id IS NULL AND DATE(conducted_on AT TIME ZONE %s) = %s')
         params = [poll.pk, org_timezone.zone, for_local_date]
-        existing = list(Issue.objects.raw(sql, params))
+        existing = list(PollRun.objects.raw(sql, params))
 
         if existing:
             return existing[0]
@@ -221,13 +230,13 @@ class Issue(models.Model):
 
     @classmethod
     def get_all(cls, org, region=None):
-        issues = cls.objects.filter(poll__org=org, poll__is_active=True)
+        pollruns = cls.objects.filter(poll__org=org, poll__is_active=True)
 
         if region:
-            # any issue to this region or any non-regional issue
-            issues = issues.filter(Q(region=None) | Q(region=region))
+            # any pollrun to this region or any non-regional pollrun
+            pollruns = pollruns.filter(Q(region=None) | Q(region=region))
 
-        return issues.select_related('poll', 'region')
+        return pollruns.select_related('poll', 'region')
 
     def get_responses(self, region=None, include_empty=True):
         if region and self.region_id and region.pk != self.region_id:
@@ -250,22 +259,22 @@ class Issue(models.Model):
 
     def is_last_for_region(self, region):
         """
-        Whether or not this is the last issue of the poll conducted in the given region. Includes non-regional polls.
+        Whether or not this is the last pollrun of the poll conducted in the given region. Includes non-regional polls.
         """
-        # did this issue cover the given region
+        # did this pollrun cover the given region
         if self.region_id and self.region_id != region.pk:
             return False
 
-        # did any newer issues cover the given region
-        newer_issues = Issue.objects.filter(poll=self.poll, pk__gt=self.pk)
-        newer_issues = newer_issues.filter(Q(region=None) | Q(region=region))
-        return not newer_issues.exists()
+        # did any newer pollruns cover the given region
+        newer_pollruns = PollRun.objects.filter(poll=self.poll, pk__gt=self.pk)
+        newer_pollruns = newer_pollruns.filter(Q(region=None) | Q(region=region))
+        return not newer_pollruns.exists()
 
     def get_answers_to(self, question, region=None):
         """
-        Gets all answers from active responses for this issue, to the given question
+        Gets all answers from active responses for this pollrun, to the given question
         """
-        qs = Answer.objects.filter(response__issue=self, response__is_active=True, question=question)
+        qs = Answer.objects.filter(response__pollrun=self, response__is_active=True, question=question)
         if region:
             qs = qs.filter(response__contact__region=region)
 
@@ -337,9 +346,6 @@ class Issue(models.Model):
                     region=region_as_json,
                     responses=self.get_response_counts(region))
 
-    def __unicode__(self):
-        return "%s (%s)" % (self.poll.name, self.conducted_on.strftime(settings.SITE_DATE_FORMAT))
-
 
 class Response(models.Model):
     """
@@ -347,9 +353,9 @@ class Response(models.Model):
     """
     flow_run_id = models.IntegerField(unique=True)
 
-    issue = models.ForeignKey(Issue, related_name='responses')
+    pollrun = models.ForeignKey('polls.PollRun', null=True, related_name='responses')
 
-    contact = models.ForeignKey(Contact, related_name='responses')
+    contact = models.ForeignKey('contacts.Contact', related_name='responses')
 
     created_on = models.DateTimeField(help_text=_("When this response was created"))
 
@@ -361,16 +367,16 @@ class Response(models.Model):
     is_active = models.BooleanField(default=True, help_text="Whether this response is active")
 
     @classmethod
-    def create_empty(cls, org, issue, run):
+    def create_empty(cls, org, pollrun, run):
         """
-        Creates an empty response from a run. Used to start or restart a contact in an existing issue.
+        Creates an empty response from a run. Used to start or restart a contact in an existing pollrun.
         """
         contact = Contact.get_or_fetch(org, uuid=run.contact)
 
         # de-activate any existing responses for this contact
-        issue.responses.filter(contact=contact).update(is_active=False)
+        pollrun.responses.filter(contact=contact).update(is_active=False)
 
-        return Response.objects.create(flow_run_id=run.id, issue=issue, contact=contact,
+        return Response.objects.create(flow_run_id=run.id, pollrun=pollrun, contact=contact,
                                        created_on=run.created_on, updated_on=run.created_on,
                                        status=RESPONSE_EMPTY)
 
@@ -378,9 +384,9 @@ class Response(models.Model):
     def from_run(cls, org, run, poll=None):
         """
         Gets or creates a response from a flow run. If response is not up-to-date with provided run, then it is
-        updated. If the run doesn't match with an existing poll issue, it's assumed to be non-regional.
+        updated. If the run doesn't match with an existing poll pollrun, it's assumed to be non-regional.
         """
-        response = Response.objects.filter(issue__poll__org=org, flow_run_id=run.id).select_related('issue').first()
+        response = Response.objects.filter(pollrun__poll__org=org, flow_run_id=run.id).select_related('pollrun').first()
         run_updated_on = cls.get_run_updated_on(run)
 
         # if there is an up-to-date existing response for this run, return it
@@ -409,12 +415,12 @@ class Response(models.Model):
             response.save(update_fields=('updated_on', 'status'))
         else:
             # if we don't have an existing response, then this poll started in RapidPro and is non-regional
-            issue = Issue.get_or_create_non_regional(org, poll, for_date=run.created_on)
+            pollrun = PollRun.get_or_create_non_regional(org, poll, for_date=run.created_on)
 
-            # if contact has an older response for this issue, retire it
-            Response.objects.filter(issue=issue, contact=contact).update(is_active=False)
+            # if contact has an older response for this pollrun, retire it
+            Response.objects.filter(pollrun=pollrun, contact=contact).update(is_active=False)
 
-            response = Response.objects.create(flow_run_id=run.id, issue=issue, contact=contact,
+            response = Response.objects.create(flow_run_id=run.id, pollrun=pollrun, contact=contact,
                                                created_on=run.created_on, updated_on=run_updated_on,
                                                status=status)
             response.is_new = True
@@ -431,7 +437,7 @@ class Response(models.Model):
 
         # clear answer caches for this contact's region
         for question in questions:
-            response.issue.clear_answer_cache(question, contact.region)
+            response.pollrun.clear_answer_cache(question, contact.region)
 
         return response
 
@@ -448,22 +454,22 @@ class Response(models.Model):
     @classmethod
     def get_update_required(cls, org):
         """
-        Gets incomplete responses to the latest issues of all polls so that they can be updated
+        Gets incomplete responses to the latest pollruns of all polls so that they can be updated
         """
-        # get polls with the latest issue id for each
-        polls = Poll.get_all(org).annotate(latest_issue_id=models.Max('issues'))
-        latest_issues = [p.latest_issue_id for p in polls if p.latest_issue_id]
+        # get polls with the latest pollrun id for each
+        polls = Poll.get_all(org).annotate(latest_pollrun_id=models.Max('pollruns'))
+        latest_pollruns = [p.latest_pollrun_id for p in polls if p.latest_pollrun_id]
 
-        return Response.objects.filter(issue__in=latest_issues, is_active=True).exclude(status=RESPONSE_COMPLETE)
+        return Response.objects.filter(pollrun__in=latest_pollruns, is_active=True).exclude(status=RESPONSE_COMPLETE)
 
 
 class Answer(models.Model):
     """
     Corresponds to RapidPro FlowStep
     """
-    response = models.ForeignKey(Response, related_name='answers')
+    response = models.ForeignKey('polls.Response', related_name='answers')
 
-    question = models.ForeignKey(Question, related_name='answers')
+    question = models.ForeignKey('polls.Question', related_name='answers')
 
     value = models.CharField(max_length=640, null=True)
 
@@ -557,7 +563,7 @@ class Answer(models.Model):
                 cat_max = cat_min + category_step - 1
                 cat_label = '%d - %d' % (cat_min, cat_max)
             else:
-                cat_label = unicode(cat_min)
+                cat_label = str(cat_min)
 
             category_labels[cat_index] = cat_label
             category_counts[cat_label] = 0

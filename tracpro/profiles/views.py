@@ -1,14 +1,18 @@
 from __future__ import absolute_import, unicode_literals
 
 from dash.orgs.views import OrgPermsMixin
+
 from django import forms
-from django.utils.translation import ugettext_lazy as _
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.core.validators import MinLengthValidator
 from django.db.models import Q
 from django.http import Http404
-from smartmin.users.views import SmartCRUDL, SmartCreateView, SmartListView, SmartReadView, SmartUpdateView
+from django.utils.encoding import force_text
+from django.utils.translation import ugettext_lazy as _
+
+from smartmin.users.views import (
+    SmartCRUDL, SmartCreateView, SmartListView, SmartReadView, SmartUpdateView)
 from tracpro.groups.models import Region
 
 
@@ -40,6 +44,10 @@ class UserForm(forms.ModelForm):
                                              required=False,
                                              help_text=_("Regions which this user can access."))
 
+    class Meta:
+        model = User
+        fields = forms.ALL_FIELDS
+
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user')
 
@@ -56,10 +64,6 @@ class UserForm(forms.ModelForm):
             confirm_password = cleaned_data.get('confirm_password', '')
             if password != confirm_password:
                 self.add_error('confirm_password', _("Passwords don't match."))
-
-    class Meta:
-        model = User
-        exclude = ()
 
 
 class UserFormMixin(object):
@@ -96,7 +100,7 @@ class UserFieldsMixin(object):
         return obj.profile.full_name
 
     def get_regions(self, obj):
-        return ", ".join([unicode(r) for r in obj.regions.all()])
+        return ", ".join([force_text(r) for r in obj.regions.all()])
 
 
 class UserCRUDL(SmartCRUDL):
@@ -251,7 +255,7 @@ class ManageUserCRUDL(SmartCRUDL):
     class List(UserFieldsMixin, SmartListView):
         fields = ('full_name', 'email', 'orgs')
         default_order = ('profile__full_name',)
-        select_related = ('profile', 'org_admins', 'org_editors')
+        select_related = ('profile',)
 
         def derive_queryset(self, **kwargs):
             qs = super(ManageUserCRUDL.List, self).derive_queryset(**kwargs)
@@ -260,7 +264,7 @@ class ManageUserCRUDL(SmartCRUDL):
 
         def get_orgs(self, obj):
             orgs = set(obj.org_admins.all()) | set(obj.org_editors.all())
-            return ", ".join([unicode(o) for o in orgs])
+            return ", ".join([force_text(o) for o in orgs])
 
         def lookup_field_link(self, context, field, obj):
             return reverse('profiles.admin_update', args=[obj.pk])

@@ -1,25 +1,33 @@
 from __future__ import absolute_import, unicode_literals
 
-from dash.orgs.models import Org
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import Count
+from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
+
 from tracpro.contacts.tasks import sync_org_contacts
 
 
+@python_2_unicode_compatible
 class AbstractGroup(models.Model):
     """
     Corresponds to a RapidPro contact group
     """
     uuid = models.CharField(max_length=36, unique=True)
 
-    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="%(class)ss")
+    org = models.ForeignKey('orgs.Org', verbose_name=_("Organization"), related_name="%(class)ss")
 
     name = models.CharField(verbose_name=_("Name"), max_length=128, blank=True,
                             help_text=_("The name of this region"))
 
     is_active = models.BooleanField(default=True, help_text="Whether this item is active")
+
+    class Meta:
+        abstract = True
+
+    def __str__(self):
+        return self.name
 
     @classmethod
     def create(cls, org, name, uuid):
@@ -55,7 +63,7 @@ class AbstractGroup(models.Model):
     @classmethod
     def get_response_counts(cls, org, window=None, include_empty=False):
         from tracpro.polls.models import Response, RESPONSE_EMPTY
-        qs = Response.objects.filter(issue__poll__org=org, is_active=True)
+        qs = Response.objects.filter(pollrun__poll__org=org, is_active=True)
 
         if not include_empty:
             qs = qs.exclude(status=RESPONSE_EMPTY)
@@ -87,12 +95,6 @@ class AbstractGroup(models.Model):
 
     def get_contacts(self):
         return self.contacts.filter(is_active=True)
-
-    def __unicode__(self):
-        return self.name
-
-    class Meta:
-        abstract = True
 
 
 class Region(AbstractGroup):

@@ -9,7 +9,10 @@ from collections import defaultdict, OrderedDict
 from dash.utils import datetime_to_ms
 from decimal import Decimal
 from django.utils.safestring import mark_safe
-from .models import QUESTION_TYPE_OPEN, QUESTION_TYPE_MULTIPLE_CHOICE, QUESTION_TYPE_NUMERIC, QUESTION_TYPE_KEYPAD, QUESTION_TYPE_MENU
+
+from .models import (
+    QUESTION_TYPE_OPEN, QUESTION_TYPE_MULTIPLE_CHOICE, QUESTION_TYPE_NUMERIC,
+    QUESTION_TYPE_KEYPAD, QUESTION_TYPE_MENU)
 
 
 class ChartJsonEncoder(json.JSONEncoder):
@@ -24,21 +27,21 @@ class ChartJsonEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 
-def single_issue(issue, question, region):
+def single_pollrun(pollrun, question, region):
     """
-    Chart data for a single issue. Will be a word cloud for open-ended questions, and pie chart of categories for
+    Chart data for a single pollrun. Will be a word cloud for open-ended questions, and pie chart of categories for
     everything else.
     """
     if question.type == QUESTION_TYPE_OPEN:
-        word_counts = issue.get_answer_word_counts(question, region)
+        word_counts = pollrun.get_answer_word_counts(question, region)
         chart_type = 'word'
         chart_data = word_cloud_data(word_counts)
     elif question.type in (QUESTION_TYPE_MULTIPLE_CHOICE, QUESTION_TYPE_KEYPAD, QUESTION_TYPE_MENU):
-        category_counts = issue.get_answer_category_counts(question, region)
+        category_counts = pollrun.get_answer_category_counts(question, region)
         chart_type = 'pie'
         chart_data = pie_chart_data(category_counts)
     elif question.type == QUESTION_TYPE_NUMERIC:
-        range_counts = issue.get_answer_auto_range_counts(question, region)
+        range_counts = pollrun.get_answer_auto_range_counts(question, region)
         chart_type = 'column'
         chart_data = column_chart_data(range_counts)
     else:
@@ -48,15 +51,15 @@ def single_issue(issue, question, region):
     return chart_type, render_data(chart_data)
 
 
-def multiple_issues(issues, question, region):
+def multiple_pollruns(pollruns, question, region):
     """
-    Chart data for multiple issues of a poll.
+    Chart data for multiple pollruns of a poll.
     """
     if question.type == QUESTION_TYPE_OPEN:
         overall_counts = defaultdict(int)
 
-        for issue in issues:
-            word_counts = issue.get_answer_word_counts(question, region)
+        for pollrun in pollruns:
+            word_counts = pollrun.get_answer_word_counts(question, region)
             for word, count in word_counts:
                 overall_counts[word] += count
 
@@ -65,13 +68,13 @@ def multiple_issues(issues, question, region):
         chart_data = word_cloud_data(sorted_counts[:50])
     elif question.type == QUESTION_TYPE_MULTIPLE_CHOICE:
         categories = set()
-        counts_by_issue = OrderedDict()
+        counts_by_pollrun = OrderedDict()
 
-        # fetch category counts for all issues, keeping track of all found categories
-        for issue in issues:
-            category_counts = issue.get_answer_category_counts(question, region)
+        # fetch category counts for all pollruns, keeping track of all found categories
+        for pollrun in pollruns:
+            category_counts = pollrun.get_answer_category_counts(question, region)
             as_dict = dict(category_counts)
-            counts_by_issue[issue] = as_dict
+            counts_by_pollrun[pollrun] = as_dict
 
             for category in as_dict.keys():
                 categories.add(category)
@@ -79,19 +82,19 @@ def multiple_issues(issues, question, region):
         categories = list(categories)
         category_series = defaultdict(list)
 
-        for issue, category_counts in counts_by_issue.iteritems():
+        for pollrun, category_counts in counts_by_pollrun.iteritems():
             for category in categories:
                 count = category_counts.get(category, 0)
-                category_series[category].append((issue.conducted_on, count))
+                category_series[category].append((pollrun.conducted_on, count))
 
         chart_type = 'time-area'
         chart_data = [{'name': cgi.escape(category), 'data': data} for category, data in category_series.iteritems()]
     elif question.type == QUESTION_TYPE_NUMERIC:
         chart_type = 'time-line'
         chart_data = []
-        for issue in issues:
-            average = issue.get_answer_numeric_average(question, region)
-            chart_data.append((issue.conducted_on, average))
+        for pollrun in pollruns:
+            average = pollrun.get_answer_numeric_average(question, region)
+            chart_data.append((pollrun.conducted_on, average))
     else:
         chart_type = None
         chart_data = []
@@ -118,4 +121,3 @@ def column_chart_data(range_counts):
 
 def render_data(chart_data):
     return mark_safe(json.dumps(chart_data, cls=ChartJsonEncoder))
-
