@@ -40,6 +40,11 @@ class BaselineTerm(models.Model):
                             auto_choose=True
                             )
 
+    @classmethod
+    def get_all(cls, org):
+        baseline_terms = cls.objects.filter(org=org)
+        return baseline_terms
+
     def get_baseline(self, region):
         answers = Answer.objects.filter(
             response__contact__region=region,

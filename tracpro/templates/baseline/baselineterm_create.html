@@ -1,0 +1,8 @@
+{% extends "smartmin/create.html" %}
+{% load smartmin i18n %}
+
+{% block post-form %}
+<script>
+    $("input[class^='datepicker']").datepicker();
+</script>
+{% endblock %}

@@ -281,6 +281,7 @@ GROUP_PERMISSIONS = {
         'profiles.profile.*',
     ),
     "Editors": (
+        'baseline.baselineterm.*'
         'contacts.contact.*',
         'groups.group_most_active',
         'groups.region_most_active',
@@ -318,6 +319,7 @@ PERMISSIONS = {
         'list',  # can view a list of the objects
     ),
     'orgs.org': ('create', 'update', 'list', 'edit', 'home'),
+    'baseline.baselineterm': ('create', 'read', 'update', 'delete', 'list'),
     'contacts.contact': ('create', 'read', 'update', 'delete', 'list'),
     'groups.group': ('list', 'most_active', 'select'),
     'groups.region': ('list', 'most_active', 'select'),

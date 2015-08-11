@@ -12,3 +12,8 @@ class BaselineTermForm(forms.ModelForm):
         fields = ('name', 'org', 'start_date', 'end_date',
                   'baseline_poll', 'baseline_question',
                   'follow_up_poll', 'follow_up_question')
+
+        widgets = {
+            'start_date': forms.widgets.DateInput(attrs={'class': 'datepicker'}),
+            'end_date': forms.widgets.DateInput(attrs={'class': 'datepicker'})
+        }
