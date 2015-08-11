@@ -5,6 +5,7 @@ from django.conf.urls import include, url
 
 
 urlpatterns = [
+    url(r'', include('tracpro.baseline.urls')),
     url(r'', include('tracpro.contacts.urls')),
     url(r'', include('tracpro.groups.urls')),
     url(r'', include('tracpro.home.urls')),

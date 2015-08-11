@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     'guardian',
     'reversion',
     'sorl.thumbnail',
+    'smart_selects',
 
     'smartmin',
     'smartmin.csv_imports',
@@ -67,6 +68,7 @@ INSTALLED_APPS = [
     'tracpro.orgs_ext.apps.DashOrgConfig',
     'dash.utils',
 
+    'tracpro.baseline',
     'tracpro.contacts',
     'tracpro.groups',
     'tracpro.home',
@@ -267,6 +269,7 @@ GROUP_PERMISSIONS = {
     "Administrators": (
         'orgs.org_home',
         'orgs.org_edit',
+        'baseline.baselineterm.*'
         'contacts.contact.*',
         'groups.group.*',
         'groups.region.*',
