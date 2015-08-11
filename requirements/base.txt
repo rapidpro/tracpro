@@ -22,6 +22,7 @@ django-reversion==1.8.7
 django-rosetta==0.7.6
   microsofttranslator==0.7
   polib==1.0.7
+django-smart-selects==1.1.1
 django-storages==1.1.8
 django-timezones==0.2
 enum34==1.0.4
