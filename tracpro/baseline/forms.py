@@ -9,6 +9,6 @@ class BaselineTermForm(forms.ModelForm):
     """
     class Meta:
         model = BaselineTerm
-        fields =   ('name', 'org', 'start_date', 'end_date',
-                    'baseline_poll', 'baseline_question',
-                    'follow_up_poll', 'follow_up_question')
+        fields = ('name', 'org', 'start_date', 'end_date',
+                  'baseline_poll', 'baseline_question',
+                  'follow_up_poll', 'follow_up_question')
