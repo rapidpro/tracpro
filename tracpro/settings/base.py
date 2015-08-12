@@ -269,7 +269,7 @@ GROUP_PERMISSIONS = {
     "Administrators": (
         'orgs.org_home',
         'orgs.org_edit',
-        'baseline.baselineterm.*'
+        'baseline.baselineterm.*',
         'contacts.contact.*',
         'groups.group.*',
         'groups.region.*',
@@ -281,7 +281,7 @@ GROUP_PERMISSIONS = {
         'profiles.profile.*',
     ),
     "Editors": (
-        'baseline.baselineterm.*'
+        'baseline.baselineterm.*',
         'contacts.contact.*',
         'groups.group_most_active',
         'groups.region_most_active',

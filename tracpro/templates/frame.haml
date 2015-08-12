@@ -117,21 +117,30 @@
                         %a{ href:"{% url 'msgs.message_list' %}" }
                           - trans "Message Log"
 
+              %li.dropdown
+                  %a.dropdown-toggle{href:"#", data-toggle:"dropdown"}
+                    - trans "Management"
+                    %b.caret
+                  %ul.dropdown-menu
+                    - if org_perms.contacts.contact_list
+                      %li
+                        %a{ href:"{% url 'contacts.contact_list' %}" }
+                          - trans "Contacts"
+
+                    - if org_perms.msgs.inboxmessage_list
+                          %li
+                            %a{ href:"{% url 'msgs.inboxmessage_list' %}" }
+                              - trans "Inbox Messages"
+
+                    - if org_perms.baseline.baselineterm_list
+                          %li
+                            %a{ href:"{% url 'baseline.baselineterm_list' %}" }
+                              - trans "Baseline Charts"
 
               - if org and request.user.is_authenticated
                 %li
                   %a{ href:"/" }
                     - trans "Home"
-
-                - if org_perms.contacts.contact_list
-                  %li
-                    %a{ href:"{% url 'contacts.contact_list' %}" }
-                      - trans "Contacts"
-
-                - if org_perms.msgs.inboxmessage_list
-                      %li
-                        %a{ href:"{% url 'msgs.inboxmessage_list' %}" }
-                          - trans "Inbox Messages"
 
             %ul.nav.navbar-nav.navbar-right
               - block login
