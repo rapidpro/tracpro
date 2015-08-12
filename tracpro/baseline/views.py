@@ -3,7 +3,8 @@ from django.core.urlresolvers import reverse
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 
 from smartmin.views import (
-    SmartCRUDL, SmartCreateView, SmartDeleteView, SmartListView
+    SmartCRUDL, SmartCreateView, SmartDeleteView,
+    SmartListView, SmartUpdateView
     )
 
 from .models import BaselineTerm
@@ -27,5 +28,11 @@ class BaselineTermCRUDL(SmartCRUDL):
             return qs
 
     class Delete(OrgObjPermsMixin, SmartDeleteView):
+        cancel_url = '@baseline.baselineterm_list'
+
         def get_redirect_url(self):
             return reverse('baseline.baselineterm_list')
+
+    class Update(OrgObjPermsMixin, SmartUpdateView):
+        form_class = BaselineTermForm
+        delete_url = '' # Turn off the smartmin delete button for this view
