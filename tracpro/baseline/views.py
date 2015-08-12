@@ -35,4 +35,4 @@ class BaselineTermCRUDL(SmartCRUDL):
 
     class Update(OrgObjPermsMixin, SmartUpdateView):
         form_class = BaselineTermForm
-        delete_url = '' # Turn off the smartmin delete button for this view
+        delete_url = ''     # Turn off the smartmin delete button for this view
