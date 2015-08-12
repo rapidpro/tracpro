@@ -4,5 +4,6 @@
 {% block post-form %}
 <script>
     $("input[class^='datepicker']").datepicker();
+    $("#id_org").val("{{ org.pk }}");   // Set the value of this hidden field to the current org
 </script>
 {% endblock %}
