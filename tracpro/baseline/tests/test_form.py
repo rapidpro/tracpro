@@ -2,7 +2,7 @@ from tracpro.test import TracProTest
 from ..forms import BaselineTermForm
 
 
-class UserFormTests(TracProTest):
+class TestBaselineTermForm(TracProTest):
     form_class = BaselineTermForm
 
     def setUp(self):
@@ -10,7 +10,7 @@ class UserFormTests(TracProTest):
         self.org = self.unicef
         self.data = {
             'name': 'Test Baseline Term',
-            'org': self.org,
+            'org': self.org.pk,
             'start_date': '2015-05-01',
             'end_date': '2015-05-10',
             'baseline_poll': self.poll1.pk,
@@ -21,11 +21,5 @@ class UserFormTests(TracProTest):
 
     def test_valid_form(self):
         """This form should pass validation."""
-
-        form = self.form_class(data=self.data) #, instance=self.org
-        import ipdb; ipdb.set_trace();
+        form = self.form_class(data=self.data)
         self.assertTrue(form.is_valid())
-        #self.assertEqual(len(form.errors), 1, form.errors)
-        #self.assertTrue('available_languages' in form.errors, form.errors)
-        #self.assertEqual(form.errors['available_languages'],
-        #                 ['This field is required.'])

@@ -21,7 +21,6 @@ class BaselineTermForm(forms.ModelForm):
 
     def clean(self, *args, **kwargs):
         cleaned_data = super(BaselineTermForm, self).clean()
-        import ipdb; ipdb.set_trace();
 
         start_date = cleaned_data.get("start_date")
         end_date = cleaned_data.get("end_date")
@@ -34,7 +33,7 @@ class BaselineTermForm(forms.ModelForm):
         baseline_question = cleaned_data.get("baseline_question")
         follow_up_question = cleaned_data.get("follow_up_question")
 
-        if baseline_question.id == follow_up_question.id:
+        if baseline_question.pk == follow_up_question.pk:
             raise forms.ValidationError(
                     "Baseline question and follow up question should be different."
                 )
