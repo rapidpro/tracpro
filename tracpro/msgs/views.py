@@ -1,4 +1,5 @@
 from __future__ import absolute_import, unicode_literals
+import logging
 
 from django.core.urlresolvers import reverse
 from django.http import JsonResponse
@@ -15,6 +16,9 @@ from tracpro.polls.models import PollRun
 from .models import Message, InboxMessage
 from .forms import InboxMessageResponseForm
 from .tasks import send_unsolicited_message, fetch_inbox_messages
+
+
+logger = logging.getLogger(__name__)
 
 
 class MessageListMixin(object):
@@ -141,8 +145,10 @@ class InboxMessageCRUDL(SmartCRUDL):
             if form.is_valid():
                 # Send the new inbox message through the temba task
                 send_unsolicited_message(self.request.org, request.POST.get('text'), self.contact)
+                logger.info("Sending a message to %s" % (self.contact))
                 # Run the task to pull all inbox messages for this org into the local InboxMessage table
                 fetch_inbox_messages(self.request.org)
+                logger.info("Retrieving inbox messages for %s" % (self.request.org))
                 return redirect('msgs.inboxmessage_conversation', contact_id=self.contact.pk)
             else:
                 return self.get(request, *args, **kwargs)
