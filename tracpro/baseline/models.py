@@ -18,27 +18,31 @@ class BaselineTerm(models.Model):
                          ie. How many students attended today?
     """
 
-    org = models.ForeignKey("orgs.Org", verbose_name=_("Organization"), related_name="baseline_terms")
-    name = models.CharField(max_length=255, help_text=_("For example: 2015 Term 3 Attendance for P3 Girls"))
+    org = models.ForeignKey("orgs.Org", verbose_name=_(
+        "Organization"), related_name="baseline_terms")
+    region = models.ForeignKey("groups.Region", related_name="baseline_terms")
+    name = models.CharField(max_length=255, help_text=_(
+        "For example: 2015 Term 3 Attendance for P3 Girls"))
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
 
-    baseline_poll = models.ForeignKey(Poll, related_name="baseline_terms")
+    baseline_poll = models.ForeignKey(Poll, related_name="baseline_terms",
+                                      help_text=_("The most recent response per user will be used as the baseline."))
     baseline_question = ChainedForeignKey(
-                        Question,
-                        chained_field='baseline_poll',
-                        chained_model_field='poll',
-                        auto_choose=True,
-                        related_name="baseline_terms"
-                        )
+        Question,
+        chained_field='baseline_poll',
+        chained_model_field='poll',
+        auto_choose=True,
+        related_name="baseline_terms"
+    )
 
     follow_up_poll = models.ForeignKey(Poll)
     follow_up_question = ChainedForeignKey(
-                            Question,
-                            chained_field='follow_up_poll',
-                            chained_model_field='poll',
-                            auto_choose=True
-                            )
+        Question,
+        chained_field='follow_up_poll',
+        chained_model_field='poll',
+        auto_choose=True
+    )
 
     @classmethod
     def get_all(cls, org):
