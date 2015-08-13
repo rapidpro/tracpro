@@ -6,4 +6,3 @@ from .views import BaselineTermCRUDL
 
 urlpatterns = BaselineTermCRUDL().as_urlpatterns()
 
-urlpatterns += url(r'^chaining/', include('smart_selects.urls')),

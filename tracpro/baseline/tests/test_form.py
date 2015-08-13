@@ -6,7 +6,7 @@ class TestBaselineTermForm(TracProTest):
     form_class = BaselineTermForm
 
     def setUp(self):
-        super(UserFormTests, self).setUp()
+        super(TestBaselineTermForm, self).setUp()
         self.org = self.unicef
         self.data = {
             'name': 'Test Baseline Term',
