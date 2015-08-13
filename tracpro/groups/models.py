@@ -104,6 +104,9 @@ class Region(mptt.MPTTModel, AbstractGroup):
     parent = mptt.TreeForeignKey(
         'self', null=True, blank=True, related_name="children", db_index=True)
 
+    class MPTTMeta:
+        order_insertion_by = ['name']
+
     def get_users(self):
         return self.users.filter(is_active=True).select_related('profile')
 
