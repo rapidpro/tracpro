@@ -26,14 +26,14 @@ class BaselineTerm(models.Model):
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
 
-    baseline_poll = models.ForeignKey(Poll, related_name="baseline_terms",
-                                      help_text=_("The most recent response per user will be used as the baseline."))
+    baseline_poll = models.ForeignKey(Poll, related_name="baseline_terms")
     baseline_question = ChainedForeignKey(
         Question,
         chained_field='baseline_poll',
         chained_model_field='poll',
         auto_choose=True,
-        related_name="baseline_terms"
+        related_name="baseline_terms",
+        help_text=_("The most recent response per user will be used as the baseline.")
     )
 
     follow_up_poll = models.ForeignKey(Poll)
@@ -41,7 +41,8 @@ class BaselineTerm(models.Model):
         Question,
         chained_field='follow_up_poll',
         chained_model_field='poll',
-        auto_choose=True
+        auto_choose=True,
+        help_text=_("Responses over time to compare to the baseline.")
     )
 
     @classmethod
