@@ -17,7 +17,7 @@ class RegionCRUDL(SmartCRUDL):
 
     class List(OrgPermsMixin, SmartListView):
         fields = ('name', 'contacts')
-        default_order = ('name',)
+        paginate_by = None
 
         def derive_queryset(self, **kwargs):
             return Region.get_all(self.request.org)

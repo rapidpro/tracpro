@@ -1,7 +1,8 @@
 {% extends "smartmin/list.html" %}
 
-{% load smartmin %}
 {% load i18n %}
+{% load mptt_tags %}
+{% load smartmin %}
 
 {% block table-controls %}
   <div class="clearfix">
@@ -20,3 +21,26 @@
     </div>
   </div>
 {% endblock table-controls %}
+
+{% block table %}
+  <table class="list-table {% get_list_class object_list %} table table-bordered" cellspacing="0">
+    <thead>
+      <tr>
+        {% for field in fields %}
+          <th>{% get_label field %}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% recursetree object_list %}
+        <tr>
+          {% for field in fields %}
+            <td class="value-{{ field }}">{% get_value node field %}</td>
+          {% endfor %}
+        </tr>
+        {{ children }}
+      {% endrecursetree %}
+      {% block extra-rows %}{% endblock extra-rows %}
+    </tbody>
+  </table>
+{% endblock table %}
