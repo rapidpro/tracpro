@@ -52,14 +52,3 @@ class BaselineTermForm(forms.ModelForm):
             )
 
         return cleaned_data
-
-
-class BaselineTermFormMixin(object):
-    """
-    Mixin for views that use a BaselineTerm form
-    """
-
-    def get_form_kwargs(self):
-        kwargs = super(BaselineTermFormMixin, self).get_form_kwargs()
-        kwargs['user'] = self.request.user
-        return kwargs
