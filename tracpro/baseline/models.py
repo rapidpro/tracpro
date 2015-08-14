@@ -58,10 +58,11 @@ class BaselineTerm(models.Model):
             question=self.baseline_question,
             submitted_on__gte=self.start_date,
             submitted_on__lte=self.end_date,  # look into timezone
-        )
-        answers = answers.order_by("submitted_on")
-        baseline_answer = answers.last()
-        return baseline_answer.value
+        ).select_related('response','contact')
+        # Retrieve the most recent baseline results per contact
+        baseline_answers = answers.order_by('response__contact', '-submitted_on').distinct('response__contact')
+
+        return list(baseline_answers.values_list("submitted_on", "value", "response__contact__name"))
 
     def get_follow_up(self, region):
         answers = Answer.objects.filter(
@@ -69,6 +70,7 @@ class BaselineTerm(models.Model):
             question=self.follow_up_question,
             submitted_on__gte=self.start_date,
             submitted_on__lte=self.end_date,  # look into timezone
-        )
+        ).select_related('response','contact')
         answers = answers.order_by("submitted_on")
-        return list(answers.values_list("submitted_on", "value"))
+
+        return list(answers.values_list("submitted_on", "value", "response__contact__name"))

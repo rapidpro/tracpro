@@ -98,7 +98,6 @@ def multiple_pollruns(pollruns, question, region):
     else:
         chart_type = None
         chart_data = []
-
     return chart_type, render_data(chart_data)
 
 

@@ -7,8 +7,10 @@ from smartmin.views import (
     SmartListView, SmartReadView, SmartUpdateView
 )
 
+from tracpro.polls.models import Answer
 from .models import BaselineTerm
 from .forms import BaselineTermForm
+from .charts import baseline_chart
 
 
 class BaselineTermCRUDL(SmartCRUDL):
@@ -58,3 +60,13 @@ class BaselineTermCRUDL(SmartCRUDL):
         def derive_queryset(self, **kwargs):
             regions = self.request.user.get_regions(self.request.org)
             return BaselineTerm.get_all(self.request.org, regions)
+
+        def get_context_data(self, **kwargs):
+            context = super(BaselineTermCRUDL.Read, self).get_context_data(**kwargs)
+
+            context['baseline_answers'] = self.object.get_baseline(region=self.object.region)
+            context['follow_up_answers'] = self.object.get_follow_up(region=self.object.region)
+
+            baseline_chart(context['baseline_answers'])
+
+            return context

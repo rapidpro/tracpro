@@ -5,6 +5,11 @@
 
   {% include 'baseline/baselineterm_header.html' %}
 
+  <br>
+  {% for baseline_answer in baseline_answers %}
+    {{ baseline_answer }}<br>
+  {% endfor %}
+
 {% endblock pre-content %}
 
 {% block read-buttons %}
