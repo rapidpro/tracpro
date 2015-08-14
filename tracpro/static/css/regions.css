@@ -1,0 +1,15 @@
+table.treetable tr.branch.collapsed span.indenter a .glyphicon:before {
+    content: "\e080";  /* glyphicon-chevron-right */
+}
+table.treetable tr.branch.expanded span.indenter a .glyphicon:before {
+    content: "\e114";  /* glyphicon-chevron-down */
+}
+table.treetable span.indenter {
+    padding-right: 4px;
+}
+table.treetable span.indenter a {
+    color: inherit;
+}
+table.list_groups_region th:first-child {
+    width: 75%;  /* prevent visual shift when rows expand/collapse */
+}

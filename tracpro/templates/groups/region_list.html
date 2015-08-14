@@ -3,6 +3,23 @@
 {% load i18n %}
 {% load mptt_tags %}
 {% load smartmin %}
+{% load static from staticfiles %}
+
+{% block extra-script %}
+  {# Required for hierarchical tree structure. #}
+  <script src="{% static "libs/treetable-3.2.0/jquery.treetable.js" %}"></script>
+
+  <script src="{% static "js/regions.js" %}"></script>
+{% endblock extra-script %}
+
+{% block extra-style %}
+  {# Required for hierarchical tree structure. #}
+  <link href="{% static "libs/treetable-3.2.0/jquery.treetable.css" %}"
+        rel="stylesheet" type="text/css">
+
+  <link href="{% static "css/regions.css" %}"
+        rel="stylesheet" type="text/css">
+{% endblock extra-style %}
 
 {% block table-controls %}
   <div class="clearfix">
@@ -23,7 +40,7 @@
 {% endblock table-controls %}
 
 {% block table %}
-  <table class="list-table {% get_list_class object_list %} table table-bordered" cellspacing="0">
+  <table class="treetable list-table {% get_list_class object_list %} table table-bordered">
     <thead>
       <tr>
         {% for field in fields %}
@@ -33,7 +50,7 @@
     </thead>
     <tbody>
       {% recursetree object_list %}
-        <tr>
+        <tr data-tt-id="{{ node.pk }}"{% if node.is_child_node %} data-tt-parent-id="{{ node.parent.pk }}"{% endif %}>
           {% for field in fields %}
             <td class="value-{{ field }}">{% get_value node field %}</td>
           {% endfor %}
