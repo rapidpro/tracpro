@@ -26,11 +26,12 @@ class BaselineTermForm(forms.ModelForm):
 
         super(BaselineTermForm, self).__init__(*args, **kwargs)
 
-        self.fields['region'].queryset = self.user.get_regions(
-            org).order_by('name')
-        polls = Poll.get_all(org).order_by('name')
-        self.fields['baseline_poll'].queryset = polls
-        self.fields['follow_up_poll'].queryset = polls
+        if org:
+            self.fields['region'].queryset = self.user.get_regions(
+                org).order_by('name')
+            polls = Poll.get_all(org).order_by('name')
+            self.fields['baseline_poll'].queryset = polls
+            self.fields['follow_up_poll'].queryset = polls
 
     def clean(self, *args, **kwargs):
         cleaned_data = super(BaselineTermForm, self).clean()
