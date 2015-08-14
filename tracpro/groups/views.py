@@ -2,10 +2,13 @@ from __future__ import absolute_import, unicode_literals
 
 from dash.orgs.views import OrgPermsMixin
 
+from django.db.models import Prefetch
 from django.http import HttpResponseRedirect, JsonResponse
 from django.utils.translation import ugettext_lazy as _
 
 from smartmin.users.views import SmartCRUDL, SmartListView, SmartFormView
+
+from tracpro.contacts.models import Contact
 
 from .models import Group, Region
 from .forms import ContactGroupsForm
@@ -20,10 +23,18 @@ class RegionCRUDL(SmartCRUDL):
         paginate_by = None
 
         def derive_queryset(self, **kwargs):
-            return Region.get_all(self.request.org)
+            regions = Region.get_all(self.request.org)
+            regions = regions.prefetch_related(
+                Prefetch(
+                    "contacts",
+                    Contact.objects.filter(is_active=True),
+                    "prefetched_contacts",
+                ),
+            )
+            return regions
 
         def get_contacts(self, obj):
-            return obj.get_contacts().count()
+            return len(obj.prefetched_contacts)
 
     class MostActive(OrgPermsMixin, SmartListView):
 
