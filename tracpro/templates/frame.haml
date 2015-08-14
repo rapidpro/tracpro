@@ -180,7 +180,7 @@
       - block content-div
         .content
           - block messages
-            - if messages
+            #user-messages
               - for message in messages
                 .alert{ class:"alert-={ message.tags }"}
                   %a.close{ data-dismiss:"alert"}
