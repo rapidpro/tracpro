@@ -9,12 +9,23 @@
   {# Required for hierarchical tree structure. #}
   <script src="{% static "libs/treetable-3.2.0/jquery.treetable.js" %}"></script>
 
+  {# Required for drag-and-drop rows. #}
+  <script src="{% static "libs/jquery-ui-1.11.4/jquery-ui.min.js" %}"></script>
+
   <script src="{% static "js/regions.js" %}"></script>
 {% endblock extra-script %}
 
 {% block extra-style %}
   {# Required for hierarchical tree structure. #}
   <link href="{% static "libs/treetable-3.2.0/jquery.treetable.css" %}"
+        rel="stylesheet" type="text/css">
+
+  {# Required for drag-and-drop rows. #}
+  <link href="{% static "libs/jquery-ui-1.11.4/jquery-ui.min.css" %}"
+        rel="stylesheet" type="text/css">
+  <link href="{% static "libs/jquery-ui-1.11.4/jquery-ui.structure.min.css" %}"
+        rel="stylesheet" type="text/css">
+  <link href="{% static "libs/jquery-ui-1.11.4/jquery-ui.theme.min.css" %}"
         rel="stylesheet" type="text/css">
 
   <link href="{% static "css/regions.css" %}"
@@ -49,10 +60,19 @@
       </tr>
     </thead>
     <tbody>
+      {# Include a dummy row so regions can be dragged to the top level. #}
+      <tr data-tt-id="0">
+        <td colspan="{{ fields|length }}">All Regions</td>
+      </tr>
       {% recursetree object_list %}
-        <tr data-tt-id="{{ node.pk }}"{% if node.is_child_node %} data-tt-parent-id="{{ node.parent.pk }}"{% endif %}>
+        <tr data-tt-id="{{ node.pk }}"
+            data-tt-parent-id="{% if node.is_child_node %}{{ node.parent.pk }}{% else %}0{% endif %}">
           {% for field in fields %}
-            <td class="value-{{ field }}">{% get_value node field %}</td>
+            <td class="value-{{ field }}">
+              <span class="value">
+                {% get_value node field %}
+              </span>
+            </td>
           {% endfor %}
         </tr>
         {{ children }}

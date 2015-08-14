@@ -4,6 +4,12 @@ table.treetable tr.branch.collapsed span.indenter a .glyphicon:before {
 table.treetable tr.branch.expanded span.indenter a .glyphicon:before {
     content: "\e114";  /* glyphicon-chevron-down */
 }
+table.treetable tr.selected {
+    background-color: red;  /* FIXME */
+}
+table.treetable tr.hovered {
+    background-color: green;  /* FIXME */
+}
 table.treetable span.indenter {
     padding-right: 4px;
 }
