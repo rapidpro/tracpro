@@ -1,3 +1,13 @@
+#region-actions {
+    margin-bottom: 10px;
+}
+#edit-hierarchy-help {
+    color: #2d6ca2;  /* color of btn-primary */
+    font-weight: bold;
+}
+.btn.hierarchy {
+    width: 170px;  /* prevent visual shift when toggling between buttons */
+}
 table.treetable tr.branch.collapsed span.indenter a .glyphicon:before {
     content: "\e080";  /* glyphicon-chevron-right */
 }

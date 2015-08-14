@@ -33,25 +33,40 @@
 {% endblock extra-style %}
 
 {% block table-controls %}
-  <div class="clearfix">
-    <div class="pull-back">
-      {% trans "Each region is a contact group in RapidPro." %}
+  {% if org_perms.groups.region_select %}
+    <div id="region-actions" class="pull-right buttons">
+      <a class="btn btn-default"
+         href="{% url 'groups.region_select' %}">
+        <span class="glyphicon glyphicon-download"></span>
+        {% trans "Select Groups" %}
+      </a>
+      <button id="edit-hierarchy" class="btn btn-default hierarchy">
+        {% trans "Edit Region Hierarchy" %}
+      </button>
+      <button id="save-hierarchy" class="btn btn-primary hierarchy hidden">
+        {% trans "Save Region Hierarchy" %}
+      </button>
+      <button id="saving-hierarchy" class="btn btn-primary disabled hierarchy hidden">
+        {% trans "Saving..." %}
+      </button>
     </div>
+    <div class="clearfix"></div>
+  {% endif %}
 
-    <div class="pull-away buttons">
-      {% if org_perms.groups.region_select %}
-        <a class="btn btn-default pull-right"
-           href="{% url 'groups.region_select' %}">
-          <span class="glyphicon glyphicon-download"></span>
-          {% trans "Select Groups" %}
-        </a>
-      {% endif %}
-    </div>
+  <div>
+    <p>{% trans "Each region is a contact group in RapidPro." %}</p>
+
+    {% if org_perms.groups.region_select %}
+      <p id="edit-hierarchy-help" class="hidden">
+        {% trans "Edit region hierarchy by dragging and dropping table rows. Click 'Save Region Hierarchy' when changes are complete." %}
+      </p>
+    {% endif %}
   </div>
 {% endblock table-controls %}
 
 {% block table %}
-  <table class="treetable list-table {% get_list_class object_list %} table table-bordered">
+  <table class="treetable list-table {% get_list_class object_list %} table table-bordered"
+         data-update-hierarchy-url="{% url "groups.region_update_hierarchy" %}">
     <thead>
       <tr>
         {% for field in fields %}

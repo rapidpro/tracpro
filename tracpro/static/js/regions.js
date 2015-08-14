@@ -1,4 +1,125 @@
 $(function() {
+    var EDIT_HIERARCHY_MESSAGE = "edit-hierarchy-message";
+
+    /* Per Django documentation, to get CSRF cookie for AJAX post. */
+    function getCookie(name) {
+        var cookieValue = null;
+        if (document.cookie && document.cookie != '') {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = jQuery.trim(cookies[i]);
+                // Does this cookie string begin with the name we want?
+                if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    /* Add user message to the top of the page. */
+    var addUserMessage = function(id, type, message) {
+        clearUserMessage(id);
+        close = $("<a>").attr("href", "#")
+        close.addClass("close").attr("data-dismiss", "alert")
+        close.html("×");
+        msgDiv = $("<div>").attr("id", id);
+        msgDiv.addClass("alert alert-" + type);
+        msgDiv.html(message)
+        msgDiv.prepend(close);
+        $("#user-messages").append(msgDiv);
+    }
+
+    /* Remove user message from the top of the page. */
+    var clearUserMessage = function(id) {
+        $("#" + id).remove();
+    }
+
+    /* Allow user to edit region hierarchy. */
+    var editHierarchy = function() {
+        clearUserMessage(EDIT_HIERARCHY_MESSAGE);
+
+        /* Display only the "Save Hierarchy" button. */
+        $("#region-actions .btn.hierarchy").addClass("hidden");
+        $("#save-hierarchy").removeClass("hidden");
+
+        /* Show user help message. */
+        $("#edit-hierarchy-help").removeClass("hidden");
+
+        /* Enable drag-and-drop. */
+        $(".treetable tbody tr.region").draggable("enable");
+        $(".treetable tbody tr").droppable("enable");
+    }
+
+    /* Save edited region hierarchy to server. */
+    var saveHierarchy = function() {
+        /* Disable drag-and-drop. */
+        $(".treetable tbody tr.region").draggable("disable");
+        $(".treetable tbody tr").droppable("disable");
+
+        /* Hide user help message. */
+        $("#edit-hierarchy-help").addClass("hidden");
+
+        /* Display only the "Saving Hierarchy..." button. */
+        $("#region-actions .btn.hierarchy").addClass("hidden");
+        $("#saving-hierarchy").removeClass("hidden");
+
+        updateHierarchyOnServer();
+    }
+
+    /* Display success message & allow user to edit again. */
+    var saveHierarchySuccess = function(message) {
+        addUserMessage(EDIT_HIERARCHY_MESSAGE, "success", message);
+
+        /* Display only the "Edit Hierarchy" button. */
+        $("#region-actions .btn.hierarchy").addClass("hidden");
+        $("#edit-hierarchy").removeClass("hidden");
+    }
+
+    /* Display error message & maintain "editing" state. */
+    var saveHierarchyFailure = function(message) {
+        addUserMessage(EDIT_HIERARCHY_MESSAGE, "error", message);
+
+        /* Display only the "Save Hierarchy" button. */
+        $("#region-actions .btn.hierarchy").addClass("hidden");
+        $("#save-hierarchy").removeClass("hidden");
+    }
+
+    /* Send the updated region hierarchy to the server. */
+    var updateHierarchyOnServer = function() {
+        var regionParents = {};  // region id -> parent id
+        $(".list_groups_region").find("tr.region").each(function(i) {
+            var regionId = $(this).data("ttId");
+            var parentId = $(this).data("ttParentId");
+            regionParents[regionId] = parentId !== 0 ? parentId : null;
+        });
+
+        $.ajax({
+            data: {
+                csrfmiddlewaretoken: getCookie('csrftoken'),
+                data: JSON.stringify(regionParents)
+            },
+            dataType: "json",
+            type: "POST",
+            url: $(".list_groups_region").data("updateHierarchyUrl")
+        }).done(function(data, status, xhr) {
+            if (data['success']) {
+                saveHierarchySuccess(data['message']);
+            } else {
+                message = "<strong>An error occurred while saving the " +
+                          "hierarchy:</strong> " + data["message"];
+                saveHierarchyFailure(message);
+            }
+        }).fail(function() {
+            var message = "An error has occurred and your changes were not " +
+                          "saved. Please try again later.";
+            saveHierarchyFailure(message);
+        });
+    };
+
+    /* === INITIALIZATIONS === */
+
     /* Initialize the hierarchical tree table in the expanded state. */
     $(".treetable").treetable({
         expandable: true,
@@ -6,7 +127,7 @@ $(function() {
         initialState: "expanded"
     });
 
-    /* Allow dragging table rows. */
+    /* Allow dragging table rows, but keep disabled initially. */
     $(".treetable tbody tr").not(":first-child").draggable({
         containment: "document",
         cursor: "move",
@@ -31,8 +152,9 @@ $(function() {
             $(this).removeClass("selected");
         }
     });
+    $(".treetable tbody tr").not(":first-child").draggable("disable");
 
-    /* Allow dropping table rows. */
+    /* Allow dropping table rows, but keep disabled initially */
     $(".treetable tbody tr").droppable({
         accept: ".treetable tbody tr.region",
         drop: function(e, ui) {
@@ -53,4 +175,9 @@ $(function() {
             }
         }
     });
+    $(".treetable tbody tr").droppable("disable");
+
+    /* Toggle the ability to edit region hierarchy. */
+    $("#edit-hierarchy").click(editHierarchy);
+    $("#save-hierarchy").click(saveHierarchy);
 });
