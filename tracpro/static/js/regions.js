@@ -1,6 +1,11 @@
 $(function() {
     var EDIT_HIERARCHY_MESSAGE = "edit-hierarchy-message";
 
+    // The first row is a dummy that exists so that the user can drag
+    // other regions to the top level.
+    var ALL_ROWS = $(".treetable tbody tr");
+    var REGION_ROWS = ALL_ROWS.not(":first-child");
+
     /* Per Django documentation, to get CSRF cookie for AJAX post. */
     function getCookie(name) {
         var cookieValue = null;
@@ -48,15 +53,15 @@ $(function() {
         $("#edit-hierarchy-help").removeClass("hidden");
 
         /* Enable drag-and-drop. */
-        $(".treetable tbody tr.region").draggable("enable");
-        $(".treetable tbody tr").droppable("enable");
+        REGION_ROWS.draggable("enable");
+        ALL_ROWS.droppable("enable");
     }
 
     /* Save edited region hierarchy to server. */
     var saveHierarchy = function() {
         /* Disable drag-and-drop. */
-        $(".treetable tbody tr.region").draggable("disable");
-        $(".treetable tbody tr").droppable("disable");
+        REGION_ROWS.draggable("disable");
+        ALL_ROWS.droppable("disable");
 
         /* Hide user help message. */
         $("#edit-hierarchy-help").addClass("hidden");
@@ -89,7 +94,7 @@ $(function() {
     /* Send the updated region hierarchy to the server. */
     var updateHierarchyOnServer = function() {
         var regionParents = {};  // region id -> parent id
-        $(".list_groups_region").find("tr.region").each(function(i) {
+        $(".list_groups_region").find("tr:not(first-child)").each(function(i) {
             var regionId = $(this).data("ttId");
             var parentId = $(this).data("ttParentId");
             regionParents[regionId] = parentId !== 0 ? parentId : null;
@@ -128,7 +133,7 @@ $(function() {
     });
 
     /* Allow dragging table rows, but keep disabled initially. */
-    $(".treetable tbody tr").not(":first-child").draggable({
+    REGION_ROWS.draggable({
         containment: "document",
         cursor: "move",
         delay: 200,  // Avoid triggering drag when expanding/collapsing.
@@ -152,11 +157,11 @@ $(function() {
             $(this).removeClass("selected");
         }
     });
-    $(".treetable tbody tr").not(":first-child").draggable("disable");
+    REGION_ROWS.draggable("disable");
 
     /* Allow dropping table rows, but keep disabled initially */
-    $(".treetable tbody tr").droppable({
-        accept: ".treetable tbody tr.region",
+    ALL_ROWS.droppable({
+        accept: REGION_ROWS,
         drop: function(e, ui) {
             var table = $(this).closest(".treetable");
             var toMoveNode = table.treetable("node", ui.draggable.data("ttId"));
@@ -175,7 +180,7 @@ $(function() {
             }
         }
     });
-    $(".treetable tbody tr").droppable("disable");
+    ALL_ROWS.droppable("disable");
 
     /* Toggle the ability to edit region hierarchy. */
     $("#edit-hierarchy").click(editHierarchy);
