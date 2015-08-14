@@ -5,8 +5,10 @@ from dash.orgs.views import OrgPermsMixin
 from django.db.models import Prefetch
 from django.http import HttpResponseRedirect, JsonResponse
 from django.utils.translation import ugettext_lazy as _
+from django.views.generic import View
 
-from smartmin.users.views import SmartCRUDL, SmartListView, SmartFormView
+from smartmin.users.views import (
+    SmartCRUDL, SmartListView, SmartFormView, SmartView)
 
 from tracpro.contacts.models import Contact
 
@@ -16,7 +18,7 @@ from .forms import ContactGroupsForm
 
 class RegionCRUDL(SmartCRUDL):
     model = Region
-    actions = ('list', 'most_active', 'select')
+    actions = ('list', 'most_active', 'select', 'update_hierarchy')
 
     class List(OrgPermsMixin, SmartListView):
         fields = ('name', 'contacts')
@@ -35,6 +37,20 @@ class RegionCRUDL(SmartCRUDL):
 
         def get_contacts(self, obj):
             return len(obj.prefetched_contacts)
+
+    class UpdateHierarchy(OrgPermsMixin, SmartView, View):
+        http_method_names = ['post']
+
+        def post(self, request, *args, **kwargs):
+            # FIXME: stub.
+            message = '{org.name} region hierarchy has been updated.'.format(
+                org=request.org,
+            )
+            return JsonResponse({
+                'status': '200',
+                'success': True,
+                'message': message,
+            })
 
     class MostActive(OrgPermsMixin, SmartListView):
 
