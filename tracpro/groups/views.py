@@ -1,7 +1,10 @@
 from __future__ import absolute_import, unicode_literals
 
+import json
+
 from dash.orgs.views import OrgPermsMixin
 
+from django.db import transaction
 from django.db.models import Prefetch
 from django.http import HttpResponseRedirect, JsonResponse
 from django.utils.translation import ugettext_lazy as _
@@ -38,20 +41,6 @@ class RegionCRUDL(SmartCRUDL):
         def get_contacts(self, obj):
             return len(obj.prefetched_contacts)
 
-    class UpdateHierarchy(OrgPermsMixin, SmartView, View):
-        http_method_names = ['post']
-
-        def post(self, request, *args, **kwargs):
-            # FIXME: stub.
-            message = '{org.name} region hierarchy has been updated.'.format(
-                org=request.org,
-            )
-            return JsonResponse({
-                'status': '200',
-                'success': True,
-                'message': message,
-            })
-
     class MostActive(OrgPermsMixin, SmartListView):
 
         def get(self, request, *args, **kwargs):
@@ -79,6 +68,54 @@ class RegionCRUDL(SmartCRUDL):
         def form_valid(self, form):
             form.sync_contacts()
             return HttpResponseRedirect(self.get_success_url())
+
+    class UpdateHierarchy(OrgPermsMixin, SmartView, View):
+        http_method_names = ['post']
+
+        @transaction.atomic
+        def post(self, request, *args, **kwargs):
+            """AJAX endpoint to update Region hierarchy at once."""
+            try:
+                data = json.loads(request.POST.get('data'))
+            except (TypeError, ValueError):
+                return self.error_response(400, "Bad JSON.")
+            else:
+                if not isinstance(data, dict):
+                    return self.error_response(400, "Invalid format.")
+
+            # Grab all org regions.
+            regions = {str(r.pk): r for r in Region.get_all(request.org)}
+
+            # Check that the user is updating exactly the regions for this org.
+            sent_ids = set(str(i) for i in data.keys() + data.values() if i is not None)
+            if sent_ids != set(regions.keys()):
+                return self.error_response(400, "ID mismatch.")
+
+            with Region.objects.delay_mptt_updates():
+                for region_id, parent_id in data.items():
+                    region = regions.get(str(region_id))
+                    parent = regions.get(str(parent_id))
+                    if region.parent != parent:
+                        region.parent = parent
+                        region.save()
+
+            message = '{org.name} region hierarchy has been updated.'
+            message = message.format(org=request.org)
+            return self.success_response(message)
+
+        def error_response(self, status, message):
+            return JsonResponse({
+                'status': status,
+                'success': False,
+                'message': message,
+            })
+
+        def success_response(self, message):
+            return JsonResponse({
+                'status': 200,
+                'success': True,
+                'message': message,
+            })
 
 
 class GroupCRUDL(SmartCRUDL):
