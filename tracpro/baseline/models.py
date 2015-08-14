@@ -46,8 +46,10 @@ class BaselineTerm(models.Model):
     )
 
     @classmethod
-    def get_all(cls, org):
+    def get_all(cls, org, regions=None):
         baseline_terms = cls.objects.filter(org=org)
+        if regions:
+            baseline_terms = baseline_terms.filter(region__in=regions)
         return baseline_terms
 
     def get_baseline(self, region):

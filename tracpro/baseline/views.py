@@ -4,7 +4,7 @@ from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 
 from smartmin.views import (
     SmartCRUDL, SmartCreateView, SmartDeleteView,
-    SmartListView, SmartUpdateView
+    SmartListView, SmartReadView, SmartUpdateView
 )
 
 from .models import BaselineTerm
@@ -29,7 +29,8 @@ class BaselineTermCRUDL(SmartCRUDL):
         link_fields = ('name')
 
         def derive_queryset(self, **kwargs):
-            qs = BaselineTerm.get_all(self.request.org)
+            regions = [self.request.region] if self.request.region else None
+            qs = BaselineTerm.get_all(self.request.org, regions)
             qs = qs.order_by('-start_date', '-end_date')
             return qs
 
@@ -43,7 +44,17 @@ class BaselineTermCRUDL(SmartCRUDL):
         form_class = BaselineTermForm
         delete_url = ''     # Turn off the smartmin delete button for this view
 
+        def derive_queryset(self, **kwargs):
+            regions = self.request.user.get_regions(self.request.org)
+            return BaselineTerm.get_all(self.request.org, regions)
+
         def get_form_kwargs(self):
             kwargs = super(BaselineTermCRUDL.Update, self).get_form_kwargs()
             kwargs['user'] = self.request.user
             return kwargs
+
+    class Read(OrgObjPermsMixin, SmartReadView):
+
+        def derive_queryset(self, **kwargs):
+            regions = self.request.user.get_regions(self.request.org)
+            return BaselineTerm.get_all(self.request.org, regions)
