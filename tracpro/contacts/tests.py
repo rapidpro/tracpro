@@ -8,11 +8,11 @@ from django.utils import timezone
 from mock import patch
 from temba.types import Contact as TembaContact, Run
 from tracpro.polls.models import PollRun, Response, RESPONSE_COMPLETE, RESPONSE_EMPTY
-from tracpro.test import TracProTest
+from tracpro.test.cases import TracProDataTest
 from .models import Contact
 
 
-class ContactTest(TracProTest):
+class ContactTest(TracProDataTest):
     @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
     @patch('dash.orgs.models.TembaClient.create_contact')
     def test_create(self, mock_create_contact):
@@ -108,7 +108,7 @@ class ContactTest(TracProTest):
         self.assertEqual(str(self.contact1), "1234")
 
 
-class ContactCRUDLTest(TracProTest):
+class ContactCRUDLTest(TracProDataTest):
     def test_create(self):
         url = reverse('contacts.contact_create')
 

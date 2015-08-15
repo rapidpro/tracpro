@@ -1,10 +1,11 @@
 from __future__ import absolute_import, unicode_literals
 
 from django.core.urlresolvers import reverse
-from tracpro.test import TracProTest
+from tracpro.test.cases import TracProDataTest
 
 
-class HomeViewTest(TracProTest):
+class HomeViewTest(TracProDataTest):
+
     def test_home(self):
         # can't access it anonymously
         response = self.url_get('unicef', reverse('home.home'))

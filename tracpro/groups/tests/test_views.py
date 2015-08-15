@@ -6,10 +6,10 @@ from django.core.urlresolvers import reverse
 from django.utils import timezone
 
 from tracpro.polls import models as polls
-from tracpro.test import TracProTest
+from tracpro.test.cases import TracProDataTest
 
 
-class TestRegionList(TracProTest):
+class TestRegionList(TracProDataTest):
     url_name = "groups.region_list"
 
     def test_list_non_admin(self):
@@ -24,7 +24,7 @@ class TestRegionList(TracProTest):
         self.assertEqual(len(response.context['object_list']), 3)
 
 
-class TestRegionMostActive(TracProTest):
+class TestRegionMostActive(TracProDataTest):
     url_name = "groups.region_most_active"
 
     def test_most_active(self):
@@ -79,7 +79,7 @@ class TestRegionMostActive(TracProTest):
         self.assertEqual(results[1]['response_count'], 1)
 
 
-class TestGroupList(TracProTest):
+class TestGroupList(TracProDataTest):
     url_name = "groups.group_list"
 
     def test_non_admin(self):
@@ -94,7 +94,7 @@ class TestGroupList(TracProTest):
         self.assertEqual(len(response.context['object_list']), 3)
 
 
-class TestGroupMostActive(TracProTest):
+class TestGroupMostActive(TracProDataTest):
     url_name = "groups.group_most_active"
 
     def test_most_active(self):

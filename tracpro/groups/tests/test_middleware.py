@@ -1,9 +1,9 @@
 from django.core.urlresolvers import reverse
 
-from tracpro.test import TracProTest
+from tracpro.test.cases import TracProDataTest
 
 
-class UserRegionsMiddlewareTest(TracProTest):
+class UserRegionsMiddlewareTest(TracProDataTest):
     def test_process_request(self):
         # make anonymous request to home page
         response = self.url_get('unicef', reverse('home.home'))

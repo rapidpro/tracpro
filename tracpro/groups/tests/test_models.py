@@ -7,12 +7,12 @@ from django.utils import timezone
 from temba.types import Contact as TembaContact, Group as TembaGroup
 
 from tracpro.contacts.models import Contact
-from tracpro.test import TracProTest
+from tracpro.test.cases import TracProDataTest
 
 from .. import models
 
 
-class TestRegion(TracProTest):
+class TestRegion(TracProDataTest):
 
     def test_create(self):
         zabul = models.Region.create(self.unicef, "Zabul", 'G-101')
@@ -112,7 +112,7 @@ class TestRegion(TracProTest):
         Contact.objects.get(name="Jan", is_active=True)
 
 
-class TestGroup(TracProTest):
+class TestGroup(TracProDataTest):
 
     def test_create(self):
         group = models.Group.create(self.unicef, "Male Teachers", 'G-101')

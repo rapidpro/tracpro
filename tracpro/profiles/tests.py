@@ -2,10 +2,10 @@ from __future__ import absolute_import, unicode_literals
 
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
-from tracpro.test import TracProTest
+from tracpro.test.cases import TracProDataTest
 
 
-class UserPatchTest(TracProTest):
+class UserPatchTest(TracProDataTest):
     def test_create_user(self):
         user = User.create(self.unicef, "Mo Polls", "mo@trac.com", "Qwerty123", False,
                            regions=[self.region1, self.region2])
@@ -50,7 +50,7 @@ class UserPatchTest(TracProTest):
         self.assertEqual(str(self.user1), "sam@unicef.org")
 
 
-class UserCRUDLTest(TracProTest):
+class UserCRUDLTest(TracProDataTest):
     def test_create(self):
         url = reverse('profiles.user_create')
 
@@ -262,7 +262,7 @@ class UserCRUDLTest(TracProTest):
         self.assertNotEqual(user.password, old_password_hash)
 
 
-class DashUserCRUDLTest(TracProTest):
+class DashUserCRUDLTest(TracProDataTest):
     def test_login(self):
         url = reverse('users.user_login')
 
@@ -275,7 +275,7 @@ class DashUserCRUDLTest(TracProTest):
         self.assertRedirects(response, 'http://unicef.localhost/', fetch_redirect_response=False)
 
 
-class ForcePasswordChangeMiddlewareTest(TracProTest):
+class ForcePasswordChangeMiddlewareTest(TracProDataTest):
     def test_process_view(self):
         self.user1.profile.change_password = True
         self.user1.profile.save()
