@@ -53,6 +53,7 @@ $(function() {
         $("#edit-hierarchy-help").removeClass("hidden");
 
         /* Enable drag-and-drop. */
+        $(".list_groups_region").addClass("edit-mode");
         REGION_ROWS.draggable("enable");
         ALL_ROWS.droppable("enable");
     }
@@ -78,6 +79,7 @@ $(function() {
         addUserMessage(EDIT_HIERARCHY_MESSAGE, "success", message);
 
         /* Display only the "Edit Hierarchy" button. */
+        $(".list_groups_region").removeClass("edit-mode");
         $("#region-actions .btn.hierarchy").addClass("hidden");
         $("#edit-hierarchy").removeClass("hidden");
     }
