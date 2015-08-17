@@ -297,6 +297,7 @@ GROUP_PERMISSIONS = {
         'polls.response_by_pollrun',
         'profiles.profile_user_read',
     ),
+    "Viewers": (),
 }
 
 ORG_CONFIG_FIELDS = [
@@ -327,7 +328,7 @@ PERMISSIONS = {
     'orgs.org': ('create', 'update', 'list', 'edit', 'home'),
     'contacts.contact': ('create', 'read', 'update', 'delete', 'list'),
     'groups.group': ('list', 'most_active', 'select'),
-    'groups.region': ('list', 'most_active', 'select'),
+    'groups.region': ('list', 'most_active', 'select', 'update_hierarchy'),
     'msgs.message': ('list', 'send', 'by_contact'),
     'msgs.inboxmessage': ('read', 'list', 'conversation'),
     'polls.poll': ('read', 'update', 'list', 'select'),
