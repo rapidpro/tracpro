@@ -242,7 +242,7 @@ class ContactCRUDLTest(TracProDataTest):
 
         # delete contact
         response = self.url_post('unicef', reverse('contacts.contact_delete', args=[self.contact1.pk]))
-        self.assertRedirects(response, 'http://unicef.localhost/contact/', fetch_redirect_response=False)
+        self.assertRedirects(response, 'http://unicef.testserver/contact/', fetch_redirect_response=False)
         self.assertFalse(Contact.objects.get(pk=self.contact1.pk).is_active)
 
         # try to delete contact from other org
@@ -255,7 +255,7 @@ class ContactCRUDLTest(TracProDataTest):
 
         # delete contact from region we have access to
         response = self.url_post('unicef', reverse('contacts.contact_delete', args=[self.contact3.pk]))
-        self.assertRedirects(response, 'http://unicef.localhost/contact/', fetch_redirect_response=False)
+        self.assertRedirects(response, 'http://unicef.testserver/contact/', fetch_redirect_response=False)
         contact = Contact.objects.get(pk=self.contact3.pk)
         self.assertFalse(contact.is_active)
         self.assertEqual(contact.modified_by, self.user1)

@@ -230,4 +230,4 @@ class DashUserCRUDLTest(TracProDataTest):
 
         # login with org subdomain
         response = self.url_post('unicef', url, dict(username='sam@unicef.org', password='sam@unicef.org'))
-        self.assertRedirects(response, 'http://unicef.localhost/', fetch_redirect_response=False)
+        self.assertRedirects(response, 'http://unicef.testserver/', fetch_redirect_response=False)
