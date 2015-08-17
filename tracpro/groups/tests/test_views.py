@@ -14,8 +14,9 @@ class TestRegionList(TracProDataTest):
 
     def test_list_non_admin(self):
         self.login(self.user1)  # not an admin
-        response = self.url_get('unicef', reverse(self.url_name))
-        self.assertRedirects(response, 'http://unicef.localhost/users/login/?next=/region/')
+        url = reverse(self.url_name)
+        response = self.url_get('unicef', url)
+        self.assertLoginRedirect(response, "unicef", url)
 
     def test_list_admin(self):
         self.login(self.admin)
@@ -84,8 +85,9 @@ class TestGroupList(TracProDataTest):
 
     def test_non_admin(self):
         self.login(self.user1)  # not an admin
-        response = self.url_get('unicef', reverse(self.url_name))
-        self.assertRedirects(response, 'http://unicef.localhost/users/login/?next=/group/')
+        url = reverse(self.url_name)
+        response = self.url_get('unicef', url)
+        self.assertLoginRedirect(response, "unicef", url)
 
     def test_admin(self):
         self.login(self.admin)
