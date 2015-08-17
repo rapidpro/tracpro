@@ -1,5 +1,6 @@
 from __future__ import absolute_import, unicode_literals
 
+import logging
 import json
 
 from dash.orgs.views import OrgPermsMixin
@@ -17,6 +18,9 @@ from tracpro.contacts.models import Contact
 
 from .models import Group, Region
 from .forms import ContactGroupsForm
+
+
+logger = logging.getLogger(__name__)
 
 
 class RegionCRUDL(SmartCRUDL):
@@ -75,22 +79,45 @@ class RegionCRUDL(SmartCRUDL):
         @transaction.atomic
         def post(self, request, *args, **kwargs):
             """AJAX endpoint to update Region hierarchy at once."""
+
+            # Load data and validate that it is in the correct format.
+            raw_data = request.POST.get('data', "").strip() or None
             try:
-                data = json.loads(request.POST.get('data'))
-            except (TypeError, ValueError):
-                return self.error_response(400, "Bad JSON.")
-            else:
-                if not isinstance(data, dict):
-                    return self.error_response(400, "Invalid format.")
+                data = json.loads(raw_data)
+            except TypeError:
+                msg = "No data was provided in the `data` parameter."
+                logger.warning("Hierarchy: " + msg, exc_info=True)
+                return self.error_response(400, msg)
+            except ValueError:
+                msg = "Data must be valid JSON. "
+                logger.warning("Hierarchy: " + msg + raw_data, exc_info=True)
+                return self.error_response(400, msg)
+            if not isinstance(data, dict):
+                msg = "Data must be a dict that maps region id to parent id. "
+                logger.warning("Hierarchy: " + msg + raw_data)
+                return self.error_response(400, msg)
 
-            # Grab all org regions.
-            regions = {str(r.pk): r for r in Region.get_all(request.org)}
+            # Grab all of the org's regions at once.
+            org = request.org
+            regions = {str(r.pk): r for r in Region.get_all(org)}
 
-            # Check that the user is updating exactly the regions for this org.
-            sent_ids = set(str(i) for i in data.keys() + data.values() if i is not None)
-            if sent_ids != set(regions.keys()):
-                return self.error_response(400, "ID mismatch.")
+            # Check that the user is updating exactly the regions from this
+            # org, and that specified parents are regions from this org.
+            expected_ids = set(regions.keys())
+            sent_regions = set(str(i) for i in data.keys())
+            sent_parents = set(str(i) for i in data.values() if i is not None)
+            if sent_regions != expected_ids:
+                msg = ("Data must map region id to parent id for each "
+                       "region in this org. ")
+                logger.warning("Hierarchy: " + msg + raw_data)
+                return self.error_response(400, msg)
+            elif not sent_parents.issubset(expected_ids):
+                msg = ("Region parent must be a region from the same org, "
+                       "or null. ")
+                logger.warning("Hierarchy: " + msg + raw_data)
+                return self.error_response(400, msg)
 
+            # Re-set parent values for each region.
             with Region.objects.delay_mptt_updates():
                 for region_id, parent_id in data.items():
                     region = regions.get(str(region_id))
@@ -99,9 +126,9 @@ class RegionCRUDL(SmartCRUDL):
                         region.parent = parent
                         region.save()
 
-            message = '{org.name} region hierarchy has been updated.'
-            message = message.format(org=request.org)
-            return self.success_response(message)
+            msg = '{} region hierarchy has been updated. '.format(org.name)
+            logger.info("Hierarchy: " + msg + raw_data)
+            return self.success_response(msg)
 
         def error_response(self, status, message):
             return JsonResponse({
