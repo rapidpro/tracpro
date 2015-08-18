@@ -5,12 +5,66 @@
 
   {% include 'baseline/baselineterm_header.html' %}
 
-  <br>
-  {% for baseline_answer in baseline_answers %}
-    {{ baseline_answer }}<br>
-  {% endfor %}
+  <div id="container" style="min-width: 310px; height: 400px; max-width: 800px; margin: 0 auto"></div>
 
 {% endblock pre-content %}
 
-{% block read-buttons %}
-{% endblock read-buttons %}
+{% block read-buttons %}{% endblock read-buttons %}
+
+{% block extra-script %}
+<script src="http://code.highcharts.com/modules/exporting.js"></script>
+<script>
+$(function () {
+    $('#container').highcharts({
+        title: {
+            text: '{{ baselineterm.name }}'
+        },
+        subtitle: {
+            text: 'Baseline gathered from: {{ baselineterm.baseline_question }}'
+        },
+        xAxis: {
+            categories: [
+                        {% for date in date_list %}
+                            '{{ date }}',
+                        {% endfor %}
+                        ]
+        },
+        yAxis: {
+            title: {
+                text: 'Boys'
+            }
+        },
+        series: [
+        // Baseline Data
+        {% for key, values in baseline_dict.items %}
+            {
+                type: 'area',
+                name: '{{ key }} Baseline',
+                {% for subkey, subvalue in values.items %}
+                    {% if subkey == "value" %}
+                        data: [
+                              {% for i in date_count %}
+                                {{ subvalue }},
+                              {% endfor %}
+                              ]
+                    {% endif %}
+                {% endfor %}
+            },
+        {% endfor %}
+        // Follow Up Data
+        {% for key, values in answers_dict.items %}
+            {
+                type: 'area',
+                name: '{{ key }}',
+                {% for subkey, subvalue in values.items %}
+                    {% if subkey == "values" %}
+                        data: {{ subvalue }}
+                    {% endif %}
+                {% endfor %}
+            },
+        {% endfor %}
+        ]
+    });
+});
+</script>
+{% endblock extra-script %}

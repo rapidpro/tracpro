@@ -58,19 +58,36 @@ class BaselineTerm(models.Model):
             question=self.baseline_question,
             submitted_on__gte=self.start_date,
             submitted_on__lte=self.end_date,  # look into timezone
-        ).select_related('response','contact')
+        ).select_related('response')
         # Retrieve the most recent baseline results per contact
         baseline_answers = answers.order_by('response__contact', '-submitted_on').distinct('response__contact')
 
         return list(baseline_answers.values_list("submitted_on", "value", "response__contact__name"))
 
     def get_follow_up(self, region):
+        """ Get all follow up responses """
+        # TODO: extra() may be depricated in future versions of Django
         answers = Answer.objects.filter(
             response__contact__region=region,
             question=self.follow_up_question,
             submitted_on__gte=self.start_date,
             submitted_on__lte=self.end_date,  # look into timezone
-        ).select_related('response','contact')
-        answers = answers.order_by("submitted_on")
+        ).select_related('response').extra({"submitted_on_date": "date(submitted_on)"})
 
-        return list(answers.values_list("submitted_on", "value", "response__contact__name"))
+        answers = answers.order_by("response__contact__name", "submitted_on")
+
+        contact_answers = {}
+        for contact in answers.values('response__contact__name').distinct():
+            contact_name = contact['response__contact__name'].encode('ascii');
+            contact_answers[contact_name] = {};
+            contact_answers[contact_name]["values"] = answers.filter(
+                                                      response__contact__name=contact_name).values_list(
+                                                      "value", flat=True);
+            contact_answers[contact_name]["dates"] = answers.filter(
+                                                     response__contact__name=contact_name).values_list(
+                                                     "submitted_on_date", flat=True);
+
+        dates = answers.extra({"submitted_on_date": "date(submitted_on)"}).values_list(
+                               "submitted_on_date").order_by("submitted_on_date").distinct()
+
+        return contact_answers, dates
