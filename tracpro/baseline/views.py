@@ -1,5 +1,4 @@
 from django.core.urlresolvers import reverse
-from django.utils.translation import ugettext_lazy as _
 
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 
@@ -7,12 +6,9 @@ from smartmin.views import (
     SmartCRUDL, SmartCreateView, SmartDeleteView,
     SmartListView, SmartReadView, SmartUpdateView
 )
-from smartmin.users.views import SmartTemplateView
 
-from tracpro.polls.models import Answer, PollRun
 from .models import BaselineTerm
 from .forms import BaselineTermForm
-from .charts import baseline_chart
 
 
 class BaselineTermCRUDL(SmartCRUDL):
@@ -69,8 +65,6 @@ class BaselineTermCRUDL(SmartCRUDL):
             baselines = self.object.get_baseline(region=self.object.region)
             follow_ups, dates = self.object.get_follow_up(region=self.object.region)
 
-            baseline_answers = []
-            baseline_contacts = []
             baseline_dict = {}
             for baseline in baselines:
                 baseline_dict[baseline[2]] = {}
@@ -80,8 +74,8 @@ class BaselineTermCRUDL(SmartCRUDL):
             answers_dict = {}
             for follow_up in follow_ups:
                 answers_dict[follow_up] = {}
-                answers_dict[follow_up]["dates"] = [date.strftime("%m/%d") for date in follow_ups[follow_up]["dates"]];
-                answers_dict[follow_up]["values"] =  [float(val) for val in follow_ups[follow_up]["values"]];
+                answers_dict[follow_up]["dates"] = [date.strftime("%m/%d") for date in follow_ups[follow_up]["dates"]]
+                answers_dict[follow_up]["values"] = [float(val) for val in follow_ups[follow_up]["values"]]
             context['answers_dict'] = answers_dict
 
             date_list = []

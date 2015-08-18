@@ -78,14 +78,14 @@ class BaselineTerm(models.Model):
 
         contact_answers = {}
         for contact in answers.values('response__contact__name').distinct():
-            contact_name = contact['response__contact__name'].encode('ascii');
-            contact_answers[contact_name] = {};
+            contact_name = contact['response__contact__name'].encode('ascii')
+            contact_answers[contact_name] = {}
             contact_answers[contact_name]["values"] = answers.filter(
                                                       response__contact__name=contact_name).values_list(
-                                                      "value", flat=True);
+                                                      "value", flat=True)
             contact_answers[contact_name]["dates"] = answers.filter(
                                                      response__contact__name=contact_name).values_list(
-                                                     "submitted_on_date", flat=True);
+                                                     "submitted_on_date", flat=True)
 
         dates = answers.extra({"submitted_on_date": "date(submitted_on)"}).values_list(
                                "submitted_on_date").order_by("submitted_on_date").distinct()
