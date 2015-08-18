@@ -298,13 +298,22 @@ GROUP_PERMISSIONS = {
     ),
 }
 
-ORG_CONFIG_FIELDS = [{
-    'name': 'facility_code_field',
-    'field': {
-        'help_text': _("Contact field to use as the facility code"),
-        'required': True,
-    }
-}]
+ORG_CONFIG_FIELDS = [
+    {
+        'name': 'facility_code_field',
+        'field': {
+            'help_text': _("Contact field to use as the facility code"),
+            'required': True,
+        },
+    },
+    {
+        'name': 'available_languages',
+        'field': {
+            'help_text': _("The languages used by administrators in your organization"),
+            'required': True,
+        },
+    },
+]
 
 PERMISSIONS = {
     '*': (

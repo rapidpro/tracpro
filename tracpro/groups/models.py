@@ -11,17 +11,17 @@ from tracpro.contacts.tasks import sync_org_contacts
 
 @python_2_unicode_compatible
 class AbstractGroup(models.Model):
-    """
-    Corresponds to a RapidPro contact group
-    """
+    """Corresponds to a RapidPro contact group."""
+
     uuid = models.CharField(max_length=36, unique=True)
-
-    org = models.ForeignKey('orgs.Org', verbose_name=_("Organization"), related_name="%(class)ss")
-
-    name = models.CharField(verbose_name=_("Name"), max_length=128, blank=True,
-                            help_text=_("The name of this region"))
-
-    is_active = models.BooleanField(default=True, help_text="Whether this item is active")
+    org = models.ForeignKey(
+        'orgs.Org', verbose_name=_("Organization"), related_name="%(class)ss")
+    name = models.CharField(
+        verbose_name=_("Name"), max_length=128, blank=True,
+        help_text=_("The name of this region"))
+    is_active = models.BooleanField(
+        default=True,
+        help_text=_("Whether this item is active"))
 
     class Meta:
         abstract = True
@@ -35,11 +35,10 @@ class AbstractGroup(models.Model):
 
     @classmethod
     def sync_with_groups(cls, org, group_uuids):
-        """
-        Updates an org's groups based on the selected groups UUIDs
-        """
+        """Updates an org's groups based on the selected groups UUIDs."""
         # de-activate any active groups not included
-        cls.objects.filter(org=org, is_active=True).exclude(uuid__in=group_uuids).update(is_active=False)
+        other_groups = cls.objects.filter(org=org, is_active=True).exclude(uuid__in=group_uuids)
+        other_groups = other_groups.update(is_active=False)
 
         # fetch group details
         groups = org.get_temba_client().get_groups()
@@ -81,16 +80,14 @@ class AbstractGroup(models.Model):
     @classmethod
     def get_most_active(cls, org):
         from tracpro.polls.models import Window
-
-        count_by_id = cls.get_response_counts(org, window=Window.last_30_days, include_empty=False)
-
+        count_by_id = cls.get_response_counts(org, window=Window.last_30_days,
+                                              include_empty=False)
         groups = []
         for group in cls.get_all(org):
             count = count_by_id.get(group.pk, 0)
             if count:
                 group.response_count = count
                 groups.append(group)
-
         return sorted(groups, key=lambda g: g.response_count, reverse=True)
 
     def get_contacts(self):
@@ -98,18 +95,16 @@ class AbstractGroup(models.Model):
 
 
 class Region(AbstractGroup):
-    """
-    A geographical region modelled as a group
-    """
-    users = models.ManyToManyField(User, verbose_name=_("Users"), related_name='regions',
-                                   help_text=_("Users who can access this region"))
+    """A geographical region modelled as a group."""
+
+    users = models.ManyToManyField(
+        User, verbose_name=_("Users"), related_name='regions',
+        help_text=_("Users who can access this region"))
 
     def get_users(self):
         return self.users.filter(is_active=True).select_related('profile')
 
 
 class Group(AbstractGroup):
-    """
-    A data reporting group
-    """
+    """A data reporting group."""
     pass
