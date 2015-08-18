@@ -3,8 +3,9 @@ from __future__ import unicode_literals
 from django.core.exceptions import NON_FIELD_ERRORS
 from django.test import override_settings, TestCase
 
+from tracpro.test import factories
+
 from .. import forms
-from . import factories
 
 
 @override_settings(LANGUAGES=[

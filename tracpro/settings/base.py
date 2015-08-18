@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     'compressor',
     'djcelery',
     'guardian',
+    'mptt',
     'reversion',
     'sorl.thumbnail',
 
@@ -296,15 +297,25 @@ GROUP_PERMISSIONS = {
         'polls.response_by_pollrun',
         'profiles.profile_user_read',
     ),
+    "Viewers": (),
 }
 
-ORG_CONFIG_FIELDS = [{
-    'name': 'facility_code_field',
-    'field': {
-        'help_text': _("Contact field to use as the facility code"),
-        'required': True,
-    }
-}]
+ORG_CONFIG_FIELDS = [
+    {
+        'name': 'facility_code_field',
+        'field': {
+            'help_text': _("Contact field to use as the facility code"),
+            'required': True,
+        },
+    },
+    {
+        'name': 'available_languages',
+        'field': {
+            'help_text': _("The languages used by administrators in your organization"),
+            'required': True,
+        },
+    },
+]
 
 PERMISSIONS = {
     '*': (
@@ -317,7 +328,7 @@ PERMISSIONS = {
     'orgs.org': ('create', 'update', 'list', 'edit', 'home'),
     'contacts.contact': ('create', 'read', 'update', 'delete', 'list'),
     'groups.group': ('list', 'most_active', 'select'),
-    'groups.region': ('list', 'most_active', 'select'),
+    'groups.region': ('list', 'most_active', 'select', 'update_hierarchy'),
     'msgs.message': ('list', 'send', 'by_contact'),
     'msgs.inboxmessage': ('read', 'list', 'conversation'),
     'polls.poll': ('read', 'update', 'list', 'select'),

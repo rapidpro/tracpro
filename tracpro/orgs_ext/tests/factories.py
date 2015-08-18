@@ -2,28 +2,10 @@ import factory
 import factory.django
 import factory.fuzzy
 
-
-class SmartModelFactory(factory.django.DjangoModelFactory):
-    created_by = factory.SubFactory("tracpro.orgs_ext.tests.factories.User")
-    modified_by = factory.SubFactory("tracpro.orgs_ext.tests.factories.User")
-
-    class Meta:
-        abstract = True
+from tracpro.test.factory_utils import SmartModelFactory
 
 
-class User(factory.django.DjangoModelFactory):
-    username = factory.fuzzy.FuzzyText()
-    email = factory.Sequence(lambda n: "user{0}@gmail.com".format(n))
-
-    class Meta:
-        model = "auth.User"
-
-    @factory.post_generation
-    def password(self, create, extracted, **kwargs):
-        password = extracted or "password"
-        self.set_password(password)
-        if create:
-            self.save()
+__all__ = ['Org']
 
 
 class Org(SmartModelFactory):
