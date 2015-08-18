@@ -57,6 +57,7 @@ $(function() {
         REGION_ROWS.draggable("enable");
         ALL_ROWS.droppable("enable");
     }
+    $("#edit-hierarchy").click(editHierarchy);
 
     /* Save edited region hierarchy to server. */
     var saveHierarchy = function() {
@@ -73,6 +74,7 @@ $(function() {
 
         updateHierarchyOnServer();
     }
+    $("#save-hierarchy").click(saveHierarchy);
 
     /* Display success message & allow user to edit again. */
     var saveHierarchySuccess = function(message) {
@@ -125,16 +127,7 @@ $(function() {
         });
     };
 
-    /* === INITIALIZATIONS === */
-
-    /* Initialize the hierarchical tree table in the expanded state. */
-    $(".treetable").treetable({
-        expandable: true,
-        expanderTemplate: '<a href="#"><span class="glyphicon"></span></a>',
-        initialState: "expanded"
-    });
-
-    /* Allow dragging table rows, but keep disabled initially. */
+    /* Allow dragging table rows that represent regions. */
     REGION_ROWS.draggable({
         containment: "document",
         cursor: "move",
@@ -159,9 +152,9 @@ $(function() {
             $(this).removeClass("selected");
         }
     });
-    REGION_ROWS.draggable("disable");
+    REGION_ROWS.draggable("disable");  // Enable by clicking #edit-hierarchy.
 
-    /* Allow dropping table rows, but keep disabled initially */
+    /* Allow dropping regions onto any table row. */
     ALL_ROWS.droppable({
         accept: REGION_ROWS,
         drop: function(e, ui) {
@@ -182,9 +175,12 @@ $(function() {
             }
         }
     });
-    ALL_ROWS.droppable("disable");
+    ALL_ROWS.droppable("disable");  // Enable by clicking #edit-hierarchy.
 
-    /* Toggle the ability to edit region hierarchy. */
-    $("#edit-hierarchy").click(editHierarchy);
-    $("#save-hierarchy").click(saveHierarchy);
+    /* Initialize the hierarchical tree table in the expanded state. */
+    $(".treetable").treetable({
+        expandable: true,
+        expanderTemplate: '<a href="#"><span class="glyphicon"></span></a>',
+        initialState: "expanded"
+    });
 });
