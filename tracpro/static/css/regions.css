@@ -65,7 +65,7 @@ table.treetable.edit-mode tr.ui-draggable:not(.hovered) {
     cursor: -moz-grab;
     cursor: -webkit-grab;
 }
-table.treetable.edit-mode tr.ui-draggable:hover {
+table.treetable.edit-mode tr.ui-draggable:not(.selected):hover {
     background-color: #f5f5f5;
 }
 table.treetable.edit-mode tr.ui-draggable.selected {
