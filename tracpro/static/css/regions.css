@@ -60,7 +60,7 @@ table.treetable.edit-mode {
 table.treetable.edit-mode tr {
     cursor: default;
 }
-table.treetable.edit-mode tr.ui-draggable {
+table.treetable.edit-mode tr.ui-draggable:not(.hovered) {
     cursor: grab;
     cursor: -moz-grab;
     cursor: -webkit-grab;
