@@ -76,11 +76,12 @@
     </thead>
     <tbody>
       {# Include a dummy row so regions can be dragged to the top level. #}
-      <tr data-tt-id="0">
+      <tr class="region hidden" data-tt-id="0">
         <td colspan="{{ fields|length }}">All {{ org.name }} Regions</td>
       </tr>
+
       {% recursetree object_list %}
-        <tr data-tt-id="{{ node.pk }}"
+        <tr class="region hidden" data-tt-id="{{ node.pk }}"
             data-tt-parent-id="{% if node.is_child_node %}{{ node.parent.pk }}{% else %}0{% endif %}">
           {% for field in fields %}
             <td class="value-{{ field }}">
@@ -92,6 +93,12 @@
         </tr>
         {{ children }}
       {% endrecursetree %}
+
+      {# Something to display while treetable loads. #}
+      <tr class="loading-text">
+        <td colspan="{{ fields|length }}">Loading regions...</td>
+      </tr>
+
       {% block extra-rows %}{% endblock extra-rows %}
     </tbody>
   </table>
