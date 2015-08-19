@@ -73,4 +73,5 @@ table.treetable.edit-mode tr.ui-draggable.selected {
 }
 table.treetable.edit-mode tr.ui-droppable.hovered {
     border: 1px solid #2d6ca2;
+    background: #c4e3f3;
 }
