@@ -8,11 +8,11 @@ from django.utils import timezone
 from mock import patch
 from temba.types import Contact as TembaContact, Run
 from tracpro.polls.models import PollRun, Response, RESPONSE_COMPLETE, RESPONSE_EMPTY
-from tracpro.test import TracProTest
+from tracpro.test.cases import TracProDataTest
 from .models import Contact
 
 
-class ContactTest(TracProTest):
+class ContactTest(TracProDataTest):
     @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
     @patch('dash.orgs.models.TembaClient.create_contact')
     def test_create(self, mock_create_contact):
@@ -108,7 +108,7 @@ class ContactTest(TracProTest):
         self.assertEqual(str(self.contact1), "1234")
 
 
-class ContactCRUDLTest(TracProTest):
+class ContactCRUDLTest(TracProDataTest):
     def test_create(self):
         url = reverse('contacts.contact_create')
 
@@ -242,7 +242,7 @@ class ContactCRUDLTest(TracProTest):
 
         # delete contact
         response = self.url_post('unicef', reverse('contacts.contact_delete', args=[self.contact1.pk]))
-        self.assertRedirects(response, 'http://unicef.localhost/contact/', fetch_redirect_response=False)
+        self.assertRedirects(response, 'http://unicef.testserver/contact/', fetch_redirect_response=False)
         self.assertFalse(Contact.objects.get(pk=self.contact1.pk).is_active)
 
         # try to delete contact from other org
@@ -255,7 +255,7 @@ class ContactCRUDLTest(TracProTest):
 
         # delete contact from region we have access to
         response = self.url_post('unicef', reverse('contacts.contact_delete', args=[self.contact3.pk]))
-        self.assertRedirects(response, 'http://unicef.localhost/contact/', fetch_redirect_response=False)
+        self.assertRedirects(response, 'http://unicef.testserver/contact/', fetch_redirect_response=False)
         contact = Contact.objects.get(pk=self.contact3.pk)
         self.assertFalse(contact.is_active)
         self.assertEqual(contact.modified_by, self.user1)

@@ -1,0 +1,76 @@
+#region-actions {
+    margin-bottom: 10px;
+}
+#region-actions .btn.hierarchy {
+    width: 170px;  /* prevent visual shift when toggling between buttons */
+}
+
+
+#edit-hierarchy-help {
+    color: #2d6ca2;  /* color of btn-primary */
+    font-weight: bold;
+}
+
+
+/* Row indentation & expand/collapse. */
+table.treetable span.indenter {
+    padding-right: 4px;
+}
+table.treetable span.indenter a {
+    color: inherit;
+}
+table.treetable tr.branch.collapsed span.indenter a .glyphicon:before {
+    content: "\e080";  /* glyphicon-chevron-right */
+}
+table.treetable tr.branch.expanded span.indenter a .glyphicon:before {
+    content: "\e114";  /* glyphicon-chevron-down */
+}
+table.list_groups_region th:first-child {
+    width: 75%;  /* prevent visual shift when rows expand/collapse */
+}
+
+
+/* Table borders. */
+table.treetable tr th,
+table.treetable tr td {
+    border: none;
+}
+table.treetable tr {
+    /* prevent visual shift when showing color border */
+    border-left: 1px solid #fff;
+    border-right: 1px solid #fff;
+}
+table.treetable tbody tr {
+    border-top: 1px solid #ddd;
+}
+table.treetable tbody tr:first-child {
+    border-top: 2px solid #ddd;
+}
+
+
+/* Drag & drop styles. */
+table.treetable.edit-mode {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+table.treetable.edit-mode tr {
+    cursor: default;
+}
+table.treetable.edit-mode tr.ui-draggable {
+    cursor: grab;
+    cursor: -moz-grab;
+    cursor: -webkit-grab;
+}
+table.treetable.edit-mode tr.ui-draggable:hover {
+    background-color: #f5f5f5;
+}
+table.treetable.edit-mode tr.ui-draggable.selected {
+    cursor: initial;
+}
+table.treetable.edit-mode tr.ui-droppable.hovered {
+    border: 1px solid #2d6ca2;
+}

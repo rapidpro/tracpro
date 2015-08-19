@@ -154,7 +154,7 @@
                       %p.navbar-text{ style:"float: left;"}
                         {{ request.user.username }}
 
-                    - if request.user_regions.count > 1
+                    - if request.user_regions.exists
                       %li.dropdown
                         %a.dropdown-toggle{ href:"#", data-toggle:"dropdown", role:"button"}
                           %strong
@@ -193,7 +193,7 @@
       - block content-div
         .content
           - block messages
-            - if messages
+            #user-messages
               - for message in messages
                 .alert{ class:"alert-={ message.tags }"}
                   %a.close{ data-dismiss:"alert"}

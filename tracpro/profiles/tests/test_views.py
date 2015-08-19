@@ -2,55 +2,12 @@ from __future__ import absolute_import, unicode_literals
 
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
-from tracpro.test import TracProTest
+
+from tracpro.test.cases import TracProDataTest
 
 
-class UserPatchTest(TracProTest):
-    def test_create_user(self):
-        user = User.create(self.unicef, "Mo Polls", "mo@trac.com", "Qwerty123", False,
-                           regions=[self.region1, self.region2])
-        self.assertEqual(user.profile.full_name, "Mo Polls")
+class UserCRUDLTest(TracProDataTest):
 
-        self.assertEqual(user.first_name, "")
-        self.assertEqual(user.last_name, "")
-        self.assertEqual(user.email, "mo@trac.com")
-        self.assertEqual(user.get_full_name(), "Mo Polls")
-        self.assertIsNotNone(user.password)
-        self.assertFalse(user.profile.change_password)
-
-        self.assertEqual(user.regions.count(), 2)
-        self.assertEqual(user.get_regions(self.unicef).count(), 2)
-
-        self.assertTrue(user.has_region_access(self.region1))
-        self.assertTrue(user.has_region_access(self.region2))
-        self.assertFalse(user.has_region_access(self.region3))
-        self.assertFalse(user.has_region_access(self.region4))
-
-    def test_has_profile(self):
-        self.assertFalse(self.superuser.has_profile())
-        self.assertTrue(self.admin.has_profile())
-        self.assertTrue(self.user1.has_profile())
-
-    def test_get_full_name(self):
-        self.assertEqual(self.superuser.get_full_name(), "")
-        self.assertEqual(self.admin.get_full_name(), "Richard")
-        self.assertEqual(self.user1.get_full_name(), "Sam Sims")
-
-    def test_is_admin_for(self):
-        self.assertTrue(self.admin.is_admin_for(self.unicef))
-        self.assertFalse(self.admin.is_admin_for(self.nyaruka))
-        self.assertFalse(self.user1.is_admin_for(self.unicef))
-
-    def test_str(self):
-        self.assertEqual(str(self.superuser), "root")
-
-        self.assertEqual(str(self.user1), "Sam Sims")
-        self.user1.profile.full_name = None
-        self.user1.profile.save()
-        self.assertEqual(str(self.user1), "sam@unicef.org")
-
-
-class UserCRUDLTest(TracProTest):
     def test_create(self):
         url = reverse('profiles.user_create')
 
@@ -262,7 +219,8 @@ class UserCRUDLTest(TracProTest):
         self.assertNotEqual(user.password, old_password_hash)
 
 
-class DashUserCRUDLTest(TracProTest):
+class DashUserCRUDLTest(TracProDataTest):
+
     def test_login(self):
         url = reverse('users.user_login')
 
@@ -272,24 +230,4 @@ class DashUserCRUDLTest(TracProTest):
 
         # login with org subdomain
         response = self.url_post('unicef', url, dict(username='sam@unicef.org', password='sam@unicef.org'))
-        self.assertRedirects(response, 'http://unicef.localhost/', fetch_redirect_response=False)
-
-
-class ForcePasswordChangeMiddlewareTest(TracProTest):
-    def test_process_view(self):
-        self.user1.profile.change_password = True
-        self.user1.profile.save()
-
-        self.login(self.user1)
-
-        response = self.url_get('unicef', reverse('home.home'))
-        self.assertRedirects(response, 'http://unicef.localhost/profile/self/', fetch_redirect_response=False)
-
-        response = self.url_get('unicef', reverse('profiles.user_self'))
-        self.assertEqual(response.status_code, 200)
-
-        self.user1.profile.change_password = False
-        self.user1.profile.save()
-
-        response = self.url_get('unicef', reverse('home.home'))
-        self.assertEqual(response.status_code, 200)
+        self.assertRedirects(response, 'http://unicef.testserver/', fetch_redirect_response=False)
