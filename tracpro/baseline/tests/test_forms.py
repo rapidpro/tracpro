@@ -1,10 +1,10 @@
-from tracpro.test import TracProTest
-from ..forms import BaselineTermForm
-
 from django.core.exceptions import NON_FIELD_ERRORS
 
+from tracpro.test.cases import TracProDataTest
+from ..forms import BaselineTermForm
 
-class TestBaselineTermForm(TracProTest):
+
+class TestBaselineTermForm(TracProDataTest):
     form_class = BaselineTermForm
 
     def setUp(self):

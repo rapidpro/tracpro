@@ -1,8 +1,9 @@
 from django.core.urlresolvers import reverse
-from tracpro.test import TracProTest
+
+from tracpro.test.cases import TracProDataTest
 
 
-class TestBaselineTermCRUDL(TracProTest):
+class TestBaselineTermCRUDL(TracProDataTest):
 
     def test_get(self):
         url_name = "baseline.baselineterm_list"
