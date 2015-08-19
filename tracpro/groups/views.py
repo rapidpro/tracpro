@@ -79,6 +79,7 @@ class RegionCRUDL(SmartCRUDL):
         @transaction.atomic
         def post(self, request, *args, **kwargs):
             """AJAX endpoint to update Region hierarchy at once."""
+            org = request.org
 
             # Load data and validate that it is in the correct format.
             raw_data = request.POST.get('data', "").strip() or None
@@ -86,19 +87,18 @@ class RegionCRUDL(SmartCRUDL):
                 data = json.loads(raw_data)
             except TypeError:
                 msg = "No data was provided in the `data` parameter."
-                logger.warning("Hierarchy: " + msg, exc_info=True)
+                logger.warning("{} Hierarchy: {}".format(org, msg), exc_info=True)
                 return self.error_response(400, msg)
             except ValueError:
-                msg = "Data must be valid JSON. "
-                logger.warning("Hierarchy: " + msg + raw_data, exc_info=True)
+                msg = "Data must be valid JSON."
+                logger.warning("{} Hierarchy: {} {}".format(org, msg, raw_data), exc_info=True)
                 return self.error_response(400, msg)
             if not isinstance(data, dict):
-                msg = "Data must be a dict that maps region id to parent id. "
-                logger.warning("Hierarchy: " + msg + raw_data)
+                msg = "Data must be a dict that maps region id to parent id."
+                logger.warning("{} Hierarchy: {} {}".format(org, msg, raw_data))
                 return self.error_response(400, msg)
 
             # Grab all of the org's regions at once.
-            org = request.org
             regions = {str(r.pk): r for r in Region.get_all(org)}
 
             # Check that the user is updating exactly the regions from this
@@ -108,26 +108,31 @@ class RegionCRUDL(SmartCRUDL):
             sent_parents = set(str(i) for i in data.values() if i is not None)
             if sent_regions != expected_ids:
                 msg = ("Data must map region id to parent id for each "
-                       "region in this org. ")
-                logger.warning("Hierarchy: " + msg + raw_data)
+                       "region in this org.")
+                logger.warning("{} Hierarchy: {} {}".format(org, msg, raw_data))
                 return self.error_response(400, msg)
             elif not sent_parents.issubset(expected_ids):
                 msg = ("Region parent must be a region from the same org, "
-                       "or null. ")
-                logger.warning("Hierarchy: " + msg + raw_data)
+                       "or null.")
+                logger.warning("{} Hierarchy: {} {}".format(org, msg, raw_data))
                 return self.error_response(400, msg)
 
-            # Re-set parent values for each region.
-            with Region.objects.delay_mptt_updates():
+            # Re-set parent values for each region, then rebuild the mptt tree.
+            with Region.objects.disable_mptt_updates():
                 for region_id, parent_id in data.items():
                     region = regions.get(str(region_id))
                     parent = regions.get(str(parent_id))
                     if region.parent != parent:
+                        old = region.parent.name if region.parent else None
+                        new = parent.name if parent else None
+                        msg = "Updating parent of {} from {} -> {}".format(region, old, new)
+                        logger.debug("{} Hierarchy: {}".format(org, msg))
                         region.parent = parent
                         region.save()
+            Region.objects.rebuild()
 
-            msg = '{} region hierarchy has been updated. '.format(org.name)
-            logger.info("Hierarchy: " + msg + raw_data)
+            msg = '{} region hierarchy has been updated.'.format(org.name)
+            logger.info("{} Hierarchy: {} {}".format(org, msg, raw_data))
             return self.success_response(msg)
 
         def error_response(self, status, message):
