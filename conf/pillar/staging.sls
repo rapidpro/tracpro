@@ -1,13 +1,9 @@
 #!yaml|gpg
 
 environment: staging
-
-# FIXME: Change to match staging domain name
 domain: edutrac-staging.cakt.us
-
-# FIXME: Update to the correct project repo
 repo:
-  url: git@github.com:caktus/edutrac.git
+  url: git@github.com:rapidpro/tracpro.git
   branch: master
 
 # Addtional public environment variables to set for the project
@@ -145,7 +141,7 @@ github_deploy_key: |-
   C+J65KdKQOlIBxJJmmZc3E37/XNdokAERVJwiUwrA94jLTBVbF2i4BJJFw==
   =5zNt
   -----END PGP MESSAGE-----
-  
+
 # Uncomment and update ssl_key and ssl_cert to enabled signed SSL
 # Must be GPG encrypted.
 #{% if 'balancer' in grains['roles'] %}

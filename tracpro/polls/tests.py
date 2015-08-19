@@ -8,12 +8,12 @@ from django.core.urlresolvers import reverse
 from django.utils import timezone
 from mock import patch
 from temba.types import Flow, RuleSet, Run, RunValueSet
-from tracpro.test import TracProTest
+from tracpro.test.cases import TracProDataTest
 from .models import Poll, PollRun, Response, Answer, RESPONSE_EMPTY, RESPONSE_PARTIAL, RESPONSE_COMPLETE
 from .models import extract_words
 
 
-class PollTest(TracProTest):
+class PollTest(TracProDataTest):
     @patch('dash.orgs.models.TembaClient.get_flows')
     def test_sync_with_flows(self, mock_get_flows):
         mock_get_flows.return_value = [
@@ -92,7 +92,7 @@ class PollTest(TracProTest):
         self.assertEqual(list(self.poll2.get_questions()), [self.poll2_question1])
 
 
-class PollRunTest(TracProTest):
+class PollRunTest(TracProDataTest):
     def test_get_or_create_non_regional(self):
         # 2014-Jan-01 04:30 in org's Afg timezone
         with patch.object(timezone, 'now', return_value=datetime.datetime(2014, 1, 1, 0, 0, 0, 0, pytz.utc)):
@@ -248,7 +248,7 @@ class PollRunTest(TracProTest):
                          [('مطر', 1)])
 
 
-class ResponseTest(TracProTest):
+class ResponseTest(TracProDataTest):
     def test_from_run(self):
         # a complete run
         run = Run.create(id=1234,
@@ -367,7 +367,7 @@ class ResponseTest(TracProTest):
         self.assertEqual(Response.from_run(self.unicef, run), response5)
 
 
-class AnswerTest(TracProTest):
+class AnswerTest(TracProDataTest):
     def test_create(self):
         pollrun = PollRun.objects.create(poll=self.poll1, region=None, conducted_on=timezone.now())
         response = Response.create_empty(self.unicef, pollrun,
@@ -409,7 +409,7 @@ class AnswerTest(TracProTest):
                                                  Answer(value=2, category="1 - 100")]), 1.5)
 
 
-class PollCRUDLTest(TracProTest):
+class PollCRUDLTest(TracProDataTest):
     def test_list(self):
         url = reverse('polls.poll_list')
 
@@ -421,7 +421,7 @@ class PollCRUDLTest(TracProTest):
         self.assertEqual(len(response.context['object_list']), 1)
 
 
-class ResponseCRUDLTest(TracProTest):
+class ResponseCRUDLTest(TracProDataTest):
     def setUp(self):
         super(ResponseCRUDLTest, self).setUp()
         date1 = self.datetime(2014, 1, 1, 7, 0)
@@ -488,7 +488,7 @@ class ResponseCRUDLTest(TracProTest):
         self.assertEqual(responses, [self.pollrun2_r1, self.pollrun1_r1])  # newest non-empty first
 
 
-class PollFuncsTest(TracProTest):
+class PollFuncsTest(TracProDataTest):
     def test_extract_words(self):
         self.assertEqual(extract_words("I think it's good", "eng"), ['think', 'good'])  # I and it's are stop words
         self.assertEqual(extract_words("I think it's good", "kin"), ['think', "it's", 'good'])  # no stop words for kin

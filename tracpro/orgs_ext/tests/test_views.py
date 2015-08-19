@@ -1,10 +1,10 @@
 from __future__ import absolute_import, unicode_literals
 
 from django.core.urlresolvers import reverse
-from tracpro.test import TracProTest
+from tracpro.test.cases import TracProDataTest
 
 
-class TestOrgExtCRUDLHome(TracProTest):
+class TestOrgExtCRUDLHome(TracProDataTest):
     url_name = "orgs_ext.org_home"
 
     def test_get(self):

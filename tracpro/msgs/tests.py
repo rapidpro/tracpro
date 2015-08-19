@@ -9,10 +9,10 @@ from temba.types import Broadcast
 
 from tracpro.msgs.models import Message, COHORT_ALL, COHORT_RESPONDENTS, COHORT_NONRESPONDENTS, InboxMessage
 from tracpro.polls.models import PollRun, Response, RESPONSE_COMPLETE, RESPONSE_PARTIAL, RESPONSE_EMPTY
-from tracpro.test import TracProTest
+from tracpro.test.cases import TracProDataTest
 
 
-class MessageTest(TracProTest):
+class MessageTest(TracProDataTest):
     @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
     @patch('dash.orgs.models.TembaClient.create_broadcast')
     def test_create(self, mock_create_broadcast):
@@ -58,7 +58,7 @@ class MessageTest(TracProTest):
         self.assertEqual(list(msg4.recipients.order_by('pk')), [self.contact1, self.contact2])
 
 
-class MessageCRUDLTest(TracProTest):
+class MessageCRUDLTest(TracProDataTest):
     def test_list(self):
         url = reverse('msgs.message_list')
 
@@ -82,7 +82,7 @@ class MessageCRUDLTest(TracProTest):
         self.assertEqual(list(response.context['object_list']), [msg2, msg1])
 
 
-class InboxMessageCRUDLTest(TracProTest):
+class InboxMessageCRUDLTest(TracProDataTest):
     def setUp(self):
         super(InboxMessageCRUDLTest, self).setUp()
         self.login(self.admin)

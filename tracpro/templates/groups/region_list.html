@@ -1,0 +1,98 @@
+{% extends "smartmin/list.html" %}
+
+{% load i18n %}
+{% load mptt_tags %}
+{% load smartmin %}
+{% load static from staticfiles %}
+
+{% block extra-script %}
+  {# Required for hierarchical tree structure. #}
+  <script src="{% static "libs/treetable-3.2.0/jquery.treetable.js" %}"></script>
+
+  {# Required for drag-and-drop rows. #}
+  <script src="{% static "libs/jquery-ui-1.11.4/jquery-ui.min.js" %}"></script>
+
+  <script src="{% static "js/regions.js" %}"></script>
+{% endblock extra-script %}
+
+{% block extra-style %}
+  {# Required for hierarchical tree structure. #}
+  <link href="{% static "libs/treetable-3.2.0/jquery.treetable.css" %}"
+        rel="stylesheet" type="text/css">
+
+  {# Required for drag-and-drop rows. #}
+  <link href="{% static "libs/jquery-ui-1.11.4/jquery-ui.min.css" %}"
+        rel="stylesheet" type="text/css">
+  <link href="{% static "libs/jquery-ui-1.11.4/jquery-ui.structure.min.css" %}"
+        rel="stylesheet" type="text/css">
+  <link href="{% static "libs/jquery-ui-1.11.4/jquery-ui.theme.min.css" %}"
+        rel="stylesheet" type="text/css">
+
+  <link href="{% static "css/regions.css" %}"
+        rel="stylesheet" type="text/css">
+{% endblock extra-style %}
+
+{% block table-controls %}
+  {% if org_perms.groups.region_select %}
+    <div id="region-actions" class="pull-right buttons">
+      <a class="btn btn-default"
+         href="{% url 'groups.region_select' %}">
+        <span class="glyphicon glyphicon-download"></span>
+        {% trans "Select Groups" %}
+      </a>
+      <button id="edit-hierarchy" class="btn btn-default hierarchy">
+        {% trans "Edit Region Hierarchy" %}
+      </button>
+      <button id="save-hierarchy" class="btn btn-primary hierarchy hidden">
+        {% trans "Save Region Hierarchy" %}
+      </button>
+      <button id="saving-hierarchy" class="btn btn-primary disabled hierarchy hidden">
+        {% trans "Saving..." %}
+      </button>
+    </div>
+    <div class="clearfix"></div>
+  {% endif %}
+
+  <div>
+    <p>{% trans "Each region is a contact group in RapidPro." %}</p>
+
+    {% if org_perms.groups.region_select %}
+      <p id="edit-hierarchy-help" class="hidden">
+        {% trans "Edit region hierarchy by dragging and dropping table rows. Click 'Save Region Hierarchy' when changes are complete." %}
+      </p>
+    {% endif %}
+  </div>
+{% endblock table-controls %}
+
+{% block table %}
+  <table class="treetable list-table {% get_list_class object_list %} table"
+         data-update-hierarchy-url="{% url "groups.region_update_hierarchy" %}">
+    <thead>
+      <tr>
+        {% for field in fields %}
+          <th>{% get_label field %}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {# Include a dummy row so regions can be dragged to the top level. #}
+      <tr data-tt-id="0">
+        <td colspan="{{ fields|length }}">All Regions</td>
+      </tr>
+      {% recursetree object_list %}
+        <tr data-tt-id="{{ node.pk }}"
+            data-tt-parent-id="{% if node.is_child_node %}{{ node.parent.pk }}{% else %}0{% endif %}">
+          {% for field in fields %}
+            <td class="value-{{ field }}">
+              <span class="value">
+                {% get_value node field %}
+              </span>
+            </td>
+          {% endfor %}
+        </tr>
+        {{ children }}
+      {% endrecursetree %}
+      {% block extra-rows %}{% endblock extra-rows %}
+    </tbody>
+  </table>
+{% endblock table %}
