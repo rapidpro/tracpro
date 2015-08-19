@@ -76,6 +76,12 @@ class BaselineTerm(models.Model):
 
         answers = answers.order_by("response__contact__name", "submitted_on")
 
+        """
+        Loop through all contacts in answers and create
+        a dict of values and dates per contact
+        ex.
+        { 'Erin': {'values': [35,...], 'dates': [datetime.date(2015, 8, 12),...]} }
+        """
         contact_answers = {}
         for contact in answers.values('response__contact__name').distinct():
             contact_name = contact['response__contact__name'].encode('ascii')
@@ -87,7 +93,6 @@ class BaselineTerm(models.Model):
                                                      response__contact__name=contact_name).values_list(
                                                      "submitted_on_date", flat=True)
 
-        dates = answers.extra({"submitted_on_date": "date(submitted_on)"}).values_list(
-                               "submitted_on_date").order_by("submitted_on_date").distinct()
+        dates = answers.values_list("submitted_on_date").order_by("submitted_on_date").distinct()
 
         return contact_answers, dates
