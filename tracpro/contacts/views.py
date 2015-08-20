@@ -67,23 +67,23 @@ class URNWidget(forms.widgets.MultiWidget):
 
 
 class ContactForm(forms.ModelForm):
-    """
-    Form for contacts
-    """
     name = forms.CharField(max_length=128, label=_("Full name"))
-
-    urn = URNField(label=_("Phone/Twitter"), help_text=_("Phone number or Twitter handle of this contact."))
-
-    region = forms.ModelChoiceField(label=_("Region"), queryset=Region.objects.filter(pk=-1),
-                                    help_text=_("Region where this contact lives."))
-
-    group = forms.ModelChoiceField(label=_("Reporter Group"), queryset=Group.objects.filter(pk=-1),
-                                   help_text=_("Reporter Group to which this contact belongs."))
-
-    facility_code = forms.CharField(max_length=16, label=_("Facility Code"), required=False)
-
-    language = forms.CharField(label=_("Language"), required=False,
-                               widget=forms.TextInput(attrs={'class': 'language-field'}))
+    urn = URNField(
+        label=_("Phone/Twitter"),
+        help_text=_("Phone number or Twitter handle of this contact."))
+    region = forms.ModelChoiceField(
+        label=_("Region"),
+        queryset=Region.objects.filter(pk=-1),
+        help_text=_("Region where this contact lives."))
+    group = forms.ModelChoiceField(
+        label=_("Reporter Group"),
+        queryset=Group.objects.filter(pk=-1),
+        help_text=_("Reporter Group to which this contact belongs."))
+    facility_code = forms.CharField(
+        max_length=16, label=_("Facility Code"), required=False)
+    language = forms.CharField(
+        label=_("Language"), required=False,
+        widget=forms.TextInput(attrs={'class': 'language-field'}))
 
     class Meta:
         model = Contact
@@ -196,7 +196,9 @@ class ContactCRUDL(SmartCRUDL):
             return obj.get_urn()[1]
 
         def get_language(self, obj):
-            return pycountry.languages.get(bibliographic=obj.language).name if obj.language else None
+            if obj.language:
+                return pycountry.languages.get(bibliographic=obj.language).name
+            return None
 
         def get_last_response(self, obj):
             last_response = obj.responses.order_by('-updated_on').first()
@@ -232,8 +234,10 @@ class ContactCRUDL(SmartCRUDL):
         def lookup_field_value(self, context, obj, field):
             if field.startswith('pollrun_'):
                 pollrun = self.derive_pollruns()[field]
-                has_completed = pollrun.responses.filter(contact=obj, status=RESPONSE_COMPLETE).exists()
-                return '<span class="glyphicon glyphicon-%s"></span>' % ('ok' if has_completed else 'time')
+                has_completed = pollrun.responses.filter(
+                    contact=obj, status=RESPONSE_COMPLETE).exists()
+                return ('<span class="glyphicon glyphicon-%s"></span>' %
+                        ('ok' if has_completed else 'time'))
 
             return super(ContactCRUDL.List, self).lookup_field_value(context, obj, field)
 
@@ -246,7 +250,9 @@ class ContactCRUDL(SmartCRUDL):
         def derive_pollruns(self):
             def fetch():
                 pollruns = OrderedDict()
-                for pollrun in PollRun.get_all(self.request.org, self.request.region).order_by('-conducted_on')[0:3]:
+                qs = PollRun.get_all(self.request.org, self.request.region)
+                qs = qs.order_by('-conducted_on')
+                for pollrun in qs[0:3]:
                     pollruns['pollrun_%d' % pollrun.pk] = pollrun
                 return pollruns
 
