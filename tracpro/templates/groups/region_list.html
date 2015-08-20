@@ -40,13 +40,17 @@
         <span class="glyphicon glyphicon-download"></span>
         {% trans "Select Groups" %}
       </a>
-      <button id="edit-hierarchy" class="btn btn-default hierarchy">
+      <button id="edit-hierarchy"
+              class="btn btn-default hierarchy">
         {% trans "Edit Region Hierarchy" %}
       </button>
-      <button id="save-hierarchy" class="btn btn-primary hierarchy hidden">
+      <button id="save-hierarchy"
+              class="btn btn-primary hierarchy hidden">
         {% trans "Save Region Hierarchy" %}
       </button>
-      <button id="saving-hierarchy" class="btn btn-primary disabled hierarchy hidden">
+      <button id="saving-hierarchy"
+              class="btn btn-primary disabled hierarchy hidden"
+              disabled>
         {% trans "Saving..." %}
       </button>
     </div>
@@ -75,6 +79,11 @@
       </tr>
     </thead>
     <tbody>
+      {# Something to display while treetable loads. #}
+      <tr class="loading-text">
+        <td colspan="{{ fields|length }}">Loading regions...</td>
+      </tr>
+
       {# Include a dummy row so regions can be dragged to the top level. #}
       <tr class="region hidden" data-tt-id="0">
         <td colspan="{{ fields|length }}">All {{ org.name }} Regions</td>
@@ -93,11 +102,6 @@
         </tr>
         {{ children }}
       {% endrecursetree %}
-
-      {# Something to display while treetable loads. #}
-      <tr class="loading-text">
-        <td colspan="{{ fields|length }}">Loading regions...</td>
-      </tr>
 
       {% block extra-rows %}{% endblock extra-rows %}
     </tbody>
