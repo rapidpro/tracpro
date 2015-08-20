@@ -20,6 +20,7 @@ class BaselineTerm(models.Model):
 
     org = models.ForeignKey("orgs.Org", verbose_name=_(
         "Organization"), related_name="baseline_terms")
+    # TODO - remove region
     region = models.ForeignKey("groups.Region", related_name="baseline_terms")
     name = models.CharField(max_length=255, help_text=_(
         "For example: 2015 Term 3 Attendance for P3 Girls"))
@@ -67,6 +68,7 @@ class BaselineTerm(models.Model):
     def get_follow_up(self, region):
         """ Get all follow up responses """
         # TODO: extra() may be depricated in future versions of Django
+        # Look into date_trunc/django
         answers = Answer.objects.filter(
             response__contact__region=region,
             question=self.follow_up_question,
@@ -82,6 +84,7 @@ class BaselineTerm(models.Model):
         ex.
         { 'Erin': {'values': [35,...], 'dates': [datetime.date(2015, 8, 12),...]} }
         """
+        # TODO - switch this to sum of all answers by region
         contact_answers = {}
         for contact in answers.values('response__contact__name').distinct():
             contact_name = contact['response__contact__name'].encode('ascii')
