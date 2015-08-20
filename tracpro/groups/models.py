@@ -2,7 +2,7 @@ from __future__ import absolute_import, unicode_literals
 
 from mptt import models as mptt
 
-from django.contrib.auth.models import User
+from django.conf import settings
 from django.db import models
 from django.db.models import Count
 from django.utils.encoding import python_2_unicode_compatible
@@ -99,7 +99,7 @@ class AbstractGroup(models.Model):
 class Region(mptt.MPTTModel, AbstractGroup):
     """A geographical region modelled as a group."""
     users = models.ManyToManyField(
-        User, verbose_name=_("Users"), related_name='regions',
+        settings.AUTH_USER_MODEL, verbose_name=_("Users"), related_name='regions',
         help_text=_("Users who can access this region"))
     parent = mptt.TreeForeignKey(
         'self', null=True, blank=True, related_name="children", db_index=True)
