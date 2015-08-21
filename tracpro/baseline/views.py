@@ -24,13 +24,12 @@ class BaselineTermCRUDL(SmartCRUDL):
             return kwargs
 
     class List(OrgPermsMixin, SmartListView):
-        fields = ('name', 'region', 'start_date', 'end_date',
+        fields = ('name', 'start_date', 'end_date',
                   'baseline_question', 'follow_up_question')
         link_fields = ('name')
 
         def derive_queryset(self, **kwargs):
-            regions = [self.request.region] if self.request.region else None
-            qs = BaselineTerm.get_all(self.request.org, regions)
+            qs = BaselineTerm.get_all(self.request.org)
             qs = qs.order_by('-start_date', '-end_date')
             return qs
 
@@ -45,8 +44,7 @@ class BaselineTermCRUDL(SmartCRUDL):
         delete_url = ''     # Turn off the smartmin delete button for this view
 
         def derive_queryset(self, **kwargs):
-            regions = self.request.user.get_regions(self.request.org)
-            return BaselineTerm.get_all(self.request.org, regions)
+            return BaselineTerm.get_all(self.request.org)
 
         def get_form_kwargs(self):
             kwargs = super(BaselineTermCRUDL.Update, self).get_form_kwargs()
@@ -56,5 +54,4 @@ class BaselineTermCRUDL(SmartCRUDL):
     class Read(OrgObjPermsMixin, SmartReadView):
 
         def derive_queryset(self, **kwargs):
-            regions = self.request.user.get_regions(self.request.org)
-            return BaselineTerm.get_all(self.request.org, regions)
+            return BaselineTerm.get_all(self.request.org)

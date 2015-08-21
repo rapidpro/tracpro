@@ -20,7 +20,6 @@ class BaselineTerm(models.Model):
 
     org = models.ForeignKey("orgs.Org", verbose_name=_(
         "Organization"), related_name="baseline_terms")
-    region = models.ForeignKey("groups.Region", related_name="baseline_terms")
     name = models.CharField(max_length=255, help_text=_(
         "For example: 2015 Term 3 Attendance for P3 Girls"))
     start_date = models.DateTimeField()
@@ -46,10 +45,8 @@ class BaselineTerm(models.Model):
     )
 
     @classmethod
-    def get_all(cls, org, regions=None):
+    def get_all(cls, org):
         baseline_terms = cls.objects.filter(org=org)
-        if regions:
-            baseline_terms = baseline_terms.filter(region__in=regions)
         return baseline_terms
 
     def get_baseline(self, region):

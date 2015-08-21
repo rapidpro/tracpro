@@ -14,7 +14,6 @@ class TestBaselineTermForm(TracProDataTest):
         self.data = {
             'name': 'Test Baseline Term',
             'org': self.org.pk,
-            'region': self.region1.pk,
             'start_date': '2015-05-01',
             'end_date': '2015-05-10',
             'baseline_poll': self.poll1.pk,
@@ -29,12 +28,12 @@ class TestBaselineTermForm(TracProDataTest):
         self.assertTrue(form.is_valid())
 
     def test_missing_field(self):
-        """No region selected, should be invalid."""
-        self.data.pop("region")
+        """No end_date selected, should be invalid."""
+        self.data.pop("end_date")
         form = self.form_class(data=self.data, user=self.admin)
         self.assertFalse(form.is_valid())
         self.assertEqual(len(form.errors), 1, form.errors)
-        self.assertEqual(form.errors['region'],
+        self.assertEqual(form.errors['end_date'],
                          ['This field is required.'])
 
     def test_bad_dates(self):

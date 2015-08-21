@@ -10,7 +10,7 @@ class BaselineTermForm(forms.ModelForm):
     """
     class Meta:
         model = BaselineTerm
-        fields = ('name', 'org', 'region', 'start_date', 'end_date',
+        fields = ('name', 'org', 'start_date', 'end_date',
                   'baseline_poll', 'baseline_question',
                   'follow_up_poll', 'follow_up_question')
 
@@ -27,8 +27,6 @@ class BaselineTermForm(forms.ModelForm):
         super(BaselineTermForm, self).__init__(*args, **kwargs)
 
         if org:
-            self.fields['region'].queryset = self.user.get_regions(
-                org).order_by('name')
             polls = Poll.get_all(org).order_by('name')
             self.fields['baseline_poll'].queryset = polls
             self.fields['follow_up_poll'].queryset = polls
