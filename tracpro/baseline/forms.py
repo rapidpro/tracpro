@@ -39,7 +39,7 @@ class BaselineTermForm(forms.ModelForm):
         start_date = cleaned_data.get("start_date")
         end_date = cleaned_data.get("end_date")
 
-        if start_date > end_date:
+        if start_date and end_date and start_date > end_date:
             raise forms.ValidationError(
                 "Start date should be before end date."
             )
