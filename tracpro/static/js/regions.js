@@ -3,7 +3,7 @@ $(function() {
 
     // The first row is a dummy that exists so that the user can drag
     // other regions to the top level.
-    var ALL_ROWS = $(".treetable tbody tr");
+    var ALL_ROWS = $(".treetable tbody tr.region");
     var REGION_ROWS = ALL_ROWS.not(":first-child");
 
     /* Per Django documentation, to get CSRF cookie for AJAX post. */
@@ -181,6 +181,11 @@ $(function() {
     $(".treetable").treetable({
         expandable: true,
         expanderTemplate: '<a href="#"><span class="glyphicon"></span></a>',
-        initialState: "expanded"
+        initialState: "expanded",
+        onInitialized: function() {
+            var table = $(this.table);
+            table.find("tr").removeClass("hidden");
+            table.find("tr.loading-text").remove();
+        }
     });
 });

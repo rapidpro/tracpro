@@ -88,31 +88,34 @@ class InboxMessageCRUDLTest(TracProDataTest):
         self.login(self.admin)
 
         self.inboxmsg1 = InboxMessage.objects.create(
-                        org=self.unicef,
-                        rapidpro_message_id=1234,
-                        contact=self.contact1,
-                        text="Test message to contact1",
-                        archived=False,
-                        direction="O",
-                        created_on=timezone.now())
+            org=self.unicef,
+            rapidpro_message_id=1234,
+            contact=self.contact1,
+            text="Test message to contact1",
+            archived=False,
+            direction="O",
+            created_on=timezone.now(),
+        )
 
         self.inboxmsg2 = InboxMessage.objects.create(
-                        org=self.unicef,
-                        rapidpro_message_id=4567,
-                        contact=self.contact1,
-                        text="A more recent test message to contact1",
-                        archived=False,
-                        direction="O",
-                        created_on=timezone.now())
+            org=self.unicef,
+            rapidpro_message_id=4567,
+            contact=self.contact1,
+            text="A more recent test message to contact1",
+            archived=False,
+            direction="O",
+            created_on=timezone.now(),
+        )
 
         self.inboxmsg3 = InboxMessage.objects.create(
-                        org=self.unicef,
-                        rapidpro_message_id=6789,
-                        contact=self.contact2,
-                        text="A message from contact2",
-                        archived=False,
-                        direction="I",
-                        created_on=timezone.now())
+            org=self.unicef,
+            rapidpro_message_id=6789,
+            contact=self.contact2,
+            text="A message from contact2",
+            archived=False,
+            direction="I",
+            created_on=timezone.now(),
+        )
 
     def test_list(self):
         url = reverse('msgs.inboxmessage_list')

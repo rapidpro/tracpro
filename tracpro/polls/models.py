@@ -191,7 +191,7 @@ class PollRun(models.Model):
 
     conducted_on = models.DateTimeField(help_text=_("When the poll was conducted"))
 
-    created_by = models.ForeignKey('auth.User', null=True, related_name="pollruns_created")
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, related_name="pollruns_created")
 
     def __str__(self):
         return "%s (%s)" % (self.poll.name, self.conducted_on.strftime(settings.SITE_DATE_FORMAT))
