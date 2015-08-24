@@ -10,7 +10,6 @@ class Migration(migrations.Migration):
     dependencies = [
         ('polls', '0022_auto_20150716_1722'),
         ('orgs', '0014_auto_20150722_1419'),
-        ('groups', '0005_auto_20150805_2050'),
     ]
 
     operations = [
@@ -26,7 +25,6 @@ class Migration(migrations.Migration):
                 ('follow_up_poll', models.ForeignKey(to='polls.Poll')),
                 ('follow_up_question', smart_selects.db_fields.ChainedForeignKey(chained_model_field=b'poll', chained_field=b'follow_up_poll', auto_choose=True, to='polls.Question', help_text='Responses over time to compare to the baseline.')),
                 ('org', models.ForeignKey(related_name='baseline_terms', verbose_name='Organization', to='orgs.Org')),
-                ('region', models.ForeignKey(related_name='baseline_terms', to='groups.Region')),
             ],
         ),
     ]
