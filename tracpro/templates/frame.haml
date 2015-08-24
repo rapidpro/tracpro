@@ -20,6 +20,8 @@
       <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
       <![endif]-->
 
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+
     <!-- Mobile viewport optimized: j.mp/bplateviewport -->
     %meta{ name:"viewport", content:"width=device-width, initial-scale=1.0"}
 
@@ -38,10 +40,6 @@
 
     - block extra-less
     - block extra-style
-
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
-    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
-    <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/themes/smoothness/jquery-ui.css">
 
     {% if lang_direction == 'ltr' %}
       %link{ type:"text/css", rel:"stylesheet", href:"{{ STATIC_URL }}css/trac-ltr.css"}

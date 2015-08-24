@@ -20,8 +20,6 @@ class BaselineTerm(models.Model):
 
     org = models.ForeignKey("orgs.Org", verbose_name=_(
         "Organization"), related_name="baseline_terms")
-    # TODO - remove region
-    region = models.ForeignKey("groups.Region", related_name="baseline_terms")
     name = models.CharField(max_length=255, help_text=_(
         "For example: 2015 Term 3 Attendance for P3 Girls"))
     start_date = models.DateTimeField()
@@ -47,19 +45,18 @@ class BaselineTerm(models.Model):
     )
 
     @classmethod
-    def get_all(cls, org, regions=None):
+    def get_all(cls, org):
         baseline_terms = cls.objects.filter(org=org)
-        if regions:
-            baseline_terms = baseline_terms.filter(region__in=regions)
         return baseline_terms
 
     def get_baseline(self, region):
         answers = Answer.objects.filter(
-            response__contact__region=region,
             question=self.baseline_question,
             submitted_on__gte=self.start_date,
             submitted_on__lte=self.end_date,  # look into timezone
         ).select_related('response')
+        if region:
+            answers = answers.filter(response__contact__region=region)
         # Retrieve the most recent baseline results per contact
         baseline_answers = answers.order_by('response__contact', '-submitted_on').distinct('response__contact')
 
@@ -70,11 +67,12 @@ class BaselineTerm(models.Model):
         # TODO: extra() may be depricated in future versions of Django
         # Look into date_trunc/django
         answers = Answer.objects.filter(
-            response__contact__region=region,
             question=self.follow_up_question,
             submitted_on__gte=self.start_date,
             submitted_on__lte=self.end_date,  # look into timezone
         ).select_related('response').extra({"submitted_on_date": "date(submitted_on)"})
+        if region:
+            answers = answers.filter(response__contact__region=region)
 
         answers = answers.order_by("response__contact__name", "submitted_on")
 

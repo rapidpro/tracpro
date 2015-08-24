@@ -1,9 +1,16 @@
 {% extends "smartmin/create.html" %}
 {% load smartmin i18n %}
+{% load static from staticfiles %}
+
+{% block pre-form %}
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
+    <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/themes/smoothness/jquery-ui.css">
+{% endblock %}
 
 {% block post-form %}
+<script src="{% static "js/baseline.js" %}"></script>
 <script>
-    $("input[class^='datepicker']").datepicker();
-    $("#id_org").val("{{ org.pk }}");   // Set the value of this hidden field to the current org
+    // Set the value of this hidden field to the current org
+    $("#id_org").val("{{ org.pk }}");
 </script>
 {% endblock %}
