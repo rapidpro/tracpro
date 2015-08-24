@@ -87,6 +87,7 @@ class BaselineTerm(models.Model):
         region_answers = {}
         for region in answers.values('response__contact__region__name').distinct('response__contact__region__name').order_by('response__contact__region__name'):
             import ipdb; ipdb.set_trace();
+            # TODO: look into Answer.numeric_average()
             region_name = region['response__contact__region__name'].encode('ascii')
             region_answers[region_name] = {}
             region_answers[region_name]["values"] = answers.filter(
