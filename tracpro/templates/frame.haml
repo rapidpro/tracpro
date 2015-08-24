@@ -115,7 +115,7 @@
                       %li
                         %a{ href:"{% url 'msgs.message_list' %}" }
                           - trans "Message Log"
-              - if org and request.user.is_authenticated
+              -if org_perms.contacts.contact_list or org_perms.msgs.inboxmessage_list or org_perms.baseline.baselineterm_list
                 %li.dropdown
                     %a.dropdown-toggle{href:"#", data-toggle:"dropdown"}
                       - trans "Management"
