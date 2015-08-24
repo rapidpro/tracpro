@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     'mptt',
     'reversion',
     'sorl.thumbnail',
+    'smart_selects',
 
     'smartmin',
     'smartmin.csv_imports',
@@ -68,6 +69,7 @@ INSTALLED_APPS = [
     'tracpro.orgs_ext.apps.DashOrgConfig',
     'dash.utils',
 
+    'tracpro.baseline',
     'tracpro.contacts',
     'tracpro.groups',
     'tracpro.home',
@@ -104,7 +106,7 @@ LOGGING = {
             'format': '%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s'
         },
         'basic': {
-            'format': '%(levelname)s %(message)s'
+            'format': '%(levelname)s %(asctime)s %(message)s'
         },
     },
     'handlers': {
@@ -268,6 +270,7 @@ GROUP_PERMISSIONS = {
     "Administrators": (
         'orgs.org_home',
         'orgs.org_edit',
+        'baseline.baselineterm.*',
         'contacts.contact.*',
         'groups.group.*',
         'groups.region.*',
@@ -279,6 +282,7 @@ GROUP_PERMISSIONS = {
         'profiles.profile.*',
     ),
     "Editors": (
+        'baseline.baselineterm.*',
         'contacts.contact.*',
         'groups.group_most_active',
         'groups.region_most_active',
@@ -326,6 +330,7 @@ PERMISSIONS = {
         'list',  # can view a list of the objects
     ),
     'orgs.org': ('create', 'update', 'list', 'edit', 'home'),
+    'baseline.baselineterm': ('create', 'read', 'update', 'delete', 'list'),
     'contacts.contact': ('create', 'read', 'update', 'delete', 'list'),
     'groups.group': ('list', 'most_active', 'select'),
     'groups.region': ('list', 'most_active', 'select', 'update_hierarchy'),

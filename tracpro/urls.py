@@ -5,6 +5,7 @@ from django.conf.urls import include, url
 
 
 urlpatterns = [
+    url(r'', include('tracpro.baseline.urls')),
     url(r'', include('tracpro.contacts.urls')),
     url(r'', include('tracpro.groups.urls')),
     url(r'', include('tracpro.home.urls')),
@@ -14,6 +15,7 @@ urlpatterns = [
     url(r'^manage/', include('tracpro.orgs_ext.urls')),
     url(r'^users/', include('dash.users.urls')),
     url(r'^i18n/', include('django.conf.urls.i18n')),
+    url(r'^chaining/', include('smart_selects.urls')),
 ]
 
 if settings.DEBUG:  # pragma: no cover

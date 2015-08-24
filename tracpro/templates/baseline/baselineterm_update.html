@@ -1,0 +1,12 @@
+{% extends "smartmin/update.html" %}
+{% load smartmin i18n %}
+{% load static from staticfiles %}
+
+{% block pre-form %}
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
+    <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/themes/smoothness/jquery-ui.css">
+{% endblock %}
+
+{% block post-form %}
+<script src="{% static "js/baseline.js" %}"></script>
+{% endblock %}

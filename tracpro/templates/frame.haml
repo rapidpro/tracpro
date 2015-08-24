@@ -20,6 +20,8 @@
       <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
       <![endif]-->
 
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+
     <!-- Mobile viewport optimized: j.mp/bplateviewport -->
     %meta{ name:"viewport", content:"width=device-width, initial-scale=1.0"}
 
@@ -113,22 +115,31 @@
                       %li
                         %a{ href:"{% url 'msgs.message_list' %}" }
                           - trans "Message Log"
+              -if org_perms.contacts.contact_list or org_perms.msgs.inboxmessage_list or org_perms.baseline.baselineterm_list
+                %li.dropdown
+                    %a.dropdown-toggle{href:"#", data-toggle:"dropdown"}
+                      - trans "Management"
+                      %b.caret
+                    %ul.dropdown-menu
+                      - if org_perms.contacts.contact_list
+                        %li
+                          %a{ href:"{% url 'contacts.contact_list' %}" }
+                            - trans "Contacts"
 
+                      - if org_perms.msgs.inboxmessage_list
+                            %li
+                              %a{ href:"{% url 'msgs.inboxmessage_list' %}" }
+                                - trans "Inbox Messages"
+
+                      - if org_perms.baseline.baselineterm_list
+                            %li
+                              %a{ href:"{% url 'baseline.baselineterm_list' %}" }
+                                - trans "Baseline Charts"
 
               - if org and request.user.is_authenticated
                 %li
                   %a{ href:"/" }
                     - trans "Home"
-
-                - if org_perms.contacts.contact_list
-                  %li
-                    %a{ href:"{% url 'contacts.contact_list' %}" }
-                      - trans "Contacts"
-
-                - if org_perms.msgs.inboxmessage_list
-                      %li
-                        %a{ href:"{% url 'msgs.inboxmessage_list' %}" }
-                          - trans "Inbox Messages"
 
             %ul.nav.navbar-nav.navbar-right
               - block login
@@ -196,7 +207,6 @@
           {% include 'lang_switcher.html' %}
 
     <!-- JavaScript at the bottom for fast page loading -->
-    <script type="text/javascript" src="{{ STATIC_URL }}js/libs/jquery.1.11.1.min.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/bootstrap.min.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/angular.min.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/highcharts.js"></script>

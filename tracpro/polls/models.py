@@ -177,6 +177,9 @@ class Question(models.Model):
     def create(cls, poll, text, _type, order, ruleset_uuid):
         return cls.objects.create(poll=poll, text=text, type=_type, order=order, ruleset_uuid=ruleset_uuid)
 
+    def __str__(self):
+        return self.text
+
 
 @python_2_unicode_compatible
 class PollRun(models.Model):
