@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
+from django.db.models import Sum
 
 from smart_selects.db_fields import ChainedForeignKey
 
@@ -83,17 +84,18 @@ class BaselineTerm(models.Model):
         { 'Erin': {'values': [35,...], 'dates': [datetime.date(2015, 8, 12),...]} }
         """
         # TODO - switch this to sum of all answers by region
-        contact_answers = {}
-        for contact in answers.values('response__contact__name').distinct():
-            contact_name = contact['response__contact__name'].encode('ascii')
-            contact_answers[contact_name] = {}
-            contact_answers[contact_name]["values"] = answers.filter(
-                                                      response__contact__name=contact_name).values_list(
+        region_answers = {}
+        for region in answers.values('response__contact__region__name').distinct('response__contact__region__name').order_by('response__contact__region__name'):
+            import ipdb; ipdb.set_trace();
+            region_name = region['response__contact__region__name'].encode('ascii')
+            region_answers[region_name] = {}
+            region_answers[region_name]["values"] = answers.filter(
+                                                      response__contact__region__name=region_name).values_list(
                                                       "value", flat=True)
-            contact_answers[contact_name]["dates"] = answers.filter(
-                                                     response__contact__name=contact_name).values_list(
+            region_answers[region_name]["dates"] = answers.filter(
+                                                     response__contact__region__name=region_name).values_list(
                                                      "submitted_on_date", flat=True)
 
         dates = answers.values_list("submitted_on_date").order_by("submitted_on_date").distinct()
 
-        return contact_answers, dates
+        return region_answers, dates
