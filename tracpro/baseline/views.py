@@ -1,4 +1,5 @@
 from django.core.urlresolvers import reverse
+from django.utils.translation import ugettext_lazy as _
 
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 
@@ -86,5 +87,9 @@ class BaselineTermCRUDL(SmartCRUDL):
                 """
                 answers_dict[follow_up]["values"] = [float(val) for val in follow_ups[follow_up]["values"]]
             context['answers_dict'] = answers_dict
+
+            if len(context['answers_dict']) == 0 and len(context['baseline_dict']) == 0:
+                context['error_message'] = _(
+                    "No data exists for this baseline chart. You may need to select a different region.")
 
             return context
