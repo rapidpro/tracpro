@@ -45,7 +45,7 @@ class BaselineTermForm(forms.ModelForm):
         baseline_question = cleaned_data.get("baseline_question")
         follow_up_question = cleaned_data.get("follow_up_question")
 
-        if baseline_question and follow_up_question and baseline_question.pk == follow_up_question.pk:
+        if baseline_question and follow_up_question and baseline_question == follow_up_question:
             raise forms.ValidationError(
                 "Baseline question and follow up question should be different."
             )
