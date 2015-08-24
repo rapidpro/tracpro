@@ -11,5 +11,8 @@
 <script>
     $("input[class^='datepicker']").datepicker();
     $("#id_org").val("{{ org.pk }}");   // Set the value of this hidden field to the current org
+
+    $("#id_baseline_question").parent().hide();
+    //$("#id_baseline_question").prev("label").hide();
 </script>
 {% endblock %}
