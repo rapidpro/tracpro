@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% load smartmin i18n %}
+
+{% block login %}
+
+{% endblock %}
+
+{% block content %}
+  <div class='row login-form'>
+    <div class='col-md-6 col-md-offset-3'>
+      <div class='page-header'>
+        <h2>
+          {% trans "Sign in" %}
+
+        </h2>
+      </div>
+      <form class='form-stacked' method='post'>
+        {% csrf_token %}
+
+        {% for field, errors in form.errors.items %}
+          {% if field == '__all__' %}
+            <div class='alert alert-danger form-errors'>
+              <h3>
+                Error
+              </h3>
+              {{ errors }}
+
+            </div>
+          {% endif %}
+        {% endfor %}
+        <div class='form-group'>
+          <label class='control-label' for='username'>
+            {% trans "Email" %}
+          </label>
+          <div class='input'>
+            <input class='form-control' type='text' name='username' maxlength='254' />
+
+          </div>
+        </div>
+        <div class='form-group'>
+          <label class='control-label' for='password'>
+            {% trans "Password" %}
+          </label>
+          <div class='input'>
+            <input class='form-control' type='password' name='password' />
+
+          </div>
+        </div>
+        <button class='btn btn-primary' type='submit'>
+          {% trans "Login" %}
+
+        </button>
+        {% if allow_email_recovery %}
+          <span class='pull-away' style='padding-top:7px'>
+            <a href='{% url 'users.user_forget' %}'>
+              {% trans "Forgot Password?" %}
+
+            </a>
+          </span>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+{% endblock %}

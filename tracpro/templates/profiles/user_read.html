@@ -1,0 +1,12 @@
+{% extends "smartmin/read.html" %}
+{% load smartmin i18n %}
+
+{% block read-buttons %}
+  <div class='btn-group pull-away'>
+    <a class='btn btn-default' href='{{ edit_button_url }}'>
+      <span class='glyphicon glyphicon-pencil'></span>
+      {% trans "Edit" %}
+
+    </a>
+  </div>
+{% endblock %}

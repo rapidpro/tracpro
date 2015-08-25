@@ -1,0 +1,64 @@
+{% load i18n %}
+{% load utils %}
+
+<div class='page-header'>
+  <h2>
+    {{ pollrun }}
+  </h2>
+  <ul class='pollrun-details'>
+    <li><strong>{% trans "Region" %}</strong>:
+      {% if pollrun.region %}
+        {{ pollrun.region }}
+      {% else %}
+        {% trans "All" %}
+      {% endif %}
+    </li>
+    <li><strong>{% trans "Poll" %}</strong>:
+      <a href='{% url 'polls.poll_read' pollrun.poll.pk %}'>
+        {{ pollrun.poll }}
+      </a>
+    </li>
+    <li><strong>{% trans "Started by" %}</strong>:
+      {% if pollrun.created_by_id %}
+        {{ pollrun.created_by }}
+      {% else %}
+        {% trans "RapidPro" %}
+
+      {% endif %}
+    </li>
+  </ul>
+</div>
+<ul class='nav nav-tabs' style='margin-bottom: 1em'>
+  <li class='{% if_url 'polls.pollrun_read' 'active' '' %}'>
+    <a href='{% url 'polls.pollrun_read' pollrun.pk %}'>
+      {% trans "Summary" %}
+    </a>
+  </li>
+  <li class='{% if_url 'polls.pollrun_participation' 'active' '' %}'>
+    <a href='{% url 'polls.pollrun_participation' pollrun.pk %}'>
+      {% trans "Participation" %}
+    </a>
+  </li>
+  <li class='{% if_url 'polls.response_by_pollrun' 'active' '' %}'>
+    <a href='{% url 'polls.response_by_pollrun' pollrun.pk %}'>
+      {% trans "Responses" %}
+
+
+    </a>
+  </li>
+</ul>
+<style type='text/css'>
+/*<![CDATA[*/
+  ul.pollrun-details {
+    margin: 0;
+    padding: 0;
+  }
+  ul.pollrun-details li {
+    display: inline-block;
+    margin: 5px;
+    padding: 0;
+    list-style: none;
+  }
+
+/*]]>*/
+</style>

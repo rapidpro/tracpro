@@ -1,0 +1,24 @@
+{% extends "smartmin/list.html" %}
+{% load smartmin i18n %}
+
+{% block pre-content %}
+
+  {% include 'polls/pollrun_header.html' with pollrun=pollrun %}
+
+  <div class='clearfix'>
+    {% if request.region and not pollrun.region %}
+      {% blocktrans with region=request.region %}
+        These are the responses for <strong>{{ region }}</strong>
+
+      {% endblocktrans %}
+    {% endif %}
+    <div class='buttons pull-away'>
+      <a class='btn btn-default' href='{{ request.path }}?_format=csv'>
+        <span class='glyphicon glyphicon-download'></span>
+        {% trans "Download" %}
+
+      </a>
+    </div>
+  </div>
+{% endblock %}
+

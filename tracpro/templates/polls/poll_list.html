@@ -1,0 +1,22 @@
+{% extends "smartmin/list.html" %}
+{% load smartmin i18n %}
+
+{% block pre-content %}
+  <div class='page-header'>
+    <h2>
+      {% trans "Polls" %}
+    </h2>
+  </div>
+  {% blocktrans %}
+    Each poll is a flow in RapidPro.
+
+  {% endblocktrans %}
+{% endblock %}
+{% block table-buttons %}
+  {% if org_perms.polls.poll_select %}
+    <a class='btn btn-default pull-right' href='{% url 'polls.poll_select' %}'>
+      <span class='glyphicon glyphicon-download'></span>
+      {% trans "Select Flows" %}
+    </a>
+  {% endif %}
+{% endblock %}

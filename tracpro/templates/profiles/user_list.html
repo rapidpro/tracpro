@@ -1,0 +1,16 @@
+{% extends "smartmin/list.html" %}
+{% load smartmin i18n %}
+
+{% block table-controls %}
+  <div class='clearfix'>
+    <div class='pull-away buttons'>
+      {% if org_perms.profiles.profile_user_create %}
+        <a class='btn btn-default' href='{% url 'profiles.user_create' %}'>
+          <span class='glyphicon glyphicon-plus'></span>
+          {% trans "Add" %}
+
+        </a>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}
