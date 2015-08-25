@@ -26,7 +26,7 @@ $(function () {
             text: '{{ baselineterm.name }}'
         },
         subtitle: {
-            text: 'Baseline gathered from: {{ baselineterm.baseline_question }}'
+            text: 'Baseline: {{ baselineterm.baseline_question }}, Follow Up: {{ baselineterm.follow_up_question }}'
         },
         xAxis: {
             categories: [
@@ -47,13 +47,11 @@ $(function () {
                 type: 'area',
                 name: '{{ key }} Baseline',
                 {% for subkey, subvalue in values.items %}
-                    {% if subkey == "value" %}
-                        data: [
-                              {% for i in date_count %}
-                                {{ subvalue }},
-                              {% endfor %}
-                              ]
-                    {% endif %}
+                    data: [
+                          {% for i in date_count %}
+                            {{ subvalue }},
+                          {% endfor %}
+                          ]
                 {% endfor %}
             },
         {% endfor %}
@@ -61,11 +59,9 @@ $(function () {
         {% for key, values in answers_dict.items %}
             {
                 type: 'area',
-                name: '{{ key }}',
+                name: '{{ key }} Follow Up',
                 {% for subkey, subvalue in values.items %}
-                    {% if subkey == "values" %}
-                        data: {{ subvalue }}
-                    {% endif %}
+                    data: {{ subvalue }}
                 {% endfor %}
             },
         {% endfor %}

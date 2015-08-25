@@ -61,18 +61,15 @@ class BaselineTermCRUDL(SmartCRUDL):
             context = super(BaselineTermCRUDL.Read, self).get_context_data(**kwargs)
 
             region = self.request.region
-            baselines = self.object.get_baseline(region=region)
-            follow_ups, dates = self.object.get_follow_up(region=region)
 
-            baseline_dict = {}
-            for baseline in baselines:
-                baseline_dict[baseline[2]] = {}
-                baseline_dict[baseline[2]]["value"] = float(baseline[1])
+            baseline_dict = self.object.get_baseline(region=region)
             context['baseline_dict'] = baseline_dict
+
+            follow_ups, dates = self.object.get_follow_up(region=region)
 
             date_list = []
             for date in dates:
-                date_formatted = date[0].strftime('%m/%d')
+                date_formatted = date.strftime('%m/%d')
                 date_list.append(date_formatted)
             context['date_list'] = date_list
             context['date_count'] = range(len(date_list))
@@ -80,11 +77,6 @@ class BaselineTermCRUDL(SmartCRUDL):
             answers_dict = {}
             for follow_up in follow_ups:
                 answers_dict[follow_up] = {}
-                answers_dict[follow_up]["dates"] = [date.strftime("%m/%d") for date in follow_ups[follow_up]["dates"]]
-                """
-                TODO: I might want to check to see if the date exists
-                for this value before inserting it into the list
-                """
                 answers_dict[follow_up]["values"] = [float(val) for val in follow_ups[follow_up]["values"]]
             context['answers_dict'] = answers_dict
 

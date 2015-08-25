@@ -1,6 +1,5 @@
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
-from django.db.models import Sum
 
 from smart_selects.db_fields import ChainedForeignKey
 
@@ -58,45 +57,44 @@ class BaselineTerm(models.Model):
         ).select_related('response')
         if region:
             answers = answers.filter(response__contact__region=region)
+
         # Retrieve the most recent baseline results per contact
         baseline_answers = answers.order_by('response__contact', '-submitted_on').distinct('response__contact')
+        region_answers = {}
+        regions = baseline_answers.values('response__contact__region__name').distinct(
+                                          'response__contact__region__name').order_by('response__contact__region__name')
+        for region in regions:
+            region_name = region['response__contact__region__name'].encode('ascii')
+            answers_by_region = answers.filter(response__contact__region__name=region_name)
+            answer_sums, dates = Answer.numeric_sum_group_by_date(answers_by_region)
+            region_answers[region_name] = {}
+            region_answers[region_name]["values"] = sum(answer_sums)
 
-        return list(baseline_answers.values_list("submitted_on", "value", "response__contact__name"))
+        return region_answers
 
     def get_follow_up(self, region):
-        """ Get all follow up responses """
-        # TODO: extra() may be depricated in future versions of Django
-        # Look into date_trunc/django
+        """ Get all follow up responses summed by region """
         answers = Answer.objects.filter(
             question=self.follow_up_question,
             submitted_on__gte=self.start_date,
             submitted_on__lte=self.end_date,  # look into timezone
-        ).select_related('response').extra({"submitted_on_date": "date(submitted_on)"})
+        ).select_related('response')
         if region:
             answers = answers.filter(response__contact__region=region)
-
-        answers = answers.order_by("response__contact__name", "submitted_on")
-
         """
-        Loop through all contacts in answers and create
-        a dict of values and dates per contact
+        Loop through all regions in answers and create
+        a dict of values and dates per Region
         ex.
-        { 'Erin': {'values': [35,...], 'dates': [datetime.date(2015, 8, 12),...]} }
+        { 'Kumpala': {'values': [35,...], 'dates': [datetime.date(2015, 8, 12),...]} }
         """
-        # TODO - switch this to sum of all answers by region
         region_answers = {}
-        for region in answers.values('response__contact__region__name').distinct('response__contact__region__name').order_by('response__contact__region__name'):
-            import ipdb; ipdb.set_trace();
-            # TODO: look into Answer.numeric_average()
+        regions = answers.values('response__contact__region__name').distinct(
+                                 'response__contact__region__name').order_by('response__contact__region__name')
+        for region in regions:
             region_name = region['response__contact__region__name'].encode('ascii')
+            answers_by_region = answers.filter(response__contact__region__name=region_name)
+            answer_sums, dates = Answer.numeric_sum_group_by_date(answers_by_region)
             region_answers[region_name] = {}
-            region_answers[region_name]["values"] = answers.filter(
-                                                      response__contact__region__name=region_name).values_list(
-                                                      "value", flat=True)
-            region_answers[region_name]["dates"] = answers.filter(
-                                                     response__contact__region__name=region_name).values_list(
-                                                     "submitted_on_date", flat=True)
-
-        dates = answers.values_list("submitted_on_date").order_by("submitted_on_date").distinct()
+            region_answers[region_name]["values"] = answer_sums
 
         return region_answers, dates

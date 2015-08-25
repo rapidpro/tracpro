@@ -530,6 +530,38 @@ class Answer(models.Model):
         return float(total / count) if count else 0
 
     @classmethod
+    def numeric_sum_group_by_date(cls, answers):
+        """
+        Parses decimals out of a set of answers and returns the sum for each distinct date.
+        Returns:
+        answer_sums: list of sum of each value on each date ie. [33, 40, ...]
+        dates: list of distinct dates ie. [datetime.date(2015, 8, 12),...]
+        """
+        answer_sums = []
+        dates = []
+        total = Decimal(0)
+        answer_date = ""
+        answers = answers.order_by('submitted_on')
+        for answer in answers:
+            if answer.category is not None:  # ignore answers with no category as they weren't in the required range
+                if answer_date != answer.submitted_on.date():
+                    # Append the sum total value for each date
+                    if total:
+                        answer_sums.append(total)
+                        dates.append(answer_date)
+                    answer_date = answer.submitted_on.date()
+                    total = Decimal(0)
+                try:
+                    total += Decimal(answer.value)
+                except (TypeError, ValueError, InvalidOperation):
+                    continue
+        # One last value to append, for the final date
+        if total:
+            answer_sums.append(total)
+            dates.append(answer_date)
+        return answer_sums, dates
+
+    @classmethod
     def auto_range_counts(cls, answers):
         """
         Creates automatic range "categories" for a given set of answers and returns the count of values in each range
