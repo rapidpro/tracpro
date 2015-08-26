@@ -17,22 +17,47 @@ class UserCRUDLTest(TracProDataTest):
         # submit with no fields entered
         response = self.url_post('unicef', url, dict())
         self.assertEqual(response.status_code, 200)
-        self.assertFormError(response, 'form', 'full_name', 'This field is required.')
-        self.assertFormError(response, 'form', 'email', 'This field is required.')
-        self.assertFormError(response, 'form', 'password', 'This field is required.')
+        self.assertFormError(
+            response, 'form', 'full_name',
+            'This field is required.')
+        self.assertFormError(
+            response, 'form', 'email',
+            'This field is required.')
+        self.assertFormError(
+            response, 'form', 'password',
+            'This field is required.')
 
         # submit again with all required fields but invalid password
-        data = dict(full_name="Mo Polls", email="mo@trac.com", password="123", confirm_password="123")
+        data = {
+            'full_name': "Mo Polls",
+            'email': "mo@trac.com",
+            'password': "123",
+            'confirm_password': "123",
+        }
         response = self.url_post('unicef', url, data)
-        self.assertFormError(response, 'form', 'password', "Ensure this value has at least 8 characters (it has 3).")
+        self.assertFormError(
+            response, 'form', 'password',
+            "Ensure this value has at least 8 characters (it has 3).")
 
         # submit again with valid password but mismatched confirmation
-        data = dict(full_name="Mo Polls", email="mo@trac.com", password="Qwerty123", confirm_password="123")
+        data = {
+            'full_name': "Mo Polls",
+            'email': "mo@trac.com",
+            'password': "Qwerty123",
+            'confirm_password': "123",
+        }
         response = self.url_post('unicef', url, data)
-        self.assertFormError(response, 'form', 'confirm_password', "Passwords don't match.")
+        self.assertFormError(
+            response, 'form', 'confirm_password',
+            "Passwords don't match.")
 
         # submit again with valid password and confirmation
-        data = dict(full_name="Mo Polls", email="mo@trac.com", password="Qwerty123", confirm_password="Qwerty123")
+        data = {
+            'full_name': "Mo Polls",
+            'email': "mo@trac.com",
+            'password': "Qwerty123",
+            'confirm_password': "Qwerty123",
+        }
         response = self.url_post('unicef', url, data)
         self.assertEqual(response.status_code, 302)
 
@@ -43,9 +68,16 @@ class UserCRUDLTest(TracProDataTest):
         self.assertEqual(user.username, "mo@trac.com")
 
         # try again with same email address
-        data = dict(full_name="Mo Polls II", email="mo@trac.com", password="Qwerty123", confirm_password="Qwerty123")
+        data = {
+            'full_name': "Mo Polls II",
+            'email': "mo@trac.com",
+            'password': "Qwerty123",
+            'confirm_password': "Qwerty123",
+        }
         response = self.url_post('unicef', url, data)
-        self.assertFormError(response, 'form', None, "Email address already taken.")
+        self.assertFormError(
+            response, 'form', None,
+            "Email address already taken.")
 
     def test_update(self):
         url = reverse('profiles.user_update', args=[self.user1.pk])
@@ -55,16 +87,26 @@ class UserCRUDLTest(TracProDataTest):
 
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.context['form'].fields['regions'].choices), 3)  # can assign to any org region
+        # can assign to any org region
+        self.assertEqual(len(response.context['form'].fields['regions'].choices), 3)
 
         # submit with no fields entered
         response = self.url_post('unicef', url, dict())
         self.assertEqual(response.status_code, 200)
-        self.assertFormError(response, 'form', 'full_name', 'This field is required.')
-        self.assertFormError(response, 'form', 'email', 'This field is required.')
+        self.assertFormError(
+            response, 'form', 'full_name',
+            'This field is required.')
+        self.assertFormError(
+            response, 'form', 'email',
+            'This field is required.')
 
         # submit with all fields entered
-        data = dict(full_name="Morris", email="mo2@chat.com", regions=[self.region3.pk], is_active=True)
+        data = {
+            'full_name': "Morris",
+            'email': "mo2@chat.com",
+            'regions': [self.region3.pk],
+            'is_active': True,
+        }
         response = self.url_post('unicef', url, data)
         self.assertEqual(response.status_code, 302)
 
@@ -76,17 +118,34 @@ class UserCRUDLTest(TracProDataTest):
         self.assertEqual(list(user.regions.all()), [self.region3])
 
         # submit again for good measure
-        data = dict(full_name="Morris", email="mo2@chat.com", regions=[self.region3.pk], is_active=True)
+        data = {
+            'full_name': "Morris",
+            'email': "mo2@chat.com",
+            'regions': [self.region3.pk],
+            'is_active': True,
+        }
         response = self.url_post('unicef', url, data)
         self.assertEqual(response.status_code, 302)
 
         # try giving user someone else's email address
-        data = dict(full_name="Morris", email="eric@nyaruka.com", password="Qwerty123", confirm_password="Qwerty123")
+        data = {
+            'full_name': "Morris",
+            'email': "eric@nyaruka.com",
+            'password': "Qwerty123",
+            'confirm_password': "Qwerty123",
+        }
         response = self.url_post('unicef', url, data)
-        self.assertFormError(response, 'form', None, "Email address already taken.")
+        self.assertFormError(
+            response, 'form', None,
+            "Email address already taken.")
 
         # check de-activating user
-        data = dict(full_name="Morris", email="mo2@chat.com", regions=[], is_active=False)
+        data = {
+            'full_name': "Morris",
+            'email': "mo2@chat.com",
+            'regions': [],
+            'is_active': False,
+        }
         response = self.url_post('unicef', url, data)
         self.assertEqual(response.status_code, 302)
 
@@ -99,24 +158,32 @@ class UserCRUDLTest(TracProDataTest):
         self.login(self.admin)
 
         # view our own profile
-        response = self.url_get('unicef', reverse('profiles.user_read', args=[self.admin.pk]))
+        response = self.url_get(
+            'unicef', reverse('profiles.user_read', args=[self.admin.pk]))
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context['edit_button_url'], reverse('profiles.user_self'))
+        self.assertEqual(
+            response.context['edit_button_url'],
+            reverse('profiles.user_self'))
 
         # view other user's profile
-        response = self.url_get('unicef', reverse('profiles.user_read', args=[self.user1.pk]))
+        response = self.url_get(
+            'unicef', reverse('profiles.user_read', args=[self.user1.pk]))
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context['edit_button_url'], reverse('profiles.user_update', args=[self.user1.pk]))
+        self.assertEqual(
+            response.context['edit_button_url'],
+            reverse('profiles.user_update', args=[self.user1.pk]))
 
         # try to view user from other org
-        response = self.url_get('unicef', reverse('profiles.user_read', args=[self.user3.pk]))
+        response = self.url_get(
+            'unicef', reverse('profiles.user_read', args=[self.user3.pk]))
         self.assertEqual(response.status_code, 404)
 
         # log in as a user
         self.login(self.user1)
 
         # view other user's profile
-        response = self.url_get('unicef', reverse('profiles.user_read', args=[self.admin.pk]))
+        response = self.url_get(
+            'unicef', reverse('profiles.user_read', args=[self.admin.pk]))
         self.assertEqual(response.status_code, 200)
         self.assertIsNone(response.context['edit_button_url'])
 
@@ -166,8 +233,12 @@ class UserCRUDLTest(TracProDataTest):
         # submit with no fields entered
         response = self.url_post('unicef', url, dict())
         self.assertEqual(response.status_code, 200)
-        self.assertFormError(response, 'form', 'full_name', 'This field is required.')
-        self.assertFormError(response, 'form', 'email', 'This field is required.')
+        self.assertFormError(
+            response, 'form', 'full_name',
+            'This field is required.')
+        self.assertFormError(
+            response, 'form', 'email',
+            'This field is required.')
 
         # submit with all required fields entered
         data = dict(full_name="Morris", email="mo2@trac.com")
@@ -183,7 +254,12 @@ class UserCRUDLTest(TracProDataTest):
 
         # submit with all required fields entered and password fields
         old_password_hash = user.password
-        data = dict(full_name="Morris", email="mo2@trac.com", new_password="Qwerty123", confirm_password="Qwerty123")
+        data = {
+            'full_name': "Morris",
+            'email': "mo2@trac.com",
+            'new_password': "Qwerty123",
+            'confirm_password': "Qwerty123",
+        }
         response = self.url_post('unicef', url, data)
         self.assertEqual(response.status_code, 302)
 
@@ -200,16 +276,29 @@ class UserCRUDLTest(TracProDataTest):
         data = dict(full_name="Morris", email="mo2@trac.com")
         response = self.url_post('unicef', url, data)
         self.assertEqual(response.status_code, 200)
-        self.assertFormError(response, 'form', 'password', 'This field is required.')
+        self.assertFormError(
+            response, 'form', 'password',
+            'This field is required.')
 
         # submit again with password but no confirmation
-        data = dict(full_name="Morris", email="mo2@trac.com", password="Qwerty123")
+        data = {
+            'full_name': "Morris",
+            'email': "mo2@trac.com",
+            'password': "Qwerty123",
+        }
         response = self.url_post('unicef', url, data)
         self.assertEqual(response.status_code, 200)
-        self.assertFormError(response, 'form', 'confirm_password', "Passwords don't match.")
+        self.assertFormError(
+            response, 'form', 'confirm_password',
+            "Passwords don't match.")
 
         # submit again with password and confirmation
-        data = dict(full_name="Morris", email="mo2@trac.com", password="Qwerty123", confirm_password="Qwerty123")
+        data = {
+            'full_name': "Morris",
+            'email': "mo2@trac.com",
+            'password': "Qwerty123",
+            'confirm_password': "Qwerty123",
+        }
         response = self.url_post('unicef', url, data)
         self.assertEqual(response.status_code, 302)
 
@@ -225,9 +314,19 @@ class DashUserCRUDLTest(TracProDataTest):
         url = reverse('users.user_login')
 
         # login without org subdomain
-        response = self.url_post(None, url, dict(username='sam@unicef.org', password='sam@unicef.org'))
-        self.assertRedirects(response, 'http://testserver/', fetch_redirect_response=False)
+        response = self.url_post(None, url, {
+            'username': 'sam@unicef.org',
+            'password': 'sam@unicef.org',
+        })
+        self.assertRedirects(
+            response, 'http://testserver/',
+            fetch_redirect_response=False)
 
         # login with org subdomain
-        response = self.url_post('unicef', url, dict(username='sam@unicef.org', password='sam@unicef.org'))
-        self.assertRedirects(response, 'http://unicef.testserver/', fetch_redirect_response=False)
+        response = self.url_post('unicef', url, {
+            'username': 'sam@unicef.org',
+            'password': 'sam@unicef.org',
+        })
+        self.assertRedirects(
+            response, 'http://unicef.testserver/',
+            fetch_redirect_response=False)
