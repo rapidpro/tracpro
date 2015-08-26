@@ -13,7 +13,7 @@ class HomeView(OrgPermsMixin, SmartTemplateView):
     """TracPro homepage"""
 
     title = _("Home")
-    template_name = 'home/home.haml'
+    template_name = 'home/home.html'
 
     def has_permission(self, request, *args, **kwargs):
         return request.user.is_authenticated()

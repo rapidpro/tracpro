@@ -1,0 +1,59 @@
+{% extends "smartmin/base.html" %}
+{% load smartmin i18n %}
+
+{% block pre-content %}
+
+  {% include 'polls/poll_header.html' with poll=object %}
+
+{% endblock %}
+
+{% block content %}
+  <div>
+    {% if not request.region %}
+      {% trans "Charts only include data from non-regional poll runs" %}
+
+    {% endif %}
+    <div class='pull-away'>
+      <form class='form-inline' method='get'>
+        <label class='control-label' for='window-select'></label>
+        {% trans "Show" %}
+        <select id='window-select' class='form-control' onchange='onChartWindowChange(this)' name='window'>
+          {% for win in window_options %}
+            {% if win == window %}
+              <option selected='selected' value='{{ win.name }}'>
+                {{ win.label }}
+              </option>
+            {% else %}
+              <option value='{{ win.name }}'>
+                {{ win.label }}
+
+
+              </option>
+            {% endif %}
+          {% endfor %}
+        </select>
+      </form>
+    </div>
+  </div>
+  {% for question in questions %}
+    <h3>
+      {{ question.order }}. {{ question.text }}
+
+    </h3>
+    <div class='chart' data-chart-type='{{ question.chart_type }}' data-unit-text='{{ question.text }}' data-question-id='{{ question.pk }}' data-window-max='{{ window_max }}' data-window-min='{{ window_min }}' dir='ltr'></div>
+    <script type='text/javascript'>
+      var chart_{{ question.pk }}_data = {{ question.chart_data }};
+
+
+    </script>
+  {% endfor %}
+{% endblock %}
+{% block extra-script %}
+<script type='text/javascript'>
+// <![CDATA[
+    function onChartWindowChange(ctrl) {
+      ctrl.form.submit();
+    }
+// ]]>
+</script>
+{% endblock %}

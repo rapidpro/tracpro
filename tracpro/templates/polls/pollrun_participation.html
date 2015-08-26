@@ -1,0 +1,267 @@
+{% extends "smartmin/base.html" %}
+{% load smartmin i18n %}
+
+{% block pre-content %}
+
+  {% include 'polls/pollrun_header.html' with pollrun=object %}
+
+{% endblock %}
+
+{% block content %}
+
+  <div class='row'>
+    <div class='col-md-12 buttons'>
+      <div class='btn-group pull-right'>
+        <a class='btn btn-default' data-toggle='modal' type='button' data-target='#send-message-dialog'>
+          <span class='glyphicon glyphicon-comment'></span>
+          {% trans "Send Message..." %}
+        </a>
+        {% if can_restart %}
+          <a class='btn btn-default' data-toggle='modal' type='button' data-target='#restart-dialog'>
+            <span class='glyphicon glyphicon-repeat'></span>
+            {% trans "Restart..." %}
+
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div id='send-message-dialog' class='modal fade' role='dialog'>
+    <div class='modal-dialog'>
+      <div class='modal-content'>
+        <div class='modal-header'>
+          <button class='close' data-dismiss='modal' type='button'>
+            &times;
+          </button>
+          <h4 class='modal-title'>
+            {% trans "Send Message" %}
+          </h4>
+        </div>
+        <div class='modal-body'>
+          <form id='send-message-form' class='form-horizontal'>
+            {% csrf_token %}
+            <input type='hidden' name='pollrun' value='{{ pollrun.pk }}' />
+            <div class='form-group'>
+              <label class='col-sm-2 control-label' for='cohort'>
+                {% trans "Recipients" %}
+              </label>
+              <div class='col-sm-10'>
+                <select class='form-control' style='width: 100%' name='cohort'>
+                  <option value='A'>
+                    {% with count=all_participants_count %}
+                      {% if request.region %}
+                        {% blocktrans with region=request.region %}
+                          All participants in {{ region }} ({{ count }})
+                        {% endblocktrans %}
+                      {% else %}
+                        {% blocktrans %}
+                          All participants ({{ count }})
+                        {% endblocktrans %}
+                      {% endif %}
+                    {% endwith %}
+                  </option>
+                  <option value='R'>
+                    {% with count=complete_count %}
+                      {% if request.region %}
+                        {% blocktrans with region=request.region %}
+                          Respondents in {{ region }} ({{ count }})
+                        {% endblocktrans %}
+                      {% else %}
+                        {% blocktrans %}
+                          Respondents ({{ count }})
+                        {% endblocktrans %}
+                      {% endif %}
+                    {% endwith %}
+                  </option>
+                  <option value='N'>
+                    {% with count=incomplete_count %}
+                      {% if request.region %}
+                        {% blocktrans with region=request.region %}
+                          Non-respondents in {{ region }} ({{ count }})
+                        {% endblocktrans %}
+                      {% else %}
+                        {% blocktrans %}
+                          Non-respondents ({{ count }})
+                        {% endblocktrans %}
+                      {% endif %}
+                    {% endwith %}
+                  </option>
+                </select>
+              </div>
+            </div>
+            <div class='form-group'>
+              <label class='col-sm-2 control-label' for='message'></label>
+              <div class='col-sm-10'>
+                <textarea class='form-control' style='width: 100%' placeholder='Enter message' name='text'></textarea>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class='modal-footer'>
+          <button class='btn btn-default' data-dismiss='modal' type='button'>
+            {% trans "Cancel" %}
+          </button>
+          <button class='btn btn-primary' type='button' onclick='onMessageSend()'>
+            {% trans "Send" %}
+
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id='restart-dialog' class='modal fade' role='dialog'>
+    <div class='modal-dialog'>
+      <div class='modal-content'>
+        <div class='modal-header'>
+          <button class='close' data-dismiss='modal' type='button'>
+            &times;
+          </button>
+          <h4 class='modal-title'>
+            {% trans "Restart Non-respondents" %}
+          </h4>
+        </div>
+        <div class='modal-body'>
+          <form id='restart-form'>
+            {% csrf_token %}
+            <input type='hidden' name='pollrun' value='{{ pollrun.pk }}' />
+          </form>
+          <p>
+            {% if request.region %}
+              {% blocktrans with region=request.region count=incomplete_response_count %}
+                Restart poll for {{ count }} non-respondents in {{ region }}?
+              {% endblocktrans %}
+            {% else %}
+              {% blocktrans with count=incomplete_response_count %}
+                Restart poll for {{ count }} non-respondents?
+              {% endblocktrans %}
+            {% endif %}
+          </p>
+        </div>
+        <div class='modal-footer'>
+          <button class='btn btn-default' data-dismiss='modal' type='button'>
+            {% trans "Cancel" %}
+          </button>
+          <button class='btn btn-primary' type='button' onclick='onRestart()'>
+            {% trans "Restart" %}
+
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class='row'>
+    <div class='col-md-12'>
+      <table class='table table-striped' style='width: 100%'>
+        <thead>
+          <tr>
+            <th>
+              {% trans "Reporter Group" %}
+            </th>
+            <th>
+              {% trans "No response" %}
+            </th>
+            <th>
+              {% trans "Partial response" %}
+            </th>
+            <th>
+              {% trans "Full response" %}
+            </th>
+            <th>
+              {% trans "Completion" %}
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for group, counts in per_group_counts.iteritems %}
+            <tr>
+              <td>
+                {{ group }}
+              </td>
+              <td>
+                {{ counts.E }}
+              </td>
+              <td>
+                {{ counts.P }}
+              </td>
+              <td>
+                {{ counts.C }}
+              </td>
+              <td>
+                {{ counts.X }}
+              </td>
+            </tr>
+          {% endfor %}
+          <tr>
+            <td>
+              <i>
+                {% trans "No group" %}
+              </i>
+            </td>
+            <td>
+              {{ no_group_counts.E }}
+            </td>
+            <td>
+              {{ no_group_counts.P }}
+            </td>
+            <td>
+              {{ no_group_counts.C }}
+            </td>
+            <td>
+              {{ no_group_counts.X }}
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <strong>
+                {% trans "Total" %}
+              </strong>
+            </td>
+            <td>
+              <strong>
+                {{ overall_counts.E }}
+              </strong>
+            </td>
+            <td>
+              <strong>
+                {{ overall_counts.P }}
+              </strong>
+            </td>
+            <td>
+              <strong>
+                {{ overall_counts.C }}
+              </strong>
+            </td>
+            <td>
+              <strong>
+                {{ overall_counts.X }}
+
+              </strong>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra-script %}
+<script type='text/javascript'>
+// <![CDATA[
+    function onMessageSend() {
+      data = $('#send-message-form').serialize();
+      $.post('{% url "msgs.message_send"  %}', data).success(function(data) {
+        $('#send-message-dialog').modal('hide')
+        display_alert('success', "Sent message to " + data.recipients + " recipients")
+      });
+    }
+
+    function onRestart() {
+      data = $('#restart-form').serialize();
+      $.post('{% url "polls.pollrun_restart"  %}', data).success(function(data) {
+        $('#restart-dialog').modal('hide')
+        display_alert('success', "Restarted poll for " + data.contacts + " contacts")
+      });
+    }
+// ]]>
+</script>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends "smartmin/list.html" %}
+{% load smartmin i18n %}
+
+{% block table-controls %}
+  <div class='clearfix'>
+    <div class='pull-back'>
+      {% blocktrans %}
+        Each reporter group is a contact group in RapidPro.
+
+      {% endblocktrans %}
+    </div>
+    <div class='pull-away buttons'>
+      {% if org_perms.groups.group_select %}
+        <a class='btn btn-default pull-right' href='{% url 'groups.group_select' %}'>
+          <span class='glyphicon glyphicon-download'></span>
+          {% trans "Select Groups" %}
+
+        </a>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

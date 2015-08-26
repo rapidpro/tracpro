@@ -1,0 +1,32 @@
+{% load i18n %}
+{% load utils %}
+
+<div class='page-header'>
+  <h2>
+    {{ poll }}
+
+  </h2>
+</div>
+<div class='clearfix'>
+  {% if org_perms.polls.poll_update %}
+    <a class='btn btn-default pull-right' href='{% url 'polls.poll_update' poll.pk %}'>
+      <span class='glyphicon glyphicon-pencil'></span>
+      {% trans "Edit" %}
+
+    </a>
+  {% endif %}
+  <ul class='nav nav-tabs' style='margin-bottom: 1em'>
+    <li class='{% if_url 'polls.poll_read' 'active' '' %}'>
+      <a href='{% url 'polls.poll_read' poll.pk %}'>
+        {% trans "Summary" %}
+      </a>
+    </li>
+    <li class='{% if_url 'polls.pollrun_by_poll' 'active' '' %}'>
+      <a href='{% url 'polls.pollrun_by_poll' poll.pk %}'>
+        {% trans "Dates" %}
+
+
+      </a>
+    </li>
+  </ul>
+</div>
