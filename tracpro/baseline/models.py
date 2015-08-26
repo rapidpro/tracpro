@@ -57,7 +57,6 @@ class BaselineTerm(models.Model):
         ).select_related('response')
         if region:
             answers = answers.filter(response__contact__region=region)
-
         # Retrieve the most recent baseline results per contact
         baseline_answers = answers.order_by('response__contact', '-submitted_on').distinct('response__contact')
         region_answers = {}
@@ -88,6 +87,7 @@ class BaselineTerm(models.Model):
         { 'Kumpala': {'values': [35,...], 'dates': [datetime.date(2015, 8, 12),...]} }
         """
         region_answers = {}
+        dates = []
         regions = answers.values('response__contact__region__name').distinct(
                                  'response__contact__region__name').order_by('response__contact__region__name')
         for region in regions:
