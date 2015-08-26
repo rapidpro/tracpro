@@ -2,18 +2,25 @@
 from __future__ import absolute_import, unicode_literals
 
 import datetime
+
+from mock import patch
+
 import pytz
+
+from temba.types import Flow, RuleSet, Run, RunValueSet
 
 from django.core.urlresolvers import reverse
 from django.utils import timezone
-from mock import patch
-from temba.types import Flow, RuleSet, Run, RunValueSet
+
 from tracpro.test.cases import TracProDataTest
-from .models import Poll, PollRun, Response, Answer, RESPONSE_EMPTY, RESPONSE_PARTIAL, RESPONSE_COMPLETE
-from .models import extract_words
+
+from .models import (
+    extract_words, Answer, Poll, PollRun, Response, RESPONSE_COMPLETE,
+    RESPONSE_EMPTY, RESPONSE_PARTIAL)
 
 
 class PollTest(TracProDataTest):
+
     @patch('dash.orgs.models.TembaClient.get_flows')
     def test_sync_with_flows(self, mock_get_flows):
         mock_get_flows.return_value = [
@@ -59,7 +66,8 @@ class PollTest(TracProDataTest):
         self.assertEqual(Response.get_update_required(self.unicef).count(), 0)
 
         # create pollrun but no responses yet
-        pollrun1 = PollRun.get_or_create_non_regional(self.unicef, self.poll1, for_date=self.datetime(2014, 1, 1))
+        pollrun1 = PollRun.get_or_create_non_regional(
+            self.unicef, self.poll1, for_date=self.datetime(2014, 1, 1))
 
         self.assertEqual(Response.get_update_required(self.unicef).count(), 0)
 
@@ -77,44 +85,64 @@ class PollTest(TracProDataTest):
             created_on=timezone.now(), updated_on=timezone.now(),
             status=RESPONSE_COMPLETE)
 
-        self.assertEqual(list(Response.get_update_required(self.unicef).order_by('pk')), [response1, response2])
+        self.assertEqual(
+            list(Response.get_update_required(self.unicef).order_by('pk')),
+            [response1, response2])
 
         # create newer pollrun with an incomplete response
-        pollrun2 = PollRun.get_or_create_non_regional(self.unicef, self.poll1, for_date=self.datetime(2014, 1, 2))
-        response3 = Response.objects.create(flow_run_id=456, pollrun=pollrun2, contact=self.contact1,
-                                            created_on=timezone.now(), updated_on=timezone.now(), status=RESPONSE_EMPTY)
+        pollrun2 = PollRun.get_or_create_non_regional(
+            self.unicef, self.poll1, for_date=self.datetime(2014, 1, 2))
+        response3 = Response.objects.create(
+            flow_run_id=456, pollrun=pollrun2, contact=self.contact1,
+            created_on=timezone.now(), updated_on=timezone.now(),
+            status=RESPONSE_EMPTY)
 
         # shouldn't include any responses from older pollrun
-        self.assertEqual(list(Response.get_update_required(self.unicef)), [response3])
+        self.assertEqual(
+            list(Response.get_update_required(self.unicef)),
+            [response3])
 
     def test_get_questions(self):
-        self.assertEqual(list(self.poll1.get_questions()), [self.poll1_question1, self.poll1_question2])
-        self.assertEqual(list(self.poll2.get_questions()), [self.poll2_question1])
+        self.assertEqual(
+            list(self.poll1.get_questions()),
+            [self.poll1_question1, self.poll1_question2])
+        self.assertEqual(
+            list(self.poll2.get_questions()),
+            [self.poll2_question1])
 
 
 class PollRunTest(TracProDataTest):
+
     def test_get_or_create_non_regional(self):
         # 2014-Jan-01 04:30 in org's Afg timezone
-        with patch.object(timezone, 'now', return_value=datetime.datetime(2014, 1, 1, 0, 0, 0, 0, pytz.utc)):
+        with patch.object(timezone, 'now') as mock_now:
+            mock_now.return_value = datetime.datetime(2014, 1, 1, 0, 0, 0, 0, pytz.utc)
             # no existing pollruns so one is created
             pollrun1 = PollRun.get_or_create_non_regional(self.unicef, self.poll1)
-            self.assertEqual(pollrun1.conducted_on, datetime.datetime(2014, 1, 1, 0, 0, 0, 0, pytz.utc))
+            self.assertEqual(
+                pollrun1.conducted_on,
+                datetime.datetime(2014, 1, 1, 0, 0, 0, 0, pytz.utc))
 
         # 2014-Jan-01 23:30 in org's Afg timezone
-        with patch.object(timezone, 'now', return_value=datetime.datetime(2014, 1, 1, 19, 0, 0, 0, pytz.utc)):
+        with patch.object(timezone, 'now') as mock_now:
+            mock_now.return_value = datetime.datetime(2014, 1, 1, 19, 0, 0, 0, pytz.utc)
             # existing pollrun on same day is returned
             pollrun2 = PollRun.get_or_create_non_regional(self.unicef, self.poll1)
             self.assertEqual(pollrun1, pollrun2)
 
         # 2014-Jan-02 00:30 in org's Afg timezone
-        with patch.object(timezone, 'now', return_value=datetime.datetime(2014, 1, 1, 20, 0, 0, 0, pytz.utc)):
+        with patch.object(timezone, 'now') as mock_now:
+            mock_now.return_value = datetime.datetime(2014, 1, 1, 20, 0, 0, 0, pytz.utc)
             # different day locally so new pollrun
             pollrun3 = PollRun.get_or_create_non_regional(self.unicef, self.poll1)
             self.assertNotEqual(pollrun3, pollrun1)
-            self.assertEqual(pollrun3.conducted_on, datetime.datetime(2014, 1, 1, 20, 0, 0, 0, pytz.utc))
+            self.assertEqual(
+                pollrun3.conducted_on,
+                datetime.datetime(2014, 1, 1, 20, 0, 0, 0, pytz.utc))
 
         # 2014-Jan-02 04:30 in org's Afg timezone
-        with patch.object(timezone, 'now', return_value=datetime.datetime(2014, 1, 2, 0, 0, 0, 0, pytz.utc)):
+        with patch.object(timezone, 'now') as mock_now:
+            mock_now.return_value = datetime.datetime(2014, 1, 2, 0, 0, 0, 0, pytz.utc)
             # same day locally so no new pollrun
             pollrun4 = PollRun.get_or_create_non_regional(self.unicef, self.poll1)
             self.assertEqual(pollrun3, pollrun4)
@@ -126,238 +154,379 @@ class PollRunTest(TracProDataTest):
         pollrun = PollRun.objects.create(poll=self.poll1, conducted_on=date1)
 
         # add a incomplete response from contact in region #1
-        response1 = Response.objects.create(flow_run_id=123, pollrun=pollrun, contact=self.contact1,
-                                            created_on=date1, updated_on=date1, status=RESPONSE_EMPTY)
+        response1 = Response.objects.create(
+            flow_run_id=123, pollrun=pollrun, contact=self.contact1,
+            created_on=date1, updated_on=date1, status=RESPONSE_EMPTY)
 
         self.assertEqual(list(pollrun.get_responses()), [response1])
-        self.assertEqual(pollrun.get_response_counts(),
-                         {RESPONSE_EMPTY: 1, RESPONSE_PARTIAL: 0, RESPONSE_COMPLETE: 0})
+        self.assertDictEqual(pollrun.get_response_counts(), {
+            RESPONSE_EMPTY: 1,
+            RESPONSE_PARTIAL: 0,
+            RESPONSE_COMPLETE: 0,
+        })
 
         self.assertEqual(list(pollrun.get_responses(self.region1)), [response1])
-        self.assertEqual(pollrun.get_response_counts(self.region1),
-                         {RESPONSE_EMPTY: 1, RESPONSE_PARTIAL: 0, RESPONSE_COMPLETE: 0})
+        self.assertDictEqual(pollrun.get_response_counts(self.region1), {
+            RESPONSE_EMPTY: 1,
+            RESPONSE_PARTIAL: 0,
+            RESPONSE_COMPLETE: 0,
+        })
 
         self.assertEqual(list(pollrun.get_responses(self.region2)), [])
-        self.assertEqual(pollrun.get_response_counts(self.region2),
-                         {RESPONSE_EMPTY: 0, RESPONSE_PARTIAL: 0, RESPONSE_COMPLETE: 0})
+        self.assertDictEqual(pollrun.get_response_counts(self.region2), {
+            RESPONSE_EMPTY: 0,
+            RESPONSE_PARTIAL: 0,
+            RESPONSE_COMPLETE: 0,
+        })
 
         # add a complete response from another contact in region #1
-        response2 = Response.objects.create(flow_run_id=234, pollrun=pollrun, contact=self.contact2,
-                                            created_on=date1, updated_on=date1, status=RESPONSE_COMPLETE)
+        response2 = Response.objects.create(
+            flow_run_id=234, pollrun=pollrun, contact=self.contact2,
+            created_on=date1, updated_on=date1, status=RESPONSE_COMPLETE)
 
-        self.assertEqual(list(pollrun.get_responses().order_by('pk')), [response1, response2])
-        self.assertEqual(pollrun.get_response_counts(),
-                         {RESPONSE_EMPTY: 1, RESPONSE_PARTIAL: 0, RESPONSE_COMPLETE: 1})
+        self.assertEqual(
+            list(pollrun.get_responses().order_by('pk')),
+            [response1, response2])
+        self.assertDictEqual(pollrun.get_response_counts(), {
+            RESPONSE_EMPTY: 1,
+            RESPONSE_PARTIAL: 0,
+            RESPONSE_COMPLETE: 1,
+        })
 
-        self.assertEqual(list(pollrun.get_responses(self.region1).order_by('pk')), [response1, response2])
-        self.assertEqual(pollrun.get_response_counts(self.region1),
-                         {RESPONSE_EMPTY: 1, RESPONSE_PARTIAL: 0, RESPONSE_COMPLETE: 1})
+        self.assertEqual(
+            list(pollrun.get_responses(self.region1).order_by('pk')),
+            [response1, response2])
+        self.assertDictEqual(pollrun.get_response_counts(self.region1), {
+            RESPONSE_EMPTY: 1,
+            RESPONSE_PARTIAL: 0,
+            RESPONSE_COMPLETE: 1,
+        })
 
         self.assertEqual(list(pollrun.get_responses(self.region2)), [])
-        self.assertEqual(pollrun.get_response_counts(self.region2),
-                         {RESPONSE_EMPTY: 0, RESPONSE_PARTIAL: 0, RESPONSE_COMPLETE: 0})
+        self.assertDictEqual(pollrun.get_response_counts(self.region2), {
+            RESPONSE_EMPTY: 0,
+            RESPONSE_PARTIAL: 0,
+            RESPONSE_COMPLETE: 0,
+        })
 
         # add a complete response from contact in different region
-        response3 = Response.objects.create(flow_run_id=345, pollrun=pollrun, contact=self.contact4,
-                                            created_on=date1, updated_on=date1, status=RESPONSE_COMPLETE)
+        response3 = Response.objects.create(
+            flow_run_id=345, pollrun=pollrun, contact=self.contact4,
+            created_on=date1, updated_on=date1, status=RESPONSE_COMPLETE)
 
-        self.assertEqual(list(pollrun.get_responses().order_by('pk')), [response1, response2, response3])
-        self.assertEqual(pollrun.get_response_counts(),
-                         {RESPONSE_EMPTY: 1, RESPONSE_PARTIAL: 0, RESPONSE_COMPLETE: 2})
+        self.assertEqual(
+            list(pollrun.get_responses().order_by('pk')),
+            [response1, response2, response3])
+        self.assertDictEqual(pollrun.get_response_counts(), {
+            RESPONSE_EMPTY: 1,
+            RESPONSE_PARTIAL: 0,
+            RESPONSE_COMPLETE: 2,
+        })
 
-        self.assertEqual(list(pollrun.get_responses(self.region1).order_by('pk')), [response1, response2])
-        self.assertEqual(pollrun.get_response_counts(self.region1),
-                         {RESPONSE_EMPTY: 1, RESPONSE_PARTIAL: 0, RESPONSE_COMPLETE: 1})
+        self.assertEqual(
+            list(pollrun.get_responses(self.region1).order_by('pk')),
+            [response1, response2])
+        self.assertDictEqual(pollrun.get_response_counts(self.region1), {
+            RESPONSE_EMPTY: 1,
+            RESPONSE_PARTIAL: 0,
+            RESPONSE_COMPLETE: 1,
+        })
 
-        self.assertEqual(list(pollrun.get_responses(self.region2)), [response3])
-        self.assertEqual(pollrun.get_response_counts(self.region2),
-                         {RESPONSE_EMPTY: 0, RESPONSE_PARTIAL: 0, RESPONSE_COMPLETE: 1})
+        self.assertEqual(
+            list(pollrun.get_responses(self.region2)),
+            [response3])
+        self.assertDictEqual(pollrun.get_response_counts(self.region2), {
+            RESPONSE_EMPTY: 0,
+            RESPONSE_PARTIAL: 0,
+            RESPONSE_COMPLETE: 1,
+        })
 
     def test_is_last_for_region(self):
-        pollrun1 = PollRun.objects.create(poll=self.poll1, region=self.region1, conducted_on=timezone.now())
-        pollrun2 = PollRun.objects.create(poll=self.poll1, region=None, conducted_on=timezone.now())
-        pollrun3 = PollRun.objects.create(poll=self.poll1, region=self.region2, conducted_on=timezone.now())
+        pollrun1 = PollRun.objects.create(
+            poll=self.poll1, region=self.region1, conducted_on=timezone.now())
+        pollrun2 = PollRun.objects.create(
+            poll=self.poll1, region=None, conducted_on=timezone.now())
+        pollrun3 = PollRun.objects.create(
+            poll=self.poll1, region=self.region2, conducted_on=timezone.now())
 
-        self.assertFalse(pollrun1.is_last_for_region(self.region1))  # pollrun #2 covers region #1 and is newer
-        self.assertFalse(pollrun1.is_last_for_region(self.region2))  # pollrun #1 didn't cover region #2
+        # pollrun #2 covers region #1 and is newer
+        self.assertFalse(pollrun1.is_last_for_region(self.region1))
+        # pollrun #1 didn't cover region #2
+        self.assertFalse(pollrun1.is_last_for_region(self.region2))
         self.assertTrue(pollrun2.is_last_for_region(self.region1))
-        self.assertFalse(pollrun2.is_last_for_region(self.region2))  # pollrun #3 covers region #2 and is newer
+        # pollrun #3 covers region #2 and is newer
+        self.assertFalse(pollrun2.is_last_for_region(self.region2))
         self.assertTrue(pollrun3.is_last_for_region(self.region2))
 
     def test_answer_aggregation(self):
         self.contact5.language = 'ara'
         self.contact5.save()
 
-        pollrun = PollRun.objects.create(poll=self.poll1, region=None, conducted_on=timezone.now())
+        pollrun = PollRun.objects.create(
+            poll=self.poll1, region=None, conducted_on=timezone.now())
 
-        response1 = Response.create_empty(self.unicef, pollrun,
-                                          Run.create(id=123, contact='C-001', created_on=timezone.now()))
-        Answer.create(response1, self.poll1_question1, "4.00000", "1 - 5", timezone.now())
-        Answer.create(response1, self.poll1_question2, "It's very rainy", "All Responses", timezone.now())
+        response1 = Response.create_empty(
+            self.unicef, pollrun,
+            Run.create(id=123, contact='C-001', created_on=timezone.now()))
+        Answer.create(
+            response1, self.poll1_question1, "4.00000", "1 - 5",
+            timezone.now())
+        Answer.create(
+            response1, self.poll1_question2, "It's very rainy",
+            "All Responses", timezone.now())
 
-        response2 = Response.create_empty(self.unicef, pollrun,
-                                          Run.create(id=234, contact='C-002', created_on=timezone.now()))
-        Answer.create(response2, self.poll1_question1, "3.00000", "1 - 5", timezone.now())
-        Answer.create(response2, self.poll1_question2, "rainy and rainy", "All Responses", timezone.now())
+        response2 = Response.create_empty(
+            self.unicef, pollrun,
+            Run.create(id=234, contact='C-002', created_on=timezone.now()))
+        Answer.create(
+            response2, self.poll1_question1, "3.00000", "1 - 5",
+            timezone.now())
+        Answer.create(
+            response2, self.poll1_question2, "rainy and rainy",
+            "All Responses", timezone.now())
 
-        response3 = Response.create_empty(self.unicef, pollrun,
-                                          Run.create(id=345, contact='C-004', created_on=timezone.now()))
-        Answer.create(response3, self.poll1_question1, "8.00000", "6 - 10", timezone.now())
-        Answer.create(response3, self.poll1_question2, "Sunny sunny", "All Responses", timezone.now())
+        response3 = Response.create_empty(
+            self.unicef, pollrun,
+            Run.create(id=345, contact='C-004', created_on=timezone.now()))
+        Answer.create(
+            response3, self.poll1_question1, "8.00000", "6 - 10",
+            timezone.now())
+        Answer.create(
+            response3, self.poll1_question2, "Sunny sunny", "All Responses",
+            timezone.now())
 
-        response4 = Response.create_empty(self.unicef, pollrun,
-                                          Run.create(id=456, contact='C-005', created_on=timezone.now()))
-        Answer.create(response4, self.poll1_question2, "مطر", "All Responses", timezone.now())
+        response4 = Response.create_empty(
+            self.unicef, pollrun,
+            Run.create(id=456, contact='C-005', created_on=timezone.now()))
+        Answer.create(
+            response4, self.poll1_question2, "مطر", "All Responses",
+            timezone.now())
 
         # category counts for question #1
-        self.assertEqual(pollrun.get_answer_category_counts(self.poll1_question1), [("1 - 5", 2), ("6 - 10", 1)])
-        self.assertEqual(pollrun.get_answer_category_counts(self.poll1_question1, self.region1), [("1 - 5", 2)])
-        self.assertEqual(pollrun.get_answer_category_counts(self.poll1_question1, self.region2), [("6 - 10", 1)])
-        self.assertEqual(pollrun.get_answer_category_counts(self.poll1_question1, self.region3), [])
+        self.assertEqual(
+            pollrun.get_answer_category_counts(self.poll1_question1),
+            [("1 - 5", 2), ("6 - 10", 1)])
+        self.assertEqual(
+            pollrun.get_answer_category_counts(self.poll1_question1, self.region1),
+            [("1 - 5", 2)])
+        self.assertEqual(
+            pollrun.get_answer_category_counts(self.poll1_question1, self.region2),
+            [("6 - 10", 1)])
+        self.assertEqual(
+            pollrun.get_answer_category_counts(self.poll1_question1, self.region3),
+            [])
 
         # and from cache... (lists rather than tuples due to JSON serialization)
         with self.assertNumQueries(0):
-            self.assertEqual(pollrun.get_answer_category_counts(self.poll1_question1), [["1 - 5", 2], ["6 - 10", 1]])
-            self.assertEqual(pollrun.get_answer_category_counts(self.poll1_question1, self.region1), [["1 - 5", 2]])
-            self.assertEqual(pollrun.get_answer_category_counts(self.poll1_question1, self.region2), [["6 - 10", 1]])
-            self.assertEqual(pollrun.get_answer_category_counts(self.poll1_question1, self.region3), [])
+            self.assertEqual(
+                pollrun.get_answer_category_counts(self.poll1_question1),
+                [["1 - 5", 2], ["6 - 10", 1]])
+            self.assertEqual(
+                pollrun.get_answer_category_counts(self.poll1_question1, self.region1),
+                [["1 - 5", 2]])
+            self.assertEqual(
+                pollrun.get_answer_category_counts(self.poll1_question1, self.region2),
+                [["6 - 10", 1]])
+            self.assertEqual(
+                pollrun.get_answer_category_counts(self.poll1_question1, self.region3),
+                [])
 
         # auto-range category counts for question #1
-        self.assertEqual(pollrun.get_answer_auto_range_counts(self.poll1_question1),
-                         [('2 - 3', 1), ('4 - 5', 1), ('6 - 7', 0), ('8 - 9', 1), ('10 - 11', 0)])
-        self.assertEqual(pollrun.get_answer_auto_range_counts(self.poll1_question1, self.region1),
-                         [('3', 1), ('4', 1), ('5', 0), ('6', 0), ('7', 0)])
-        self.assertEqual(pollrun.get_answer_auto_range_counts(self.poll1_question1, self.region2),
-                         [('8', 1), ('9', 0), ('10', 0), ('11', 0), ('12', 0)])
-        self.assertEqual(pollrun.get_answer_auto_range_counts(self.poll1_question1, self.region3), [])
+        self.assertEqual(
+            pollrun.get_answer_auto_range_counts(self.poll1_question1),
+            [('2 - 3', 1), ('4 - 5', 1), ('6 - 7', 0), ('8 - 9', 1), ('10 - 11', 0)])
+        self.assertEqual(
+            pollrun.get_answer_auto_range_counts(self.poll1_question1, self.region1),
+            [('3', 1), ('4', 1), ('5', 0), ('6', 0), ('7', 0)])
+        self.assertEqual(
+            pollrun.get_answer_auto_range_counts(self.poll1_question1, self.region2),
+            [('8', 1), ('9', 0), ('10', 0), ('11', 0), ('12', 0)])
+        self.assertEqual(
+            pollrun.get_answer_auto_range_counts(self.poll1_question1, self.region3),
+            [])
 
         # numeric averages for question #1
-        self.assertEqual(pollrun.get_answer_numeric_average(self.poll1_question1), 5.0)
-        self.assertEqual(pollrun.get_answer_numeric_average(self.poll1_question1, self.region1), 3.5)
-        self.assertEqual(pollrun.get_answer_numeric_average(self.poll1_question1, self.region2), 8.0)
-        self.assertEqual(pollrun.get_answer_numeric_average(self.poll1_question1, self.region3), 0.0)
+        self.assertEqual(
+            pollrun.get_answer_numeric_average(self.poll1_question1), 5.0)
+        self.assertEqual(
+            pollrun.get_answer_numeric_average(self.poll1_question1, self.region1), 3.5)
+        self.assertEqual(
+            pollrun.get_answer_numeric_average(self.poll1_question1, self.region2), 8.0)
+        self.assertEqual(
+            pollrun.get_answer_numeric_average(self.poll1_question1, self.region3), 0.0)
 
         # word counts for question #2
-        self.assertEqual(pollrun.get_answer_word_counts(self.poll1_question2),
-                         [("rainy", 3), ("sunny", 2), ('مطر', 1)])
-        self.assertEqual(pollrun.get_answer_word_counts(self.poll1_question2, self.region1),
-                         [("rainy", 3)])
-        self.assertEqual(pollrun.get_answer_word_counts(self.poll1_question2, self.region2),
-                         [("sunny", 2)])
-        self.assertEqual(pollrun.get_answer_word_counts(self.poll1_question2, self.region3),
-                         [('مطر', 1)])
+        self.assertEqual(
+            pollrun.get_answer_word_counts(self.poll1_question2),
+            [("rainy", 3), ("sunny", 2), ('مطر', 1)])
+        self.assertEqual(
+            pollrun.get_answer_word_counts(self.poll1_question2, self.region1),
+            [("rainy", 3)])
+        self.assertEqual(
+            pollrun.get_answer_word_counts(self.poll1_question2, self.region2),
+            [("sunny", 2)])
+        self.assertEqual(
+            pollrun.get_answer_word_counts(self.poll1_question2, self.region3),
+            [('مطر', 1)])
 
 
 class ResponseTest(TracProDataTest):
+
     def test_from_run(self):
         # a complete run
-        run = Run.create(id=1234,
-                         flow='F-001',  # flow UUID for poll #1
-                         contact='C-001',
-                         completed=True,
-                         values=[RunValueSet.create(category="1 - 50",
-                                                    node='RS-001',
-                                                    text="6",
-                                                    value="6.00000000",
-                                                    label="Number of sheep",
-                                                    time=datetime.datetime(2014, 1, 2, 3, 4, 5, 6, pytz.UTC)),
-                                 RunValueSet.create(category="1 - 25",
-                                                    node='RS-002',
-                                                    text="4",
-                                                    value="4.00000000",
-                                                    label="Number of goats",
-                                                    time=datetime.datetime(2015, 1, 2, 3, 4, 5, 6, pytz.UTC))],
-                         steps=[],  # not used
-                         created_on=datetime.datetime(2013, 1, 2, 3, 4, 5, 6, pytz.UTC))
+        run = Run.create(
+            id=1234,
+            flow='F-001',  # flow UUID for poll #1
+            contact='C-001',
+            completed=True,
+            values=[
+                RunValueSet.create(
+                    category="1 - 50",
+                    node='RS-001',
+                    text="6",
+                    value="6.00000000",
+                    label="Number of sheep",
+                    time=datetime.datetime(2014, 1, 2, 3, 4, 5, 6, pytz.UTC)
+                ),
+                RunValueSet.create(
+                    category="1 - 25",
+                    node='RS-002',
+                    text="4",
+                    value="4.00000000",
+                    label="Number of goats",
+                    time=datetime.datetime(2015, 1, 2, 3, 4, 5, 6, pytz.UTC),
+                ),
+            ],
+            steps=[],  # not used
+            created_on=datetime.datetime(2013, 1, 2, 3, 4, 5, 6, pytz.UTC),
+        )
 
         response1 = Response.from_run(self.unicef, run)
         self.assertEqual(response1.contact, self.contact1)
-        self.assertEqual(response1.created_on, datetime.datetime(2013, 1, 2, 3, 4, 5, 6, pytz.UTC))
-        self.assertEqual(response1.updated_on, datetime.datetime(2015, 1, 2, 3, 4, 5, 6, pytz.UTC))
+        self.assertEqual(
+            response1.created_on,
+            datetime.datetime(2013, 1, 2, 3, 4, 5, 6, pytz.UTC))
+        self.assertEqual(
+            response1.updated_on,
+            datetime.datetime(2015, 1, 2, 3, 4, 5, 6, pytz.UTC))
         self.assertEqual(response1.status, RESPONSE_COMPLETE)
         self.assertEqual(len(response1.answers.all()), 2)
         answers = list(response1.answers.order_by('question_id'))
         self.assertEqual(answers[0].question, self.poll1_question1)
         self.assertEqual(answers[0].value, "6.00000000")
         self.assertEqual(answers[0].category, "1 - 50")
-        self.assertEqual(answers[0].submitted_on, datetime.datetime(2014, 1, 2, 3, 4, 5, 6, pytz.UTC))
+        self.assertEqual(
+            answers[0].submitted_on,
+            datetime.datetime(2014, 1, 2, 3, 4, 5, 6, pytz.UTC))
         self.assertEqual(answers[1].question, self.poll1_question2)
         self.assertEqual(answers[1].value, "4.00000000")
         self.assertEqual(answers[1].category, "1 - 25")
-        self.assertEqual(answers[1].submitted_on, datetime.datetime(2015, 1, 2, 3, 4, 5, 6, pytz.UTC))
+        self.assertEqual(
+            answers[1].submitted_on,
+            datetime.datetime(2015, 1, 2, 3, 4, 5, 6, pytz.UTC))
 
         # an partially complete run
-        run = Run.create(id=2345,
-                         flow='F-001',  # flow UUID for poll #1
-                         contact='C-002',
-                         completed=False,
-                         values=[RunValueSet.create(category="1 - 50",
-                                                    node='RS-001',
-                                                    text="6",
-                                                    value="6.00000000",
-                                                    label="Number of sheep",
-                                                    time=datetime.datetime(2014, 1, 2, 3, 4, 5, 6, pytz.UTC))],
-                         steps=[],  # not used
-                         created_on=datetime.datetime(2013, 1, 2, 3, 4, 5, 6, pytz.UTC))
+        run = Run.create(
+            id=2345,
+            flow='F-001',  # flow UUID for poll #1
+            contact='C-002',
+            completed=False,
+            values=[
+                RunValueSet.create(
+                    category="1 - 50",
+                    node='RS-001',
+                    text="6",
+                    value="6.00000000",
+                    label="Number of sheep",
+                    time=datetime.datetime(2014, 1, 2, 3, 4, 5, 6, pytz.UTC),
+                ),
+            ],
+            steps=[],  # not used
+            created_on=datetime.datetime(2013, 1, 2, 3, 4, 5, 6, pytz.UTC),
+        )
 
         response2 = Response.from_run(self.unicef, run)
         self.assertEqual(response2.contact, self.contact2)
-        self.assertEqual(response2.created_on, datetime.datetime(2013, 1, 2, 3, 4, 5, 6, pytz.UTC))
-        self.assertEqual(response2.updated_on, datetime.datetime(2014, 1, 2, 3, 4, 5, 6, pytz.UTC))
+        self.assertEqual(
+            response2.created_on,
+            datetime.datetime(2013, 1, 2, 3, 4, 5, 6, pytz.UTC))
+        self.assertEqual(
+            response2.updated_on,
+            datetime.datetime(2014, 1, 2, 3, 4, 5, 6, pytz.UTC))
         self.assertEqual(response2.status, RESPONSE_PARTIAL)
         self.assertEqual(len(response2.answers.all()), 1)
 
         # now completed
-        run = Run.create(id=2345,
-                         flow='F-001',  # flow UUID for poll #1
-                         contact='C-002',
-                         completed=True,
-                         values=[RunValueSet.create(category="1 - 50",
-                                                    node='RS-001',
-                                                    text="6",
-                                                    value="6.00000000",
-                                                    label="Number of sheep",
-                                                    time=datetime.datetime(2014, 1, 2, 3, 4, 5, 6, pytz.UTC)),
-                                 RunValueSet.create(category="1 - 25",
-                                                    node='RS-002',
-                                                    text="4",
-                                                    value="4.00000000",
-                                                    label="Number of goats",
-                                                    time=datetime.datetime(2015, 1, 2, 3, 4, 5, 6, pytz.UTC))],
-                         steps=[],  # not used
-                         created_on=datetime.datetime(2013, 1, 2, 3, 4, 5, 6, pytz.UTC))
+        run = Run.create(
+            id=2345,
+            flow='F-001',  # flow UUID for poll #1
+            contact='C-002',
+            completed=True,
+            values=[
+                RunValueSet.create(
+                    category="1 - 50",
+                    node='RS-001',
+                    text="6",
+                    value="6.00000000",
+                    label="Number of sheep",
+                    time=datetime.datetime(2014, 1, 2, 3, 4, 5, 6, pytz.UTC),
+                ),
+                RunValueSet.create(
+                    category="1 - 25",
+                    node='RS-002',
+                    text="4",
+                    value="4.00000000",
+                    label="Number of goats",
+                    time=datetime.datetime(2015, 1, 2, 3, 4, 5, 6, pytz.UTC),
+                ),
+            ],
+            steps=[],  # not used
+            created_on=datetime.datetime(2013, 1, 2, 3, 4, 5, 6, pytz.UTC),
+        )
 
         response3 = Response.from_run(self.unicef, run)
         self.assertEqual(response3.contact, self.contact2)
-        self.assertEqual(response3.created_on, datetime.datetime(2013, 1, 2, 3, 4, 5, 6, pytz.UTC))
-        self.assertEqual(response3.updated_on, datetime.datetime(2015, 1, 2, 3, 4, 5, 6, pytz.UTC))
+        self.assertEqual(
+            response3.created_on,
+            datetime.datetime(2013, 1, 2, 3, 4, 5, 6, pytz.UTC))
+        self.assertEqual(
+            response3.updated_on,
+            datetime.datetime(2015, 1, 2, 3, 4, 5, 6, pytz.UTC))
         self.assertEqual(response3.status, RESPONSE_COMPLETE)
         self.assertEqual(len(response3.answers.all()), 2)
 
         # an empty run
-        run = Run.create(id=3456,
-                         flow='F-001',  # flow UUID for poll #1
-                         contact='C-003',
-                         completed=False,
-                         values=[],
-                         steps=[],  # not used
-                         created_on=datetime.datetime(2013, 1, 2, 3, 4, 5, 6, pytz.UTC))
+        run = Run.create(
+            id=3456,
+            flow='F-001',  # flow UUID for poll #1
+            contact='C-003',
+            completed=False,
+            values=[],
+            steps=[],  # not used
+            created_on=datetime.datetime(2013, 1, 2, 3, 4, 5, 6, pytz.UTC),
+        )
 
         response4 = Response.from_run(self.unicef, run)
         self.assertEqual(response4.contact, self.contact3)
-        self.assertEqual(response4.created_on, datetime.datetime(2013, 1, 2, 3, 4, 5, 6, pytz.UTC))
-        self.assertEqual(response4.updated_on, datetime.datetime(2013, 1, 2, 3, 4, 5, 6, pytz.UTC))
+        self.assertEqual(
+            response4.created_on,
+            datetime.datetime(2013, 1, 2, 3, 4, 5, 6, pytz.UTC))
+        self.assertEqual(
+            response4.updated_on,
+            datetime.datetime(2013, 1, 2, 3, 4, 5, 6, pytz.UTC))
         self.assertEqual(response4.status, RESPONSE_EMPTY)
         self.assertEqual(len(response4.answers.all()), 0)
 
         # new run for same contact should de-activate old response
-        run = Run.create(id=4567,
-                         flow='F-001',  # flow UUID for poll #1
-                         contact='C-003',
-                         completed=False,
-                         values=[],
-                         steps=[],  # not used
-                         created_on=datetime.datetime(2013, 1, 2, 3, 0, 0, 0, pytz.UTC))
+        run = Run.create(
+            id=4567,
+            flow='F-001',  # flow UUID for poll #1
+            contact='C-003',
+            completed=False,
+            values=[],
+            steps=[],  # not used
+            created_on=datetime.datetime(2013, 1, 2, 3, 0, 0, 0, pytz.UTC),
+        )
 
         response5 = Response.from_run(self.unicef, run)
         self.assertFalse(Response.objects.get(pk=response4.pk).is_active)
@@ -368,39 +537,50 @@ class ResponseTest(TracProDataTest):
 
 
 class AnswerTest(TracProDataTest):
-    def test_create(self):
-        pollrun = PollRun.objects.create(poll=self.poll1, region=None, conducted_on=timezone.now())
-        response = Response.create_empty(self.unicef, pollrun,
-                                         Run.create(id=123, contact='C-001', created_on=timezone.now()))
 
-        answer1 = Answer.create(response, self.poll1_question1, "4.00000", "1 - 5", timezone.now())
+    def test_create(self):
+        pollrun = PollRun.objects.create(
+            poll=self.poll1, region=None, conducted_on=timezone.now())
+        response = Response.create_empty(
+            self.unicef, pollrun,
+            Run.create(id=123, contact='C-001', created_on=timezone.now()))
+
+        answer1 = Answer.create(
+            response, self.poll1_question1, "4.00000", "1 - 5", timezone.now())
         self.assertEqual(answer1.response, response)
         self.assertEqual(answer1.question, self.poll1_question1)
         self.assertEqual(answer1.category, "1 - 5")
         self.assertEqual(answer1.value, "4.00000")
 
-        answer2 = Answer.create(response, self.poll1_question1, "rain", dict(base="Rain", rwa="Imvura"), timezone.now())
+        answer2 = Answer.create(
+            response, self.poll1_question1, "rain",
+            dict(base="Rain", rwa="Imvura"), timezone.now())
         self.assertEqual(answer2.category, "Rain")
 
-        answer3 = Answer.create(response, self.poll1_question1, "rain", dict(eng="Yes"), timezone.now())
+        answer3 = Answer.create(
+            response, self.poll1_question1, "rain", dict(eng="Yes"),
+            timezone.now())
         self.assertEqual(answer3.category, "Yes")
 
     def test_auto_range_counts(self):
         self.assertEqual(Answer.auto_range_counts([]), {})
         self.assertEqual(Answer.auto_range_counts([Answer(value=1, category=None)]), {})
-        self.assertEqual(Answer.auto_range_counts([Answer(value=1, category="1 - 100")]),
-                         {'1': 1, '2': 0, '3': 0, '4': 0, '5': 0})
-        self.assertEqual(Answer.auto_range_counts([Answer(value=1, category="1 - 100"),
-                                                   Answer(value=2, category="1 - 100"),
-                                                   Answer(value=2, category="1 - 100"),
-                                                   Answer(value=3, category="1 - 100")]),
-                         {'1': 1, '2': 2, '3': 1, '4': 0, '5': 0})
-        self.assertEqual(Answer.auto_range_counts([Answer(value=1, category="1 - 100"),
-                                                   Answer(value=2, category="1 - 100"),
-                                                   Answer(value=6, category="1 - 100"),
-                                                   Answer(value=6, category="1 - 100"),
-                                                   Answer(value=13, category="1 - 100")]),
-                         {'0 - 9': 4, '10 - 19': 1, '20 - 29': 0, '30 - 39': 0, '40 - 49': 0})
+        self.assertEqual(
+            Answer.auto_range_counts([Answer(value=1, category="1 - 100")]),
+            {'1': 1, '2': 0, '3': 0, '4': 0, '5': 0})
+        self.assertEqual(
+            Answer.auto_range_counts([Answer(value=1, category="1 - 100"),
+                                      Answer(value=2, category="1 - 100"),
+                                      Answer(value=2, category="1 - 100"),
+                                      Answer(value=3, category="1 - 100")]),
+            {'1': 1, '2': 2, '3': 1, '4': 0, '5': 0})
+        self.assertEqual(
+            Answer.auto_range_counts([Answer(value=1, category="1 - 100"),
+                                      Answer(value=2, category="1 - 100"),
+                                      Answer(value=6, category="1 - 100"),
+                                      Answer(value=6, category="1 - 100"),
+                                      Answer(value=13, category="1 - 100")]),
+            {'0 - 9': 4, '10 - 19': 1, '20 - 29': 0, '30 - 39': 0, '40 - 49': 0})
 
     def test_numeric_average(self):
         self.assertEqual(Answer.numeric_average([]), 0)
@@ -410,6 +590,7 @@ class AnswerTest(TracProDataTest):
 
 
 class PollCRUDLTest(TracProDataTest):
+
     def test_list(self):
         url = reverse('polls.poll_list')
 
@@ -422,6 +603,7 @@ class PollCRUDLTest(TracProDataTest):
 
 
 class ResponseCRUDLTest(TracProDataTest):
+
     def setUp(self):
         super(ResponseCRUDLTest, self).setUp()
         date1 = self.datetime(2014, 1, 1, 7, 0)
@@ -429,37 +611,49 @@ class ResponseCRUDLTest(TracProDataTest):
         date3 = self.datetime(2014, 1, 2, 7, 0)
 
         # create non-regional pollrun with 3 responses (1 complete, 1 partial, 1 empty)
-        self.pollrun1 = PollRun.objects.create(poll=self.poll1, region=None, conducted_on=date1)
+        self.pollrun1 = PollRun.objects.create(
+            poll=self.poll1, region=None, conducted_on=date1)
 
-        self.pollrun1_r1 = Response.objects.create(flow_run_id=123, pollrun=self.pollrun1, contact=self.contact1,
-                                                   created_on=date1, updated_on=date1, status=RESPONSE_COMPLETE)
-        Answer.create(self.pollrun1_r1, self.poll1_question1, "5.0000", "1 - 10", date1)
-        Answer.create(self.pollrun1_r1, self.poll1_question2, "Sunny", "All Responses", date1)
+        self.pollrun1_r1 = Response.objects.create(
+            flow_run_id=123, pollrun=self.pollrun1, contact=self.contact1,
+            created_on=date1, updated_on=date1, status=RESPONSE_COMPLETE)
+        Answer.create(
+            self.pollrun1_r1, self.poll1_question1, "5.0000", "1 - 10", date1)
+        Answer.create(
+            self.pollrun1_r1, self.poll1_question2, "Sunny", "All Responses", date1)
 
-        self.pollrun1_r2 = Response.objects.create(flow_run_id=234, pollrun=self.pollrun1, contact=self.contact2,
-                                                   created_on=date2, updated_on=date2, status=RESPONSE_PARTIAL)
-        Answer.create(self.pollrun1_r2, self.poll1_question1, "6.0000", "1 - 10", date2)
+        self.pollrun1_r2 = Response.objects.create(
+            flow_run_id=234, pollrun=self.pollrun1, contact=self.contact2,
+            created_on=date2, updated_on=date2, status=RESPONSE_PARTIAL)
+        Answer.create(
+            self.pollrun1_r2, self.poll1_question1, "6.0000", "1 - 10", date2)
 
-        self.pollrun1_r3 = Response.objects.create(flow_run_id=345, pollrun=self.pollrun1, contact=self.contact4,
-                                                   created_on=date3, updated_on=date3, status=RESPONSE_EMPTY)
+        self.pollrun1_r3 = Response.objects.create(
+            flow_run_id=345, pollrun=self.pollrun1, contact=self.contact4,
+            created_on=date3, updated_on=date3, status=RESPONSE_EMPTY)
 
         # create regional pollrun with 1 incomplete response
-        self.pollrun2 = PollRun.objects.create(poll=self.poll1, region=self.region1, conducted_on=date3)
-        self.pollrun2_r1 = Response.objects.create(flow_run_id=456, pollrun=self.pollrun2, contact=self.contact1,
-                                                   created_on=date3, updated_on=date3, status=RESPONSE_PARTIAL)
+        self.pollrun2 = PollRun.objects.create(
+            poll=self.poll1, region=self.region1, conducted_on=date3)
+        self.pollrun2_r1 = Response.objects.create(
+            flow_run_id=456, pollrun=self.pollrun2, contact=self.contact1,
+            created_on=date3, updated_on=date3, status=RESPONSE_PARTIAL)
 
     def test_by_pollrun(self):
+        url = reverse('polls.response_by_pollrun', args=[self.pollrun1.pk])
+
         # log in as admin
         self.login(self.admin)
 
         # view responses for pollrun #1
-        response = self.url_get('unicef', reverse('polls.response_by_pollrun', args=[self.pollrun1.pk]))
+        response = self.url_get('unicef', url)
         self.assertContains(response, "Number of sheep", status_code=200)
         self.assertContains(response, "How is the weather?")
 
         responses = list(response.context['object_list'])
         self.assertEqual(len(responses), 2)
-        self.assertEqual(responses, [self.pollrun1_r2, self.pollrun1_r1])  # newest non-empty first
+        # newest non-empty first
+        self.assertEqual(responses, [self.pollrun1_r2, self.pollrun1_r1])
 
         # can't restart from "All Regions" view of responses
         self.assertFalse(response.context['can_restart'])
@@ -467,13 +661,13 @@ class ResponseCRUDLTest(TracProDataTest):
         self.switch_region(self.region1)
 
         # can't restart as there is a later pollrun of the same poll in region #1
-        response = self.url_get('unicef', reverse('polls.response_by_pollrun', args=[self.pollrun1.pk]))
+        response = self.url_get('unicef', url)
         self.assertFalse(response.context['can_restart'])
 
         self.switch_region(self.region2)
 
         # can restart as this is the latest pollrun of this poll in region #2
-        response = self.url_get('unicef', reverse('polls.response_by_pollrun', args=[self.pollrun1.pk]))
+        response = self.url_get('unicef', url)
         self.assertTrue(response.context['can_restart'])
 
     def test_by_contact(self):
@@ -481,15 +675,24 @@ class ResponseCRUDLTest(TracProDataTest):
         self.login(self.admin)
 
         # view responses for contact #1
-        response = self.url_get('unicef', reverse('polls.response_by_contact', args=[self.contact1.pk]))
+        url = reverse('polls.response_by_contact', args=[self.contact1.pk])
+        response = self.url_get('unicef', url)
 
         responses = list(response.context['object_list'])
         self.assertEqual(len(responses), 2)
-        self.assertEqual(responses, [self.pollrun2_r1, self.pollrun1_r1])  # newest non-empty first
+        # newest non-empty first
+        self.assertEqual(responses, [self.pollrun2_r1, self.pollrun1_r1])
 
 
 class PollFuncsTest(TracProDataTest):
+
     def test_extract_words(self):
-        self.assertEqual(extract_words("I think it's good", "eng"), ['think', 'good'])  # I and it's are stop words
-        self.assertEqual(extract_words("I think it's good", "kin"), ['think', "it's", 'good'])  # no stop words for kin
-        self.assertEqual(extract_words("قلم رصاص", "ara"), ['قلم', 'رصاص'])
+        self.assertEqual(
+            extract_words("I think it's good", "eng"),
+            ['think', 'good'])  # I and it's are stop words
+        self.assertEqual(
+            extract_words("I think it's good", "kin"),
+            ['think', "it's", 'good'])  # no stop words for kin
+        self.assertEqual(
+            extract_words("قلم رصاص", "ara"),
+            ['قلم', 'رصاص'])
