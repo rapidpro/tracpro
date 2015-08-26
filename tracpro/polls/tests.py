@@ -54,39 +54,6 @@ class PollTest(TracProDataTest):
         # existing poll that was inactive should now be active
         self.assertTrue(Poll.objects.get(flow_uuid='F-001').is_active)
 
-    def test_get_update_required(self):
-        # no pollruns means no responses to update
-        self.assertEqual(Response.get_update_required(self.unicef).count(), 0)
-
-        # create pollrun but no responses yet
-        pollrun1 = PollRun.get_or_create_non_regional(self.unicef, self.poll1, for_date=self.datetime(2014, 1, 1))
-
-        self.assertEqual(Response.get_update_required(self.unicef).count(), 0)
-
-        # add an empty, a partial and a complete response
-        response1 = Response.objects.create(
-            flow_run_id=123, pollrun=pollrun1, contact=self.contact1,
-            created_on=timezone.now(), updated_on=timezone.now(),
-            status=RESPONSE_EMPTY)
-        response2 = Response.objects.create(
-            flow_run_id=234, pollrun=pollrun1, contact=self.contact2,
-            created_on=timezone.now(), updated_on=timezone.now(),
-            status=RESPONSE_PARTIAL)
-        Response.objects.create(
-            flow_run_id=345, pollrun=pollrun1, contact=self.contact3,
-            created_on=timezone.now(), updated_on=timezone.now(),
-            status=RESPONSE_COMPLETE)
-
-        self.assertEqual(list(Response.get_update_required(self.unicef).order_by('pk')), [response1, response2])
-
-        # create newer pollrun with an incomplete response
-        pollrun2 = PollRun.get_or_create_non_regional(self.unicef, self.poll1, for_date=self.datetime(2014, 1, 2))
-        response3 = Response.objects.create(flow_run_id=456, pollrun=pollrun2, contact=self.contact1,
-                                            created_on=timezone.now(), updated_on=timezone.now(), status=RESPONSE_EMPTY)
-
-        # shouldn't include any responses from older pollrun
-        self.assertEqual(list(Response.get_update_required(self.unicef)), [response3])
-
     def test_get_questions(self):
         self.assertEqual(list(self.poll1.get_questions()), [self.poll1_question1, self.poll1_question2])
         self.assertEqual(list(self.poll2.get_questions()), [self.poll2_question1])
