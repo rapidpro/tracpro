@@ -2,6 +2,7 @@ from __future__ import absolute_import, unicode_literals
 
 from uuid import uuid4
 
+from django.conf import settings
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
@@ -43,13 +44,13 @@ class Contact(models.Model):
 
     is_active = models.BooleanField(default=True, help_text=_("Whether this contact is active"))
 
-    created_by = models.ForeignKey('auth.User', null=True, related_name="contact_creations",
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, related_name="contact_creations",
                                    help_text="The user which originally created this item")
 
     created_on = models.DateTimeField(auto_now_add=True,
                                       help_text="When this item was originally created")
 
-    modified_by = models.ForeignKey('auth.User', null=True, related_name="contact_modifications",
+    modified_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, related_name="contact_modifications",
                                     help_text="The user which last modified this item")
 
     modified_on = models.DateTimeField(auto_now=True,

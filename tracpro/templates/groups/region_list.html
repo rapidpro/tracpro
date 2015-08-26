@@ -40,13 +40,17 @@
         <span class="glyphicon glyphicon-download"></span>
         {% trans "Select Groups" %}
       </a>
-      <button id="edit-hierarchy" class="btn btn-default hierarchy">
+      <button id="edit-hierarchy"
+              class="btn btn-default hierarchy">
         {% trans "Edit Region Hierarchy" %}
       </button>
-      <button id="save-hierarchy" class="btn btn-primary hierarchy hidden">
+      <button id="save-hierarchy"
+              class="btn btn-primary hierarchy hidden">
         {% trans "Save Region Hierarchy" %}
       </button>
-      <button id="saving-hierarchy" class="btn btn-primary disabled hierarchy hidden">
+      <button id="saving-hierarchy"
+              class="btn btn-primary disabled hierarchy hidden"
+              disabled>
         {% trans "Saving..." %}
       </button>
     </div>
@@ -75,12 +79,18 @@
       </tr>
     </thead>
     <tbody>
-      {# Include a dummy row so regions can be dragged to the top level. #}
-      <tr data-tt-id="0">
-        <td colspan="{{ fields|length }}">All Regions</td>
+      {# Something to display while treetable loads. #}
+      <tr class="loading-text">
+        <td colspan="{{ fields|length }}">Loading regions...</td>
       </tr>
+
+      {# Include a dummy row so regions can be dragged to the top level. #}
+      <tr class="region hidden" data-tt-id="0">
+        <td colspan="{{ fields|length }}">All {{ org.name }} Regions</td>
+      </tr>
+
       {% recursetree object_list %}
-        <tr data-tt-id="{{ node.pk }}"
+        <tr class="region hidden" data-tt-id="{{ node.pk }}"
             data-tt-parent-id="{% if node.is_child_node %}{{ node.parent.pk }}{% else %}0{% endif %}">
           {% for field in fields %}
             <td class="value-{{ field }}">
@@ -92,6 +102,7 @@
         </tr>
         {{ children }}
       {% endrecursetree %}
+
       {% block extra-rows %}{% endblock extra-rows %}
     </tbody>
   </table>

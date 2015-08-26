@@ -217,8 +217,6 @@ TEMPLATE_DIRS = (
 )
 
 TEMPLATE_LOADERS = (
-    'hamlpy.template.loaders.HamlPyFilesystemLoader',
-    'hamlpy.template.loaders.HamlPyAppDirectoriesLoader',
     'django.template.loaders.filesystem.Loader',
     'django.template.loaders.app_directories.Loader',
 )
@@ -360,7 +358,7 @@ SITE_API_USER_AGENT = 'tracpro/1.0'
 
 SITE_CHOOSER_URL_NAME = 'orgs_ext.org_chooser'
 
-SITE_CHOOSER_TEMPLATE = 'org_chooser.haml'
+SITE_CHOOSER_TEMPLATE = 'org_chooser.html'
 
 SITE_HOST_PATTERN = 'http://%s.localhost:8000'
 

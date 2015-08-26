@@ -64,9 +64,7 @@ def fetch_inbox_messages(org):
     inbox_messages = client.get_messages(_types="I")
 
     for inbox_message in inbox_messages:
-        contact = Contact.objects.filter(
-                        uuid=inbox_message.contact
-                        ).first()
+        contact = Contact.objects.filter(uuid=inbox_message.contact).first()
         # If the sync_all_contacts() task hasn't gotten this contact yet,
         # don't get the message yet
         if contact:

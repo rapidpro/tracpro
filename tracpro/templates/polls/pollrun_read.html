@@ -1,0 +1,24 @@
+{% extends "smartmin/base.html" %}
+{% load smartmin i18n %}
+
+{% block pre-content %}
+
+  {% include 'polls/pollrun_header.html' with pollrun=object %}
+
+{% endblock %}
+
+{% block content %}
+
+  {% for question in questions %}
+    <h3>
+      {{ question.order }}. {{ question.text }}
+
+    </h3>
+    <div class='chart' data-chart-type='{{ question.chart_type }}' data-unit-text='{{ question.text }}' data-question-id='{{ question.pk }}' dir='ltr'></div>
+    <script type='text/javascript'>
+      var chart_{{ question.pk }}_data = {{ question.chart_data }};
+
+    </script>
+  {% endfor %}
+{% endblock %}
+

@@ -174,7 +174,7 @@ class TestRegionUpdateHierarchy(TracProTest):
         content = json.loads(response.content.decode("utf-8"))
         self.assertFalse(content['success'])
         self.assertEqual(content['status'], 400)
-        self.assertEqual(content['message'], "Data must be valid JSON. ")
+        self.assertEqual(content['message'], "Data must be valid JSON.")
 
     def test_post_wrong_type(self):
         """View requires a JSON-encoded dictionary in the `data` parameter."""
@@ -186,7 +186,7 @@ class TestRegionUpdateHierarchy(TracProTest):
         self.assertEqual(content['status'], 400)
         self.assertEqual(
             content['message'],
-            "Data must be a dict that maps region id to parent id. ")
+            "Data must be a dict that maps region id to parent id.")
 
     def test_post_extra_groups(self):
         """Submitted data should provide data for all groups in the org."""
@@ -202,7 +202,7 @@ class TestRegionUpdateHierarchy(TracProTest):
         self.assertEqual(content['status'], 400)
         self.assertEqual(
             content['message'],
-            "Data must map region id to parent id for each region in this org. ")
+            "Data must map region id to parent id for each region in this org.")
 
     def test_post_missing_groups(self):
         """Submitted data should provide data for all groups in the org."""
@@ -218,7 +218,7 @@ class TestRegionUpdateHierarchy(TracProTest):
         self.assertEqual(content['status'], 400)
         self.assertEqual(
             content['message'],
-            "Data must map region id to parent id for each region in this org. ")
+            "Data must map region id to parent id for each region in this org.")
 
     def test_post_invalid_parent(self):
         """Submitted data should only reference parents within the same org."""
@@ -234,7 +234,7 @@ class TestRegionUpdateHierarchy(TracProTest):
         self.assertEqual(content['status'], 400)
         self.assertEqual(
             content['message'],
-            "Region parent must be a region from the same org, or null. ")
+            "Region parent must be a region from the same org, or null.")
 
     def test_post_same(self):
         """Test when hierarchy is "updated" to existing hierarchy."""
@@ -248,7 +248,7 @@ class TestRegionUpdateHierarchy(TracProTest):
         self.assertEqual(content['status'], 200)
         self.assertEqual(
             content['message'],
-            "Test region hierarchy has been updated. ")
+            "Test region hierarchy has been updated.")
         new_structure = dict(models.Region.get_all(self.org).values_list('pk', 'parent'))
         self.assertDictEqual(new_structure, structure)
 
@@ -266,7 +266,7 @@ class TestRegionUpdateHierarchy(TracProTest):
         self.assertEqual(content['status'], 200)
         self.assertEqual(
             content['message'],
-            "Test region hierarchy has been updated. ")
+            "Test region hierarchy has been updated.")
         new_structure = dict(models.Region.get_all(self.org).values_list('pk', 'parent'))
         self.assertDictEqual(structure, new_structure)
 

@@ -1,0 +1,278 @@
+{% extends "smartmin/base.html" %}
+{% load smartmin i18n compress %}
+
+{% block pre-content %}
+
+{% endblock %}
+
+{% block content %}
+
+  {% if not request.user_regions %}
+    <div class='none'>
+      {% trans "You don't have access to any regions. Contact your administrator." %}
+
+    </div>
+  {% else %}
+    <div class='page-header'>
+      <div class='btn-group pull-away'>
+        <a class='btn btn-default' href='{% url 'polls.pollrun_list' %}'>
+          <span class='glyphicon glyphicon-th-list'></span>
+          {% trans "View All" %}
+        </a>
+        {% if request.region %}
+          <button class='btn btn-default' data-toggle='modal' type='button' data-target='#start-poll-dialog'>
+            <span class='glyphicon glyphicon-send'></span>
+            {% trans "Start..." %}
+          </button>
+        {% endif %}
+      </div>
+      <h2>
+        {% trans "Latest Polling" %}
+
+      </h2>
+    </div>
+    <div class='row ng-cloak' ng-cloak='' style='margin-bottom: 1em' ng-controller='LatestPollRunsController'>
+      <div class='col-md-12'>
+        <table class='table table-striped' style='width: 100%'>
+          <thead>
+            <tr>
+              <th>
+                {% trans "Conducted On" %}
+              </th>
+              <th>
+                {% trans "Poll" %}
+              </th>
+              <th>
+                {% trans "Region" %}
+              </th>
+              <th>
+                {% trans "Participants" %}
+              </th>
+              <th>
+                {% trans "Responses" %}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr ng-repeat='pollrun in pollruns'>
+              <td>
+                <a href='/pollrun/read/[[ pollrun.id ]]/'>
+                  [[ pollrun.conducted_on | autodate ]]
+                </a>
+              </td>
+              <td>
+                <a href='/poll/read/[[ pollrun.poll.id ]]/'>
+                  [[ pollrun.poll.name ]]
+                </a>
+              </td>
+              <td>
+                <span ng-if='pollrun.region'>
+                  [[ pollrun.region.name ]]
+                </span>
+                <span ng-if='!pollrun.region'>
+                  All
+                </span>
+              </td>
+              <td>
+                <a href='/pollrun/participation/[[ pollrun.id ]]/'>
+                  [[ pollrun.responses.E + pollrun.responses.P + pollrun.responses.C ]]
+                </a>
+              </td>
+              <td>
+                <a href='/response/by_pollrun/[[ pollrun.id ]]/'>
+                  [[ pollrun.responses.C ]]
+                  <span ng-if='pollrun.responses.P'>
+                    ([[ pollrun.responses.P ]])
+
+                  </span>
+                </a>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div class='loading' ng-if='loading'></div>
+        <div class='none' ng-if='!loading && pollruns.length == 0'>
+          {% trans "None" %}
+
+        </div>
+      </div>
+    </div>
+    {% if request.region %}
+      <div id='start-poll-dialog' class='modal fade' role='dialog'>
+        <div class='modal-dialog'>
+          <div class='modal-content'>
+            <div class='modal-header'>
+              <button class='close' data-dismiss='modal' type='button'>
+                &times;
+              </button>
+              <h4 class='modal-title'>
+                {% trans "Start Poll" %}
+              </h4>
+            </div>
+            <div class='modal-body'>
+              <form id='start-poll-form' class='form-horizontal'>
+                {% csrf_token %}
+                <div class='form-group'>
+                  <label class='col-sm-2 control-label' for='start-poll'>
+                    {% trans "Poll" %}
+                  </label>
+                  <div class='col-sm-10'>
+                    <select class='form-control' style='width: 100%' name='poll'>
+                      {% for poll in polls %}
+                        <option value='{{ poll.pk }}'>
+                          {{ poll.name }}
+                        </option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                </div>
+                <div class='form-group'>
+                  <label class='col-sm-2 control-label'>
+                    {% trans "Region" %}
+                  </label>
+                  <div class='col-sm-10'>
+                    <input class='form-control' style='width: 100%' type='text' readonly='readonly' value='{{ request.region }}' />
+                  </div>
+                </div>
+              </form>
+            </div>
+            <div class='modal-footer'>
+              <button class='btn btn-default' data-dismiss='modal' type='button'>
+                {% trans "Cancel" %}
+              </button>
+              <button class='btn btn-primary' type='button' onclick='onPollCreate()'>
+                {% trans "Start" %}
+
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+    <div class='row'>
+      <div class='col-md-6'>
+        <div class='page-header'>
+          {% if org_perms.groups.region_list %}
+            <a class='btn btn-default pull-away' href='{% url 'groups.region_list' %}'>
+              <span class='glyphicon glyphicon-th-list'></span>
+              {% trans "View All" %}
+            </a>
+          {% endif %}
+          <h2>
+            {% trans "Active Regions" %}
+
+          </h2>
+        </div>
+        <div class='ng-cloak' ng-cloak='' ng-controller='ActiveRegionsController'>
+          <p>
+            Regions with most responses in the last 30 days:
+          </p>
+          <table class='table table-striped' style='width: 100%'>
+            <thead>
+              <tr>
+                <th>
+                  {% trans "Region" %}
+                </th>
+                <th>
+                  {% trans "Responses" %}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr ng-repeat='region in regions'>
+                <td>
+                  [[ region.name ]]
+                </td>
+                <td>
+                  [[ region.response_count ]]
+
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div class='loading' ng-if='loading'></div>
+          <div class='none' ng-if='!loading && regions.length == 0'>
+            {% trans "None" %}
+
+          </div>
+        </div>
+      </div>
+      <div class='col-md-6'>
+        <div class='page-header'>
+          {% if org_perms.groups.group_list %}
+            <a class='btn btn-default pull-away' href='{% url 'groups.group_list' %}'>
+              <span class='glyphicon glyphicon-th-list'></span>
+              {% trans "View All" %}
+            </a>
+          {% endif %}
+          <h2>
+            {% trans "Active Groups" %}
+
+          </h2>
+        </div>
+        <div class='ng-cloak' ng-cloak='' ng-controller='ActiveGroupsController'>
+          <p>
+            Reporting groups with most responses in the last 30 days:
+          </p>
+          <table class='table table-striped' style='width: 100%'>
+            <thead>
+              <tr>
+                <th>
+                  {% trans "Group" %}
+                </th>
+                <th>
+                  {% trans "Responses" %}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr ng-repeat='group in groups'>
+                <td>
+                  [[ group.name ]]
+                </td>
+                <td>
+                  [[ group.response_count ]]
+
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div class='loading' ng-if='loading'></div>
+          <div class='none' ng-if='!loading && groups.length == 0'>
+            {% trans "None" %}
+
+
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+{% endblock %}
+
+{% block extra-script %}
+<script type='text/javascript'>
+// <![CDATA[
+    function onPollCreate() {
+      data = $('#start-poll-form').serialize();
+      $.post('{% url "polls.pollrun_create"  %}', data).success(function(data) {
+        $('#start-poll-dialog').modal('hide')
+        display_alert('success', 'Started new poll for contacts in {{ request.region }}')
+      });
+    }
+
+// ]]>
+</script>
+{% endblock %}
+{% block extra-style %}
+  {{ block.super }}
+<style type='text/css'>
+/*<![CDATA[*/
+    .none {
+      font-style: italic;
+      text-align: center;
+    }
+
+
+/*]]>*/
+</style>
+{% endblock %}

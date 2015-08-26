@@ -1,5 +1,6 @@
 from __future__ import absolute_import, unicode_literals
 
+from django.conf import settings
 from django.db import models
 from django.db.models import Q
 from django.utils.encoding import python_2_unicode_compatible
@@ -35,7 +36,7 @@ class Message(models.Model):
     """
     org = models.ForeignKey('orgs.Org', verbose_name=_("Organization"), related_name="messages")
 
-    sent_by = models.ForeignKey('auth.User', related_name="messages")
+    sent_by = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="messages")
 
     sent_on = models.DateTimeField(auto_now_add=True, help_text=_("When the message was sent"))
 
