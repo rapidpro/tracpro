@@ -63,7 +63,7 @@ class BaselineTerm(models.Model):
 
         region_answers = {}
         regions = baseline_answers.values('response__contact__region__name').distinct(
-                                          'response__contact__region__name').order_by('response__contact__region__name')
+            'response__contact__region__name').order_by('response__contact__region__name')
         # Separate out baseline values per region
         for region in regions:
             region_name = region['response__contact__region__name'].encode('ascii')
@@ -92,7 +92,7 @@ class BaselineTerm(models.Model):
         region_answers = {}
         dates = []
         regions = answers.values('response__contact__region__name').distinct(
-                                 'response__contact__region__name').order_by('response__contact__region__name')
+            'response__contact__region__name').order_by('response__contact__region__name')
         for region in regions:
             region_name = region['response__contact__region__name'].encode('ascii')
             answers_by_region = answers.filter(response__contact__region__name=region_name)

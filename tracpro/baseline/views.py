@@ -125,42 +125,42 @@ class BaselineTermCRUDL(SmartCRUDL):
             for contact in contacts:
                 # Create a Response AKA FlowRun for each contact for Baseline
                 response = Response.objects.create(
-                                            pollrun=baseline_pollrun,
-                                            contact=contact,
-                                            created_on=baseline_datetime,
-                                            updated_on=baseline_datetime,
-                                            status=RESPONSE_COMPLETE,
-                                            is_active=True)
+                    pollrun=baseline_pollrun,
+                    contact=contact,
+                    created_on=baseline_datetime,
+                    updated_on=baseline_datetime,
+                    status=RESPONSE_COMPLETE,
+                    is_active=True)
                 random_answer = random.randrange(baseline_minimum, baseline_maximum)
                 # Create a randomized Answer for each contact for Baseline
                 Answer.objects.create(
-                            response=response,
-                            question=baseline_question,
-                            value=random_answer,
-                            submitted_on=baseline_datetime,
-                            category=u'')
+                    response=response,
+                    question=baseline_question,
+                    value=random_answer,
+                    submitted_on=baseline_datetime,
+                    category=u'')
 
             # Create a PollRun for each date from start to end dates for the Follow Up Poll
             for follow_up_date in rrule.rrule(rrule.DAILY, dtstart=start, until=end):
                 follow_up_datetime = datetime.combine(follow_up_date, datetime.now().time())
                 follow_up_pollrun = PollRun.objects.create(
-                                        poll=follow_up_question.poll, conducted_on=follow_up_datetime)
+                    poll=follow_up_question.poll, conducted_on=follow_up_datetime)
                 for contact in contacts:
                     # Create a Response AKA FlowRun for each contact for Follow Up
                     response = Response.objects.create(
-                                                pollrun=follow_up_pollrun,
-                                                contact=contact,
-                                                created_on=follow_up_datetime,
-                                                updated_on=follow_up_datetime,
-                                                status=RESPONSE_COMPLETE,
-                                                is_active=True)
+                        pollrun=follow_up_pollrun,
+                        contact=contact,
+                        created_on=follow_up_datetime,
+                        updated_on=follow_up_datetime,
+                        status=RESPONSE_COMPLETE,
+                        is_active=True)
                     random_answer = random.randrange(follow_up_minimum, follow_up_maximum)
                     # Create a randomized Answer for each contact for Follow Up
                     Answer.objects.create(
-                                response=response,
-                                question=follow_up_question,
-                                value=random_answer,
-                                submitted_on=follow_up_datetime,
-                                category=u'')
+                        response=response,
+                        question=follow_up_question,
+                        value=random_answer,
+                        submitted_on=follow_up_datetime,
+                        category=u'')
 
             return HttpResponseRedirect(self.get_success_url())

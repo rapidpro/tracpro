@@ -60,25 +60,25 @@ class SpoofDataForm(forms.Form):
     contacts = forms.ModelMultipleChoiceField(queryset=Contact.objects.all(),
                                               help_text=_("Select contacts for this set of spoofed data."))
     start_date = forms.DateField(help_text=_(
-                                "Baseline poll data will be submitted on this date. " +
-                                "Follow up data will start on this date."))
+        "Baseline poll data will be submitted on this date. " +
+        "Follow up data will start on this date."))
     end_date = forms.DateField(help_text=_("Follow up data will end on this date."))
     baseline_question = forms.ModelChoiceField(queryset=Question.objects.all(),
                                                help_text=_(
-                                                "Select a baseline question which will have numeric " +
-                                                "answers only."))
+                                               "Select a baseline question which " +
+                                               "will have numeric answers only."))
     follow_up_question = forms.ModelChoiceField(queryset=Question.objects.all(),
                                                 help_text=_(
-                                                "Select a follow up question which will have numeric " +
-                                                "answers only."))
+                                                "Select a follow up question which " +
+                                                "will have numeric answers only."))
     baseline_minimum = forms.IntegerField(
-                help_text=_("A baseline answer will be created for each contact within the minimum/maximum range."))
+        help_text=_("A baseline answer will be created for each contact within the minimum/maximum range."))
     baseline_maximum = forms.IntegerField(
-                help_text=_("A baseline answer will be created for each contact within the minimum/maximum range."))
+        help_text=_("A baseline answer will be created for each contact within the minimum/maximum range."))
     follow_up_minimum = forms.IntegerField(
-                help_text=_("Follow up answers will be created for each contact within the minimum/maximum range."))
+        help_text=_("Follow up answers will be created for each contact within the minimum/maximum range."))
     follow_up_maximum = forms.IntegerField(
-                help_text=_("Follow up answers will be created for each contact within the minimum/maximum range."))
+        help_text=_("Follow up answers will be created for each contact within the minimum/maximum range."))
 
     def __init__(self, *args, **kwargs):
         org = kwargs.pop('org')
