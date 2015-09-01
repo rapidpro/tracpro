@@ -1,0 +1,9 @@
+{% extends "smartmin/list.html" %}
+{% load smartmin i18n %}
+
+{% block table-buttons %}
+    <div class="pull-right">
+        <a class="btn btn-primary" href="./data_spoof/">{% trans "Spoof Data" %}</a>
+        <a class="btn btn-primary" href="./create/">{% trans "Add" %}</a>
+    </div>
+{% endblock table-buttons %}

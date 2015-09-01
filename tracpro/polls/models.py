@@ -354,7 +354,7 @@ class Response(models.Model):
     """
     Corresponds to RapidPro FlowRun
     """
-    flow_run_id = models.IntegerField(unique=True)
+    flow_run_id = models.IntegerField(unique=True, null=True)
 
     pollrun = models.ForeignKey('polls.PollRun', null=True, related_name='responses')
 
@@ -560,6 +560,23 @@ class Answer(models.Model):
             answer_sums.append(total)
             dates.append(answer_date)
         return answer_sums, dates
+
+    @classmethod
+    def numeric_sum_all_dates(cls, answers):
+        """
+        Parses decimals out of a set of answers and returns the sum for all answers,
+        regardless of dates.
+        Returns:
+        total: total sum of all answer values
+        """
+        total = Decimal(0)
+        for answer in answers:
+            if answer.category is not None:  # ignore answers with no category as they weren't in the required range
+                try:
+                    total += Decimal(answer.value)
+                except (TypeError, ValueError, InvalidOperation):
+                    continue
+        return total
 
     @classmethod
     def auto_range_counts(cls, answers):

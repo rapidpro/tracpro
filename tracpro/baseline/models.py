@@ -55,19 +55,22 @@ class BaselineTerm(models.Model):
             submitted_on__gte=self.start_date,
             submitted_on__lte=self.end_date,  # look into timezone
         ).select_related('response')
-        if region:
-            answers = answers.filter(response__contact__region=region)
         # Retrieve the most recent baseline results per contact
         baseline_answers = answers.order_by('response__contact', '-submitted_on').distinct('response__contact')
+
+        if region:
+            baseline_answers = baseline_answers.filter(response__contact__region=region)
+
         region_answers = {}
         regions = baseline_answers.values('response__contact__region__name').distinct(
                                           'response__contact__region__name').order_by('response__contact__region__name')
+        # Separate out baseline values per region
         for region in regions:
             region_name = region['response__contact__region__name'].encode('ascii')
-            answers_by_region = answers.filter(response__contact__region__name=region_name)
-            answer_sums, dates = Answer.numeric_sum_group_by_date(answers_by_region)
+            answers_by_region = baseline_answers.filter(response__contact__region__name=region_name)
+            answer_sum = Answer.numeric_sum_all_dates(answers_by_region)
             region_answers[region_name] = {}
-            region_answers[region_name]["values"] = sum(answer_sums)
+            region_answers[region_name]["values"] = answer_sum
 
         return region_answers
 
