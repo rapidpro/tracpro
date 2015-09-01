@@ -27,6 +27,7 @@ class BaselineTermCRUDL(SmartCRUDL):
 
     class Create(OrgPermsMixin, SmartCreateView):
         form_class = BaselineTermForm
+        success_url = 'id@baseline.baselineterm_read'
 
         def get_form_kwargs(self):
             kwargs = super(BaselineTermCRUDL.Create, self).get_form_kwargs()
@@ -52,6 +53,7 @@ class BaselineTermCRUDL(SmartCRUDL):
     class Update(OrgObjPermsMixin,  SmartUpdateView):
         form_class = BaselineTermForm
         delete_url = ''     # Turn off the smartmin delete button for this view
+        success_url = 'id@baseline.baselineterm_read'
 
         def derive_queryset(self, **kwargs):
             return BaselineTerm.get_all(self.request.org)
