@@ -135,6 +135,12 @@ class Region(mptt.MPTTModel, AbstractGroup):
     def get_users(self):
         return self.users.filter(is_active=True).select_related('profile')
 
+    @classmethod
+    def sync_with_temba(cls, org, uuids):
+        """Rebuild the tree hierarchy after new nodes are added."""
+        super(Region, cls).sync_with_temba(org, uuids)
+        Region.objects.rebuild()
+
 
 class Group(AbstractGroup):
     """A data reporting group."""
