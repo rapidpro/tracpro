@@ -97,7 +97,34 @@ class TestRegionUpdateHierarchy(TracProTest):
         self.org = factories.Org(name="Test", subdomain="test")
         self.org.administrators.add(self.user)
 
+    def assertErrorResponse(self, data, message):
+        """Assert that the data causes an error with the given message."""
+        response = self.url_post("test", reverse(self.url_name), data=data)
+        self.assertEqual(response.status_code, 200)
+
+        content = json.loads(response.content.decode("utf-8"))
+        self.assertFalse(content['success'])
+        self.assertEqual(content['status'], 400)
+        self.assertEqual(content['message'], message)
+
+    def assertSuccessResponse(self, data, expected_structure):
+        """Assert that region hierarchy is successfully updated."""
+        response = self.url_post("test", reverse(self.url_name), data=data)
+        self.assertEqual(response.status_code, 200)
+
+        content = json.loads(response.content.decode("utf-8"))
+        self.assertTrue(content['success'])
+        self.assertEqual(content['status'], 200)
+        self.assertEqual(
+            content['message'],
+            "Test region hierarchy has been updated.")
+
+        regions = models.Region.get_all(self.org)
+        new_structure = dict(regions.values_list('pk', 'parent'))
+        self.assertDictEqual(expected_structure, new_structure)
+
     def make_regions(self):
+        """Create a collection of nested regions."""
         self.region_uganda = factories.Region(
             org=self.org, name="Uganda")
         self.region_kampala = factories.Region(
@@ -112,6 +139,11 @@ class TestRegionUpdateHierarchy(TracProTest):
             org=self.org, name="Nairobi", parent=self.region_kenya)
         self.region_mombasa = factories.Region(
             org=self.org, name="Mombasa", parent=self.region_kenya)
+
+        self.region_inactive = factories.Region(
+            org=self.org, name="Inactive", parent=self.region_nairobi,
+            is_active=False)
+
         return models.Region.get_all(self.org)
 
     def test_unauthenticated(self):
@@ -156,101 +188,78 @@ class TestRegionUpdateHierarchy(TracProTest):
 
     def test_post_no_data(self):
         """View requires that data is sent in the `data` parameter."""
-        data = {}
-        response = self.url_post("test", reverse(self.url_name), data=data)
-        self.assertEqual(response.status_code, 200)
-        content = json.loads(response.content.decode("utf-8"))
-        self.assertFalse(content['success'])
-        self.assertEqual(content['status'], 400)
-        self.assertEqual(
-            content['message'],
-            "No data was provided in the `data` parameter.")
+        self.assertErrorResponse(
+            data={},
+            message="No data was provided in the `data` parameter.")
 
     def test_post_invalid_json_data(self):
         """View requires valid JSON data in the `data` parameter."""
-        data = {'data': "invalid"}
-        response = self.url_post("test", reverse(self.url_name), data=data)
-        self.assertEqual(response.status_code, 200)
-        content = json.loads(response.content.decode("utf-8"))
-        self.assertFalse(content['success'])
-        self.assertEqual(content['status'], 400)
-        self.assertEqual(content['message'], "Data must be valid JSON.")
+        self.assertErrorResponse(
+            data={'data': "invalid"},
+            message="Data must be valid JSON.")
 
     def test_post_wrong_type(self):
         """View requires a JSON-encoded dictionary in the `data` parameter."""
-        data = {'data': json.dumps("Wrong type")}
-        response = self.url_post("test", reverse(self.url_name), data=data)
-        self.assertEqual(response.status_code, 200)
-        content = json.loads(response.content.decode("utf-8"))
-        self.assertFalse(content['success'])
-        self.assertEqual(content['status'], 400)
-        self.assertEqual(
-            content['message'],
-            "Data must be a dict that maps region id to parent id.")
+        self.assertErrorResponse(
+            data={'data': json.dumps("Wrong type")},
+            message="Data must be a dict that maps region id to parent id.")
 
     def test_post_extra_groups(self):
         """Submitted data should provide data for all groups in the org."""
         regions = self.make_regions()
         structure = dict(regions.values_list('pk', 'parent'))
         structure['12345'] = str(regions.first().pk)
-
-        data = {'data': json.dumps(structure)}
-        response = self.url_post("test", reverse(self.url_name), data=data)
-        self.assertEqual(response.status_code, 200)
-        content = json.loads(response.content.decode("utf-8"))
-        self.assertFalse(content['success'])
-        self.assertEqual(content['status'], 400)
-        self.assertEqual(
-            content['message'],
-            "Data must map region id to parent id for each region in this org.")
+        self.assertErrorResponse(
+            data={'data': json.dumps(structure)},
+            message="Data must map region id to parent id for each region "
+                    "in this org.")
 
     def test_post_missing_groups(self):
         """Submitted data should provide data for all groups in the org."""
         regions = self.make_regions()
         structure = dict(regions.values_list('pk', 'parent'))
         structure.pop(regions.first().pk)
+        self.assertErrorResponse(
+            data={'data': json.dumps(structure)},
+            message="Data must map region id to parent id for each region "
+                    "in this org.")
 
-        data = {'data': json.dumps(structure)}
-        response = self.url_post("test", reverse(self.url_name), data=data)
-        self.assertEqual(response.status_code, 200)
-        content = json.loads(response.content.decode("utf-8"))
-        self.assertFalse(content['success'])
-        self.assertEqual(content['status'], 400)
-        self.assertEqual(
-            content['message'],
-            "Data must map region id to parent id for each region in this org.")
+    def test_post_inactive_groups(self):
+        """Submitted data should not include info about inactive groups."""
+        regions = self.make_regions()
+        structure = dict(regions.values_list('pk', 'parent'))
+        structure[self.region_inactive.pk] = None
+        self.assertErrorResponse(
+            data={'data': json.dumps(structure)},
+            message="Data must map region id to parent id for each region "
+                    "in this org.")
 
     def test_post_invalid_parent(self):
         """Submitted data should only reference parents within the same org."""
         regions = self.make_regions()
         structure = dict(regions.values_list('pk', 'parent'))
         structure[regions.first().pk] = "12345"
+        self.assertErrorResponse(
+            data={'data': json.dumps(structure)},
+            message="Region parent must be a region from the same org, or "
+                    "null.")
 
-        data = {'data': json.dumps(structure)}
-        response = self.url_post("test", reverse(self.url_name), data=data)
-        self.assertEqual(response.status_code, 200)
-        content = json.loads(response.content.decode("utf-8"))
-        self.assertFalse(content['success'])
-        self.assertEqual(content['status'], 400)
-        self.assertEqual(
-            content['message'],
-            "Region parent must be a region from the same org, or null.")
+    def test_post_inactive_parent(self):
+        """Submitted data should not reference inactive parents."""
+        regions = self.make_regions()
+        structure = dict(regions.values_list('pk', 'parent'))
+        structure[regions.first().pk] = self.region_inactive.pk
+        self.assertErrorResponse(
+            data={'data': json.dumps(structure)},
+            message="Region parent must be a region from the same org, or "
+                    "null.")
 
     def test_post_same(self):
         """Test when hierarchy is "updated" to existing hierarchy."""
         regions = self.make_regions()
         structure = dict(regions.values_list('pk', 'parent'))
         data = {'data': json.dumps(structure)}
-        response = self.url_post("test", reverse(self.url_name), data=data)
-        self.assertEqual(response.status_code, 200)
-        content = json.loads(response.content.decode("utf-8"))
-        self.assertTrue(content['success'])
-        self.assertEqual(content['status'], 200)
-        self.assertEqual(
-            content['message'],
-            "Test region hierarchy has been updated.")
-        new_structure = dict(models.Region.get_all(self.org).values_list('pk', 'parent'))
-        self.assertDictEqual(new_structure, structure)
+        self.assertSuccessResponse(data, structure)
 
     def test_post_change(self):
         """Test hierarchy change."""
@@ -259,16 +268,7 @@ class TestRegionUpdateHierarchy(TracProTest):
         structure[self.region_kampala.pk] = self.region_kenya.pk
         structure[self.region_nairobi.pk] = self.region_uganda.pk
         data = {'data': json.dumps(structure)}
-        response = self.url_post("test", reverse(self.url_name), data=data)
-        self.assertEqual(response.status_code, 200)
-        content = json.loads(response.content.decode("utf-8"))
-        self.assertTrue(content['success'])
-        self.assertEqual(content['status'], 200)
-        self.assertEqual(
-            content['message'],
-            "Test region hierarchy has been updated.")
-        new_structure = dict(models.Region.get_all(self.org).values_list('pk', 'parent'))
-        self.assertDictEqual(structure, new_structure)
+        self.assertSuccessResponse(data, structure)
 
 
 class TestGroupList(TracProDataTest):

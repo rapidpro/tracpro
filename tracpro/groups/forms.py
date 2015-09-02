@@ -21,6 +21,3 @@ class ContactGroupsForm(forms.Form):
         # Set initial group values from the org.
         initial = [r.uuid for r in self.model.get_all(self.org)]
         self.fields['groups'].initial = initial
-
-    def sync_contacts(self):
-        self.model.sync_with_groups(self.org, self.cleaned_data['groups'])
