@@ -55,7 +55,10 @@ class OrgExtCRUDL(OrgCRUDL):
         def get_last_flow_run_fetch(self, obj):
             result = obj.get_task_result(constants.TaskType.fetch_runs)
             if result:
-                return format_datetime(ms_to_datetime(result['time']))
+                return "%s (%d fetched)" % (
+                    format_datetime(ms_to_datetime(result['time'])),
+                    result.get('counts', {}).get('fetched', 0)
+                )
             else:
                 return None
 
