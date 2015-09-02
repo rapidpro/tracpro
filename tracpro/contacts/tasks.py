@@ -46,7 +46,8 @@ def sync_org_contacts(org_id):
 
     sync_groups = [r.uuid for r in Region.get_all(org)] + [g.uuid for g in Group.get_all(org)]
 
-    created, updated, deleted, failed = sync_pull_contacts(org, Contact, fields=(), groups=sync_groups)
+    created, updated, deleted, failed = sync_pull_contacts(
+        org, Contact, fields=(), groups=sync_groups)
 
     task_result = dict(time=datetime_to_ms(timezone.now()),
                        counts=dict(created=len(created),
@@ -55,8 +56,9 @@ def sync_org_contacts(org_id):
                                    failed=len(failed)))
     org.set_task_result(TaskType.sync_contacts, task_result)
 
-    logger.info("Finished contact sync for org #%d (%d created, %d updated, %d deleted, %d failed)"
-                % (org.id, len(created), len(updated), len(deleted), len(failed)))
+    logger.info("Finished contact sync for org #%d (%d created, "
+                "%d updated, %d deleted, %d failed)" %
+                (org.id, len(created), len(updated), len(deleted), len(failed)))
 
 
 @task

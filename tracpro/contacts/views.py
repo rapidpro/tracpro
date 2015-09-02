@@ -8,95 +8,20 @@ from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from dash.utils import get_obj_cacheable
 from dash.utils.sync import ChangeType
 
-from django import forms
 from django.core.exceptions import PermissionDenied
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect, JsonResponse
-from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 
 from smartmin.users.views import (
     SmartListView, SmartCreateView, SmartReadView, SmartUpdateView,
     SmartDeleteView, SmartCRUDL)
 
-from tracpro.groups.models import Region, Group
 from tracpro.polls.models import PollRun, RESPONSE_COMPLETE
 
+from .fields import URN_SCHEME_CHOICES
+from .forms import ContactForm
 from .models import Contact
-
-
-URN_SCHEME_TEL = 'tel'
-URN_SCHEME_TWITTER = 'twitter'
-URN_SCHEME_CHOICES = (
-    (URN_SCHEME_TEL, _("Phone")),
-    (URN_SCHEME_TWITTER, _("Twitter")),
-)
-
-
-class URNField(forms.fields.MultiValueField):
-
-    def __init__(self, *args, **kwargs):
-        fields = (forms.ChoiceField(choices=URN_SCHEME_CHOICES),
-                  forms.CharField(max_length=32))
-        super(URNField, self).__init__(fields, *args, **kwargs)
-        self.widget = URNWidget(scheme_choices=URN_SCHEME_CHOICES)
-
-    def compress(self, values):
-        return '%s:%s' % (values[0], values[1])
-
-
-class URNWidget(forms.widgets.MultiWidget):
-
-    def __init__(self, *args, **kwargs):
-        scheme_choices = kwargs.pop('scheme_choices')
-        widgets = (forms.Select(choices=scheme_choices),
-                   forms.TextInput(attrs={'maxlength': 32}))
-        super(URNWidget, self).__init__(widgets, *args, **kwargs)
-
-    def decompress(self, value):
-        if value:
-            return value.split(':', 1)
-        else:
-            return URN_SCHEME_TEL, ''
-
-    def render(self, name, value, attrs=None):
-        output = ['<div class="urn-widget">',
-                  super(URNWidget, self).render(name, value, attrs),
-                  '</div>']
-        return mark_safe(''.join(output))
-
-
-class ContactForm(forms.ModelForm):
-    """
-    Form for contacts
-    """
-    name = forms.CharField(max_length=128, label=_("Full name"))
-
-    urn = URNField(label=_("Phone/Twitter"), help_text=_("Phone number or Twitter handle of this contact."))
-
-    region = forms.ModelChoiceField(label=_("Region"), queryset=Region.objects.filter(pk=-1),
-                                    help_text=_("Region where this contact lives."))
-
-    group = forms.ModelChoiceField(label=_("Reporter Group"), queryset=Group.objects.filter(pk=-1),
-                                   help_text=_("Reporter Group to which this contact belongs."))
-
-    facility_code = forms.CharField(max_length=16, label=_("Facility Code"), required=False)
-
-    language = forms.CharField(label=_("Language"), required=False,
-                               widget=forms.TextInput(attrs={'class': 'language-field'}))
-
-    class Meta:
-        model = Contact
-        fields = forms.ALL_FIELDS
-
-    def __init__(self, *args, **kwargs):
-        self.user = kwargs.pop('user')
-        org = self.user.get_org()
-
-        super(ContactForm, self).__init__(*args, **kwargs)
-
-        self.fields['region'].queryset = self.user.get_regions(org).order_by('name')
-        self.fields['group'].queryset = Group.get_all(org).order_by('name')
 
 
 class ContactFormMixin(object):
@@ -196,7 +121,9 @@ class ContactCRUDL(SmartCRUDL):
             return obj.get_urn()[1]
 
         def get_language(self, obj):
-            return pycountry.languages.get(bibliographic=obj.language).name if obj.language else None
+            if obj.language:
+                return pycountry.languages.get(bibliographic=obj.language).name
+            return None
 
         def get_last_response(self, obj):
             last_response = obj.responses.order_by('-updated_on').first()
@@ -232,8 +159,10 @@ class ContactCRUDL(SmartCRUDL):
         def lookup_field_value(self, context, obj, field):
             if field.startswith('pollrun_'):
                 pollrun = self.derive_pollruns()[field]
-                has_completed = pollrun.responses.filter(contact=obj, status=RESPONSE_COMPLETE).exists()
-                return '<span class="glyphicon glyphicon-%s"></span>' % ('ok' if has_completed else 'time')
+                has_completed = pollrun.responses.filter(
+                    contact=obj, status=RESPONSE_COMPLETE).exists()
+                return ('<span class="glyphicon glyphicon-%s"></span>' %
+                        ('ok' if has_completed else 'time'))
 
             return super(ContactCRUDL.List, self).lookup_field_value(context, obj, field)
 
@@ -246,7 +175,9 @@ class ContactCRUDL(SmartCRUDL):
         def derive_pollruns(self):
             def fetch():
                 pollruns = OrderedDict()
-                for pollrun in PollRun.get_all(self.request.org, self.request.region).order_by('-conducted_on')[0:3]:
+                qs = PollRun.get_all(self.request.org, self.request.region)
+                qs = qs.order_by('-conducted_on')
+                for pollrun in qs[0:3]:
                     pollruns['pollrun_%d' % pollrun.pk] = pollrun
                 return pollruns
 

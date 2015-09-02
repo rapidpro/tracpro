@@ -14,7 +14,10 @@ class ForcePasswordChangeMiddlewareTest(TracProDataTest):
         self.login(self.user1)
 
         response = self.url_get('unicef', reverse('home.home'))
-        self.assertRedirects(response, 'http://unicef.testserver/profile/self/', fetch_redirect_response=False)
+        self.assertRedirects(
+            response,
+            'http://unicef.testserver/profile/self/',
+            fetch_redirect_response=False)
 
         response = self.url_get('unicef', reverse('profiles.user_self'))
         self.assertEqual(response.status_code, 200)
