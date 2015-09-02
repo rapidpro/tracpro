@@ -452,17 +452,6 @@ class Response(models.Model):
 
         return last_value_on if last_value_on else run.created_on
 
-    @classmethod
-    def get_update_required(cls, org):
-        """
-        Gets incomplete responses to the latest pollruns of all polls so that they can be updated
-        """
-        # get polls with the latest pollrun id for each
-        polls = Poll.get_all(org).annotate(latest_pollrun_id=models.Max('pollruns'))
-        latest_pollruns = [p.latest_pollrun_id for p in polls if p.latest_pollrun_id]
-
-        return Response.objects.filter(pollrun__in=latest_pollruns, is_active=True).exclude(status=RESPONSE_COMPLETE)
-
 
 class Answer(models.Model):
     """
