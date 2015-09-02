@@ -139,6 +139,11 @@ class TestRegionUpdateHierarchy(TracProTest):
             org=self.org, name="Nairobi", parent=self.region_kenya)
         self.region_mombasa = factories.Region(
             org=self.org, name="Mombasa", parent=self.region_kenya)
+
+        self.region_inactive = factories.Region(
+            org=self.org, name="Inactive", parent=self.region_nairobi,
+            is_active=False)
+
         return models.Region.get_all(self.org)
 
     def test_unauthenticated(self):
@@ -219,11 +224,31 @@ class TestRegionUpdateHierarchy(TracProTest):
             message="Data must map region id to parent id for each region "
                     "in this org.")
 
+    def test_post_inactive_groups(self):
+        """Submitted data should not include info about inactive groups."""
+        regions = self.make_regions()
+        structure = dict(regions.values_list('pk', 'parent'))
+        structure[self.region_inactive.pk] = None
+        self.assertErrorResponse(
+            data={'data': json.dumps(structure)},
+            message="Data must map region id to parent id for each region "
+                    "in this org.")
+
     def test_post_invalid_parent(self):
         """Submitted data should only reference parents within the same org."""
         regions = self.make_regions()
         structure = dict(regions.values_list('pk', 'parent'))
         structure[regions.first().pk] = "12345"
+        self.assertErrorResponse(
+            data={'data': json.dumps(structure)},
+            message="Region parent must be a region from the same org, or "
+                    "null.")
+
+    def test_post_inactive_parent(self):
+        """Submitted data should not reference inactive parents."""
+        regions = self.make_regions()
+        structure = dict(regions.values_list('pk', 'parent'))
+        structure[regions.first().pk] = self.region_inactive.pk
         self.assertErrorResponse(
             data={'data': json.dumps(structure)},
             message="Region parent must be a region from the same org, or "
