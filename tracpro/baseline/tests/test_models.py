@@ -16,7 +16,6 @@ class BaselineTermTest(TracProDataTest):
           self.contact1 and self.contact2 are in self.region1
           self.contact4 is in self.region2
         """
-
         super(BaselineTermTest, self).setUp()
 
         contacts = [self.contact1, self.contact2, self.contact4]
@@ -61,12 +60,7 @@ class BaselineTermTest(TracProDataTest):
             self.contact2: {"answers": [15, 10]},
             self.contact4: {"answers": [25, 20]}
         }
-        """
-        # Create a PollRun for each date from start to end dates for the Follow Up Poll
-        for follow_up_date in rrule.rrule(rrule.DAILY, dtstart=self.start_date, until=self.end_date):
-            follow_up_pollrun = PollRun.objects.create(
-                poll=self.poll2, conducted_on=follow_up_date)
-        """
+
         # Create a PollRun for each date from start to end dates for the Follow Up Poll
         date_iter = 0
         for follow_up_date in rrule.rrule(rrule.DAILY, dtstart=self.start_date, until=self.end_date):
@@ -105,7 +99,7 @@ class BaselineTermTest(TracProDataTest):
             baseline_dict[self.region2.name]["values"],
             30)
 
-    def test_baseline_region_1(self):
+    def test_baseline_single_region(self):
         """ Answers were 10 and 20 for region1 """
         baseline_dict = self.baselineterm.get_baseline(region=self.region1)
 
