@@ -7,7 +7,6 @@ import unicodecsv
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from dash.utils import datetime_to_ms, get_obj_cacheable
 
-from django import forms
 from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
@@ -23,30 +22,12 @@ from tracpro.contacts.models import Contact
 from tracpro.groups.models import Group
 
 from .charts import multiple_pollruns, single_pollrun
+from .forms import PollForm, FlowsForm
 from .models import (
     Poll, Question, PollRun, Response, Window,
     QUESTION_TYPE_OPEN, QUESTION_TYPE_RECORDING, RESPONSE_EMPTY,
     RESPONSE_PARTIAL, RESPONSE_COMPLETE)
 from .tasks import pollrun_restart_participants
-
-
-class PollForm(forms.ModelForm):
-    """
-    Form for contacts
-    """
-    name = forms.CharField(label=_("Name"))
-
-    class Meta:
-        model = Poll
-        fields = forms.ALL_FIELDS
-
-    def __init__(self, *args, **kwargs):
-        super(PollForm, self).__init__(*args, **kwargs)
-
-        for question in self.instance.get_questions():
-            field_key = '__question__%d__text' % question.pk
-            self.fields[field_key] = forms.CharField(max_length=255, initial=question.text,
-                                                     label=_("Question #%d") % question.order)
 
 
 class PollCRUDL(SmartCRUDL):
@@ -120,21 +101,6 @@ class PollCRUDL(SmartCRUDL):
             return super(PollCRUDL.List, self).lookup_field_link(context, field, obj)
 
     class Select(OrgPermsMixin, SmartFormView):
-        class FlowsForm(forms.Form):
-            flows = forms.MultipleChoiceField(choices=(), label=_("Flows"), help_text=_("Flows to track as polls."))
-
-            def __init__(self, *args, **kwargs):
-                org = kwargs.pop('org')
-
-                super(PollCRUDL.Select.FlowsForm, self).__init__(*args, **kwargs)
-
-                choices = []
-                for flow in org.get_temba_client().get_flows(archived=False):
-                    choices.append((flow.uuid, flow.name))
-
-                self.fields['flows'].choices = choices
-                self.fields['flows'].initial = [p.flow_uuid for p in Poll.get_all(org)]
-
         title = _("Poll Flows")
         form_class = FlowsForm
         success_url = '@polls.poll_list'
