@@ -70,7 +70,8 @@ class RegionCRUDL(SmartCRUDL):
             return kwargs
 
         def form_valid(self, form):
-            form.sync_contacts()
+            uuids = form.cleaned_data['groups']
+            Region.sync_with_temba(self.request.org, uuids)
             return HttpResponseRedirect(self.get_success_url())
 
     class UpdateHierarchy(OrgPermsMixin, SmartView, View):
@@ -190,5 +191,6 @@ class GroupCRUDL(SmartCRUDL):
             return kwargs
 
         def form_valid(self, form):
-            form.sync_contacts()
+            uuids = form.cleaned_data['groups']
+            Group.sync_with_temba(self.request.org, uuids)
             return HttpResponseRedirect(self.get_success_url())

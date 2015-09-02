@@ -3,7 +3,7 @@ from __future__ import absolute_import, unicode_literals
 from mptt import models as mptt
 
 from django.conf import settings
-from django.db import models
+from django.db import models, transaction
 from django.db.models import Count
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
@@ -35,27 +35,37 @@ class AbstractGroup(models.Model):
     def create(cls, org, name, uuid):
         return cls.objects.create(org=org, name=name, uuid=uuid)
 
+    def deactivate(self):
+        self.is_active = False
+        self.save()
+
     @classmethod
-    def sync_with_groups(cls, org, group_uuids):
-        """Updates an org's groups based on the selected groups UUIDs."""
-        # de-activate any active groups not included
-        other_groups = cls.objects.filter(org=org, is_active=True).exclude(uuid__in=group_uuids)
-        other_groups = other_groups.update(is_active=False)
+    def sync_with_temba(cls, org, uuids):
+        """Sync org groups with the selected UUIDs."""
+        # De-activate any groups that are not specified.
+        other_groups = cls.objects.filter(org=org, is_active=True)
+        other_groups = other_groups.exclude(uuid__in=uuids)
+        for group in other_groups:
+            group.deactivate()
 
-        # fetch group details
-        groups = org.get_temba_client().get_groups()
-        group_names = {group.uuid: group.name for group in groups}
+        # Fetch group details at once.
+        temba_groups = org.get_temba_client().get_groups()
+        temba_groups = {g.uuid: g.name for g in temba_groups}
 
-        for group_uuid in group_uuids:
-            existing = cls.objects.filter(org=org, uuid=group_uuid).first()
-            if existing:
-                existing.name = group_names[group_uuid]
-                existing.is_active = True
-                existing.save()
+        for uuid in uuids:
+            if uuid in temba_groups:
+                # Create a new item or update an existing one.
+                obj, _ = cls.objects.get_or_create(org=org, uuid=uuid)
+                obj.is_active = True
+                obj.name = temba_groups.get(uuid)
+                obj.save()
             else:
-                cls.create(org, group_names[group_uuid], group_uuid)
+                # The group was removed remotely and should be removed locally.
+                obj = cls.objects.filter(org=org, uuid=uuid).first()
+                if obj:
+                    obj.deactivate()
 
-        sync_org_contacts.delay(org.id)
+        sync_org_contacts.delay(org.pk)
 
     @classmethod
     def get_all(cls, org):
@@ -106,6 +116,21 @@ class Region(mptt.MPTTModel, AbstractGroup):
 
     class MPTTMeta:
         order_insertion_by = ['name']
+
+    @transaction.atomic
+    def deactivate(self):
+        # Make this region's parent the parent of all of its children.
+        with Region.objects.disable_mptt_updates():
+            for child in self.get_children():
+                child.parent = self.parent
+                child.save()
+        Region.objects.rebuild()
+
+        # Move this node out of the tree.
+        # If this region is re-activated, it will appear at the top level.
+        self.parent = None
+
+        super(Region, self).deactivate()
 
     def get_users(self):
         return self.users.filter(is_active=True).select_related('profile')
