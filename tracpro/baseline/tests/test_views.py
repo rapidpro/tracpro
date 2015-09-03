@@ -2,6 +2,7 @@ from django.core.urlresolvers import reverse
 
 from tracpro.test.cases import TracProDataTest
 from ..models import BaselineTerm
+from tracpro.polls.models import Answer, PollRun, Response
 
 
 class TestBaselineTermCRUDL(TracProDataTest):
@@ -112,3 +113,43 @@ class TestBaselineTermCRUDL(TracProDataTest):
         response = self.url_get(
             'unicef', reverse('baseline.baselineterm_read', args=[fake_baselineterm_pk]))
         self.assertEqual(response.status_code, 404)
+
+    def test_data_spoof(self):
+        url = reverse('baseline.baselineterm_data_spoof')
+        # Log in as an org administrator
+        self.login(self.admin)
+        response = self.url_get('unicef', url)
+        self.assertEqual(response.status_code, 200)
+
+        # Submit with no fields entered
+        response = self.url_post('unicef', url, {})
+        self.assertEqual(response.status_code, 200)
+        self.assertFormError(response, 'form', 'contacts', 'This field is required.')
+
+        spoof_data = {
+            'contacts': [self.contact1.pk],
+            'start_date': "May 1, 2015",
+            'end_date': "May 2, 2015",
+            'baseline_question': self.poll1_question1.pk,
+            'follow_up_question': self.poll1_question2.pk,
+            'baseline_minimum': 30,
+            'baseline_maximum': 40,
+            'follow_up_minimum': 10,
+            'follow_up_maximum': 20
+        }
+
+        # Submit with  valid form data
+        response = self.url_post('unicef', url, spoof_data)
+
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(
+            response,
+            'http://unicef.testserver/baselineterm/',
+            fetch_redirect_response=False)
+
+        # Check new spoofed data created successfully
+        # 3 PollRuns, Responses and Answers
+        # for 1 Baseline Date and 2 Follow Up Dates
+        self.assertEqual(PollRun.objects.all().count(), 3)
+        self.assertEqual(Response.objects.all().count(), 3)
+        self.assertEqual(Answer.objects.all().count(), 3)
