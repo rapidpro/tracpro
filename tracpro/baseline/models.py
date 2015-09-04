@@ -43,6 +43,8 @@ class BaselineTerm(models.Model):
         auto_choose=True,
         help_text=_("Responses over time to compare to the baseline.")
     )
+    y_axis_title = models.CharField(max_length=255, null=True, blank=True,
+                                    help_text=_("The title for the y axis of the chart."))
 
     @classmethod
     def get_all(cls, org):
@@ -51,21 +53,53 @@ class BaselineTerm(models.Model):
 
     def get_baseline(self, region):
         answers = Answer.objects.filter(
-            response__contact__region=region,
             question=self.baseline_question,
             submitted_on__gte=self.start_date,
             submitted_on__lte=self.end_date,  # look into timezone
-        )
-        answers = answers.order_by("submitted_on")
-        baseline_answer = answers.last()
-        return baseline_answer.value
+        ).select_related('response')
+        # Retrieve the most recent baseline results per contact
+        baseline_answers = answers.order_by('response__contact', '-submitted_on').distinct('response__contact')
+
+        if region:
+            baseline_answers = baseline_answers.filter(response__contact__region=region)
+
+        region_answers = {}
+        regions = baseline_answers.values('response__contact__region__name').distinct(
+            'response__contact__region__name').order_by('response__contact__region__name')
+        # Separate out baseline values per region
+        for region in regions:
+            region_name = region['response__contact__region__name'].encode('ascii')
+            answers_by_region = baseline_answers.filter(response__contact__region__name=region_name)
+            answer_sum = Answer.numeric_sum_all_dates(answers_by_region)
+            region_answers[region_name] = {}
+            region_answers[region_name]["values"] = answer_sum
+
+        return region_answers
 
     def get_follow_up(self, region):
+        """ Get all follow up responses summed by region """
         answers = Answer.objects.filter(
-            response__contact__region=region,
             question=self.follow_up_question,
             submitted_on__gte=self.start_date,
             submitted_on__lte=self.end_date,  # look into timezone
-        )
-        answers = answers.order_by("submitted_on")
-        return list(answers.values_list("submitted_on", "value"))
+        ).select_related('response')
+        if region:
+            answers = answers.filter(response__contact__region=region)
+        """
+        Loop through all regions in answers and create
+        a dict of values and dates per Region
+        ex.
+        { 'Kumpala': {'values': [35,...], 'dates': [datetime.date(2015, 8, 12),...]} }
+        """
+        region_answers = {}
+        dates = []
+        regions = answers.values('response__contact__region__name').distinct(
+            'response__contact__region__name').order_by('response__contact__region__name')
+        for region in regions:
+            region_name = region['response__contact__region__name'].encode('ascii')
+            answers_by_region = answers.filter(response__contact__region__name=region_name)
+            answer_sums, dates = Answer.numeric_sum_group_by_date(answers_by_region)
+            region_answers[region_name] = {}
+            region_answers[region_name]["values"] = answer_sums
+
+        return region_answers, dates
