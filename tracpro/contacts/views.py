@@ -25,9 +25,7 @@ from .models import Contact
 
 
 class ContactFormMixin(object):
-    """
-    Mixin for views that use a contact form
-    """
+    """Mixin for views that use ContactForm."""
 
     def get_form_kwargs(self):
         kwargs = super(ContactFormMixin, self).get_form_kwargs()
@@ -86,17 +84,20 @@ class ContactCRUDL(SmartCRUDL):
 
         def save(self, obj):
             org = self.request.user.get_org()
-            self.object = Contact.create(org, self.request.user, obj.name, obj.urn,
-                                         obj.region, obj.group, obj.facility_code, obj.language)
+            self.object = Contact.create(
+                org, self.request.user, obj.name, obj.urn, obj.region,
+                obj.group, obj.facility_code, obj.language)
 
     class Update(OrgObjPermsMixin, ContactFormMixin, SmartUpdateView):
         fields = ('name', 'urn', 'region', 'group', 'facility_code', 'language')
         form_class = ContactForm
 
         def get_queryset(self):
-            regions = self.request.user.get_direct_regions(self.request.org)
-            queryset = super(ContactCRUDL.Update, self).get_queryset()
-            return queryset.filter(org=self.request.org, is_active=True, region__in=regions)
+            regions = self.request.user.get_all_regions(self.request.org)
+            qs = super(ContactCRUDL.Update, self).get_queryset()
+            qs = qs.filter(org=self.request.org, region__in=regions)
+            qs = qs.filter(is_active=True)
+            return qs
 
         def post_save(self, obj):
             obj = super(ContactCRUDL.Update, self).post_save(obj)
@@ -113,9 +114,11 @@ class ContactCRUDL(SmartCRUDL):
             return fields
 
         def get_queryset(self):
-            regions = self.request.user.get_direct_regions(self.request.org)
-            queryset = super(ContactCRUDL.Read, self).get_queryset()
-            return queryset.filter(org=self.request.org, is_active=True, region__in=regions)
+            regions = self.request.user.get_all_regions(self.request.org)
+            qs = super(ContactCRUDL.Read, self).get_queryset()
+            qs = qs.filter(org=self.request.org, region__in=regions)
+            qs = qs.filter(is_active=True)
+            return qs
 
         def get_urn(self, obj):
             return obj.get_urn()[1]
@@ -143,11 +146,10 @@ class ContactCRUDL(SmartCRUDL):
         search_fields = ('name__icontains', 'urn__icontains')
 
         def derive_fields(self):
-            base_fields = ['name', 'urn', 'group']
+            fields = ['name', 'urn', 'group', 'region']
             if self.request.region:
-                return base_fields + self.derive_pollruns().keys()
-            else:
-                return base_fields + ['region']
+                fields.extend(self.derive_pollruns().keys())
+            return fields
 
         def lookup_field_label(self, context, field, default=None):
             if field.startswith('pollrun_'):
@@ -184,20 +186,13 @@ class ContactCRUDL(SmartCRUDL):
             return get_obj_cacheable(self, '_pollruns', fetch)
 
         def derive_queryset(self, **kwargs):
-            qs = super(ContactCRUDL.List, self).derive_queryset(**kwargs)
-            qs = qs.filter(org=self.request.org, is_active=True)
-
-            if self.request.region:
-                qs = qs.filter(region=self.request.region)
-
-            return qs
+            return Contact.get_all(self.request.org, regions=self.request.data_regions)
 
     class Delete(OrgObjPermsMixin, SmartDeleteView):
         cancel_url = '@contacts.contact_list'
 
         def post(self, request, *args, **kwargs):
             self.object = self.get_object()
-
             if self.request.user.has_region_access(self.object.region):
                 self.pre_delete(self.object)
                 self.object.release()

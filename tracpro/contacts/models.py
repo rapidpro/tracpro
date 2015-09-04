@@ -101,8 +101,11 @@ class Contact(models.Model):
         return cls.objects.create(**cls.kwargs_from_temba(org, temba_contact))
 
     @classmethod
-    def get_all(cls, org):
-        return org.contacts.filter(is_active=True)
+    def get_all(cls, org, regions=None):
+        qs = cls.objects.filter(org=org, is_active=True)
+        if regions is not None:
+            qs = qs.filter(region__in=regions)
+        return qs
 
     @classmethod
     def kwargs_from_temba(cls, org, temba_contact):
