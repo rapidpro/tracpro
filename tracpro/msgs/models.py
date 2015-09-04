@@ -79,13 +79,11 @@ class Message(models.Model):
         return message
 
     @classmethod
-    def get_all(cls, org, region=None):
+    def get_all(cls, org, regions=None):
         messages = cls.objects.filter(org=org)
-
-        if region:
+        if regions is not None:
             # any message to this region or any non-regional message
-            messages = messages.filter(Q(region=None) | Q(region=region))
-
+            messages = messages.filter(Q(region=None) | Q(region__in=regions))
         return messages.select_related('region')
 
     def as_json(self):
@@ -118,7 +116,7 @@ class InboxMessage(models.Model):
     @classmethod
     def get_all(cls, org, regions=None):
         messages = cls.objects.filter(org=org)
-        if regions:
+        if regions is not None:
             messages = messages.filter(contact__region__in=regions)
         return messages
 
