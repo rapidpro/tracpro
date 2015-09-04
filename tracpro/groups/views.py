@@ -7,7 +7,9 @@ from dash.orgs.views import OrgPermsMixin
 
 from django.db import transaction
 from django.db.models import Prefetch
-from django.http import HttpResponseRedirect, JsonResponse
+from django.http import (
+    HttpResponseBadRequest, HttpResponseRedirect, JsonResponse)
+from django.shortcuts import redirect
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic import View
 
@@ -21,6 +23,36 @@ from .forms import ContactGroupsForm
 
 
 logger = logging.getLogger(__name__)
+
+
+class ToggleSubregions(View):
+    post_param = "include_subregions"
+    next_param = "next"
+    session_param = "include_subregions"
+
+    def post(self, request, *args, **kwargs):
+        """
+        Update session variable that manages whether to include data for
+        sub-regions, or only the current region.
+        """
+        if self.post_param not in request.POST or self.next_param not in request.POST:
+            raise HttpResponseBadRequest(
+                "Request should include '{}' and '{}'.".format(
+                    self.post_param, self.next_param))
+
+        val = request.POST.get(self.post_param)
+        if val in ('0', '1'):
+            request.session[self.session_param] = bool(int(val))
+            request.session.save()
+        else:
+            raise HttpResponseBadRequest(
+                "{} should be either '0' or '1'".format(
+                    self.post_param))
+
+        # Redirect to the next path.
+        # TODO: Double-check validation of `next` parameter.
+        next_path = request.POST.get(self.next_param)
+        return redirect(next_path)
 
 
 class RegionCRUDL(SmartCRUDL):

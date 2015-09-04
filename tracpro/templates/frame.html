@@ -241,10 +241,35 @@
                                 {% trans "All Regions" %}
                               </a>
                             </li>
+                            {% if request.region and not request.region.is_leaf_node %}
+                              <li>
+                                <form id="toggle-subregions-form"
+                                      method="POST" action="{% url "toggle-subregions" %}">
+                                  {% csrf_token %}
+                                  <input type="hidden" name="include_subregions"
+                                         value="{% if request.include_subregions %}0{% else %}1{% endif %}" />
+                                  <input type="hidden" name="next"
+                                         value="{{ request.get_full_path }}" />
+                                  <input type="submit" class="hidden" />
+                                </form>
+                                {% if request.include_subregions %}
+                                  <a class="toggle-subregions" href="#"
+                                     title="Currently showing data for {{ request.region }} and all sub-regions. Click to show data from {{ request.region }} only.">
+                                     Hide sub-region data
+                                   </a>
+                                {% else %}
+                                  <a class="toggle-subregions" href="#"
+                                     title="Currently showing data for {{ request.region }} only. Click to show data from {{ request.region }} and all sub-regions.">
+                                    Show sub-region data
+                                  </a>
+                                {% endif %}
+                              </li>
+                            {% endif %}
                             {% if request.user_regions %}
                               <li class='divider'></li>
                             {% endif %}
                           {% endif %}
+
                           {% recursetree request.user_regions %}
                             <li{% if node == request.region %} class="active-region"{% endif %}>
                               <a href='{{ request.path }}?_region={{ node.pk }}'>

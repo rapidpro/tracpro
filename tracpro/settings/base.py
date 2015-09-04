@@ -175,6 +175,7 @@ MIDDLEWARE_CLASSES = (
     'dash.orgs.middleware.SetOrgMiddleware',
     'tracpro.profiles.middleware.ForcePasswordChangeMiddleware',
     'tracpro.groups.middleware.UserRegionsMiddleware',
+    'tracpro.groups.middleware.IncludeSubregionsMiddleware',
 )
 
 ROOT_URLCONF = 'tracpro.urls'

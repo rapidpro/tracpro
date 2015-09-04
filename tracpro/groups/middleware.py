@@ -3,6 +3,16 @@ from __future__ import absolute_import, unicode_literals
 from tracpro.groups.models import Region
 
 
+class IncludeSubregionsMiddleware(object):
+    default_value = True
+    session_param = "include_subregions"
+
+    def process_request(self, request):
+        # Set the value on the request for convenience in views.
+        request.include_subregions = request.session.get(
+            self.session_param, self.default_value)
+
+
 class UserRegionsMiddleware(object):
     """
     Middleware to set region

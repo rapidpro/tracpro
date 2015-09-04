@@ -13,7 +13,6 @@ $(function() {
   });
 
   $(".toggle-subregions").click(function(e) {
-    debugger;
     $("#toggle-subregions-form").submit();
     return false;
   });

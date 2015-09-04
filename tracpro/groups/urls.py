@@ -1,6 +1,14 @@
 from __future__ import absolute_import, unicode_literals
 
-from .views import GroupCRUDL, RegionCRUDL
+from django.conf.urls import url
 
-urlpatterns = GroupCRUDL().as_urlpatterns()
-urlpatterns += RegionCRUDL().as_urlpatterns()
+from . import views
+
+
+urlpatterns = views.GroupCRUDL().as_urlpatterns()
+urlpatterns += views.RegionCRUDL().as_urlpatterns()
+urlpatterns += [
+    url("^toggle-subregions/$",
+        views.ToggleSubregions.as_view(),
+        name="toggle-subregions"),
+]
