@@ -87,6 +87,11 @@ def _user_update_regions(user, regions):
     user.regions.clear()
     user.regions.add(*regions)
 
+    for org_name in set(region.org.name for region in regions):
+        for attr in ('_regions_with_descendants_{}', '_regions_{}'):
+            if hasattr(user, attr.format(org_name)):
+                delattr(user, attr.format(org_name))
+
 
 def _user_has_region_access(user, region):
     """
