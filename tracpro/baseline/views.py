@@ -104,6 +104,7 @@ class BaselineTermCRUDL(SmartCRUDL):
         title = _("Baseline Term Data Spoof")
         template_name = 'baseline/baselineterm_data.html'
         form_class = SpoofDataForm
+        cancel_url = '@baseline.baselineterm_list'
         success_url = '@baseline.baselineterm_list'
 
         def get_form_kwargs(self):

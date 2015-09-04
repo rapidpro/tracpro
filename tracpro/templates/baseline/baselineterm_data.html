@@ -1,145 +1,14 @@
-{% extends "smartmin/base.html" %}
+{% extends "smartmin/form.html" %}
 {% load smartmin i18n compress %}
-
-{% block content %}
-
-    {% if form.errors %}
-        <div class="alert alert-danger form-errors">
-            Please correct the errors below.
-        </div>
-    {% endif %}
-
-    {% if form.non_field_errors %}
-        <ul class="field-errors">
-            <li>{{ form.non_field_errors }}</li>
-        </ul>
-    {% endif %}
-
-    <div>
-      <form id="spoofform" class="smartmin-form form-horizontal ng-pristine ng-valid" action="." method="post">
-        {% csrf_token %}
-        <fieldset>
-
-        <div class="form-group">
-            <label class="col-sm-2 control-label">
-                {{ form.contacts.label }}
-            </label>
-            <div class="col-sm-10 smartmin-form-field">
-                {{ form.contacts }}
-                <span class="help-block">{{ form.contacts.help_text }}</span>
-                <span class="help-block field-errors">{{ form.contacts.errors }}</span>
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label class="col-sm-2 control-label">
-                {{ form.start_date.label }}
-            </label>
-            <div class="col-sm-10 smartmin-form-field">
-                {{ form.start_date }}
-                <span class="help-block">{{ form.start_date.help_text }}</span>
-                <span class="help-block field-errors">{{ form.start_date.errors }}</span>
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label class="col-sm-2 control-label">
-                {{ form.end_date.label }}
-            </label>
-            <div class="col-sm-10 smartmin-form-field">
-                {{ form.end_date }}
-                <span class="help-block">{{ form.end_date.help_text }}</span>
-                <span class="help-block field-errors">{{ form.end_date.errors }}</span>
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label class="col-sm-2 control-label">
-                {{ form.baseline_question.label }}
-            </label>
-            <div class="col-sm-10 smartmin-form-field">
-                {{ form.baseline_question }}
-                <span class="help-block">{{ form.baseline_question.help_text }}</span>
-                <span class="help-block field-errors">{{ form.baseline_question.errors }}</span>
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label class="col-sm-2 control-label">
-                {{ form.baseline_minimum.label }}
-            </label>
-            <div class="col-sm-10 smartmin-form-field">
-                {{ form.baseline_minimum }}
-                <span class="help-block">{{ form.baseline_minimum.help_text }}</span>
-                <span class="help-block field-errors">{{ form.baseline_minimum.errors }}</span>
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label class="col-sm-2 control-label">
-                {{ form.baseline_maximum.label }}
-            </label>
-            <div class="col-sm-10 smartmin-form-field">
-                {{ form.baseline_maximum }}
-                <span class="help-block">{{ form.baseline_maximum.help_text }}</span>
-                <span class="help-block field-errors">{{ form.baseline_maximum.errors }}</span>
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label class="col-sm-2 control-label">
-                {{ form.follow_up_question.label }}
-            </label>
-            <div class="col-sm-10 smartmin-form-field">
-                {{ form.follow_up_question }}
-                <span class="help-block">{{ form.follow_up_question.help_text }}</span>
-                <span class="help-block field-errors">{{ form.follow_up_question.errors }}</span>
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label class="col-sm-2 control-label">
-                {{ form.follow_up_minimum.label }}
-            </label>
-            <div class="col-sm-10 smartmin-form-field">
-                {{ form.follow_up_minimum }}
-                <span class="help-block">{{ form.follow_up_minimum.help_text }}</span>
-                <span class="help-block field-errors">{{ form.follow_up_minimum.errors }}</span>
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label class="col-sm-2 control-label">
-                {{ form.follow_up_maximum.label }}
-            </label>
-            <div class="col-sm-10 smartmin-form-field">
-                {{ form.follow_up_maximum }}
-                <span class="help-block">{{ form.follow_up_maximum.help_text }}</span>
-                <span class="help-block field-errors">{{ form.follow_up_maximum.errors }}</span>
-            </div>
-        </div>
-
-        <div class="form-group smartmin-form-buttons">
-            <div class="col-sm-offset-1">
-                <button id="submit" class="btn btn-primary">
-                    {% trans "Create Spoof Data" %}
-                </button>
-        </div></div>
-
-
-        </fieldset>
-      </form>
-    </div>
-{% endblock content %}
-
 
 {% block script %}
 <script>
 $(function() {
     $("input[class^='datepicker']").datepicker();
 
-    $("#spoofform").submit(function( event ) {
-        $("#submit").prop("disabled", true); //disable the Send button to prevent dbl-click
+    $("form").submit(function( event ) {
+        //disable the Submit button to prevent dbl-click
+        $(".btn-primary").prop("disabled", true)
         return true;
     });
 });
