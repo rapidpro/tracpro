@@ -1,6 +1,7 @@
 from django.core.exceptions import NON_FIELD_ERRORS
 
 from tracpro.test.cases import TracProDataTest
+
 from ..forms import BaselineTermForm, SpoofDataForm
 
 

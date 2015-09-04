@@ -16,11 +16,12 @@ from smartmin.views import (
 )
 from smartmin.users.views import SmartFormView
 
-from .models import BaselineTerm
-from .forms import BaselineTermForm, SpoofDataForm
 from tracpro.polls.models import (
     Answer, PollRun, Response, RESPONSE_COMPLETE
 )
+
+from .models import BaselineTerm
+from .forms import BaselineTermForm, SpoofDataForm
 
 
 class BaselineTermCRUDL(SmartCRUDL):

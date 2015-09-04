@@ -2,10 +2,11 @@ from datetime import datetime
 from dateutil import rrule
 
 from tracpro.test.cases import TracProDataTest
-from ..models import BaselineTerm
 from tracpro.polls.models import (
     Answer, PollRun, Response, RESPONSE_COMPLETE
 )
+
+from ..models import BaselineTerm
 
 
 class BaselineTermTest(TracProDataTest):
