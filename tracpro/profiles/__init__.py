@@ -94,13 +94,15 @@ def _user_update_regions(user, regions):
 
 
 def _user_has_region_access(user, region):
-    """
-    Whether the given user has access to the given region
+    """Whether the user can access the region.
+
+    The user can either access the region directly, or one of its parents.
     """
     if user.is_superuser or user.is_admin_for(region.org):
         return True
     else:
-        return user.regions.filter(pk=region.pk).exists()
+        pks = region.get_ancestors(include_self=True).values_list('pk')
+        return user.regions.filter(pk__in=pks).exists()
 
 
 def _user_is_admin_for(user, org):
