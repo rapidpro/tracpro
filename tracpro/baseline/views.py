@@ -5,12 +5,14 @@ import random
 from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext_lazy as _
 from django.http import HttpResponseRedirect
+from django.views.generic import View
 
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 
 from smartmin.views import (
     SmartCRUDL, SmartCreateView, SmartDeleteView,
-    SmartListView, SmartReadView, SmartUpdateView
+    SmartListView, SmartReadView, SmartUpdateView,
+    SmartView
 )
 from smartmin.users.views import SmartFormView
 
@@ -23,7 +25,7 @@ from tracpro.polls.models import (
 
 class BaselineTermCRUDL(SmartCRUDL):
     model = BaselineTerm
-    actions = ('create', 'read', 'update', 'delete', 'list', 'data_spoof')
+    actions = ('create', 'read', 'update', 'delete', 'list', 'data_spoof', 'clear_spoof')
 
     class Create(OrgPermsMixin, SmartCreateView):
         form_class = BaselineTermForm
@@ -164,3 +166,16 @@ class BaselineTermCRUDL(SmartCRUDL):
                         category=u'')
 
             return HttpResponseRedirect(self.get_success_url())
+
+    class ClearSpoof(OrgObjPermsMixin, SmartView, View):
+
+        def post(self, request, *args, **kwargs):
+            # Spoofed data has a NULL flow_run_id in Response
+            responses = Response.objects.filter(flow_run_id__isnull=True)
+            pollruns = PollRun.objects.filter(pk__in=responses.values('pollrun'))
+
+            # This will create a cascading delete to clear out all Spoofed Poll data
+            # from PollRun, Answer and Response
+            pollruns.delete()
+
+            return HttpResponseRedirect(reverse('baseline.baselineterm_list'))
