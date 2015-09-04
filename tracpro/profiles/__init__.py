@@ -70,6 +70,16 @@ def _user_get_direct_regions(user, org):
     return get_obj_cacheable(user, attr_name, calculate)
 
 
+def _user_get_all_regions(user, org):
+    """Return org regions user has direct or implied (by hierarchy) permission for."""
+    def calculate():
+        regions = user.get_direct_regions(org).get_descendants(include_self=True)
+        regions = regions.filter(is_active=True)
+        return regions
+    attr_name = '_regions_with_descendants_{}'.format(org.pk)  # cache per org
+    return get_obj_cacheable(user, attr_name, calculate)
+
+
 def _user_update_regions(user, regions):
     """
     Updates a user's regions
@@ -110,6 +120,7 @@ User.add_to_class('clean', _user_clean)
 User.add_to_class('has_profile', _user_has_profile)
 User.add_to_class('get_full_name', _user_get_full_name)
 User.add_to_class('get_direct_regions', _user_get_direct_regions)
+User.add_to_class('get_all_regions', _user_get_all_regions)
 User.add_to_class('update_regions', _user_update_regions)
 User.add_to_class('has_region_access', _user_has_region_access)
 User.add_to_class('is_admin_for', _user_is_admin_for)
