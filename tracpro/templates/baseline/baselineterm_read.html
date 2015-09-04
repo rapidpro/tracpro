@@ -23,10 +23,10 @@
 $(function () {
     $('#container').highcharts({
         title: {
-            text: '{{ baselineterm.name }}'
+            text: '{{ baselineterm.name|escapejs }}'
         },
         subtitle: {
-            text: 'Baseline: {{ baselineterm.baseline_question }}, Follow Up: {{ baselineterm.follow_up_question }}'
+            text: 'Baseline: {{ baselineterm.baseline_question|escapejs }}, Follow Up: {{ baselineterm.follow_up_question|escapejs }}'
         },
         xAxis: {
             categories: [
@@ -45,7 +45,7 @@ $(function () {
         {% for key, values in baseline_dict.items %}
             {
                 type: 'area',
-                name: '{{ key }} Baseline',
+                name: '{{ key|escapejs }} Baseline',
                 {% for subkey, subvalue in values.items %}
                     data: [
                           {% for i in date_count %}
@@ -59,7 +59,7 @@ $(function () {
         {% for key, values in answers_dict.items %}
             {
                 type: 'area',
-                name: '{{ key }} Follow Up',
+                name: '{{ key|escapejs }} Follow Up',
                 {% for subkey, subvalue in values.items %}
                     data: {{ subvalue }}
                 {% endfor %}
