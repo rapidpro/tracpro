@@ -36,3 +36,13 @@ class UserRegionsMiddleware(object):
             # Retrieve current region information from the session.
             region_id = request.session['region']
             request.region = self.get_region(request, request.user_regions, region_id)
+
+        # Calculate which org regions to retrieve data for.
+        if request.region:
+            if request.include_subregions:
+                request.data_regions = request.region.get_descendants(include_self=True)
+                request.data_regions = request.data_regions.filter(pk__in=request.user_regions)
+            else:
+                request.data_regions = [request.region]
+        else:
+            request.data_regions = None
