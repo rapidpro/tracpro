@@ -329,7 +329,7 @@ PERMISSIONS = {
         'list',  # can view a list of the objects
     ),
     'orgs.org': ('create', 'update', 'list', 'edit', 'home'),
-    'baseline.baselineterm': ('create', 'read', 'update', 'delete', 'list'),
+    'baseline.baselineterm': ('create', 'read', 'update', 'delete', 'list', 'data_spoof', 'clear_spoof'),
     'contacts.contact': ('create', 'read', 'update', 'delete', 'list'),
     'groups.group': ('list', 'most_active', 'select'),
     'groups.region': ('list', 'most_active', 'select', 'update_hierarchy'),
