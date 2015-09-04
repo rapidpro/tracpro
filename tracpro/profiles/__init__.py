@@ -66,7 +66,8 @@ def _user_get_direct_regions(user, org):
             return Region.get_all(org)
         else:
             return user.regions.filter(is_active=True)
-    return get_obj_cacheable(user, '_regions', calculate)
+    attr_name = '_regions_{}'.format(org.pk)  # cache per org
+    return get_obj_cacheable(user, attr_name, calculate)
 
 
 def _user_update_regions(user, regions):
