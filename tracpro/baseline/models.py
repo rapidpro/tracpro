@@ -43,6 +43,8 @@ class BaselineTerm(models.Model):
         auto_choose=True,
         help_text=_("Responses over time to compare to the baseline.")
     )
+    y_axis_title = models.CharField(max_length=255, null=True, blank=True,
+                                    help_text=_("The title for the y axis of the chart."))
 
     @classmethod
     def get_all(cls, org):
