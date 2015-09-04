@@ -34,5 +34,5 @@ class ContactForm(forms.ModelForm):
         self.user = kwargs.pop('user')
         super(ContactForm, self).__init__(*args, **kwargs)
         org = self.user.get_org()
-        self.fields['region'].queryset = self.user.get_regions(org).order_by('name')
+        self.fields['region'].queryset = self.user.get_direct_regions(org).order_by('name')
         self.fields['group'].queryset = Group.get_all(org).order_by('name')

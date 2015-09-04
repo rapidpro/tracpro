@@ -127,7 +127,7 @@ class InboxMessageCRUDL(SmartCRUDL):
             return r'^%s/%s/(?P<contact_id>\d+)/$' % (path, action)
 
         def dispatch(self, request, contact_id, *args, **kwargs):
-            regions = self.request.user.get_regions(self.request.org)
+            regions = self.request.user.get_direct_regions(self.request.org)
             self.data = self.request.POST or None
             self.contact = get_object_or_404(Contact.objects.filter(region__in=regions), pk=contact_id)
             self.form = InboxMessageResponseForm(contact=self.contact, data=self.data)
@@ -156,5 +156,5 @@ class InboxMessageCRUDL(SmartCRUDL):
     class Read(OrgPermsMixin, SmartReadView):
 
         def derive_queryset(self, **kwargs):
-            regions = self.request.user.get_regions(self.request.org)
+            regions = self.request.user.get_direct_regions(self.request.org)
             return InboxMessage.get_all(self.request.org, regions)

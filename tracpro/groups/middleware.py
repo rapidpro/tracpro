@@ -11,7 +11,7 @@ class UserRegionsMiddleware(object):
         region = None
 
         if request.org and not request.user.is_anonymous():
-            user_regions = request.user.get_regions(request.org).order_by('name')
+            user_regions = request.user.get_direct_regions(request.org).order_by('name')
 
             if '_region' in request.GET:
                 region_id = int(request.GET['_region'])

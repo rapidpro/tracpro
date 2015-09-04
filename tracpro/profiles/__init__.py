@@ -58,7 +58,8 @@ def _user_get_full_name(user):
     return super(User, user).get_full_name()
 
 
-def _user_get_regions(user, org):
+def _user_get_direct_regions(user, org):
+    """Return org regions user has direct permission for."""
     def calculate():
         # org admins have implicit access to all regions
         if user.is_admin_for(org):
@@ -107,7 +108,7 @@ User.add_to_class('create', classmethod(_user_create))
 User.add_to_class('clean', _user_clean)
 User.add_to_class('has_profile', _user_has_profile)
 User.add_to_class('get_full_name', _user_get_full_name)
-User.add_to_class('get_regions', _user_get_regions)
+User.add_to_class('get_direct_regions', _user_get_direct_regions)
 User.add_to_class('update_regions', _user_update_regions)
 User.add_to_class('has_region_access', _user_has_region_access)
 User.add_to_class('is_admin_for', _user_is_admin_for)
