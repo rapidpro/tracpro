@@ -5,6 +5,7 @@ import json
 
 from dash.orgs.views import OrgPermsMixin
 
+from django.contrib import messages
 from django.db import transaction
 from django.db.models import Prefetch
 from django.http import (
@@ -42,8 +43,14 @@ class ToggleSubregions(View):
 
         val = request.POST.get(self.post_param)
         if val in ('0', '1'):
-            request.session[self.session_param] = bool(int(val))
+            val = bool(int(val))
+            request.session[self.session_param] = val
             request.session.save()
+            if val:
+                msg = "Now showing data from {} and its sub-regions."
+            else:
+                msg = "Showing data from {} only."
+            messages.info(request, msg.format(request.region))
         else:
             raise HttpResponseBadRequest(
                 "{} should be either '0' or '1'".format(
