@@ -186,7 +186,11 @@ class ContactCRUDL(SmartCRUDL):
             return get_obj_cacheable(self, '_pollruns', fetch)
 
         def derive_queryset(self, **kwargs):
-            return Contact.get_all(self.request.org, regions=self.request.data_regions)
+            qs = super(ContactCRUDL.List, self).derive_queryset(**kwargs)
+            qs = qs.filter(org=self.request.org, is_active=True)
+            if self.request.data_regions is not None:
+                qs = qs.filter(region__in=self.request.data_regions)
+            return qs
 
     class Delete(OrgObjPermsMixin, SmartDeleteView):
         cancel_url = '@contacts.contact_list'

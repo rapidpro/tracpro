@@ -8,9 +8,11 @@ class UserRegionsMiddleware(object):
     def get_region(self, request, user_regions, region_id):
         """Try to retrieve the specified region from the user's regions."""
         region = user_regions.filter(pk=region_id).first()
-        if not region and not request.user.is_admin_for(request.org):
-            # Only org admins may see "All Regions."
-            region = user_regions.first()
+        if not region:
+            if request.user.is_authenticated() and request.org:
+                if not request.user.is_admin_for(request.org):
+                    # Only org admins may see "All Regions."
+                    region = user_regions.first()
         return region
 
     def process_request(self, request):
@@ -34,8 +36,12 @@ class UserRegionsMiddleware(object):
             request.session['region'] = request.region.pk if request.region else None
         else:
             # Retrieve current region information from the session.
-            region_id = request.session['region']
+            region_id = request.session.get('region', None)
             request.region = self.get_region(request, request.user_regions, region_id)
+
+            # Set it back in the session in case this is the first request
+            # or the old region is no longer valid.
+            request.session['region'] = request.region.pk if request.region else None
 
         # Calculate which org regions to retrieve data for.
         if request.region:
