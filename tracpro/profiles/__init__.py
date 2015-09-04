@@ -1,15 +1,20 @@
 from __future__ import absolute_import, unicode_literals
 
 from dash.utils import get_obj_cacheable
+
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
+
 from tracpro.groups.models import Region
+
+from .models import Profile
 
 
 # === Monkey patching for the User class === #
 
-def _user_create(cls, org, full_name, email, password, change_password=False, regions=()):
+def _user_create(cls, org, full_name, email, password, change_password=False,
+                 regions=()):
     """
     Creates a regular user with specific region access
     """
@@ -19,7 +24,6 @@ def _user_create(cls, org, full_name, email, password, change_password=False, re
     user.save()
 
     # add profile
-    from .models import Profile
     Profile.objects.create(user=user, full_name=full_name, change_password=change_password)
 
     # setup as org editor with limited region access
@@ -34,14 +38,11 @@ def _user_clean(user):
     # we use email for login
     if User.objects.filter(email=user.email).exclude(pk=user.pk).exists():
         raise ValidationError(_("Email address already taken."))
-
     user.username = user.email
-
     super(User, user).clean()
 
 
 def _user_has_profile(user):
-    from .models import Profile
     try:
         return bool(user.profile)
     except Profile.DoesNotExist:
@@ -52,7 +53,9 @@ def _user_get_full_name(user):
     """
     Override regular get_full_name which returns first_name + last_name
     """
-    return user.profile.full_name if user.has_profile() else " ".join([user.first_name, user.last_name]).strip()
+    if user.has_profile():
+        return user.profile.full_name
+    return super(User, user).get_full_name()
 
 
 def _user_get_regions(user, org):
@@ -62,7 +65,6 @@ def _user_get_regions(user, org):
             return Region.get_all(org)
         else:
             return user.regions.filter(is_active=True)
-
     return get_obj_cacheable(user, '_regions', calculate)
 
 
@@ -101,12 +103,13 @@ def _user_unicode(user):
     return user.email or user.username
 
 
-User.create = classmethod(_user_create)
-User.clean = _user_clean
-User.has_profile = _user_has_profile
-User.get_full_name = _user_get_full_name
-User.get_regions = _user_get_regions
-User.update_regions = _user_update_regions
-User.has_region_access = _user_has_region_access
-User.is_admin_for = _user_is_admin_for
-User.__unicode__ = User.__str__ = _user_unicode
+User.add_to_class('create', classmethod(_user_create))
+User.add_to_class('clean', _user_clean)
+User.add_to_class('has_profile', _user_has_profile)
+User.add_to_class('get_full_name', _user_get_full_name)
+User.add_to_class('get_regions', _user_get_regions)
+User.add_to_class('update_regions', _user_update_regions)
+User.add_to_class('has_region_access', _user_has_region_access)
+User.add_to_class('is_admin_for', _user_is_admin_for)
+User.add_to_class('__unicode__', _user_unicode)
+User.add_to_class('__str__', _user_unicode)
