@@ -186,10 +186,9 @@ class PollRun(models.Model):
     """
     poll = models.ForeignKey('polls.Poll', related_name='pollruns')
 
-    region = models.ForeignKey(
-        'groups.Region', null=True, related_name='pollruns',
-        help_text="Region where poll was conducted")
-
+    regions = models.ManyToManyField(
+        'groups.Region', blank=True,
+        help_text="Regions where the poll was conducted.")
     conducted_on = models.DateTimeField(help_text=_("When the poll was conducted"))
 
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, related_name="pollruns_created")
@@ -203,7 +202,6 @@ class PollRun(models.Model):
 
         if do_start:
             pollrun_start.delay(pollrun.pk)
-
         return pollrun
 
     @classmethod
