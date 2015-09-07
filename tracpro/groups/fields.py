@@ -4,7 +4,7 @@ from django.db.models import Min
 from django.utils.html import conditional_escape, mark_safe
 
 
-class ModifiedLevelTreeNodeChoiceField(mptt.TreeNodeChoiceField):
+class ModifiedLevelMixin(object):
     """Offsets the level indicator relative to the highest level in the queryset.
 
     Turns this:
@@ -27,7 +27,17 @@ class ModifiedLevelTreeNodeChoiceField(mptt.TreeNodeChoiceField):
 
     def _set_queryset(self, queryset):
         """Set the highest level when the queryset is set."""
-        super(ModifiedLevelTreeNodeChoiceField, self)._set_queryset(queryset)
+        super(ModifiedLevelMixin, self)._set_queryset(queryset)
         self.highest_level = queryset.aggregate(Min('level'))['level__min']
 
-    queryset = property(mptt.TreeNodeChoiceField._get_queryset, _set_queryset)
+
+class ModifiedLevelTreeNodeChoiceField(ModifiedLevelMixin, mptt.TreeNodeChoiceField):
+    queryset = property(
+        mptt.TreeNodeChoiceField._get_queryset,
+        ModifiedLevelMixin._set_queryset)
+
+
+class ModifiedLevelTreeNodeMultipleChoiceField(ModifiedLevelMixin, mptt.TreeNodeMultipleChoiceField):
+    queryset = property(
+        mptt.TreeNodeMultipleChoiceField._get_queryset,
+        ModifiedLevelMixin._set_queryset)
