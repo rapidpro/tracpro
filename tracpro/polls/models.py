@@ -48,17 +48,6 @@ class Window(Enum):
             return since, now
 
 
-class AnswerCache(Enum):
-    word_counts = 1
-    category_counts = 2
-    range_counts = 3
-    average = 4
-
-
-ANSWER_CACHE_KEY = 'pollrun:%d:question:%d:%s:%d'
-ANSWER_CACHE_TTL = 60 * 60 * 24 * 7  # 1 week
-
-
 @python_2_unicode_compatible
 class Poll(models.Model):
     """
@@ -66,11 +55,14 @@ class Poll(models.Model):
     """
     flow_uuid = models.CharField(max_length=36, unique=True)
 
-    org = models.ForeignKey('orgs.Org', verbose_name=_("Organization"), related_name='polls')
+    org = models.ForeignKey(
+        'orgs.Org', verbose_name=_("Organization"), related_name='polls')
 
-    name = models.CharField(max_length=64, verbose_name=_("Name"))  # taken from flow name
+    name = models.CharField(
+        max_length=64, verbose_name=_("Name"))  # taken from flow name
 
-    is_active = models.BooleanField(default=True, help_text="Whether this item is active")
+    is_active = models.BooleanField(
+        default=True, help_text=_("Whether this item is active"))
 
     def __str__(self):
         return self.name
@@ -85,7 +77,8 @@ class Poll(models.Model):
         org.polls.exclude(flow_uuid=flow_uuids).update(is_active=False)
 
         # fetch flow details
-        flows_by_uuid = {flow.uuid: flow for flow in org.get_temba_client().get_flows(uuids=flow_uuids)}
+        temba_flows = org.get_temba_client().get_flows(uuids=flow_uuids)
+        flows_by_uuid = {flow.uuid: flow for flow in temba_flows}
 
         for flow_uuid in flow_uuids:
             flow = flows_by_uuid[flow_uuid]
@@ -114,7 +107,9 @@ class Poll(models.Model):
                 question.is_active = True
                 question.save()
             else:
-                Question.create(self, ruleset.label, ruleset.response_type, order, ruleset.uuid)
+                Question.create(
+                    self, ruleset.label, ruleset.response_type, order,
+                    ruleset.uuid)
             order += 1
 
     @classmethod
@@ -124,8 +119,8 @@ class Poll(models.Model):
     def get_questions(self):
         return self.questions.filter(is_active=True).order_by('order')
 
-    def get_pollruns(self, region=None):
-        return PollRun.get_all(self.org, region).filter(poll=self)
+    def get_pollruns(self, region=None, include_subregions=True):
+        return PollRun.objects.get_all(region, include_subregions).filter(poll=self)
 
 
 class Question(models.Model):
@@ -159,10 +154,98 @@ class Question(models.Model):
 
     @classmethod
     def create(cls, poll, text, _type, order, ruleset_uuid):
-        return cls.objects.create(poll=poll, text=text, type=_type, order=order, ruleset_uuid=ruleset_uuid)
+        return cls.objects.create(
+            poll=poll, text=text, type=_type, order=order,
+            ruleset_uuid=ruleset_uuid)
 
     def __str__(self):
         return self.text
+
+
+class PollRunQuerySet(models.QuerySet):
+
+    def active(self):
+        """Return all active PollRuns."""
+        return self.filter(poll__is_active=True)
+
+    def by_region(self, region, include_subregions=True):
+        """Return all PollRuns for the region."""
+        if not region:
+            return self.all()
+
+        q = Q(region=region)
+
+        # Include PollRuns that include this region as a sub-region.
+        q |= Q(region__in=region.get_ancestors(),
+               pollrun_type=PollRun.TYPE_PROPAGATED)
+
+        # Include poll runs that weren't sent to a particular region.
+        q |= Q(region=None)
+
+        # Include PollRuns that were sent to the region's sub-regions.
+        if include_subregions:
+            q |= Q(region__in=region.get_descendants())
+
+        return self.filter(q)
+
+
+class PollRunManager(models.Manager.from_queryset(PollRunQuerySet)):
+
+    def create(self, poll, region, do_start=True, **kwargs):
+        if region and poll.org != region.org:
+            raise ValueError("Region org must match poll org.")
+        pollrun = super(PollRunManager, self).create(poll=poll, region=region, **kwargs)
+        if do_start:
+            pollrun_start.delay(pollrun.pk)
+        return pollrun
+
+    def create_regional(self, region, **kwargs):
+        """Create a poll run for a single region."""
+        kwargs['pollrun_type'] = PollRun.TYPE_REGIONAL
+        return self.create(region=region, **kwargs)
+
+    def create_propagated(self, region, **kwargs):
+        """Create a poll run for a region and its sub-regions."""
+        kwargs['pollrun_type'] = PollRun.TYPE_PROPAGATED
+        return self.create(region=region, **kwargs)
+
+    def get_or_create_universal(self, poll, for_date, **kwargs):
+        """Create a poll run that is for all regions."""
+        # Get the requested date in the org timezone
+        for_date = for_date or timezone.now()
+        org_timezone = pytz.timezone(poll.org.timezone)
+        for_local_date = for_date.astimezone(org_timezone).date()
+
+        # look for a non-regional pollrun on that date
+        sql = ('SELECT * FROM polls_pollrun WHERE poll_id = %s AND '
+               'region_id IS NULL AND DATE(conducted_on AT TIME ZONE %s) = %s')
+        params = [poll.pk, org_timezone.zone, for_local_date]
+        existing = list(PollRun.objects.raw(sql, params))
+        if existing:
+            return existing[0]
+
+        kwargs['pollrun_type'] = PollRun.TYPE_UNIVERSAL
+        kwargs['conducted_on'] = for_date
+        return self.create(**kwargs)
+
+    def get_all(self, region, include_subregions=True):
+        """
+        Get all active PollRuns for the region, plus sub-regions if
+        specified.
+        """
+        qs = self.get_queryset().active().select_related('poll', 'region')
+        qs = qs.by_region(region, include_subregions)
+        return qs
+
+
+class AnswerCache(Enum):
+    word_counts = 1
+    category_counts = 2
+    range_counts = 3
+    average = 4
+
+
+ANSWER_CACHE_TTL = 60 * 60 * 24 * 7  # 1 week
 
 
 @python_2_unicode_compatible
@@ -183,172 +266,172 @@ class PollRun(models.Model):
 
     poll = models.ForeignKey('polls.Poll', related_name='pollruns')
 
-    regions = models.ManyToManyField(
-        'groups.Region', blank=True,
-        help_text=_("Regions where the poll was conducted."))
+    region = models.ForeignKey(
+        'groups.Region', blank=True, null=True,
+        help_text=_("Region where the poll was conducted."))
 
-    conducted_on = models.DateTimeField(help_text=_("When the poll was conducted"))
+    conducted_on = models.DateTimeField(
+        help_text=_("When the poll was conducted"), default=timezone.now)
 
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, null=True, related_name="pollruns_created")
 
+    objects = PollRunManager()
+
     def __str__(self):
-        return "%s (%s)" % (self.poll.name, self.conducted_on.strftime(settings.SITE_DATE_FORMAT))
+        return "{poll} ({when})".format(
+            poll=self.poll.name,
+            when=self.conducted_on.strftime(settings.SITE_DATE_FORMAT),
+        )
 
-    @classmethod
-    def create_regional(cls, user, poll, region, conducted_on, do_start=False):
-        pollrun = cls.objects.create(poll=poll, region=region, conducted_on=conducted_on, created_by=user)
+    def _answer_cache_key(self, question, item, regions):
+        ANSWER_CACHE_KEY = ('pollrun:{pollrun_id}:question:{question_id}'
+                            ':{item_name}:{region_id}')
+        if regions:
+            region_id = '_'.join(str(r.pk) for r in regions)
+        else:
+            region_id = str(0)
+        return ANSWER_CACHE_KEY.format(
+            pollrun_id=self.pk,
+            question_id=question.pk,
+            item_name=item.name,
+            region_id=region_id,
+        )
 
-        if do_start:
-            pollrun_start.delay(pollrun.pk)
-        return pollrun
+    def as_json(self, region=None, include_subregions=True):
+        return {
+            'id': self.pk,
+            'poll': {
+                'id': self.poll.pk,
+                'name': self.poll.name,
+            },
+            'conducted_on': self.conducted_on,
+            'region': {'id': self.region.pk, 'name': self.region.name} if self.region else None,
+            'responses': self.get_response_counts(region, include_subregions),
+        }
 
-    @classmethod
-    def get_or_create_non_regional(cls, org, poll, for_date=None):
+    def clear_answer_cache(self, question, regions):
         """
-        Gets or creates an pollrun for a non-regional poll started in RapidPro
-        """
-        if not for_date:
-            for_date = timezone.now()
-
-        # get the requested date in the org timezone
-        org_timezone = pytz.timezone(org.timezone)
-        for_local_date = for_date.astimezone(org_timezone).date()
-
-        # look for a non-regional pollrun on that date
-        sql = ('SELECT * FROM polls_pollrun WHERE poll_id = %s AND '
-               'region_id IS NULL AND DATE(conducted_on AT TIME ZONE %s) = %s')
-        params = [poll.pk, org_timezone.zone, for_local_date]
-        existing = list(PollRun.objects.raw(sql, params))
-
-        if existing:
-            return existing[0]
-
-        return cls.objects.create(poll=poll, conducted_on=for_date)
-
-    @classmethod
-    def get_all(cls, org, region=None):
-        pollruns = cls.objects.filter(poll__org=org, poll__is_active=True)
-
-        if region:
-            # any pollrun to this region or any non-regional pollrun
-            pollruns = pollruns.filter(Q(region=None) | Q(region=region))
-
-        return pollruns.select_related('poll', 'region')
-
-    def get_responses(self, region=None, include_empty=True):
-        if region and self.region_id and region.pk != self.region_id:
-            raise ValueError("Request for responses in region where poll wasn't conducted")
-
-        responses = self.responses.filter(is_active=True)
-        if region:
-            responses = responses.filter(contact__region=region)
-        if not include_empty:
-            responses = responses.exclude(status=Response.STATUS_EMPTY)
-
-        return responses.select_related('contact')
-
-    def get_response_counts(self, region=None):
-        status_counts = self.get_responses(region).values('status').annotate(count=Count('status'))
-
-        base = {Response.STATUS_EMPTY: 0, Response.STATUS_PARTIAL: 0, Response.STATUS_COMPLETE: 0}
-        base.update({sc['status']: sc['count'] for sc in status_counts})
-        return base
-
-    def is_last_for_region(self, region):
-        """
-        Whether or not this is the last pollrun of the poll conducted in the given region. Includes non-regional polls.
-        given region. Includes non-regional polls.
-        """
-        # did this pollrun cover the given region
-        if self.region_id and self.region_id != region.pk:
-            return False
-
-        # did any newer pollruns cover the given region
-        newer_pollruns = PollRun.objects.filter(poll=self.poll, pk__gt=self.pk)
-        newer_pollruns = newer_pollruns.filter(Q(region=None) | Q(region=region))
-        return not newer_pollruns.exists()
-
-    def get_answers_to(self, question, region=None):
-        """
-        Gets all answers from active responses for this pollrun, to the given question
-        """
-        qs = Answer.objects.filter(response__pollrun=self, response__is_active=True, question=question)
-        if region:
-            qs = qs.filter(response__contact__region=region)
-
-        return qs.select_related('response__contact')
-
-    def get_answer_word_counts(self, question, region=None):
-        """
-        Gets word counts for answers to the given question, sorted from most frequent, e.g.
-            [("zombies", 2), ("floods", 1)]
-        """
-        def calculate():
-            return Answer.word_counts(self.get_answers_to(question, region))
-
-        cache_key = self._answer_cache_key(question, AnswerCache.word_counts, region)
-        return get_cacheable(cache_key, ANSWER_CACHE_TTL, calculate)
-
-    def get_answer_category_counts(self, question, region=None):
-        """
-        Gets category counts for answers to the given question, sorted from most frequent, e.g.
-            [("Rainy", 2), ("Sunny", 1)]
-        """
-        def calculate():
-            return Answer.category_counts(self.get_answers_to(question, region))
-
-        cache_key = self._answer_cache_key(question, AnswerCache.category_counts, region)
-        return get_cacheable(cache_key, ANSWER_CACHE_TTL, calculate)
-
-    def get_answer_auto_range_counts(self, question, region=None):
-        """
-        Gets automatic numeric range counts for answers to the given question, sorted from most frequent, e.g.
-            [("0 - 9", 2), ("10 - 19", 1)]
-        """
-        def calculate():
-            return Answer.auto_range_counts(self.get_answers_to(question, region)).items()
-
-        cache_key = self._answer_cache_key(question, AnswerCache.range_counts, region)
-        return get_cacheable(cache_key, ANSWER_CACHE_TTL, calculate)
-
-    def get_answer_numeric_average(self, question, region=None):
-        """
-        Gets the numeric average of answers to the given question
-        """
-        def calculate():
-            return Answer.numeric_average(self.get_answers_to(question, region))
-
-        cache_key = self._answer_cache_key(question, AnswerCache.average, region)
-        return get_cacheable(cache_key, ANSWER_CACHE_TTL, calculate)
-
-    def clear_answer_cache(self, question, region):
-        """
-        Clears all answer cache for the given question for the given region and the non-regional (0) cache
+        Clears all answer cache for the given question for the given region
+        and the non-regional (0) cache
         """
         for item in AnswerCache.__members__.values():
             # always clear the non-regional cache
             cache.delete(self._answer_cache_key(question, item, None))
-            if region:
-                cache.delete(self._answer_cache_key(question, item, region))
+            if regions:
+                cache.delete(self._answer_cache_key(question, item, regions))
 
-    def _answer_cache_key(self, question, item, region):
-        region_id = region.pk if region else 0
-        return ANSWER_CACHE_KEY % (self.pk, question.pk, item.name, region_id)
+    def covers_region(self, region, include_subregions):
+        """Return whether this PollRun is related to all given regions."""
+        if not region or region.pk == self.region_id:
+            # Shortcut to minimize more expensive queries later.
+            return True
 
-    def as_json(self, region=None):
-        region_as_json = dict(id=self.region.pk, name=self.region.name) if self.region else None
+        if self.pollrun_type == self.TYPE_UNIVERSAL:
+            return True
+        if self.pollrun_type == self.TYPE_REGIONAL:
+            if include_subregions:
+                return region in self.region.get_ancestors()
+            else:  # pragma: nocover
+                return region == self.region
+        if self.pollrun_type == self.TYPE_PROPAGATED:
+            if include_subregions:
+                return region in self.region.get_family()
+            else:
+                return region in self.region.get_descendants()
 
-        return dict(id=self.pk,
-                    poll=dict(id=self.poll.pk, name=self.poll.name),
-                    conducted_on=self.conducted_on,
-                    region=region_as_json,
-                    responses=self.get_response_counts(region))
+    def get_answers_to(self, question, regions=None):
+        """Return all answers from active responses to the question."""
+        qs = Answer.objects.filter(
+            response__pollrun=self,
+            response__is_active=True,
+            question=question,
+        )
+        if regions:
+            qs = qs.filter(response__contact__region__in=regions)
+        return qs.select_related('response__contact')
+
+    def get_answer_auto_range_counts(self, question, regions=None):
+        """
+        Return automatic numeric range counts for answers to the question,
+        most frequent first.
+
+        Example: [("0 - 9", 2), ("10 - 19", 1)]
+        """
+        def calculate():
+            return self.get_answers_to(question, regions).auto_range_counts().items()
+        cache_key = self._answer_cache_key(question, AnswerCache.range_counts, regions)
+        return get_cacheable(cache_key, ANSWER_CACHE_TTL, calculate)
+
+    def get_answer_numeric_average(self, question, regions=None):
+        """Return the numeric average of answers to the question."""
+        def calculate():
+            return self.get_answers_to(question, regions).numeric_average()
+        cache_key = self._answer_cache_key(question, AnswerCache.average, regions)
+        return get_cacheable(cache_key, ANSWER_CACHE_TTL, calculate)
+
+    def get_answer_category_counts(self, question, regions=None):
+        """Return category counts for answers to the question, most frequent first.
+
+        Example: [("Rainy", 2), ("Sunny", 1)]
+        """
+        def calculate():
+            return self.get_answers_to(question, regions).category_counts()
+        cache_key = self._answer_cache_key(question, AnswerCache.category_counts, regions)
+        return get_cacheable(cache_key, ANSWER_CACHE_TTL, calculate)
+
+    def get_answer_word_counts(self, question, regions=None):
+        """Return word counts for answers to the question, most frequent first.
+
+        Example: [("zombies", 2), ("floods", 1)]
+        """
+        def calculate():
+            return self.get_answers_to(question, regions).word_counts()
+        cache_key = self._answer_cache_key(question, AnswerCache.word_counts, regions)
+        return get_cacheable(cache_key, ANSWER_CACHE_TTL, calculate)
+
+    def get_responses(self, region=None, include_subregions=True,
+                      include_empty=True):
+        """Return all PollRun responses for this region and sub-regions."""
+        if not self.covers_region(region, include_subregions):
+            raise ValueError(
+                "Request for responses in region where poll wasn't conducted")
+        responses = self.responses.filter(is_active=True)
+        if region:
+            if include_subregions:
+                regions = region.get_descendants(include_self=True)
+                responses = responses.filter(contact__region__in=regions)
+            else:
+                responses = responses.filter(contact__region=region)
+        if not include_empty:
+            responses = responses.exclude(status=Response.STATUS_EMPTY)
+        return responses.select_related('contact')
+
+    def get_response_counts(self, region=None, include_subregions=True):
+        """Returns PollRun response counts for this region and sub-regions."""
+        status_counts = self.get_responses(region, include_subregions)
+        status_counts = status_counts.values('status')
+        status_counts = status_counts.annotate(count=Count('status'))
+        results = {status: 0 for status in Response.STATUS_CHOICES.keys()}
+        results.update({sc['status']: sc['count'] for sc in status_counts})
+        return results
+
+    def is_last_for_region(self, region):
+        """Return whether this was the last PollRun conducted in the region.
+
+        Includes universal PollRuns.
+        """
+        if not self.covers_region(region, include_subregions=False):
+            return False
+        newer_pollruns = PollRun.objects.filter(
+            poll=self.poll,
+            conducted_on__gt=self.conducted_on,
+        ).by_region(region, include_subregions=False)
+        return not newer_pollruns.exists()
 
 
 class Response(models.Model):
     """Corresponds to RapidPro FlowRun."""
-
     STATUS_EMPTY = 'E'
     STATUS_PARTIAL = 'P'
     STATUS_COMPLETE = 'C'
@@ -381,7 +464,8 @@ class Response(models.Model):
     @classmethod
     def create_empty(cls, org, pollrun, run):
         """
-        Creates an empty response from a run. Used to start or restart a contact in an existing pollrun.
+        Creates an empty response from a run. Used to start or restart a
+        contact in an existing pollrun.
         """
         contact = Contact.get_or_fetch(org, uuid=run.contact)
 
@@ -396,10 +480,12 @@ class Response(models.Model):
     @classmethod
     def from_run(cls, org, run, poll=None):
         """
-        Gets or creates a response from a flow run. If response is not up-to-date with provided run, then it is
-        updated. If the run doesn't match with an existing poll pollrun, it's assumed to be non-regional.
+        Gets or creates a response from a flow run. If response is not
+        up-to-date with provided run, then it is updated. If the run doesn't
+        match with an existing poll pollrun, it's assumed to be non-regional.
         """
-        response = Response.objects.filter(pollrun__poll__org=org, flow_run_id=run.id).select_related('pollrun').first()
+        response = Response.objects.filter(pollrun__poll__org=org, flow_run_id=run.id)
+        response = response.select_related('pollrun').first()
         run_updated_on = cls.get_run_updated_on(run)
 
         # if there is an up-to-date existing response for this run, return it
@@ -427,30 +513,38 @@ class Response(models.Model):
             response.status = status
             response.save(update_fields=('updated_on', 'status'))
         else:
-            # if we don't have an existing response, then this poll started in RapidPro and is non-regional
-            pollrun = PollRun.get_or_create_non_regional(org, poll, for_date=run.created_on)
+            # if we don't have an existing response, then this poll started in
+            # RapidPro and is non-regional
+            pollrun = PollRun.objects.get_or_create_universal(
+                poll=poll,
+                for_date=run.created_on,
+            )
 
             # if contact has an older response for this pollrun, retire it
             Response.objects.filter(pollrun=pollrun, contact=contact).update(is_active=False)
 
-            response = Response.objects.create(flow_run_id=run.id, pollrun=pollrun, contact=contact,
-                                               created_on=run.created_on, updated_on=run_updated_on,
-                                               status=status)
+            response = Response.objects.create(
+                flow_run_id=run.id, pollrun=pollrun, contact=contact,
+                created_on=run.created_on, updated_on=run_updated_on,
+                status=status)
             response.is_new = True
 
         # organize values by ruleset UUID
         questions = poll.get_questions()
         valuesets_by_ruleset = {valueset.node: valueset for valueset in run.values}
-        valuesets_by_question = {q: valuesets_by_ruleset.get(q.ruleset_uuid, None) for q in questions}
+        valuesets_by_question = {q: valuesets_by_ruleset.get(q.ruleset_uuid, None)
+                                 for q in questions}
 
         # convert valuesets to answers
         for question, valueset in valuesets_by_question.iteritems():
             if valueset:
-                Answer.create(response, question, valueset.value, valueset.category, valueset.time)
+                Answer.create(
+                    response, question, valueset.value, valueset.category,
+                    valueset.time)
 
         # clear answer caches for this contact's region
         for question in questions:
-            response.pollrun.clear_answer_cache(question, contact.region)
+            response.pollrun.clear_answer_cache(question, [contact.region])
 
         return response
 
@@ -465,60 +559,35 @@ class Response(models.Model):
         return last_value_on if last_value_on else run.created_on
 
 
-class Answer(models.Model):
-    """
-    Corresponds to RapidPro FlowStep
-    """
-    response = models.ForeignKey('polls.Response', related_name='answers')
+class AnswerQuerySet(models.QuerySet):
 
-    question = models.ForeignKey('polls.Question', related_name='answers')
-
-    value = models.CharField(max_length=640, null=True)
-
-    category = models.CharField(max_length=36, null=True)
-
-    submitted_on = models.DateTimeField(help_text=_("When this answer was submitted"))
-
-    @classmethod
-    def create(cls, response, question, value, category, submitted_on):
-        # category can be a string or a multi-language dict
-        if isinstance(category, dict):
-            if 'base' in category:
-                category = category['base']
-            else:
-                category = category.itervalues().next()
-
-        if category == 'All Responses':
-            category = None
-
-        return Answer.objects.create(response=response, question=question,
-                                     value=value, category=category, submitted_on=submitted_on)
-
-    @classmethod
-    def word_counts(cls, answers):
+    def word_counts(self):
         word_counts = defaultdict(int)
-        for answer in answers:
+        for answer in self:
             contact = answer.response.contact
             for w in extract_words(answer.value, contact.language):
                 word_counts[w] += 1
 
-        sorted_counts = sorted(word_counts.items(), key=operator.itemgetter(1), reverse=True)
+        sorted_counts = sorted(
+            word_counts.items(), key=operator.itemgetter(1), reverse=True)
         return sorted_counts[:50]  # only return top 50
 
-    @classmethod
-    def category_counts(cls, answers):
-        category_counts = Counter([answer.category for answer in answers if answer.category])
+    def category_counts(self):
+        category_counts = Counter([answer.category for answer in self
+                                   if answer.category])
         return sorted(category_counts.items(), key=operator.itemgetter(1), reverse=True)
 
-    @classmethod
-    def numeric_average(cls, answers):
+    def numeric_average(self):
         """
-        Parses decimals out of a set of answers and returns the average. Returns zero if no valid numbers are found.
+        Parses decimals out of a set of answers and returns the average.
+        Returns zero if no valid numbers are found.
         """
         total = Decimal(0)
         count = 0
-        for answer in answers:
-            if answer.category is not None:  # ignore answers with no category as they weren't in the required range
+        for answer in self:
+            if answer.category is not None:
+                # ignore answers with no category as they weren't in the
+                # required range
                 try:
                     value = Decimal(answer.value)
                     total += value
@@ -528,11 +597,11 @@ class Answer(models.Model):
 
         return float(total / count) if count else 0
 
-    @classmethod
-    def numeric_sum_group_by_date(cls, answers):
+    def numeric_sum_group_by_date(self):
         """
-        Parses decimals out of a set of answers and returns the sum for each distinct date.
-        Returns:
+        Parses decimals out of a set of answers and returns the sum for each
+        distinct date.  Returns:
+
         answer_sums: list of sum of each value on each date ie. [33, 40, ...]
         dates: list of distinct dates ie. [datetime.date(2015, 8, 12),...]
         """
@@ -540,9 +609,11 @@ class Answer(models.Model):
         dates = []
         total = Decimal(0)
         answer_date = ""
-        answers = answers.order_by('submitted_on')
+        answers = self.order_by('submitted_on')
         for answer in answers:
-            if answer.category is not None:  # ignore answers with no category as they weren't in the required range
+            if answer.category is not None:
+                # ignore answers with no category as they weren't in the
+                # required range
                 if answer_date != answer.submitted_on.date():
                     # Append the sum total value for each date
                     if total:
@@ -560,34 +631,37 @@ class Answer(models.Model):
             dates.append(answer_date)
         return answer_sums, dates
 
-    @classmethod
-    def numeric_sum_all_dates(cls, answers):
+    def numeric_sum_all_dates(self):
         """
-        Parses decimals out of a set of answers and returns the sum for all answers,
-        regardless of dates.
+        Parses decimals out of a set of answers and returns the sum for all
+        answers, regardless of dates.
         Returns:
         total: total sum of all answer values
         """
         total = Decimal(0)
-        for answer in answers:
-            if answer.category is not None:  # ignore answers with no category as they weren't in the required range
+        for answer in self:
+            if answer.category is not None:
+                # ignore answers with no category as they weren't in the
+                # required range
                 try:
                     total += Decimal(answer.value)
                 except (TypeError, ValueError, InvalidOperation):
                     continue
         return total
 
-    @classmethod
-    def auto_range_counts(cls, answers):
+    def auto_range_counts(self):
         """
-        Creates automatic range "categories" for a given set of answers and returns the count of values in each range
+        Creates automatic range "categories" for a given set of answers and
+        returns the count of values in each range
         """
         # convert to integers and find minimum and maximum
         values = []
         value_min = None
         value_max = None
-        for answer in answers:
-            if answer.category is not None:  # ignore answers with no category as they weren't in the required range
+        for answer in self:
+            if answer.category is not None:
+                # ignore answers with no category as they weren't in the
+                # required range
                 try:
                     value = int(Decimal(answer.value))
                     if value < value_min or value_min is None:
@@ -602,7 +676,8 @@ class Answer(models.Model):
             return {}
 
         # pick best fitting categories
-        category_min, category_max, category_step = auto_range_categories(value_min, value_max)
+        category_min, category_max, category_step = auto_range_categories(
+            value_min, value_max)
 
         # create category labels and initialize counts
         category_counts = OrderedDict()
@@ -627,3 +702,36 @@ class Answer(models.Model):
             category_counts[label] += 1
 
         return category_counts
+
+
+class Answer(models.Model):
+    """Corresponds to RapidPro FlowStep."""
+
+    response = models.ForeignKey('polls.Response', related_name='answers')
+
+    question = models.ForeignKey('polls.Question', related_name='answers')
+
+    value = models.CharField(max_length=640, null=True)
+
+    category = models.CharField(max_length=36, null=True)
+
+    submitted_on = models.DateTimeField(
+        help_text=_("When this answer was submitted"))
+
+    objects = AnswerQuerySet.as_manager()
+
+    @classmethod
+    def create(cls, response, question, value, category, submitted_on):
+        # category can be a string or a multi-language dict
+        if isinstance(category, dict):
+            if 'base' in category:
+                category = category['base']
+            else:
+                category = category.itervalues().next()
+
+        if category == 'All Responses':
+            category = None
+
+        return Answer.objects.create(
+            response=response, question=question,
+            value=value, category=category, submitted_on=submitted_on)

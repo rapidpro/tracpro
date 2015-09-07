@@ -1,14 +1,20 @@
 from __future__ import absolute_import, unicode_literals
 
-from django.utils import timezone
-
 from celery.utils.log import get_task_logger
+
+from dash.orgs.models import Org
+from dash.utils import datetime_to_ms
+
 from djcelery_transactions import task
+
 from django_redis import get_redis_connection
+
 from temba.utils import parse_iso8601, format_iso8601
 
-from dash.utils import datetime_to_ms
-from dash.orgs.models import Org
+from django.utils import timezone
+
+from tracpro.contacts.models import Contact
+
 
 logger = get_task_logger(__name__)
 
@@ -86,13 +92,14 @@ def pollrun_start(pollrun_id):
     from tracpro.polls.models import PollRun, Response
 
     pollrun = PollRun.objects.select_related('poll', 'region').get(pk=pollrun_id)
-    if not pollrun.region:
+    if not pollrun.regions.exists():
         raise ValueError("Can't start non-regional poll")
 
     org = pollrun.poll.org
     client = org.get_temba_client()
 
-    contact_uuids = [c.uuid for c in pollrun.region.get_contacts()]
+    contacts = Contact.objects.filter(is_active=True, region__in=pollrun.regions.all())
+    contact_uuids = contacts.values_list('uuid', flat=True)
 
     runs = client.create_runs(pollrun.poll.flow_uuid, contact_uuids, restart_participants=True)
     for run in runs:
@@ -110,10 +117,10 @@ def pollrun_restart_participants(pollrun_id, contact_uuids):
     from tracpro.polls.models import PollRun, Response
 
     pollrun = PollRun.objects.select_related('poll').get(pk=pollrun_id)
-    if not pollrun.region:
+    if not pollrun.regions.exists():
         raise ValueError("Can't restart participants of a non-regional poll")
 
-    if not pollrun.is_last_for_region(pollrun.region):
+    if not pollrun.is_last_for_region(pollrun.region):  # FIXME
         raise ValueError("Can only restart last pollrun of poll for a region")
 
     org = pollrun.poll.org

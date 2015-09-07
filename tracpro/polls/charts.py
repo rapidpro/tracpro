@@ -25,22 +25,22 @@ class ChartJsonEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 
-def single_pollrun(pollrun, question, region):
+def single_pollrun(pollrun, question, regions):
     """Chart data for a single pollrun.
 
     Will be a word cloud for open-ended questions, and pie chart of categories
     for everything else.
     """
     if question.type == Question.TYPE_OPEN:
-        word_counts = pollrun.get_answer_word_counts(question, region)
+        word_counts = pollrun.get_answer_word_counts(question, regions)
         chart_type = 'word'
         chart_data = word_cloud_data(word_counts)
     elif question.type in (Question.TYPE_MULTIPLE_CHOICE, Question.TYPE_KEYPAD, Question.TYPE_MENU):
-        category_counts = pollrun.get_answer_category_counts(question, region)
+        category_counts = pollrun.get_answer_category_counts(question, regions)
         chart_type = 'pie'
         chart_data = pie_chart_data(category_counts)
     elif question.type == Question.TYPE_NUMERIC:
-        range_counts = pollrun.get_answer_auto_range_counts(question, region)
+        range_counts = pollrun.get_answer_auto_range_counts(question, regions)
         chart_type = 'column'
         chart_data = column_chart_data(range_counts)
     else:
@@ -50,14 +50,14 @@ def single_pollrun(pollrun, question, region):
     return chart_type, render_data(chart_data)
 
 
-def multiple_pollruns(pollruns, question, region):
+def multiple_pollruns(pollruns, question, regions):
     """Chart data for multiple pollruns of a poll."""
 
     if question.type == Question.TYPE_OPEN:
         overall_counts = defaultdict(int)
 
         for pollrun in pollruns:
-            word_counts = pollrun.get_answer_word_counts(question, region)
+            word_counts = pollrun.get_answer_word_counts(question, regions)
             for word, count in word_counts:
                 overall_counts[word] += count
 
@@ -72,7 +72,7 @@ def multiple_pollruns(pollruns, question, region):
         # fetch category counts for all pollruns, keeping track of all found
         # categories
         for pollrun in pollruns:
-            category_counts = pollrun.get_answer_category_counts(question, region)
+            category_counts = pollrun.get_answer_category_counts(question, regions)
             as_dict = dict(category_counts)
             counts_by_pollrun[pollrun] = as_dict
 
@@ -94,7 +94,7 @@ def multiple_pollruns(pollruns, question, region):
         chart_type = 'time-line'
         chart_data = []
         for pollrun in pollruns:
-            average = pollrun.get_answer_numeric_average(question, region)
+            average = pollrun.get_answer_numeric_average(question, regions)
             chart_data.append((pollrun.conducted_on, average))
     else:
         chart_type = None

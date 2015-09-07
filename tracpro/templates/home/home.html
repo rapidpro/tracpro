@@ -1,16 +1,13 @@
 {% extends "smartmin/base.html" %}
-{% load smartmin i18n compress %}
 
-{% block pre-content %}
-
-{% endblock %}
+{% load compress %}
+{% load i18n %}
+{% load smartmin %}
 
 {% block content %}
-
   {% if not request.user_regions %}
     <div class='none'>
       {% trans "You don't have access to any regions. Contact your administrator." %}
-
     </div>
   {% else %}
     <div class='page-header'>
@@ -28,7 +25,6 @@
       </div>
       <h2>
         {% trans "Latest Polling" %}
-
       </h2>
     </div>
     <div class='row ng-cloak' ng-cloak='' style='margin-bottom: 1em' ng-controller='LatestPollRunsController'>
@@ -93,7 +89,6 @@
         <div class='loading' ng-if='loading'></div>
         <div class='none' ng-if='!loading && pollruns.length == 0'>
           {% trans "None" %}
-
         </div>
       </div>
     </div>
@@ -113,7 +108,7 @@
               <form id='start-poll-form' class='form-horizontal'>
                 {% csrf_token %}
                 <div class='form-group'>
-                  <label class='col-sm-2 control-label' for='start-poll'>
+                  <label class='col-sm-2 control-label' for='poll'>
                     {% trans "Poll" %}
                   </label>
                   <div class='col-sm-10'>
@@ -127,13 +122,25 @@
                   </div>
                 </div>
                 <div class='form-group'>
-                  <label class='col-sm-2 control-label'>
+                  <label class='col-sm-2 control-label' for="region">
                     {% trans "Region" %}
                   </label>
                   <div class='col-sm-10'>
-                    <input class='form-control' style='width: 100%' type='text' readonly='readonly' value='{{ request.region }}' />
+                    <input class='form-control' style='width: 100%'
+                           type='text' name="region"
+                           readonly='readonly' value='{{ request.region }}' />
                   </div>
                 </div>
+                {% if not request.region.is_leaf_node %}
+                  <div class="form-group">
+                    <div class="col-sm-10 col-sm-offset-2">
+                      <label for="propagate">
+                        <input type="checkbox" name="propagate" checked />
+                        {% trans "Propagate to sub-regions" %}
+                      </label>
+                    </div>
+                  </div>
+                {% endif %}
               </form>
             </div>
             <div class='modal-footer'>
@@ -142,7 +149,6 @@
               </button>
               <button class='btn btn-primary' type='button' onclick='onPollCreate()'>
                 {% trans "Start" %}
-
               </button>
             </div>
           </div>
@@ -240,17 +246,16 @@
           <div class='loading' ng-if='loading'></div>
           <div class='none' ng-if='!loading && groups.length == 0'>
             {% trans "None" %}
-
-
           </div>
         </div>
       </div>
     </div>
   {% endif %}
-{% endblock %}
+{% endblock content %}
 
 {% block extra-script %}
-<script type='text/javascript'>
+  {{ block.super }}
+  <script type='text/javascript'>
 // <![CDATA[
     function onPollCreate() {
       data = $('#start-poll-form').serialize();
@@ -259,20 +264,18 @@
         display_alert('success', 'Started new poll for contacts in {{ request.region }}')
       });
     }
-
 // ]]>
-</script>
-{% endblock %}
+  </script>
+{% endblock extra-script %}
+
 {% block extra-style %}
   {{ block.super }}
-<style type='text/css'>
+  <style type='text/css'>
 /*<![CDATA[*/
     .none {
       font-style: italic;
       text-align: center;
     }
-
-
 /*]]>*/
-</style>
-{% endblock %}
+  </style>
+{% endblock extra-style %}
