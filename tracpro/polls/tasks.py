@@ -13,6 +13,7 @@ from dash.orgs.models import Org
 logger = get_task_logger(__name__)
 
 FETCH_ALL_RUNS_LOCK = 'task:fetch_all_runs'
+
 LAST_FETCHED_RUN_TIME_KEY = 'org:%d:last_fetched_run_time'
 
 
@@ -63,7 +64,7 @@ def fetch_org_runs(org):
         for run in poll_runs:
             try:
                 Response.from_run(org, run, poll=poll)
-            except ValueError, e:
+            except ValueError as e:
                 logger.error("Unable to save run #%d due to error: %s" % (run.id, e.message))
                 continue
 

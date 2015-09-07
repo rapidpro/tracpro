@@ -65,7 +65,7 @@ class Command(BaseCommand):
             poll = polls_by_flow_uuids[run.flow]
             try:
                 response = Response.from_run(org, run, poll=poll)
-            except ValueError, e:
+            except ValueError as e:
                 self.stderr.write("Unable to save run #%d due to error: %s" % (run.id, e.message))
                 continue
 
