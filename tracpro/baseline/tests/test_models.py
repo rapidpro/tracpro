@@ -2,9 +2,7 @@ from datetime import datetime
 from dateutil import rrule
 
 from tracpro.test.cases import TracProDataTest
-from tracpro.polls.models import (
-    Answer, PollRun, Response, RESPONSE_COMPLETE
-)
+from tracpro.polls.models import Answer, PollRun, Response
 
 from ..models import BaselineTerm
 
@@ -44,7 +42,7 @@ class BaselineTermTest(TracProDataTest):
                 contact=contact,
                 created_on=self.start_date,
                 updated_on=self.start_date,
-                status=RESPONSE_COMPLETE,
+                status=Response.STATUS_COMPLETE,
                 is_active=True)
             # Create an Answer for each contact for Baseline
             Answer.objects.create(
@@ -74,7 +72,7 @@ class BaselineTermTest(TracProDataTest):
                     contact=contact,
                     created_on=follow_up_date,
                     updated_on=follow_up_date,
-                    status=RESPONSE_COMPLETE,
+                    status=Response.STATUS_COMPLETE,
                     is_active=True)
                 answer = self.contact_dict[contact]["answers"][date_iter]
                 # Create a randomized Answer for each contact for Follow Up

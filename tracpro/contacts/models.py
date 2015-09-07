@@ -157,11 +157,11 @@ class Contact(models.Model):
         return tuple(self.urn.split(':', 1))
 
     def get_responses(self, include_empty=True):
-        from tracpro.polls.models import RESPONSE_EMPTY
+        from tracpro.polls.models import Response
         qs = self.responses.filter(pollrun__poll__is_active=True, is_active=True)
         qs = qs.select_related('pollrun')
         if not include_empty:
-            qs = qs.exclude(status=RESPONSE_EMPTY)
+            qs = qs.exclude(status=Response.STATUS_EMPTY)
         return qs
 
     def release(self):

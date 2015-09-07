@@ -17,7 +17,7 @@ from smartmin.users.views import (
     SmartListView, SmartCreateView, SmartReadView, SmartUpdateView,
     SmartDeleteView, SmartCRUDL)
 
-from tracpro.polls.models import PollRun, RESPONSE_COMPLETE
+from tracpro.polls.models import PollRun, Response
 
 from .fields import URN_SCHEME_CHOICES
 from .forms import ContactForm
@@ -162,7 +162,7 @@ class ContactCRUDL(SmartCRUDL):
             if field.startswith('pollrun_'):
                 pollrun = self.derive_pollruns()[field]
                 has_completed = pollrun.responses.filter(
-                    contact=obj, status=RESPONSE_COMPLETE).exists()
+                    contact=obj, status=Response.STATUS_COMPLETE).exists()
                 return ('<span class="glyphicon glyphicon-%s"></span>' %
                         ('ok' if has_completed else 'time'))
 

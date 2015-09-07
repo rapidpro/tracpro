@@ -24,9 +24,7 @@ from tracpro.groups.models import Group
 from .charts import multiple_pollruns, single_pollrun
 from .forms import PollForm, FlowsForm
 from .models import (
-    Poll, Question, PollRun, Response, Window,
-    QUESTION_TYPE_OPEN, QUESTION_TYPE_RECORDING, RESPONSE_EMPTY,
-    RESPONSE_PARTIAL, RESPONSE_COMPLETE)
+    Poll, Question, PollRun, Response, Window)
 from .tasks import pollrun_restart_participants
 
 
@@ -125,14 +123,14 @@ class PollRunListMixin(object):
 
     def get_participants(self, obj):
             counts = get_obj_cacheable(obj, '_response_counts', lambda: obj.get_response_counts(self.request.region))
-            return counts[RESPONSE_EMPTY] + counts[RESPONSE_PARTIAL] + counts[RESPONSE_COMPLETE]
+            return counts[Response.STATUS_EMPTY] + counts[Response.STATUS_PARTIAL] + counts[Response.STATUS_COMPLETE]
 
     def get_responses(self, obj):
         counts = get_obj_cacheable(obj, '_response_counts', lambda: obj.get_response_counts(self.request.region))
-        if counts[RESPONSE_PARTIAL]:
-            return "%s (%s)" % (counts[RESPONSE_COMPLETE], counts[RESPONSE_PARTIAL])
+        if counts[Response.STATUS_PARTIAL]:
+            return "%s (%s)" % (counts[Response.STATUS_COMPLETE], counts[Response.STATUS_PARTIAL])
         else:
-            return counts[RESPONSE_COMPLETE]
+            return counts[Response.STATUS_COMPLETE]
 
     def get_region(self, obj):
         return obj.region if obj.region else _("All")
@@ -338,7 +336,7 @@ class ResponseCRUDL(SmartCRUDL):
                 question = self.derive_questions()[field]
                 answer = obj.answers.filter(question=question).first()
                 if answer:
-                    if question.type == QUESTION_TYPE_RECORDING:
+                    if question.type == Question.TYPE_RECORDING:
                         return '<a class="answer answer-audio" href="%s" data-answer-id="%d">Play</a>' % (
                             answer.value,
                             answer.pk,
@@ -369,14 +367,14 @@ class ResponseCRUDL(SmartCRUDL):
 
                 context['can_restart'] = can_restart
                 context['response_count'] = sum([
-                    counts[RESPONSE_EMPTY],
-                    counts[RESPONSE_PARTIAL],
-                    counts[RESPONSE_COMPLETE],
+                    counts[Response.STATUS_EMPTY],
+                    counts[Response.STATUS_PARTIAL],
+                    counts[Response.STATUS_COMPLETE],
                 ])
-                context['complete_response_count'] = counts[RESPONSE_COMPLETE]
+                context['complete_response_count'] = counts[Response.STATUS_COMPLETE]
                 context['incomplete_response_count'] = sum([
-                    counts[RESPONSE_EMPTY],
-                    counts[RESPONSE_PARTIAL],
+                    counts[Response.STATUS_EMPTY],
+                    counts[Response.STATUS_PARTIAL],
                 ])
             return context
 
@@ -446,7 +444,7 @@ class ResponseCRUDL(SmartCRUDL):
                 answer = answers_by_q_id.get(question.pk, None)
                 if not answer:
                     answer_display = ""
-                elif question.type == QUESTION_TYPE_OPEN:
+                elif question.type == Question.TYPE_OPEN:
                     answer_display = answer.value
                 else:
                     answer_display = answer.category

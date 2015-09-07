@@ -14,8 +14,7 @@ from django.utils import timezone
 from tracpro.test.cases import TracProDataTest
 
 from ..models import (
-    Answer, Poll, PollRun, Response, RESPONSE_COMPLETE,
-    RESPONSE_EMPTY, RESPONSE_PARTIAL)
+    Answer, Poll, PollRun, Response)
 
 
 class PollTest(TracProDataTest):
@@ -114,89 +113,89 @@ class PollRunTest(TracProDataTest):
         # add a incomplete response from contact in region #1
         response1 = Response.objects.create(
             flow_run_id=123, pollrun=pollrun, contact=self.contact1,
-            created_on=date1, updated_on=date1, status=RESPONSE_EMPTY)
+            created_on=date1, updated_on=date1, status=Response.STATUS_EMPTY)
 
         self.assertEqual(list(pollrun.get_responses()), [response1])
         self.assertDictEqual(pollrun.get_response_counts(), {
-            RESPONSE_EMPTY: 1,
-            RESPONSE_PARTIAL: 0,
-            RESPONSE_COMPLETE: 0,
+            Response.STATUS_EMPTY: 1,
+            Response.STATUS_PARTIAL: 0,
+            Response.STATUS_COMPLETE: 0,
         })
 
         self.assertEqual(list(pollrun.get_responses(self.region1)), [response1])
         self.assertDictEqual(pollrun.get_response_counts(self.region1), {
-            RESPONSE_EMPTY: 1,
-            RESPONSE_PARTIAL: 0,
-            RESPONSE_COMPLETE: 0,
+            Response.STATUS_EMPTY: 1,
+            Response.STATUS_PARTIAL: 0,
+            Response.STATUS_COMPLETE: 0,
         })
 
         self.assertEqual(list(pollrun.get_responses(self.region2)), [])
         self.assertDictEqual(pollrun.get_response_counts(self.region2), {
-            RESPONSE_EMPTY: 0,
-            RESPONSE_PARTIAL: 0,
-            RESPONSE_COMPLETE: 0,
+            Response.STATUS_EMPTY: 0,
+            Response.STATUS_PARTIAL: 0,
+            Response.STATUS_COMPLETE: 0,
         })
 
         # add a complete response from another contact in region #1
         response2 = Response.objects.create(
             flow_run_id=234, pollrun=pollrun, contact=self.contact2,
-            created_on=date1, updated_on=date1, status=RESPONSE_COMPLETE)
+            created_on=date1, updated_on=date1, status=Response.STATUS_COMPLETE)
 
         self.assertEqual(
             list(pollrun.get_responses().order_by('pk')),
             [response1, response2])
         self.assertDictEqual(pollrun.get_response_counts(), {
-            RESPONSE_EMPTY: 1,
-            RESPONSE_PARTIAL: 0,
-            RESPONSE_COMPLETE: 1,
+            Response.STATUS_EMPTY: 1,
+            Response.STATUS_PARTIAL: 0,
+            Response.STATUS_COMPLETE: 1,
         })
 
         self.assertEqual(
             list(pollrun.get_responses(self.region1).order_by('pk')),
             [response1, response2])
         self.assertDictEqual(pollrun.get_response_counts(self.region1), {
-            RESPONSE_EMPTY: 1,
-            RESPONSE_PARTIAL: 0,
-            RESPONSE_COMPLETE: 1,
+            Response.STATUS_EMPTY: 1,
+            Response.STATUS_PARTIAL: 0,
+            Response.STATUS_COMPLETE: 1,
         })
 
         self.assertEqual(list(pollrun.get_responses(self.region2)), [])
         self.assertDictEqual(pollrun.get_response_counts(self.region2), {
-            RESPONSE_EMPTY: 0,
-            RESPONSE_PARTIAL: 0,
-            RESPONSE_COMPLETE: 0,
+            Response.STATUS_EMPTY: 0,
+            Response.STATUS_PARTIAL: 0,
+            Response.STATUS_COMPLETE: 0,
         })
 
         # add a complete response from contact in different region
         response3 = Response.objects.create(
             flow_run_id=345, pollrun=pollrun, contact=self.contact4,
-            created_on=date1, updated_on=date1, status=RESPONSE_COMPLETE)
+            created_on=date1, updated_on=date1, status=Response.STATUS_COMPLETE)
 
         self.assertEqual(
             list(pollrun.get_responses().order_by('pk')),
             [response1, response2, response3])
         self.assertDictEqual(pollrun.get_response_counts(), {
-            RESPONSE_EMPTY: 1,
-            RESPONSE_PARTIAL: 0,
-            RESPONSE_COMPLETE: 2,
+            Response.STATUS_EMPTY: 1,
+            Response.STATUS_PARTIAL: 0,
+            Response.STATUS_COMPLETE: 2,
         })
 
         self.assertEqual(
             list(pollrun.get_responses(self.region1).order_by('pk')),
             [response1, response2])
         self.assertDictEqual(pollrun.get_response_counts(self.region1), {
-            RESPONSE_EMPTY: 1,
-            RESPONSE_PARTIAL: 0,
-            RESPONSE_COMPLETE: 1,
+            Response.STATUS_EMPTY: 1,
+            Response.STATUS_PARTIAL: 0,
+            Response.STATUS_COMPLETE: 1,
         })
 
         self.assertEqual(
             list(pollrun.get_responses(self.region2)),
             [response3])
         self.assertDictEqual(pollrun.get_response_counts(self.region2), {
-            RESPONSE_EMPTY: 0,
-            RESPONSE_PARTIAL: 0,
-            RESPONSE_COMPLETE: 1,
+            Response.STATUS_EMPTY: 0,
+            Response.STATUS_PARTIAL: 0,
+            Response.STATUS_COMPLETE: 1,
         })
 
     def test_is_last_for_region(self):
@@ -367,7 +366,7 @@ class ResponseTest(TracProDataTest):
         self.assertEqual(
             response1.updated_on,
             datetime.datetime(2015, 1, 2, 3, 4, 5, 6, pytz.UTC))
-        self.assertEqual(response1.status, RESPONSE_COMPLETE)
+        self.assertEqual(response1.status, Response.STATUS_COMPLETE)
         self.assertEqual(len(response1.answers.all()), 2)
         answers = list(response1.answers.order_by('question_id'))
         self.assertEqual(answers[0].question, self.poll1_question1)
@@ -411,7 +410,7 @@ class ResponseTest(TracProDataTest):
         self.assertEqual(
             response2.updated_on,
             datetime.datetime(2014, 1, 2, 3, 4, 5, 6, pytz.UTC))
-        self.assertEqual(response2.status, RESPONSE_PARTIAL)
+        self.assertEqual(response2.status, Response.STATUS_PARTIAL)
         self.assertEqual(len(response2.answers.all()), 1)
 
         # now completed
@@ -450,7 +449,7 @@ class ResponseTest(TracProDataTest):
         self.assertEqual(
             response3.updated_on,
             datetime.datetime(2015, 1, 2, 3, 4, 5, 6, pytz.UTC))
-        self.assertEqual(response3.status, RESPONSE_COMPLETE)
+        self.assertEqual(response3.status, Response.STATUS_COMPLETE)
         self.assertEqual(len(response3.answers.all()), 2)
 
         # an empty run
@@ -472,7 +471,7 @@ class ResponseTest(TracProDataTest):
         self.assertEqual(
             response4.updated_on,
             datetime.datetime(2013, 1, 2, 3, 4, 5, 6, pytz.UTC))
-        self.assertEqual(response4.status, RESPONSE_EMPTY)
+        self.assertEqual(response4.status, Response.STATUS_EMPTY)
         self.assertEqual(len(response4.answers.all()), 0)
 
         # new run for same contact should de-activate old response

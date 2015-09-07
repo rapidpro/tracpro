@@ -24,28 +24,9 @@ from .tasks import pollrun_start
 from .utils import auto_range_categories, extract_words
 
 
-QUESTION_TYPE_OPEN = 'O'
-QUESTION_TYPE_MULTIPLE_CHOICE = 'C'
-QUESTION_TYPE_NUMERIC = 'N'
-QUESTION_TYPE_MENU = 'M'
-QUESTION_TYPE_KEYPAD = 'K'
-QUESTION_TYPE_RECORDING = 'R'
-
-QUESTION_TYPE_CHOICES = ((QUESTION_TYPE_OPEN, _("Open Ended")),
-                         (QUESTION_TYPE_MULTIPLE_CHOICE, _("Multiple Choice")),
-                         (QUESTION_TYPE_NUMERIC, _("Numeric")),
-                         (QUESTION_TYPE_MENU, _("Menu")),
-                         (QUESTION_TYPE_KEYPAD, _("Keypad")),
-                         (QUESTION_TYPE_RECORDING, _("Recording")))
-
-
-UNIT_NAMES = {'d': 'days', 'm': 'months'}
-
-
 class Window(Enum):
-    """
-    Data window
-    """
+    """Data window."""
+
     this_month = (0, 'm', _("This month"))
     last_30_days = (30, 'd', _("Last 30 days"))
     last_60_days = (60, 'd', _("Last 60 days"))
@@ -59,20 +40,12 @@ class Window(Enum):
     def to_range(self, now=None):
         if not now:
             now = timezone.now()
-
         if self.ordinal == 0:
             return get_month_range(now)
         else:
+            UNIT_NAMES = {'d': 'days', 'm': 'months'}
             since = now - relativedelta(**{UNIT_NAMES[self.unit]: self.ordinal})
             return since, now
-
-
-RESPONSE_EMPTY = 'E'
-RESPONSE_PARTIAL = 'P'
-RESPONSE_COMPLETE = 'C'
-RESPONSE_STATUS_CHOICES = ((RESPONSE_EMPTY, _("Empty")),
-                           (RESPONSE_PARTIAL, _("Partial")),
-                           (RESPONSE_COMPLETE, _("Complete")))
 
 
 class AnswerCache(Enum):
@@ -156,16 +129,29 @@ class Poll(models.Model):
 
 
 class Question(models.Model):
-    """
-    Corresponds to RapidPro RuleSet
-    """
+    """Corresponds to RapidPro RuleSet."""
+    TYPE_OPEN = 'O'
+    TYPE_MULTIPLE_CHOICE = 'C'
+    TYPE_NUMERIC = 'N'
+    TYPE_MENU = 'M'
+    TYPE_KEYPAD = 'K'
+    TYPE_RECORDING = 'R'
+    TYPE_CHOICES = {
+        TYPE_OPEN: _("Open Ended"),
+        TYPE_MULTIPLE_CHOICE: _("Multiple Choice"),
+        TYPE_NUMERIC: _("Numeric"),
+        TYPE_MENU: _("Menu"),
+        TYPE_KEYPAD: _("Keypad"),
+        TYPE_RECORDING: _("Recording"),
+    }
+
     ruleset_uuid = models.CharField(max_length=36, unique=True)
 
     poll = models.ForeignKey('polls.Poll', related_name='questions')
 
     text = models.CharField(max_length=64)
 
-    type = models.CharField(max_length=1, choices=QUESTION_TYPE_CHOICES)
+    type = models.CharField(max_length=1, choices=TYPE_CHOICES.items())
 
     order = models.IntegerField()
 
@@ -258,20 +244,21 @@ class PollRun(models.Model):
         if region:
             responses = responses.filter(contact__region=region)
         if not include_empty:
-            responses = responses.exclude(status=RESPONSE_EMPTY)
+            responses = responses.exclude(status=Response.STATUS_EMPTY)
 
         return responses.select_related('contact')
 
     def get_response_counts(self, region=None):
         status_counts = self.get_responses(region).values('status').annotate(count=Count('status'))
 
-        base = {RESPONSE_EMPTY: 0, RESPONSE_PARTIAL: 0, RESPONSE_COMPLETE: 0}
+        base = {Response.STATUS_EMPTY: 0, Response.STATUS_PARTIAL: 0, Response.STATUS_COMPLETE: 0}
         base.update({sc['status']: sc['count'] for sc in status_counts})
         return base
 
     def is_last_for_region(self, region):
         """
         Whether or not this is the last pollrun of the poll conducted in the given region. Includes non-regional polls.
+        given region. Includes non-regional polls.
         """
         # did this pollrun cover the given region
         if self.region_id and self.region_id != region.pk:
@@ -360,23 +347,36 @@ class PollRun(models.Model):
 
 
 class Response(models.Model):
-    """
-    Corresponds to RapidPro FlowRun
-    """
+    """Corresponds to RapidPro FlowRun."""
+
+    STATUS_EMPTY = 'E'
+    STATUS_PARTIAL = 'P'
+    STATUS_COMPLETE = 'C'
+    STATUS_CHOICES = {
+        STATUS_EMPTY: _("Empty"),
+        STATUS_PARTIAL: _("Partial"),
+        STATUS_COMPLETE: _("Complete"),
+    }
+
     flow_run_id = models.IntegerField(unique=True, null=True)
 
     pollrun = models.ForeignKey('polls.PollRun', null=True, related_name='responses')
 
     contact = models.ForeignKey('contacts.Contact', related_name='responses')
 
-    created_on = models.DateTimeField(help_text=_("When this response was created"))
+    created_on = models.DateTimeField(
+        help_text=_("When this response was created"))
 
-    updated_on = models.DateTimeField(help_text=_("When the last activity on this response was"))
+    updated_on = models.DateTimeField(
+        help_text=_("When the last activity on this response was"))
 
-    status = models.CharField(max_length=1, verbose_name=_("Status"), choices=RESPONSE_STATUS_CHOICES,
-                              help_text=_("Current status of this response"))
+    status = models.CharField(
+        max_length=1, verbose_name=_("Status"), choices=STATUS_CHOICES.items(),
+        help_text=_("Current status of this response"))
 
-    is_active = models.BooleanField(default=True, help_text="Whether this response is active")
+    is_active = models.BooleanField(
+        default=True,
+        help_text=_("Whether this response is active"))
 
     @classmethod
     def create_empty(cls, org, pollrun, run):
@@ -388,9 +388,10 @@ class Response(models.Model):
         # de-activate any existing responses for this contact
         pollrun.responses.filter(contact=contact).update(is_active=False)
 
-        return Response.objects.create(flow_run_id=run.id, pollrun=pollrun, contact=contact,
-                                       created_on=run.created_on, updated_on=run.created_on,
-                                       status=RESPONSE_EMPTY)
+        return Response.objects.create(
+            flow_run_id=run.id, pollrun=pollrun, contact=contact,
+            created_on=run.created_on, updated_on=run.created_on,
+            status=Response.STATUS_EMPTY)
 
     @classmethod
     def from_run(cls, org, run, poll=None):
@@ -412,11 +413,11 @@ class Response(models.Model):
 
         # categorize completeness
         if run.completed:
-            status = RESPONSE_COMPLETE
+            status = Response.STATUS_COMPLETE
         elif run.values:
-            status = RESPONSE_PARTIAL
+            status = Response.STATUS_PARTIAL
         else:
-            status = RESPONSE_EMPTY
+            status = Response.STATUS_EMPTY
 
         if response:
             # clear existing answers which will be replaced

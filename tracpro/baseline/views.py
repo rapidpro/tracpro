@@ -16,9 +16,7 @@ from smartmin.views import (
 )
 from smartmin.users.views import SmartFormView
 
-from tracpro.polls.models import (
-    Answer, PollRun, Response, RESPONSE_COMPLETE
-)
+from tracpro.polls.models import Answer, PollRun, Response
 
 from .models import BaselineTerm
 from .forms import BaselineTermForm, SpoofDataForm
@@ -133,7 +131,7 @@ class BaselineTermCRUDL(SmartCRUDL):
                     contact=contact,
                     created_on=baseline_datetime,
                     updated_on=baseline_datetime,
-                    status=RESPONSE_COMPLETE,
+                    status=Response.STATUS_COMPLETE,
                     is_active=True)
                 random_answer = random.randrange(baseline_minimum, baseline_maximum)
                 # Create a randomized Answer for each contact for Baseline
@@ -156,7 +154,7 @@ class BaselineTermCRUDL(SmartCRUDL):
                         contact=contact,
                         created_on=follow_up_datetime,
                         updated_on=follow_up_datetime,
-                        status=RESPONSE_COMPLETE,
+                        status=Response.STATUS_COMPLETE,
                         is_active=True)
                     random_answer = random.randrange(follow_up_minimum, follow_up_maximum)
                     # Create a randomized Answer for each contact for Follow Up

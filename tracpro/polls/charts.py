@@ -10,9 +10,7 @@ from dash.utils import datetime_to_ms
 from decimal import Decimal
 from django.utils.safestring import mark_safe
 
-from .models import (
-    QUESTION_TYPE_OPEN, QUESTION_TYPE_MULTIPLE_CHOICE, QUESTION_TYPE_NUMERIC,
-    QUESTION_TYPE_KEYPAD, QUESTION_TYPE_MENU)
+from .models import Question
 
 
 class ChartJsonEncoder(json.JSONEncoder):
@@ -32,15 +30,15 @@ def single_pollrun(pollrun, question, region):
     Chart data for a single pollrun. Will be a word cloud for open-ended questions, and pie chart of categories for
     everything else.
     """
-    if question.type == QUESTION_TYPE_OPEN:
+    if question.type == Question.TYPE_OPEN:
         word_counts = pollrun.get_answer_word_counts(question, region)
         chart_type = 'word'
         chart_data = word_cloud_data(word_counts)
-    elif question.type in (QUESTION_TYPE_MULTIPLE_CHOICE, QUESTION_TYPE_KEYPAD, QUESTION_TYPE_MENU):
+    elif question.type in (Question.TYPE_MULTIPLE_CHOICE, Question.TYPE_KEYPAD, Question.TYPE_MENU):
         category_counts = pollrun.get_answer_category_counts(question, region)
         chart_type = 'pie'
         chart_data = pie_chart_data(category_counts)
-    elif question.type == QUESTION_TYPE_NUMERIC:
+    elif question.type == Question.TYPE_NUMERIC:
         range_counts = pollrun.get_answer_auto_range_counts(question, region)
         chart_type = 'column'
         chart_data = column_chart_data(range_counts)
@@ -55,7 +53,7 @@ def multiple_pollruns(pollruns, question, region):
     """
     Chart data for multiple pollruns of a poll.
     """
-    if question.type == QUESTION_TYPE_OPEN:
+    if question.type == Question.TYPE_OPEN:
         overall_counts = defaultdict(int)
 
         for pollrun in pollruns:
@@ -66,7 +64,7 @@ def multiple_pollruns(pollruns, question, region):
         sorted_counts = sorted(overall_counts.items(), key=operator.itemgetter(1), reverse=True)
         chart_type = 'word'
         chart_data = word_cloud_data(sorted_counts[:50])
-    elif question.type == QUESTION_TYPE_MULTIPLE_CHOICE:
+    elif question.type == Question.TYPE_MULTIPLE_CHOICE:
         categories = set()
         counts_by_pollrun = OrderedDict()
 
@@ -89,7 +87,7 @@ def multiple_pollruns(pollruns, question, region):
 
         chart_type = 'time-area'
         chart_data = [{'name': cgi.escape(category), 'data': data} for category, data in category_series.iteritems()]
-    elif question.type == QUESTION_TYPE_NUMERIC:
+    elif question.type == Question.TYPE_NUMERIC:
         chart_type = 'time-line'
         chart_data = []
         for pollrun in pollruns:

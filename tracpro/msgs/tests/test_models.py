@@ -9,8 +9,7 @@ from temba.types import Broadcast
 
 from tracpro.msgs.models import (
     Message, COHORT_ALL, COHORT_RESPONDENTS, COHORT_NONRESPONDENTS)
-from tracpro.polls.models import (
-    PollRun, Response, RESPONSE_COMPLETE, RESPONSE_PARTIAL, RESPONSE_EMPTY)
+from tracpro.polls.models import PollRun, Response
 from tracpro.test.cases import TracProDataTest
 
 
@@ -32,13 +31,13 @@ class MessageTest(TracProDataTest):
 
         Response.objects.create(
             flow_run_id=123, pollrun=pollrun1, contact=self.contact1,
-            created_on=now, updated_on=now, status=RESPONSE_COMPLETE)
+            created_on=now, updated_on=now, status=Response.STATUS_COMPLETE)
         Response.objects.create(
             flow_run_id=234, pollrun=pollrun1, contact=self.contact2,
-            created_on=now, updated_on=now, status=RESPONSE_PARTIAL)
+            created_on=now, updated_on=now, status=Response.STATUS_PARTIAL)
         Response.objects.create(
             flow_run_id=345, pollrun=pollrun1, contact=self.contact4,
-            created_on=now, updated_on=now, status=RESPONSE_EMPTY)
+            created_on=now, updated_on=now, status=Response.STATUS_EMPTY)
 
         msg1 = Message.create(
             self.unicef, self.admin, "Test #1", pollrun1, COHORT_ALL, None)

@@ -46,30 +46,30 @@ class TestRegionMostActive(TracProDataTest):
         polls.Response.objects.create(
             flow_run_id=123, pollrun=pollrun, contact=self.contact1,
             created_on=five_days_ago, updated_on=five_days_ago,
-            status=polls.RESPONSE_EMPTY)
+            status=polls.Response.STATUS_EMPTY)
 
         # partial response not in last month for contact in region #2
         polls.Response.objects.create(
             flow_run_id=234, pollrun=pollrun, contact=self.contact4,
             created_on=five_weeks_ago, updated_on=five_weeks_ago,
-            status=polls.RESPONSE_PARTIAL)
+            status=polls.Response.STATUS_PARTIAL)
 
         # partial response in last month for contact in region #2
         polls.Response.objects.create(
             flow_run_id=345, pollrun=pollrun, contact=self.contact4,
             created_on=five_days_ago, updated_on=five_days_ago,
-            status=polls.RESPONSE_PARTIAL)
+            status=polls.Response.STATUS_PARTIAL)
 
         # 2 complete responses in last month for contact in region #3
         polls.Response.objects.create(
             flow_run_id=456, pollrun=pollrun, contact=self.contact5,
             created_on=five_days_ago, updated_on=five_days_ago,
-            status=polls.RESPONSE_COMPLETE)
+            status=polls.Response.STATUS_COMPLETE)
 
         polls.Response.objects.create(
             flow_run_id=567, pollrun=pollrun, contact=self.contact5,
             created_on=five_days_ago, updated_on=five_days_ago,
-            status=polls.RESPONSE_COMPLETE)
+            status=polls.Response.STATUS_COMPLETE)
 
         # log in as a non-administrator
         self.login(self.user1)
@@ -302,30 +302,30 @@ class TestGroupMostActive(TracProDataTest):
         polls.Response.objects.create(
             flow_run_id=123, pollrun=pollrun, contact=self.contact1,
             created_on=five_days_ago, updated_on=five_days_ago,
-            status=polls.RESPONSE_EMPTY)
+            status=polls.Response.STATUS_EMPTY)
 
         # partial response not in last month for contact in group #2
         polls.Response.objects.create(
             flow_run_id=234, pollrun=pollrun, contact=self.contact3,
             created_on=five_weeks_ago, updated_on=five_weeks_ago,
-            status=polls.RESPONSE_PARTIAL)
+            status=polls.Response.STATUS_PARTIAL)
 
         # partial response in last month for contact in group #2
         polls.Response.objects.create(
             flow_run_id=345, pollrun=pollrun, contact=self.contact3,
             created_on=five_days_ago, updated_on=five_days_ago,
-            status=polls.RESPONSE_PARTIAL)
+            status=polls.Response.STATUS_PARTIAL)
 
         # 2 complete responses in last month for contact in group #3
         polls.Response.objects.create(
             flow_run_id=456, pollrun=pollrun, contact=self.contact5,
             created_on=five_days_ago, updated_on=five_days_ago,
-            status=polls.RESPONSE_COMPLETE)
+            status=polls.Response.STATUS_COMPLETE)
 
         polls.Response.objects.create(
             flow_run_id=567, pollrun=pollrun, contact=self.contact5,
             created_on=five_days_ago, updated_on=five_days_ago,
-            status=polls.RESPONSE_COMPLETE)
+            status=polls.Response.STATUS_COMPLETE)
 
         # log in as a non-administrator
         self.login(self.user1)
