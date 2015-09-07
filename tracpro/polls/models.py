@@ -181,17 +181,30 @@ class Question(models.Model):
 
 @python_2_unicode_compatible
 class PollRun(models.Model):
-    """
-    Associates polls conducted on the same day
-    """
+    """Associates polls conducted on the same day."""
+
+    TYPE_UNIVERSAL = 'u'  # Sent to all active regions.
+    TYPE_REGIONAL = 'r'  # Sent to only one region.
+    TYPE_PROPAGATED = 'p'  # Sent to one region and its sub-regions.
+    TYPE_CHOICES = {
+        TYPE_UNIVERSAL: 'Universal',
+        TYPE_REGIONAL: 'Single Region',
+        TYPE_PROPAGATED: 'Propagated to sub-children',
+    }
+
+    pollrun_type = models.CharField(
+        max_length=1, editable=False, choices=TYPE_CHOICES.items())
+
     poll = models.ForeignKey('polls.Poll', related_name='pollruns')
 
     regions = models.ManyToManyField(
         'groups.Region', blank=True,
-        help_text="Regions where the poll was conducted.")
+        help_text=_("Regions where the poll was conducted."))
+
     conducted_on = models.DateTimeField(help_text=_("When the poll was conducted"))
 
-    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, related_name="pollruns_created")
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, related_name="pollruns_created")
 
     def __str__(self):
         return "%s (%s)" % (self.poll.name, self.conducted_on.strftime(settings.SITE_DATE_FORMAT))
