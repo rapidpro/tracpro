@@ -1,22 +1,22 @@
 from __future__ import absolute_import, unicode_literals
 
 import cgi
+from collections import defaultdict, OrderedDict
 import datetime
+from decimal import Decimal
 import json
 import operator
 
-from collections import defaultdict, OrderedDict
 from dash.utils import datetime_to_ms
-from decimal import Decimal
+
 from django.utils.safestring import mark_safe
 
 from .models import Question
 
 
 class ChartJsonEncoder(json.JSONEncoder):
-    """
-    JSON Encoder which encodes datetime objects millisecond timestamps and Decimal objects as floats
-    """
+    """Encode millisecond timestamps & Decimal objects as floats."""
+
     def default(self, obj):
         if isinstance(obj, datetime.datetime):
             return datetime_to_ms(obj)
@@ -26,9 +26,10 @@ class ChartJsonEncoder(json.JSONEncoder):
 
 
 def single_pollrun(pollrun, question, region):
-    """
-    Chart data for a single pollrun. Will be a word cloud for open-ended questions, and pie chart of categories for
-    everything else.
+    """Chart data for a single pollrun.
+
+    Will be a word cloud for open-ended questions, and pie chart of categories
+    for everything else.
     """
     if question.type == Question.TYPE_OPEN:
         word_counts = pollrun.get_answer_word_counts(question, region)
@@ -50,9 +51,8 @@ def single_pollrun(pollrun, question, region):
 
 
 def multiple_pollruns(pollruns, question, region):
-    """
-    Chart data for multiple pollruns of a poll.
-    """
+    """Chart data for multiple pollruns of a poll."""
+
     if question.type == Question.TYPE_OPEN:
         overall_counts = defaultdict(int)
 
@@ -61,14 +61,16 @@ def multiple_pollruns(pollruns, question, region):
             for word, count in word_counts:
                 overall_counts[word] += count
 
-        sorted_counts = sorted(overall_counts.items(), key=operator.itemgetter(1), reverse=True)
+        sorted_counts = sorted(
+            overall_counts.items(), key=operator.itemgetter(1), reverse=True)
         chart_type = 'word'
         chart_data = word_cloud_data(sorted_counts[:50])
     elif question.type == Question.TYPE_MULTIPLE_CHOICE:
         categories = set()
         counts_by_pollrun = OrderedDict()
 
-        # fetch category counts for all pollruns, keeping track of all found categories
+        # fetch category counts for all pollruns, keeping track of all found
+        # categories
         for pollrun in pollruns:
             category_counts = pollrun.get_answer_category_counts(question, region)
             as_dict = dict(category_counts)
@@ -86,7 +88,8 @@ def multiple_pollruns(pollruns, question, region):
                 category_series[category].append((pollrun.conducted_on, count))
 
         chart_type = 'time-area'
-        chart_data = [{'name': cgi.escape(category), 'data': data} for category, data in category_series.iteritems()]
+        chart_data = [{'name': cgi.escape(category), 'data': data}
+                      for category, data in category_series.iteritems()]
     elif question.type == Question.TYPE_NUMERIC:
         chart_type = 'time-line'
         chart_data = []
