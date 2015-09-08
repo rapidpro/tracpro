@@ -68,10 +68,6 @@ class Poll(models.Model):
         return self.name
 
     @classmethod
-    def create(cls, org, name, flow_uuid):
-        return cls.objects.create(org=org, name=name, flow_uuid=flow_uuid)
-
-    @classmethod
     def sync_with_flows(cls, org, flow_uuids):
         # de-activate polls whose flows were not selected
         org.polls.exclude(flow_uuid=flow_uuids).update(is_active=False)
@@ -89,7 +85,7 @@ class Poll(models.Model):
                 poll.is_active = True
                 poll.save()
             else:
-                poll = cls.create(org, flow.name, flow.uuid)
+                poll = cls.objects.create(org=org, name=flow.name, flow_uuid=flow.uuid)
 
             poll.update_questions_from_rulesets(flow.rulesets)
 
@@ -107,9 +103,9 @@ class Poll(models.Model):
                 question.is_active = True
                 question.save()
             else:
-                Question.create(
-                    self, ruleset.label, ruleset.response_type, order,
-                    ruleset.uuid)
+                Question.objects.create(
+                    poll=self, text=ruleset.label, type=ruleset.response_type,
+                    order=order, ruleset_uuid=ruleset.uuid)
             order += 1
 
     @classmethod
@@ -123,8 +119,10 @@ class Poll(models.Model):
         return PollRun.objects.get_all(region, include_subregions).filter(poll=self)
 
 
+@python_2_unicode_compatible
 class Question(models.Model):
     """Corresponds to RapidPro RuleSet."""
+
     TYPE_OPEN = 'O'
     TYPE_MULTIPLE_CHOICE = 'C'
     TYPE_NUMERIC = 'N'
@@ -151,12 +149,6 @@ class Question(models.Model):
     order = models.IntegerField()
 
     is_active = models.BooleanField(default=True, help_text="Whether this item is active")
-
-    @classmethod
-    def create(cls, poll, text, _type, order, ruleset_uuid):
-        return cls.objects.create(
-            poll=poll, text=text, type=_type, order=order,
-            ruleset_uuid=ruleset_uuid)
 
     def __str__(self):
         return self.text
@@ -191,25 +183,32 @@ class PollRunQuerySet(models.QuerySet):
 
 class PollRunManager(models.Manager.from_queryset(PollRunQuerySet)):
 
-    def create(self, poll, region, do_start=True, **kwargs):
+    def create(self, poll, region, **kwargs):
         if region and poll.org != region.org:
             raise ValueError("Region org must match poll org.")
-        pollrun = super(PollRunManager, self).create(poll=poll, region=region, **kwargs)
+        return super(PollRunManager, self).create(poll=poll, region=region, **kwargs)
+
+    def create_regional(self, region, do_start=True, **kwargs):
+        """Create a poll run for a single region."""
+        if not region:
+            raise ValueError("Regional poll requires a non-null region.")
+        kwargs['pollrun_type'] = PollRun.TYPE_REGIONAL
+        pollrun = self.create(region=region, **kwargs)
         if do_start:
             pollrun_start.delay(pollrun.pk)
         return pollrun
 
-    def create_regional(self, region, **kwargs):
-        """Create a poll run for a single region."""
-        kwargs['pollrun_type'] = PollRun.TYPE_REGIONAL
-        return self.create(region=region, **kwargs)
-
-    def create_propagated(self, region, **kwargs):
+    def create_propagated(self, region, do_start=True, **kwargs):
         """Create a poll run for a region and its sub-regions."""
+        if not region:
+            raise ValueError("Propagated poll requires a non-null region.")
         kwargs['pollrun_type'] = PollRun.TYPE_PROPAGATED
-        return self.create(region=region, **kwargs)
+        pollrun = self.create(region=region, **kwargs)
+        if do_start:
+            pollrun_start.delay(pollrun.pk)
+        return pollrun
 
-    def get_or_create_universal(self, poll, for_date, **kwargs):
+    def get_or_create_universal(self, poll, for_date=None, **kwargs):
         """Create a poll run that is for all regions."""
         # Get the requested date in the org timezone
         for_date = for_date or timezone.now()
@@ -224,6 +223,8 @@ class PollRunManager(models.Manager.from_queryset(PollRunQuerySet)):
         if existing:
             return existing[0]
 
+        kwargs['poll'] = poll
+        kwargs['region'] = None
         kwargs['pollrun_type'] = PollRun.TYPE_UNIVERSAL
         kwargs['conducted_on'] = for_date
         return self.create(**kwargs)
@@ -538,9 +539,13 @@ class Response(models.Model):
         # convert valuesets to answers
         for question, valueset in valuesets_by_question.iteritems():
             if valueset:
-                Answer.create(
-                    response, question, valueset.value, valueset.category,
-                    valueset.time)
+                Answer.objects.create(
+                    response=response,
+                    question=question,
+                    value=valueset.value,
+                    category=valueset.category,
+                    submitted_on=valueset.time,
+                )
 
         # clear answer caches for this contact's region
         for question in questions:
@@ -704,6 +709,22 @@ class AnswerQuerySet(models.QuerySet):
         return category_counts
 
 
+class AnswerManager(models.Manager.from_queryset(AnswerQuerySet)):
+
+    def create(self, category, **kwargs):
+        # category can be a string or a multi-language dict
+        if isinstance(category, dict):
+            if 'base' in category:
+                category = category['base']
+            else:
+                category = category.itervalues().next()
+
+        if category == 'All Responses':
+            category = None
+
+        return super(AnswerManager, self).create(category=category, **kwargs)
+
+
 class Answer(models.Model):
     """Corresponds to RapidPro FlowStep."""
 
@@ -718,20 +739,4 @@ class Answer(models.Model):
     submitted_on = models.DateTimeField(
         help_text=_("When this answer was submitted"))
 
-    objects = AnswerQuerySet.as_manager()
-
-    @classmethod
-    def create(cls, response, question, value, category, submitted_on):
-        # category can be a string or a multi-language dict
-        if isinstance(category, dict):
-            if 'base' in category:
-                category = category['base']
-            else:
-                category = category.itervalues().next()
-
-        if category == 'All Responses':
-            category = None
-
-        return Answer.objects.create(
-            response=response, question=question,
-            value=value, category=category, submitted_on=submitted_on)
+    objects = AnswerManager()

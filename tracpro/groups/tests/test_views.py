@@ -37,37 +37,37 @@ class TestRegionMostActive(TracProDataTest):
         five_weeks_ago = timezone.now() - relativedelta(weeks=5)
         five_days_ago = timezone.now() - relativedelta(days=5)
 
-        pollrun = polls.PollRun.objects.create(
+        pollrun = factories.RegionalPollRun(
             poll=self.poll1,
             conducted_on=five_weeks_ago,
         )
 
         # empty response in last month for contact in region #1
-        polls.Response.objects.create(
-            flow_run_id=123, pollrun=pollrun, contact=self.contact1,
+        factories.Response(
+            pollrun=pollrun, contact=self.contact1,
             created_on=five_days_ago, updated_on=five_days_ago,
             status=polls.Response.STATUS_EMPTY)
 
         # partial response not in last month for contact in region #2
-        polls.Response.objects.create(
-            flow_run_id=234, pollrun=pollrun, contact=self.contact4,
+        factories.Response(
+            pollrun=pollrun, contact=self.contact4,
             created_on=five_weeks_ago, updated_on=five_weeks_ago,
             status=polls.Response.STATUS_PARTIAL)
 
         # partial response in last month for contact in region #2
-        polls.Response.objects.create(
-            flow_run_id=345, pollrun=pollrun, contact=self.contact4,
+        factories.Response(
+            pollrun=pollrun, contact=self.contact4,
             created_on=five_days_ago, updated_on=five_days_ago,
             status=polls.Response.STATUS_PARTIAL)
 
         # 2 complete responses in last month for contact in region #3
-        polls.Response.objects.create(
-            flow_run_id=456, pollrun=pollrun, contact=self.contact5,
+        factories.Response(
+            pollrun=pollrun, contact=self.contact5,
             created_on=five_days_ago, updated_on=five_days_ago,
             status=polls.Response.STATUS_COMPLETE)
 
-        polls.Response.objects.create(
-            flow_run_id=567, pollrun=pollrun, contact=self.contact5,
+        factories.Response(
+            pollrun=pollrun, contact=self.contact5,
             created_on=five_days_ago, updated_on=five_days_ago,
             status=polls.Response.STATUS_COMPLETE)
 
@@ -293,37 +293,37 @@ class TestGroupMostActive(TracProDataTest):
     def test_most_active(self):
         five_weeks_ago = timezone.now() - relativedelta(weeks=5)
         five_days_ago = timezone.now() - relativedelta(days=5)
-        pollrun = polls.PollRun.objects.create(
+        pollrun = factories.RegionalPollRun(
             poll=self.poll1,
             conducted_on=five_weeks_ago,
         )
 
         # empty response in last month for contact in group #1
-        polls.Response.objects.create(
-            flow_run_id=123, pollrun=pollrun, contact=self.contact1,
+        factories.Response(
+            pollrun=pollrun, contact=self.contact1,
             created_on=five_days_ago, updated_on=five_days_ago,
             status=polls.Response.STATUS_EMPTY)
 
         # partial response not in last month for contact in group #2
-        polls.Response.objects.create(
-            flow_run_id=234, pollrun=pollrun, contact=self.contact3,
+        factories.Response(
+            pollrun=pollrun, contact=self.contact3,
             created_on=five_weeks_ago, updated_on=five_weeks_ago,
             status=polls.Response.STATUS_PARTIAL)
 
         # partial response in last month for contact in group #2
-        polls.Response.objects.create(
-            flow_run_id=345, pollrun=pollrun, contact=self.contact3,
+        factories.Response(
+            pollrun=pollrun, contact=self.contact3,
             created_on=five_days_ago, updated_on=five_days_ago,
             status=polls.Response.STATUS_PARTIAL)
 
         # 2 complete responses in last month for contact in group #3
-        polls.Response.objects.create(
-            flow_run_id=456, pollrun=pollrun, contact=self.contact5,
+        factories.Response(
+            pollrun=pollrun, contact=self.contact5,
             created_on=five_days_ago, updated_on=five_days_ago,
             status=polls.Response.STATUS_COMPLETE)
 
-        polls.Response.objects.create(
-            flow_run_id=567, pollrun=pollrun, contact=self.contact5,
+        factories.Response(
+            pollrun=pollrun, contact=self.contact5,
             created_on=five_days_ago, updated_on=five_days_ago,
             status=polls.Response.STATUS_COMPLETE)
 

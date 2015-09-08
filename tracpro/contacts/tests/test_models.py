@@ -7,7 +7,8 @@ from temba.types import Contact as TembaContact
 from django.test.utils import override_settings
 from django.utils import timezone
 
-from tracpro.polls.models import PollRun, Response
+from tracpro.polls.models import Response
+from tracpro.test import factories
 from tracpro.test.cases import TracProDataTest
 
 from ..models import Contact
@@ -101,15 +102,15 @@ class ContactTest(TracProDataTest):
     def test_get_responses(self):
         date1 = self.datetime(2014, 1, 1, 7, 0)
         date2 = self.datetime(2014, 1, 1, 8, 0)
-        pollrun1 = PollRun.objects.create(
-            poll=self.poll1, region=None, conducted_on=date1)
-        pollrun1_r1 = Response.objects.create(
-            flow_run_id=123, pollrun=pollrun1, contact=self.contact1,
+        pollrun1 = factories.UniversalPollRun(
+            poll=self.poll1, conducted_on=date1)
+        pollrun1_r1 = factories.Response(
+            pollrun=pollrun1, contact=self.contact1,
             created_on=date1, updated_on=date1, status=Response.STATUS_COMPLETE)
-        pollrun2 = PollRun.objects.create(
+        pollrun2 = factories.RegionalPollRun(
             poll=self.poll1, region=self.region1, conducted_on=date2)
-        pollrun2_r1 = Response.objects.create(
-            flow_run_id=456, pollrun=pollrun2, contact=self.contact1,
+        pollrun2_r1 = factories.Response(
+            pollrun=pollrun2, contact=self.contact1,
             created_on=date2, updated_on=date2, status=Response.STATUS_EMPTY)
 
         self.assertEqual(list(self.contact1.get_responses().order_by('pk')),

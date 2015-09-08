@@ -5,8 +5,8 @@ from django.core.urlresolvers import reverse
 
 from tracpro.test.cases import TracProDataTest
 
-from ..models import (
-    Answer, PollRun, Response)
+from ..models import Response
+from . import factories
 
 
 class PollCRUDLTest(TracProDataTest):
@@ -31,33 +31,40 @@ class ResponseCRUDLTest(TracProDataTest):
         date3 = self.datetime(2014, 1, 2, 7, 0)
 
         # create non-regional pollrun with 3 responses (1 complete, 1 partial, 1 empty)
-        self.pollrun1 = PollRun.objects.create(
-            poll=self.poll1, region=None, conducted_on=date1)
+        self.pollrun1 = factories.UniversalPollRun(
+            poll=self.poll1, conducted_on=date1)
 
-        self.pollrun1_r1 = Response.objects.create(
-            flow_run_id=123, pollrun=self.pollrun1, contact=self.contact1,
-            created_on=date1, updated_on=date1, status=Response.STATUS_COMPLETE)
-        Answer.create(
-            self.pollrun1_r1, self.poll1_question1, "5.0000", "1 - 10", date1)
-        Answer.create(
-            self.pollrun1_r1, self.poll1_question2, "Sunny", "All Responses", date1)
+        self.pollrun1_r1 = factories.Response(
+            pollrun=self.pollrun1, contact=self.contact1,
+            created_on=date1, updated_on=date1,
+            status=Response.STATUS_COMPLETE)
+        factories.Answer(
+            response=self.pollrun1_r1, question=self.poll1_question1,
+            value="5.0000", category="1 - 10", submitted_on=date1)
+        factories.Answer(
+            response=self.pollrun1_r1, question=self.poll1_question2,
+            value="Sunny", category="All Responses", submitted_on=date1)
 
-        self.pollrun1_r2 = Response.objects.create(
-            flow_run_id=234, pollrun=self.pollrun1, contact=self.contact2,
-            created_on=date2, updated_on=date2, status=Response.STATUS_PARTIAL)
-        Answer.create(
-            self.pollrun1_r2, self.poll1_question1, "6.0000", "1 - 10", date2)
+        self.pollrun1_r2 = factories.Response(
+            pollrun=self.pollrun1, contact=self.contact2,
+            created_on=date2, updated_on=date2,
+            status=Response.STATUS_PARTIAL)
+        factories.Answer(
+            response=self.pollrun1_r2, question=self.poll1_question1,
+            value="6.0000", category="1 - 10", submitted_on=date2)
 
-        self.pollrun1_r3 = Response.objects.create(
-            flow_run_id=345, pollrun=self.pollrun1, contact=self.contact4,
-            created_on=date3, updated_on=date3, status=Response.STATUS_EMPTY)
+        self.pollrun1_r3 = factories.Response(
+            pollrun=self.pollrun1, contact=self.contact4,
+            created_on=date3, updated_on=date3,
+            status=Response.STATUS_EMPTY)
 
         # create regional pollrun with 1 incomplete response
-        self.pollrun2 = PollRun.objects.create(
+        self.pollrun2 = factories.RegionalPollRun(
             poll=self.poll1, region=self.region1, conducted_on=date3)
-        self.pollrun2_r1 = Response.objects.create(
-            flow_run_id=456, pollrun=self.pollrun2, contact=self.contact1,
-            created_on=date3, updated_on=date3, status=Response.STATUS_PARTIAL)
+        self.pollrun2_r1 = factories.Response(
+            pollrun=self.pollrun2, contact=self.contact1,
+            created_on=date3, updated_on=date3,
+            status=Response.STATUS_PARTIAL)
 
     def test_by_pollrun(self):
         url = reverse('polls.response_by_pollrun', args=[self.pollrun1.pk])

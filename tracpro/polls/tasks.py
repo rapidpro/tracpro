@@ -92,13 +92,13 @@ def pollrun_start(pollrun_id):
     from tracpro.polls.models import PollRun, Response
 
     pollrun = PollRun.objects.select_related('poll', 'region').get(pk=pollrun_id)
-    if not pollrun.regions.exists():
+    if pollrun.pollrun_type == PollRun.TYPE_UNIVERSAL:
         raise ValueError("Can't start non-regional poll")
 
     org = pollrun.poll.org
     client = org.get_temba_client()
 
-    contacts = Contact.objects.filter(is_active=True, region__in=pollrun.regions.all())
+    contacts = Contact.objects.filter(is_active=True, region=pollrun.region)
     contact_uuids = contacts.values_list('uuid', flat=True)
 
     runs = client.create_runs(pollrun.poll.flow_uuid, contact_uuids, restart_participants=True)
@@ -117,10 +117,10 @@ def pollrun_restart_participants(pollrun_id, contact_uuids):
     from tracpro.polls.models import PollRun, Response
 
     pollrun = PollRun.objects.select_related('poll').get(pk=pollrun_id)
-    if not pollrun.regions.exists():
+    if pollrun.pollrun_type == PollRun.TYPE_UNIVERSAL:
         raise ValueError("Can't restart participants of a non-regional poll")
 
-    if not pollrun.is_last_for_region(pollrun.region):  # FIXME
+    if not pollrun.is_last_for_region(pollrun.region):
         raise ValueError("Can only restart last pollrun of poll for a region")
 
     org = pollrun.poll.org

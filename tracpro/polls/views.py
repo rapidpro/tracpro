@@ -80,7 +80,7 @@ class PollCRUDL(smartmin.SmartCRUDL):
 
         def derive_pollruns(self, obj):
             return obj.get_pollruns(
-                self.request.region, self.include_subregions)
+                self.request.region, self.request.include_subregions)
 
         def get_questions(self, obj):
             return obj.get_questions().count()

@@ -123,7 +123,9 @@ class BaselineTermCRUDL(SmartCRUDL):
 
             # Create a single PollRun for the Baseline Poll
             baseline_datetime = datetime.combine(start, datetime.now().time())
-            baseline_pollrun = PollRun.objects.create(poll=baseline_question.poll, conducted_on=baseline_datetime)
+            baseline_pollrun = PollRun.objects.create(
+                poll=baseline_question.poll, region=None,
+                conducted_on=baseline_datetime)
             for contact in contacts:
                 # Create a Response AKA FlowRun for each contact for Baseline
                 response = Response.objects.create(
@@ -146,7 +148,8 @@ class BaselineTermCRUDL(SmartCRUDL):
             for follow_up_date in rrule.rrule(rrule.DAILY, dtstart=start, until=end):
                 follow_up_datetime = datetime.combine(follow_up_date, datetime.now().time())
                 follow_up_pollrun = PollRun.objects.create(
-                    poll=follow_up_question.poll, conducted_on=follow_up_datetime)
+                    poll=follow_up_question.poll, region=None,
+                    conducted_on=follow_up_datetime)
                 for contact in contacts:
                     # Create a Response AKA FlowRun for each contact for Follow Up
                     response = Response.objects.create(
