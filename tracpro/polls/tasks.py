@@ -25,9 +25,7 @@ LAST_FETCHED_RUN_TIME_KEY = 'org:%d:last_fetched_run_time'
 
 @task
 def fetch_all_runs():
-    """
-    Fetches flow runs for all orgs
-    """
+    """Fetches flow runs for all orgs."""
     r = get_redis_connection()
 
     # only do this if we aren't already running so we don't get backed up
@@ -43,7 +41,8 @@ def fetch_all_runs():
 
 def fetch_org_runs(org):
     """
-    Fetches new and modified flow runs for the given org and creates/updates poll responses
+    Fetches new and modified flow runs for the given org and creates/updates
+    poll responses.
     """
     from tracpro.orgs_ext.constants import TaskType
     from tracpro.polls.models import Poll, Response
@@ -92,13 +91,18 @@ def pollrun_start(pollrun_id):
     from tracpro.polls.models import PollRun, Response
 
     pollrun = PollRun.objects.select_related('poll', 'region').get(pk=pollrun_id)
-    if pollrun.pollrun_type == PollRun.TYPE_UNIVERSAL:
+    if pollrun.pollrun_type not in (PollRun.TYPE_PROPAGATED, PollRun.TYPE_REGIONAL):
         raise ValueError("Can't start non-regional poll")
 
     org = pollrun.poll.org
     client = org.get_temba_client()
 
-    contacts = Contact.objects.filter(is_active=True, region=pollrun.region)
+    contacts = Contact.objects.filter(is_active=True)
+    if pollrun.pollrun_type == PollRun.TYPE_PROPAGATED:
+        descendants = pollrun.region.get_descendants(include_self=True)
+        contacts = contacts.filter(region__in=descendants)
+    elif pollrun.pollrun_type == PollRun.TYPE_REGIONAL:
+        contacts = contacts.filter(region=pollrun.region)
     contact_uuids = contacts.values_list('uuid', flat=True)
 
     runs = client.create_runs(pollrun.poll.flow_uuid, contact_uuids, restart_participants=True)
@@ -116,8 +120,8 @@ def pollrun_restart_participants(pollrun_id, contact_uuids):
     """
     from tracpro.polls.models import PollRun, Response
 
-    pollrun = PollRun.objects.select_related('poll').get(pk=pollrun_id)
-    if pollrun.pollrun_type == PollRun.TYPE_UNIVERSAL:
+    pollrun = PollRun.objects.select_related('poll', 'region').get(pk=pollrun_id)
+    if pollrun.pollrun_type not in (PollRun.TYPE_REGIONAL, PollRun.TYPE_PROPAGATED):
         raise ValueError("Can't restart participants of a non-regional poll")
 
     if not pollrun.is_last_for_region(pollrun.region):
