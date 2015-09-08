@@ -57,8 +57,8 @@ class BaselineTerm(models.Model):
             submitted_on__gte=self.start_date,
             submitted_on__lte=self.end_date,  # look into timezone
         ).select_related('response')
-        # Retrieve the most recent baseline results per contact
-        baseline_answers = answers.order_by('response__contact', '-submitted_on').distinct('response__contact')
+        # Retrieve the least recent baseline results per contact
+        baseline_answers = answers.order_by('response__contact', 'submitted_on').distinct('response__contact')
 
         if region:
             baseline_answers = baseline_answers.filter(response__contact__region=region)

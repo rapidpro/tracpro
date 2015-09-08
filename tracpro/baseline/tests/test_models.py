@@ -35,12 +35,12 @@ class BaselineTermTest(TracProDataTest):
             )
 
         # Create a single PollRun for the Baseline Poll
-        baseline_pollrun = PollRun.objects.create(poll=self.poll1, conducted_on=self.start_date)
+        self.baseline_pollrun = PollRun.objects.create(poll=self.poll1, conducted_on=self.start_date)
         # Create a Response AKA FlowRun for each contact for Baseline
         answer_value = 10  # Baseline values will be 10, 20 and 30
         for contact in contacts:
             response = Response.objects.create(
-                pollrun=baseline_pollrun,
+                pollrun=self.baseline_pollrun,
                 contact=contact,
                 created_on=self.start_date,
                 updated_on=self.start_date,
@@ -102,6 +102,35 @@ class BaselineTermTest(TracProDataTest):
 
     def test_baseline_single_region(self):
         """ Answers were 10 and 20 for region1 """
+        baseline_dict = self.baselineterm.get_baseline(region=self.region1)
+
+        self.assertEqual(len(baseline_dict), 1)  # One regions, one baseline
+        # Two answers sum = 10 + 20 = 30
+        self.assertEqual(
+            baseline_dict[self.region1.name]["values"],
+            30)
+
+    def test_baseline_single_region_multiple_answers(self):
+        """
+        Answers were 10 and 20 for region1
+        Add another answer for both region contacts at a later date.
+        Baseline should be retrieved from original responses
+        """
+        for contact in [self.contact1, self.contact2]:
+            response = Response.objects.create(
+                    pollrun=self.baseline_pollrun,
+                    contact=contact,
+                    created_on=self.end_date,
+                    updated_on=self.end_date,
+                    status=RESPONSE_COMPLETE,
+                    is_active=True)
+            Answer.objects.create(
+                response=response,
+                question=self.poll1_question1,
+                value=100,
+                submitted_on=self.end_date,
+                category=u'')
+
         baseline_dict = self.baselineterm.get_baseline(region=self.region1)
 
         self.assertEqual(len(baseline_dict), 1)  # One regions, one baseline
