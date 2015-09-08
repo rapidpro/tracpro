@@ -32,7 +32,7 @@ class BaselineTerm(models.Model):
         chained_model_field='poll',
         auto_choose=True,
         related_name="baseline_terms",
-        help_text=_("The most recent response per user will be used as the baseline.")
+        help_text=_("The least recent response per user will be used as the baseline.")
     )
 
     follow_up_poll = models.ForeignKey(Poll)
