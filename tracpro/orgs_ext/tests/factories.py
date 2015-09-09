@@ -11,6 +11,7 @@ __all__ = ['Org']
 class Org(SmartModelFactory):
     name = factory.fuzzy.FuzzyText()
     language = "en"
+    subdomain = factory.fuzzy.FuzzyText()
 
     class Meta:
         model = "orgs.Org"

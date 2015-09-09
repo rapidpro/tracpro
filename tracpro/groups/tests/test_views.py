@@ -14,6 +14,102 @@ from tracpro.test.cases import TracProDataTest, TracProTest
 from .. import models
 
 
+class TestSetRegion(TracProTest):
+    url_name = "set-region"
+
+    def setUp(self):
+        super(TestSetRegion, self).setUp()
+        self.org = factories.Org()
+        self.region = factories.Region(org=self.org)
+
+        self.user = factories.User()
+        self.user.regions.add(self.region)
+
+        self.login(self.user)
+
+    @property
+    def session_key(self):
+        return '{org}:region_id'.format(org=self.org.pk)
+
+    def set_region(self, data):
+        return self.url_post(self.org.subdomain, reverse(self.url_name), data)
+
+    def test_unauthenticated(self):
+        """Unauthenticated users cannot set a region."""
+        self.client.logout()
+        response = self.set_region({'region': self.region.pk})
+        self.assertLoginRedirect(response, self.org.subdomain, reverse(self.url_name))
+        self.assertFalse(self.session_key in self.client.session)
+
+    def test_get(self):
+        """Set region view does not allow GET."""
+        response = self.url_get(self.org.subdomain, reverse(self.url_name))
+        self.assertEqual(response.status_code, 405)
+        self.assertFalse(self.session_key in self.client.session)
+
+    def test_no_region(self):
+        """Set region view requires `region` POST parameter."""
+        response = self.set_region({})
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(self.session_key in self.client.session)
+
+    def test_all_not_admin(self):
+        """Non-admin user cannot set region to "All regions"."""
+        response = self.set_region({'region': 'all'})
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(self.session_key in self.client.session)
+
+    def test_all(self):
+        """Admin user can set region to "All regions"."""
+        self.org.administrators.add(self.user)
+        response = self.set_region({'region': 'all'})
+        self.assertRedirects(
+            response, reverse('home.home'), self.org.subdomain,
+            fetch_redirect_response=False)
+        self.assertIsNone(self.client.session[self.session_key])
+
+    def test_non_existant(self):
+        """Cannot set a non-existant region."""
+        response = self.set_region({'region': '1234'})
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(self.session_key in self.client.session)
+
+    def test_not_in_user_regions(self):
+        """Cannot set a region the user doesn't have access to."""
+        another_region = factories.Region(org=self.org)
+        response = self.set_region({'region': another_region.pk})
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(self.session_key in self.client.session)
+
+    def test_set_region(self):
+        """Set region_id variable in the session."""
+        response = self.set_region({'region': self.region.pk})
+        self.assertRedirects(
+            response, reverse('home.home'), self.org.subdomain,
+            fetch_redirect_response=False)
+        self.assertEqual(self.client.session[self.session_key], str(self.region.pk))
+
+    def test_next_invalid(self):
+        """Should not redirect to an invaild `next` URL."""
+        response = self.set_region({
+            'region': self.region.pk,
+            'next': 'http://example.com/',
+        })
+        self.assertRedirects(
+            response, reverse('home.home'), self.org.subdomain,
+            fetch_redirect_response=False)
+
+    def test_next(self):
+        """Should redirect to custom `next` URL."""
+        response = self.set_region({
+            'region': self.region.pk,
+            'next': '/admin/',
+        })
+        self.assertRedirects(
+            response, '/admin/', self.org.subdomain,
+            fetch_redirect_response=False)
+
+
 class TestRegionList(TracProDataTest):
     url_name = "groups.region_list"
 
