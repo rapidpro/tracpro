@@ -110,6 +110,81 @@ class TestSetRegion(TracProTest):
             fetch_redirect_response=False)
 
 
+class TestToggleSubregions(TracProTest):
+    url_name = "toggle-subregions"
+    session_key = "include_subregions"
+
+    def setUp(self):
+        super(TestToggleSubregions, self).setUp()
+        self.org = factories.Org()
+        self.user = factories.User()
+        self.login(self.user)
+
+    def toggle_subregions(self, data):
+        return self.url_post(self.org.subdomain, reverse(self.url_name), data)
+
+    def test_unauthenticated(self):
+        """Unauthenticated users cannot toggle subregion data."""
+        self.client.logout()
+        response = self.toggle_subregions({'include_subregions': '0'})
+        self.assertLoginRedirect(response, self.org.subdomain, reverse(self.url_name))
+        self.assertFalse(self.session_key in self.client.session)
+
+    def test_get(self):
+        """Toggle subregion view does not allow GET."""
+        response = self.url_get(self.org.subdomain, reverse(self.url_name))
+        self.assertEqual(response.status_code, 405)
+        self.assertFalse(self.session_key in self.client.session)
+
+    def test_no_include_subregions(self):
+        """Toggle subregion view requires `include_subregions` POST parameter."""
+        response = self.toggle_subregions({})
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(self.session_key in self.client.session)
+
+    def test_invalid_value(self):
+        """`include_subregions` value must be '0' or '1'."""
+        response = self.toggle_subregions({'include_subregions': 'asdf'})
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(self.session_key in self.client.session)
+
+    def test_include_subregions(self):
+        """`include_subregions` value of '1' sets parameter to True."""
+        response = self.toggle_subregions({'include_subregions': '1'})
+        self.assertRedirects(
+            response, reverse('home.home'), self.org.subdomain,
+            fetch_redirect_response=False)
+        self.assertTrue(self.client.session['include_subregions'])
+
+    def test_exclude_subregions(self):
+        """`include_subregions` value of '0' sets parameter to False."""
+        response = self.toggle_subregions({'include_subregions': '0'})
+        self.assertRedirects(
+            response, reverse('home.home'), self.org.subdomain,
+            fetch_redirect_response=False)
+        self.assertFalse(self.client.session['include_subregions'])
+
+    def test_next_invalid(self):
+        """Should not redirect to an invaild `next` URL."""
+        response = self.toggle_subregions({
+            'include_subregions': '0',
+            'next': 'http://example.com/',
+        })
+        self.assertRedirects(
+            response, reverse('home.home'), self.org.subdomain,
+            fetch_redirect_response=False)
+
+    def test_next(self):
+        """Should redirect to custom `next` URL."""
+        response = self.toggle_subregions({
+            'include_subregions': '0',
+            'next': '/admin/',
+        })
+        self.assertRedirects(
+            response, '/admin/', self.org.subdomain,
+            fetch_redirect_response=False)
+
+
 class TestRegionList(TracProDataTest):
     url_name = "groups.region_list"
 
