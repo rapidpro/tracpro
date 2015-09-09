@@ -53,14 +53,12 @@ class BaselineTerm(models.Model):
         return baseline_terms
 
     def get_baseline(self, region):
-        answers = Answer.objects.filter(
+        """ Get all baseline responses """
+        baseline_answers = Answer.objects.filter(
             question=self.baseline_question,
             submitted_on__gte=self.start_date,
             submitted_on__lte=self.end_date,  # look into timezone
         ).select_related('response')
-        # Retrieve the most recent baseline results per contact
-        baseline_answers = answers.order_by('response__contact', '-submitted_on')
-        baseline_answers = baseline_answers.distinct('response__contact')
 
         if region:
             baseline_answers = baseline_answers.filter(response__contact__region=region)
@@ -68,15 +66,17 @@ class BaselineTerm(models.Model):
         region_answers = {}
         regions = baseline_answers.values('response__contact__region__name').distinct(
             'response__contact__region__name').order_by('response__contact__region__name')
+        dates = []
         # Separate out baseline values per region
         for region in regions:
             region_name = region['response__contact__region__name'].encode('ascii')
             answers_by_region = baseline_answers.filter(response__contact__region__name=region_name)
-            answer_sum = answers_by_region.numeric_sum_all_dates()
-            region_answers[region_name] = {}
-            region_answers[region_name]["values"] = answer_sum
+            answer_sums, dates = answers_by_region.numeric_sum_group_by_date()
 
-        return region_answers
+            region_answers[region_name] = {}
+            region_answers[region_name]["values"] = answer_sums
+
+        return region_answers, dates
 
     def get_follow_up(self, region):
         """ Get all follow up responses summed by region """
