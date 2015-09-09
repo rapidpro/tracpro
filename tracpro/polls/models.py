@@ -180,6 +180,9 @@ class PollRunQuerySet(models.QuerySet):
 
         return self.filter(q)
 
+    def by_org(self, org):
+        return self.filter(poll__org=org)
+
 
 class PollRunManager(models.Manager.from_queryset(PollRunQuerySet)):
 

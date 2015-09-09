@@ -190,8 +190,8 @@ class PollRunCRUDL(smartmin.SmartCRUDL):
 
         def post(self, request, *args, **kwargs):
             org = self.derive_org()
-            pollrun = PollRun.objects.get(
-                poll__org=org, pk=request.POST.get('pollrun'))
+            pollrun = PollRun.objects.by_org(org).get(
+                pk=request.POST.get('pollrun'))
             region = request.region
 
             incomplete_responses = pollrun.get_incomplete_responses(region)
@@ -353,8 +353,9 @@ class ResponseCRUDL(smartmin.SmartCRUDL):
 
         def derive_pollrun(self):
             def fetch():
-                return PollRun.objects.select_related('poll').get(
-                    pk=self.kwargs['pollrun'], poll__org=self.request.org)
+                pollruns = PollRun.objects.by_org(self.request.org)
+                pollruns = pollruns.select_related('poll')
+                return pollruns.get(pk=self.kwargs['pollrun'])
             return get_obj_cacheable(self, '_pollrun', fetch)
 
         def derive_questions(self):
@@ -367,15 +368,15 @@ class ResponseCRUDL(smartmin.SmartCRUDL):
             return get_obj_cacheable(self, '_questions', fetch)
 
         def derive_fields(self):
-            base_fields = ['updated_on', 'contact']
-            if not self.request.region:
-                base_fields.append('region')
-            return base_fields + ['group'] + self.derive_questions().keys()
+            base_fields = ['updated_on', 'contact', 'region', 'group']
+            return base_fields + self.derive_questions().keys()
 
         def derive_queryset(self, **kwargs):
             # only show partial and complete responses
             return self.derive_pollrun().get_responses(
-                region=self.request.region, include_empty=False)
+                region=self.request.region,
+                include_subregions=self.request.include_subregions,
+                include_empty=False)
 
         def lookup_field_label(self, context, field, default=None):
             if field.startswith('question_'):
@@ -424,7 +425,8 @@ class ResponseCRUDL(smartmin.SmartCRUDL):
                 can_restart = self.request.region and pollrun.is_last_for_region(
                     self.request.region)
 
-                counts = pollrun.get_response_counts(self.request.region)
+                counts = pollrun.get_response_counts(
+                    self.request.region, self.request.include_subregions)
 
                 context['can_restart'] = can_restart
                 context['response_count'] = sum([
