@@ -54,7 +54,7 @@ class BaselineTermForm(forms.ModelForm):
         return cleaned_data
 
 
-class CustomModelChoiceField(forms.ModelChoiceField):
+class QuestionModelChoiceField(forms.ModelChoiceField):
     def label_from_instance(self, obj):
         return "%s: %s" % (obj.poll.name, obj.text)
 
@@ -64,35 +64,27 @@ class SpoofDataForm(forms.Form):
     Form to create spoofed poll data
     """
     contacts = forms.ModelMultipleChoiceField(queryset=Contact.objects.all(),
-                                              help_text=_("Select contacts for this set of spoofed data."),
-                                              required=True)
+                                              help_text=_("Select contacts for this set of spoofed data."))
     start_date = forms.DateField(help_text=_(
         "Baseline poll data will be submitted on this date. " +
-        "Follow up data will start on this date."),
-        required=True)
-    end_date = forms.DateField(help_text=_("Follow up data will end on this date."), required=True)
-    baseline_question = CustomModelChoiceField(queryset=Question.objects.all().order_by('poll__name', 'text'),
+        "Follow up data will start on this date."))
+    end_date = forms.DateField(help_text=_("Follow up data will end on this date."))
+    baseline_question = QuestionModelChoiceField(queryset=Question.objects.all().order_by('poll__name', 'text'),
                                                help_text=_(
                                                "Select a baseline question which " +
-                                               "will have numeric answers only."),
-                                               required=True)
-    follow_up_question = CustomModelChoiceField(queryset=Question.objects.all().order_by('poll__name', 'text'),
+                                               "will have numeric answers only."))
+    follow_up_question = QuestionModelChoiceField(queryset=Question.objects.all().order_by('poll__name', 'text'),
                                                 help_text=_(
                                                 "Select a follow up question which " +
-                                                "will have numeric answers only."),
-                                                required=True)
+                                                "will have numeric answers only."))
     baseline_minimum = forms.IntegerField(
-        help_text=_("A baseline answer will be created for each contact within the minimum/maximum range."),
-        required=True)
+        help_text=_("A baseline answer will be created for each contact within the minimum/maximum range."))
     baseline_maximum = forms.IntegerField(
-        help_text=_("A baseline answer will be created for each contact within the minimum/maximum range."),
-        required=True)
+        help_text=_("A baseline answer will be created for each contact within the minimum/maximum range."))
     follow_up_minimum = forms.IntegerField(
-        help_text=_("Follow up answers will be created for each contact within the minimum/maximum range."),
-        required=True)
+        help_text=_("Follow up answers will be created for each contact within the minimum/maximum range."))
     follow_up_maximum = forms.IntegerField(
-        help_text=_("Follow up answers will be created for each contact within the minimum/maximum range."),
-        required=True)
+        help_text=_("Follow up answers will be created for each contact within the minimum/maximum range."))
 
     def __init__(self, *args, **kwargs):
         org = kwargs.pop('org')
