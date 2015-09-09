@@ -118,12 +118,12 @@ class BaselineTermTest(TracProDataTest):
         """
         for contact in [self.contact1, self.contact2]:
             response = Response.objects.create(
-                    pollrun=self.baseline_pollrun,
-                    contact=contact,
-                    created_on=self.end_date,
-                    updated_on=self.end_date,
-                    status=RESPONSE_COMPLETE,
-                    is_active=True)
+                pollrun=self.baseline_pollrun,
+                contact=contact,
+                created_on=self.end_date,
+                updated_on=self.end_date,
+                status=RESPONSE_COMPLETE,
+                is_active=True)
             Answer.objects.create(
                 response=response,
                 question=self.poll1_question1,
