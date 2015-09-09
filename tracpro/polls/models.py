@@ -183,6 +183,9 @@ class PollRunQuerySet(models.QuerySet):
     def by_org(self, org):
         return self.filter(poll__org=org)
 
+    def universal(self):
+        return self.filter(pollrun_type=PollRun.TYPE_UNIVERSAL)
+
 
 class PollRunManager(models.Manager.from_queryset(PollRunQuerySet)):
 
