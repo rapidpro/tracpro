@@ -235,17 +235,27 @@
                           <span class='caret'></span>
                         </a>
                         <ul class='dropdown-menu' role='menu'>
+                          {% url "set-region" as set_region_url %}
                           {% if user_is_admin %}
                             <li>
-                              <a href='{{ request.path }}?_region=0'>
+                              <form id="show-region-all" method="POST"
+                                    action="{{ set_region_url }}">
+                                {% csrf_token %}
+                                <input type="hidden" name="region" value="all" />
+                                <input type="hidden" name="next"
+                                       value="{{ request.get_full_path }}" />
+                                <input type="submit" class="hidden" />
+                              </form>
+                              <a class="submit-form" href="#" data-form="#show-region-all"
+                                 title="Show data from all regions.">
                                 {% trans "All Regions" %}
                               </a>
                             </li>
                           {% endif %}
                           {% if show_subregions_toggle_form %}
                             <li>
-                              <form id="toggle-subregions-form"
-                                    method="POST" action="{% url "toggle-subregions" %}">
+                              <form id="toggle-subregions" method="post"
+                                    action="{% url "toggle-subregions" %}">
                                 {% csrf_token %}
                                 <input type="hidden" name="include_subregions"
                                        value="{% if request.include_subregions %}0{% else %}1{% endif %}" />
@@ -254,12 +264,12 @@
                                 <input type="submit" class="hidden" />
                               </form>
                               {% if request.include_subregions %}
-                                <a class="toggle-subregions" href="#"
+                                <a class="submit-form" href="#" data-form="#toggle-subregions"
                                    title="Currently showing data for {{ request.region }} and all sub-regions. Click to show data from {{ request.region }} only.">
                                    Hide sub-region data
                                  </a>
                               {% else %}
-                                <a class="toggle-subregions" href="#"
+                                <a class="submit-form" href="#" data-form="#toggle-subregions"
                                    title="Currently showing data for {{ request.region }} only. Click to show data from {{ request.region }} and all sub-regions.">
                                   Show sub-region data
                                 </a>
@@ -271,7 +281,16 @@
                           {% endif %}
                           {% recursetree request.user_regions %}
                             <li{% if node == request.region %} class="active-region"{% endif %}>
-                              <a href='{{ request.path }}?_region={{ node.pk }}'>
+                              <form id="show-region-{{ node.pk }}" method="POST"
+                                    action="{{ set_region_url }}">
+                                {% csrf_token %}
+                                <input type="hidden" name="region" value="{{ node.pk }}" />
+                                <input type="hidden" name="next"
+                                       value="{{ request.get_full_path }}" />
+                                <input type="submit" class="hidden" />
+                              </form>
+                              <a class="submit-form" href="#" data-form="#show-region-{{ node.pk }}"
+                                 title="Show data from {{ node.name }}.">
                                 <span class="indenter">&nbsp;</span>{{ node.name }}
                               </a>
                               {% if children %}
