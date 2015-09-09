@@ -4,7 +4,7 @@ from django.core.urlresolvers import reverse
 from django.utils import timezone
 
 from tracpro.msgs.models import Message, COHORT_ALL, InboxMessage
-from tracpro.polls.models import PollRun
+from tracpro.test import factories
 from tracpro.test.cases import TracProDataTest
 
 
@@ -13,8 +13,8 @@ class MessageCRUDLTest(TracProDataTest):
         url = reverse('msgs.message_list')
 
         # create a non-regional pollrun
-        pollrun1 = PollRun.objects.create(
-            poll=self.poll1, region=None, conducted_on=timezone.now())
+        pollrun1 = factories.UniversalPollRun(
+            poll=self.poll1, conducted_on=timezone.now())
 
         # send 1 message to all regions and 2 more to specific regions
         msg1 = Message.create(

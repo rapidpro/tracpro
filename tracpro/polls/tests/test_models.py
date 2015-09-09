@@ -13,9 +13,8 @@ from django.utils import timezone
 
 from tracpro.test.cases import TracProDataTest
 
-from ..models import (
-    Answer, Poll, PollRun, Response, RESPONSE_COMPLETE,
-    RESPONSE_EMPTY, RESPONSE_PARTIAL)
+from ..models import Answer, Poll, PollRun, Response
+from . import factories
 
 
 class PollTest(TracProDataTest):
@@ -71,12 +70,12 @@ class PollTest(TracProDataTest):
 
 class PollRunTest(TracProDataTest):
 
-    def test_get_or_create_non_regional(self):
+    def test_get_or_create_universal(self):
         # 2014-Jan-01 04:30 in org's Afg timezone
         with patch.object(timezone, 'now') as mock_now:
             mock_now.return_value = datetime.datetime(2014, 1, 1, 0, 0, 0, 0, pytz.utc)
             # no existing pollruns so one is created
-            pollrun1 = PollRun.get_or_create_non_regional(self.unicef, self.poll1)
+            pollrun1 = PollRun.objects.get_or_create_universal(self.poll1)
             self.assertEqual(
                 pollrun1.conducted_on,
                 datetime.datetime(2014, 1, 1, 0, 0, 0, 0, pytz.utc))
@@ -85,14 +84,14 @@ class PollRunTest(TracProDataTest):
         with patch.object(timezone, 'now') as mock_now:
             mock_now.return_value = datetime.datetime(2014, 1, 1, 19, 0, 0, 0, pytz.utc)
             # existing pollrun on same day is returned
-            pollrun2 = PollRun.get_or_create_non_regional(self.unicef, self.poll1)
+            pollrun2 = PollRun.objects.get_or_create_universal(self.poll1)
             self.assertEqual(pollrun1, pollrun2)
 
         # 2014-Jan-02 00:30 in org's Afg timezone
         with patch.object(timezone, 'now') as mock_now:
             mock_now.return_value = datetime.datetime(2014, 1, 1, 20, 0, 0, 0, pytz.utc)
             # different day locally so new pollrun
-            pollrun3 = PollRun.get_or_create_non_regional(self.unicef, self.poll1)
+            pollrun3 = PollRun.objects.get_or_create_universal(self.poll1)
             self.assertNotEqual(pollrun3, pollrun1)
             self.assertEqual(
                 pollrun3.conducted_on,
@@ -102,109 +101,110 @@ class PollRunTest(TracProDataTest):
         with patch.object(timezone, 'now') as mock_now:
             mock_now.return_value = datetime.datetime(2014, 1, 2, 0, 0, 0, 0, pytz.utc)
             # same day locally so no new pollrun
-            pollrun4 = PollRun.get_or_create_non_regional(self.unicef, self.poll1)
+            pollrun4 = PollRun.objects.get_or_create_universal(self.poll1)
             self.assertEqual(pollrun3, pollrun4)
 
     def test_completion(self):
         date1 = self.datetime(2014, 1, 1, 7, 0)
 
         # pollrun with no responses (complete or incomplete) has null completion
-        pollrun = PollRun.objects.create(poll=self.poll1, conducted_on=date1)
+        pollrun = factories.UniversalPollRun(
+            poll=self.poll1, conducted_on=date1)
 
         # add a incomplete response from contact in region #1
-        response1 = Response.objects.create(
-            flow_run_id=123, pollrun=pollrun, contact=self.contact1,
-            created_on=date1, updated_on=date1, status=RESPONSE_EMPTY)
+        response1 = factories.Response(
+            pollrun=pollrun, contact=self.contact1,
+            created_on=date1, updated_on=date1, status=Response.STATUS_EMPTY)
 
         self.assertEqual(list(pollrun.get_responses()), [response1])
         self.assertDictEqual(pollrun.get_response_counts(), {
-            RESPONSE_EMPTY: 1,
-            RESPONSE_PARTIAL: 0,
-            RESPONSE_COMPLETE: 0,
+            Response.STATUS_EMPTY: 1,
+            Response.STATUS_PARTIAL: 0,
+            Response.STATUS_COMPLETE: 0,
         })
 
         self.assertEqual(list(pollrun.get_responses(self.region1)), [response1])
         self.assertDictEqual(pollrun.get_response_counts(self.region1), {
-            RESPONSE_EMPTY: 1,
-            RESPONSE_PARTIAL: 0,
-            RESPONSE_COMPLETE: 0,
+            Response.STATUS_EMPTY: 1,
+            Response.STATUS_PARTIAL: 0,
+            Response.STATUS_COMPLETE: 0,
         })
 
         self.assertEqual(list(pollrun.get_responses(self.region2)), [])
         self.assertDictEqual(pollrun.get_response_counts(self.region2), {
-            RESPONSE_EMPTY: 0,
-            RESPONSE_PARTIAL: 0,
-            RESPONSE_COMPLETE: 0,
+            Response.STATUS_EMPTY: 0,
+            Response.STATUS_PARTIAL: 0,
+            Response.STATUS_COMPLETE: 0,
         })
 
         # add a complete response from another contact in region #1
-        response2 = Response.objects.create(
-            flow_run_id=234, pollrun=pollrun, contact=self.contact2,
-            created_on=date1, updated_on=date1, status=RESPONSE_COMPLETE)
+        response2 = factories.Response(
+            pollrun=pollrun, contact=self.contact2,
+            created_on=date1, updated_on=date1, status=Response.STATUS_COMPLETE)
 
         self.assertEqual(
             list(pollrun.get_responses().order_by('pk')),
             [response1, response2])
         self.assertDictEqual(pollrun.get_response_counts(), {
-            RESPONSE_EMPTY: 1,
-            RESPONSE_PARTIAL: 0,
-            RESPONSE_COMPLETE: 1,
+            Response.STATUS_EMPTY: 1,
+            Response.STATUS_PARTIAL: 0,
+            Response.STATUS_COMPLETE: 1,
         })
 
         self.assertEqual(
             list(pollrun.get_responses(self.region1).order_by('pk')),
             [response1, response2])
         self.assertDictEqual(pollrun.get_response_counts(self.region1), {
-            RESPONSE_EMPTY: 1,
-            RESPONSE_PARTIAL: 0,
-            RESPONSE_COMPLETE: 1,
+            Response.STATUS_EMPTY: 1,
+            Response.STATUS_PARTIAL: 0,
+            Response.STATUS_COMPLETE: 1,
         })
 
         self.assertEqual(list(pollrun.get_responses(self.region2)), [])
         self.assertDictEqual(pollrun.get_response_counts(self.region2), {
-            RESPONSE_EMPTY: 0,
-            RESPONSE_PARTIAL: 0,
-            RESPONSE_COMPLETE: 0,
+            Response.STATUS_EMPTY: 0,
+            Response.STATUS_PARTIAL: 0,
+            Response.STATUS_COMPLETE: 0,
         })
 
         # add a complete response from contact in different region
-        response3 = Response.objects.create(
-            flow_run_id=345, pollrun=pollrun, contact=self.contact4,
-            created_on=date1, updated_on=date1, status=RESPONSE_COMPLETE)
+        response3 = factories.Response(
+            pollrun=pollrun, contact=self.contact4,
+            created_on=date1, updated_on=date1, status=Response.STATUS_COMPLETE)
 
         self.assertEqual(
             list(pollrun.get_responses().order_by('pk')),
             [response1, response2, response3])
         self.assertDictEqual(pollrun.get_response_counts(), {
-            RESPONSE_EMPTY: 1,
-            RESPONSE_PARTIAL: 0,
-            RESPONSE_COMPLETE: 2,
+            Response.STATUS_EMPTY: 1,
+            Response.STATUS_PARTIAL: 0,
+            Response.STATUS_COMPLETE: 2,
         })
 
         self.assertEqual(
             list(pollrun.get_responses(self.region1).order_by('pk')),
             [response1, response2])
         self.assertDictEqual(pollrun.get_response_counts(self.region1), {
-            RESPONSE_EMPTY: 1,
-            RESPONSE_PARTIAL: 0,
-            RESPONSE_COMPLETE: 1,
+            Response.STATUS_EMPTY: 1,
+            Response.STATUS_PARTIAL: 0,
+            Response.STATUS_COMPLETE: 1,
         })
 
         self.assertEqual(
             list(pollrun.get_responses(self.region2)),
             [response3])
         self.assertDictEqual(pollrun.get_response_counts(self.region2), {
-            RESPONSE_EMPTY: 0,
-            RESPONSE_PARTIAL: 0,
-            RESPONSE_COMPLETE: 1,
+            Response.STATUS_EMPTY: 0,
+            Response.STATUS_PARTIAL: 0,
+            Response.STATUS_COMPLETE: 1,
         })
 
     def test_is_last_for_region(self):
-        pollrun1 = PollRun.objects.create(
+        pollrun1 = factories.RegionalPollRun(
             poll=self.poll1, region=self.region1, conducted_on=timezone.now())
-        pollrun2 = PollRun.objects.create(
-            poll=self.poll1, region=None, conducted_on=timezone.now())
-        pollrun3 = PollRun.objects.create(
+        pollrun2 = factories.UniversalPollRun(
+            poll=self.poll1, conducted_on=timezone.now())
+        pollrun3 = factories.RegionalPollRun(
             poll=self.poll1, region=self.region2, conducted_on=timezone.now())
 
         # pollrun #2 covers region #1 and is newer
@@ -220,73 +220,86 @@ class PollRunTest(TracProDataTest):
         self.contact5.language = 'ara'
         self.contact5.save()
 
-        pollrun = PollRun.objects.create(
-            poll=self.poll1, region=None, conducted_on=timezone.now())
+        pollrun = factories.UniversalPollRun(
+            poll=self.poll1, conducted_on=timezone.now())
 
         response1 = Response.create_empty(
             self.unicef, pollrun,
             Run.create(id=123, contact='C-001', created_on=timezone.now()))
-        Answer.create(
-            response1, self.poll1_question1, "4.00000", "1 - 5",
-            timezone.now())
-        Answer.create(
-            response1, self.poll1_question2, "It's very rainy",
-            "All Responses", timezone.now())
+        factories.Answer(
+            response=response1, question=self.poll1_question1,
+            value="4.00000", category="1 - 5")
+        factories.Answer(
+            response=response1, question=self.poll1_question2,
+            value="It's very rainy", category="All Responses")
 
         response2 = Response.create_empty(
             self.unicef, pollrun,
             Run.create(id=234, contact='C-002', created_on=timezone.now()))
-        Answer.create(
-            response2, self.poll1_question1, "3.00000", "1 - 5",
-            timezone.now())
-        Answer.create(
-            response2, self.poll1_question2, "rainy and rainy",
-            "All Responses", timezone.now())
+        factories.Answer(
+            response=response2, question=self.poll1_question1,
+            value="3.00000", category="1 - 5")
+        factories.Answer(
+            response=response2, question=self.poll1_question2,
+            value="rainy and rainy", category="All Responses")
 
         response3 = Response.create_empty(
             self.unicef, pollrun,
             Run.create(id=345, contact='C-004', created_on=timezone.now()))
-        Answer.create(
-            response3, self.poll1_question1, "8.00000", "6 - 10",
-            timezone.now())
-        Answer.create(
-            response3, self.poll1_question2, "Sunny sunny", "All Responses",
-            timezone.now())
+        factories.Answer(
+            response=response3, question=self.poll1_question1,
+            value="8.00000", category="6 - 10")
+        factories.Answer(
+            response=response3, question=self.poll1_question2,
+            value="Sunny sunny", category="All Responses")
 
         response4 = Response.create_empty(
             self.unicef, pollrun,
             Run.create(id=456, contact='C-005', created_on=timezone.now()))
-        Answer.create(
-            response4, self.poll1_question2, "مطر", "All Responses",
-            timezone.now())
+        factories.Answer(
+            response=response4, question=self.poll1_question2,
+            value="مطر", category="All Responses")
 
         # category counts for question #1
         self.assertEqual(
             pollrun.get_answer_category_counts(self.poll1_question1),
             [("1 - 5", 2), ("6 - 10", 1)])
         self.assertEqual(
-            pollrun.get_answer_category_counts(self.poll1_question1, self.region1),
+            pollrun.get_answer_category_counts(
+                self.poll1_question1,
+                [self.region1]),
             [("1 - 5", 2)])
         self.assertEqual(
-            pollrun.get_answer_category_counts(self.poll1_question1, self.region2),
+            pollrun.get_answer_category_counts(
+                self.poll1_question1,
+                [self.region2]),
             [("6 - 10", 1)])
         self.assertEqual(
-            pollrun.get_answer_category_counts(self.poll1_question1, self.region3),
+            pollrun.get_answer_category_counts(
+                self.poll1_question1,
+                [self.region3]),
             [])
 
         # and from cache... (lists rather than tuples due to JSON serialization)
         with self.assertNumQueries(0):
             self.assertEqual(
-                pollrun.get_answer_category_counts(self.poll1_question1),
+                pollrun.get_answer_category_counts(
+                    self.poll1_question1),
                 [["1 - 5", 2], ["6 - 10", 1]])
             self.assertEqual(
-                pollrun.get_answer_category_counts(self.poll1_question1, self.region1),
+                pollrun.get_answer_category_counts(
+                    self.poll1_question1,
+                    [self.region1]),
                 [["1 - 5", 2]])
             self.assertEqual(
-                pollrun.get_answer_category_counts(self.poll1_question1, self.region2),
+                pollrun.get_answer_category_counts(
+                    self.poll1_question1,
+                    [self.region2]),
                 [["6 - 10", 1]])
             self.assertEqual(
-                pollrun.get_answer_category_counts(self.poll1_question1, self.region3),
+                pollrun.get_answer_category_counts(
+                    self.poll1_question1,
+                    [self.region3]),
                 [])
 
         # auto-range category counts for question #1
@@ -294,37 +307,55 @@ class PollRunTest(TracProDataTest):
             pollrun.get_answer_auto_range_counts(self.poll1_question1),
             [('2 - 3', 1), ('4 - 5', 1), ('6 - 7', 0), ('8 - 9', 1), ('10 - 11', 0)])
         self.assertEqual(
-            pollrun.get_answer_auto_range_counts(self.poll1_question1, self.region1),
+            pollrun.get_answer_auto_range_counts(
+                self.poll1_question1,
+                [self.region1]),
             [('3', 1), ('4', 1), ('5', 0), ('6', 0), ('7', 0)])
         self.assertEqual(
-            pollrun.get_answer_auto_range_counts(self.poll1_question1, self.region2),
+            pollrun.get_answer_auto_range_counts(
+                self.poll1_question1,
+                [self.region2]),
             [('8', 1), ('9', 0), ('10', 0), ('11', 0), ('12', 0)])
         self.assertEqual(
-            pollrun.get_answer_auto_range_counts(self.poll1_question1, self.region3),
+            pollrun.get_answer_auto_range_counts(
+                self.poll1_question1,
+                [self.region3]),
             [])
 
         # numeric averages for question #1
         self.assertEqual(
             pollrun.get_answer_numeric_average(self.poll1_question1), 5.0)
         self.assertEqual(
-            pollrun.get_answer_numeric_average(self.poll1_question1, self.region1), 3.5)
+            pollrun.get_answer_numeric_average(
+                self.poll1_question1,
+                [self.region1]), 3.5)
         self.assertEqual(
-            pollrun.get_answer_numeric_average(self.poll1_question1, self.region2), 8.0)
+            pollrun.get_answer_numeric_average(
+                self.poll1_question1,
+                [self.region2]), 8.0)
         self.assertEqual(
-            pollrun.get_answer_numeric_average(self.poll1_question1, self.region3), 0.0)
+            pollrun.get_answer_numeric_average(
+                self.poll1_question1,
+                [self.region3]), 0.0)
 
         # word counts for question #2
         self.assertEqual(
             pollrun.get_answer_word_counts(self.poll1_question2),
             [("rainy", 3), ("sunny", 2), ('مطر', 1)])
         self.assertEqual(
-            pollrun.get_answer_word_counts(self.poll1_question2, self.region1),
+            pollrun.get_answer_word_counts(
+                self.poll1_question2,
+                [self.region1]),
             [("rainy", 3)])
         self.assertEqual(
-            pollrun.get_answer_word_counts(self.poll1_question2, self.region2),
+            pollrun.get_answer_word_counts(
+                self.poll1_question2,
+                [self.region2]),
             [("sunny", 2)])
         self.assertEqual(
-            pollrun.get_answer_word_counts(self.poll1_question2, self.region3),
+            pollrun.get_answer_word_counts(
+                self.poll1_question2,
+                [self.region3]),
             [('مطر', 1)])
 
 
@@ -367,7 +398,7 @@ class ResponseTest(TracProDataTest):
         self.assertEqual(
             response1.updated_on,
             datetime.datetime(2015, 1, 2, 3, 4, 5, 6, pytz.UTC))
-        self.assertEqual(response1.status, RESPONSE_COMPLETE)
+        self.assertEqual(response1.status, Response.STATUS_COMPLETE)
         self.assertEqual(len(response1.answers.all()), 2)
         answers = list(response1.answers.order_by('question_id'))
         self.assertEqual(answers[0].question, self.poll1_question1)
@@ -411,7 +442,7 @@ class ResponseTest(TracProDataTest):
         self.assertEqual(
             response2.updated_on,
             datetime.datetime(2014, 1, 2, 3, 4, 5, 6, pytz.UTC))
-        self.assertEqual(response2.status, RESPONSE_PARTIAL)
+        self.assertEqual(response2.status, Response.STATUS_PARTIAL)
         self.assertEqual(len(response2.answers.all()), 1)
 
         # now completed
@@ -450,7 +481,7 @@ class ResponseTest(TracProDataTest):
         self.assertEqual(
             response3.updated_on,
             datetime.datetime(2015, 1, 2, 3, 4, 5, 6, pytz.UTC))
-        self.assertEqual(response3.status, RESPONSE_COMPLETE)
+        self.assertEqual(response3.status, Response.STATUS_COMPLETE)
         self.assertEqual(len(response3.answers.all()), 2)
 
         # an empty run
@@ -472,7 +503,7 @@ class ResponseTest(TracProDataTest):
         self.assertEqual(
             response4.updated_on,
             datetime.datetime(2013, 1, 2, 3, 4, 5, 6, pytz.UTC))
-        self.assertEqual(response4.status, RESPONSE_EMPTY)
+        self.assertEqual(response4.status, Response.STATUS_EMPTY)
         self.assertEqual(len(response4.answers.all()), 0)
 
         # new run for same contact should de-activate old response
@@ -497,51 +528,83 @@ class ResponseTest(TracProDataTest):
 class AnswerTest(TracProDataTest):
 
     def test_create(self):
-        pollrun = PollRun.objects.create(
-            poll=self.poll1, region=None, conducted_on=timezone.now())
+        pollrun = factories.UniversalPollRun(
+            poll=self.poll1, conducted_on=timezone.now())
         response = Response.create_empty(
             self.unicef, pollrun,
             Run.create(id=123, contact='C-001', created_on=timezone.now()))
 
-        answer1 = Answer.create(
-            response, self.poll1_question1, "4.00000", "1 - 5", timezone.now())
+        answer1 = factories.Answer(
+            response=response, question=self.poll1_question1,
+            value="4.00000", category="1 - 5")
         self.assertEqual(answer1.response, response)
         self.assertEqual(answer1.question, self.poll1_question1)
         self.assertEqual(answer1.category, "1 - 5")
         self.assertEqual(answer1.value, "4.00000")
 
-        answer2 = Answer.create(
-            response, self.poll1_question1, "rain",
-            dict(base="Rain", rwa="Imvura"), timezone.now())
+        answer2 = factories.Answer(
+            response=response, question=self.poll1_question1,
+            value="rain", category=dict(base="Rain", rwa="Imvura"))
         self.assertEqual(answer2.category, "Rain")
 
-        answer3 = Answer.create(
-            response, self.poll1_question1, "rain", dict(eng="Yes"),
-            timezone.now())
+        answer3 = factories.Answer(
+            response=response, question=self.poll1_question1,
+            value="rain", category=dict(eng="Yes"))
         self.assertEqual(answer3.category, "Yes")
 
     def test_auto_range_counts(self):
-        self.assertEqual(Answer.auto_range_counts([]), {})
-        self.assertEqual(Answer.auto_range_counts([Answer(value=1, category=None)]), {})
+        qs = Answer.objects.none()
+        self.assertEqual(qs.auto_range_counts(), {})
+
+    def test_auto_range_counts_2(self):
+        a = factories.Answer(value=1, category=None)
+        qs = Answer.objects.filter(pk=a.pk)
+        self.assertEqual(qs.auto_range_counts(), {})
+
+    def test_auto_range_counts_3(self):
+        a = factories.Answer(value=1, category="1 - 100")
+        qs = Answer.objects.filter(pk=a.pk)
         self.assertEqual(
-            Answer.auto_range_counts([Answer(value=1, category="1 - 100")]),
+            qs.auto_range_counts(),
             {'1': 1, '2': 0, '3': 0, '4': 0, '5': 0})
+
+    def test_auto_range_counts_4(self):
+        a1 = factories.Answer(value=1, category="1 - 100")
+        a2 = factories.Answer(value=2, category="1 - 100")
+        a3 = factories.Answer(value=2, category="1 - 100")
+        a4 = factories.Answer(value=3, category="1 - 100")
+        qs = Answer.objects.filter(pk__in=[a1.pk, a2.pk, a3.pk, a4.pk])
         self.assertEqual(
-            Answer.auto_range_counts([Answer(value=1, category="1 - 100"),
-                                      Answer(value=2, category="1 - 100"),
-                                      Answer(value=2, category="1 - 100"),
-                                      Answer(value=3, category="1 - 100")]),
+            qs.auto_range_counts(),
             {'1': 1, '2': 2, '3': 1, '4': 0, '5': 0})
+
+    def test_auto_range_counts_5(self):
+        a1 = factories.Answer(value=1, category="1 - 100")
+        a2 = factories.Answer(value=2, category="1 - 100")
+        a3 = factories.Answer(value=6, category="1 - 100")
+        a4 = factories.Answer(value=6, category="1 - 100")
+        a5 = factories.Answer(value=13, category="1 - 100")
+        qs = Answer.objects.filter(pk__in=[a1.pk, a2.pk, a3.pk, a4.pk, a5.pk])
         self.assertEqual(
-            Answer.auto_range_counts([Answer(value=1, category="1 - 100"),
-                                      Answer(value=2, category="1 - 100"),
-                                      Answer(value=6, category="1 - 100"),
-                                      Answer(value=6, category="1 - 100"),
-                                      Answer(value=13, category="1 - 100")]),
+            qs.auto_range_counts(),
             {'0 - 9': 4, '10 - 19': 1, '20 - 29': 0, '30 - 39': 0, '40 - 49': 0})
 
     def test_numeric_average(self):
-        self.assertEqual(Answer.numeric_average([]), 0)
-        self.assertEqual(Answer.numeric_average([Answer(value=1, category=None)]), 0)
-        self.assertEqual(Answer.numeric_average([Answer(value=1, category="1 - 100"),
-                                                 Answer(value=2, category="1 - 100")]), 1.5)
+        qs = Answer.objects.none()
+        self.assertEqual(qs.numeric_average(), 0)
+
+    def test_numeric_average_2(self):
+        a = factories.Answer(value=1, category=None)
+        qs = Answer.objects.filter(pk=a.pk)
+        self.assertEqual(qs.numeric_average(), 0)
+
+    def test_numeric_average_3(self):
+        a = factories.Answer(value=1, category="1 - 100")
+        qs = Answer.objects.filter(pk=a.pk)
+        self.assertEqual(qs.numeric_average(), 1)
+
+    def test_numeric_average_4(self):
+        a1 = factories.Answer(value=1, category="1 - 100")
+        a2 = factories.Answer(value=2, category="1 - 100")
+        qs = Answer.objects.filter(pk__in=[a1.pk, a2.pk])
+        self.assertEqual(qs.numeric_average(), 1.5)

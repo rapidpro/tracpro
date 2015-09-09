@@ -5,7 +5,8 @@ from temba.types import Run
 from django.core.urlresolvers import reverse
 from django.utils import timezone
 
-from tracpro.polls.models import PollRun, Response
+from tracpro.polls.models import Response
+from tracpro.test import factories
 from tracpro.test.cases import TracProDataTest
 
 from ..models import Contact
@@ -135,8 +136,8 @@ class ContactCRUDLTest(TracProDataTest):
         self.assertEqual(response.status_code, 404)
 
     def test_list(self):
-        pollrun1 = PollRun.objects.create(
-            poll=self.poll1, region=None, conducted_on=self.datetime(2014, 12, 1))
+        pollrun1 = factories.UniversalPollRun(
+            poll=self.poll1, conducted_on=self.datetime(2014, 12, 1))
         Response.create_empty(
             self.unicef, pollrun1,
             Run.create(id=123, contact='C-001', created_on=timezone.now()))
@@ -148,7 +149,8 @@ class ContactCRUDLTest(TracProDataTest):
         # no poll pollruns shown in "All Regions" view
         self.assertNotContains(response, "Farm Poll")
 
-        response = self.url_get('unicef', '%s?search=an' % reverse('contacts.contact_list'))
+        url = '{}?search=an'.format(reverse('contacts.contact_list'))
+        response = self.url_get('unicef', url)
         self.assertEqual(len(response.context['object_list']), 2)
         self.assertContains(response, "Ann")
         self.assertContains(response, "Dan")

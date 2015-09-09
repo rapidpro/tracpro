@@ -5,9 +5,14 @@ import json
 
 from dash.orgs.views import OrgPermsMixin
 
+from django.contrib import messages
+from django.core.urlresolvers import reverse
 from django.db import transaction
 from django.db.models import Prefetch
-from django.http import HttpResponseRedirect, JsonResponse
+from django.http import (
+    HttpResponseBadRequest, HttpResponseRedirect, JsonResponse)
+from django.shortcuts import redirect
+from django.utils.http import is_safe_url
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic import View
 
@@ -21,6 +26,41 @@ from .forms import ContactGroupsForm
 
 
 logger = logging.getLogger(__name__)
+
+
+class ToggleSubregions(View):
+    post_param = "include_subregions"
+    next_param = "next"
+    session_param = "include_subregions"
+
+    def post(self, request, *args, **kwargs):
+        """
+        Update session variable that manages whether to include data for
+        sub-regions, or only the current region.
+        """
+        if self.post_param not in request.POST:
+            raise HttpResponseBadRequest(
+                "Request should include '{}'.".format(self.post_param))
+
+        val = request.POST.get(self.post_param)
+        if val in ('0', '1'):
+            val = bool(int(val))
+            request.session[self.session_param] = val
+            request.session.save()
+            if val:
+                msg = "Now showing data from {region} and its sub-regions."
+            else:
+                msg = "Showing data from {region} only."
+            messages.info(request, msg.format(region=request.region))
+        else:
+            raise HttpResponseBadRequest(
+                "{} should be either '0' or '1'".format(self.post_param))
+
+        # Redirect to the next path.
+        next_path = request.POST.get(self.next_param)
+        if not (next_path and is_safe_url(next_path, request.get_host())):
+            next_path = reverse("home.home")
+        return redirect(next_path)
 
 
 class RegionCRUDL(SmartCRUDL):

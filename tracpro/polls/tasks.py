@@ -1,26 +1,31 @@
 from __future__ import absolute_import, unicode_literals
 
-from django.utils import timezone
-
 from celery.utils.log import get_task_logger
+
+from dash.orgs.models import Org
+from dash.utils import datetime_to_ms
+
 from djcelery_transactions import task
+
 from django_redis import get_redis_connection
+
 from temba.utils import parse_iso8601, format_iso8601
 
-from dash.utils import datetime_to_ms
-from dash.orgs.models import Org
+from django.utils import timezone
+
+from tracpro.contacts.models import Contact
+
 
 logger = get_task_logger(__name__)
 
 FETCH_ALL_RUNS_LOCK = 'task:fetch_all_runs'
+
 LAST_FETCHED_RUN_TIME_KEY = 'org:%d:last_fetched_run_time'
 
 
 @task
 def fetch_all_runs():
-    """
-    Fetches flow runs for all orgs
-    """
+    """Fetches flow runs for all orgs."""
     r = get_redis_connection()
 
     # only do this if we aren't already running so we don't get backed up
@@ -36,7 +41,8 @@ def fetch_all_runs():
 
 def fetch_org_runs(org):
     """
-    Fetches new and modified flow runs for the given org and creates/updates poll responses
+    Fetches new and modified flow runs for the given org and creates/updates
+    poll responses.
     """
     from tracpro.orgs_ext.constants import TaskType
     from tracpro.polls.models import Poll, Response
@@ -63,7 +69,7 @@ def fetch_org_runs(org):
         for run in poll_runs:
             try:
                 Response.from_run(org, run, poll=poll)
-            except ValueError, e:
+            except ValueError as e:
                 logger.error("Unable to save run #%d due to error: %s" % (run.id, e.message))
                 continue
 
@@ -85,13 +91,19 @@ def pollrun_start(pollrun_id):
     from tracpro.polls.models import PollRun, Response
 
     pollrun = PollRun.objects.select_related('poll', 'region').get(pk=pollrun_id)
-    if not pollrun.region:
+    if pollrun.pollrun_type not in (PollRun.TYPE_PROPAGATED, PollRun.TYPE_REGIONAL):
         raise ValueError("Can't start non-regional poll")
 
     org = pollrun.poll.org
     client = org.get_temba_client()
 
-    contact_uuids = [c.uuid for c in pollrun.region.get_contacts()]
+    contacts = Contact.objects.filter(is_active=True)
+    if pollrun.pollrun_type == PollRun.TYPE_PROPAGATED:
+        descendants = pollrun.region.get_descendants(include_self=True)
+        contacts = contacts.filter(region__in=descendants)
+    elif pollrun.pollrun_type == PollRun.TYPE_REGIONAL:
+        contacts = contacts.filter(region=pollrun.region)
+    contact_uuids = contacts.values_list('uuid', flat=True)
 
     runs = client.create_runs(pollrun.poll.flow_uuid, contact_uuids, restart_participants=True)
     for run in runs:
@@ -108,8 +120,8 @@ def pollrun_restart_participants(pollrun_id, contact_uuids):
     """
     from tracpro.polls.models import PollRun, Response
 
-    pollrun = PollRun.objects.select_related('poll').get(pk=pollrun_id)
-    if not pollrun.region:
+    pollrun = PollRun.objects.select_related('poll', 'region').get(pk=pollrun_id)
+    if pollrun.pollrun_type not in (PollRun.TYPE_REGIONAL, PollRun.TYPE_PROPAGATED):
         raise ValueError("Can't restart participants of a non-regional poll")
 
     if not pollrun.is_last_for_region(pollrun.region):

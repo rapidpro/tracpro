@@ -124,3 +124,45 @@ footer {
 .italicized {
   font-style: italic;
 }
+
+.navbar-nav .dropdown-menu {
+    li.active-region > a {
+        font-weight: bold;
+    }
+    ul.active-region li > a, li.active-region > a {
+        background-color: #f4f9ff;
+    }
+}
+.navbar-nav .dropdown-menu .submenu {
+    list-style: none;
+    padding-left: 0px;
+
+    li {
+        color: #333;
+        a {
+            clear: both;
+            color: inherit;
+            display: block;
+            padding: 3px 20px;
+            white-space: nowrap;
+
+            &:hover {
+                background-color: #e8e8e8;
+                background-image: -webkit-linear-gradient(top, #f5f5f5 0%, #e8e8e8 100%);
+                background-image: -webkit-gradient(linear, left top, left bottom, from(#f5f5f5), to(#e8e8e8));
+                background-image: -o-linear-gradient(top, #f5f5f5 0%, #e8e8e8 100%);
+                background-image: linear-gradient(to bottom, #f5f5f5 0%, #e8e8e8 100%);
+                background-repeat: repeat-x;
+                filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#fff5f5f5', endColorstr='#ffe8e8e8', GradientType=0);
+                text-decoration: none;
+            }
+            &:focus {
+                text-decoration: none;
+            }
+            .indenter {
+                display: inline-block;
+                width: 0;  /* exact width set by Javascript */
+            }
+        }
+    }
+}

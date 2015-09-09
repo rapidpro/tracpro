@@ -13,7 +13,9 @@ from django.test import TestCase
 
 from tracpro.contacts.models import Contact
 from tracpro.groups.models import Group, Region
-from tracpro.polls.models import Poll, Question
+from tracpro.polls.models import Question
+
+from . import factories
 
 
 class TracProTest(TestCase):
@@ -144,12 +146,31 @@ class TracProDataTest(TracProTest):
             self.nyaruka, "Norbert", 'twitter:n7', self.region4, self.group4, 'C-006')
 
         # a poll with some questions
-        self.poll1 = Poll.create(self.unicef, "Farm Poll", 'F-001')
-        self.poll1_question1 = Question.create(
-            self.poll1, "Number of sheep", 'N', 1, 'RS-001')
-        self.poll1_question2 = Question.create(
-            self.poll1, "How is the weather?", 'O', 2, 'RS-002')
+        self.poll1 = factories.Poll(
+            org=self.unicef, name="Farm Poll", flow_uuid='F-001')
+        self.poll1_question1 = factories.Question(
+            poll=self.poll1,
+            type=Question.TYPE_NUMERIC,
+            text="Number of sheep",
+            order=1,
+            ruleset_uuid='RS-001',
+        )
+
+        self.poll1_question2 = factories.Question(
+            poll=self.poll1,
+            type=Question.TYPE_OPEN,
+            text="How is the weather?",
+            order=2,
+            ruleset_uuid='RS-002',
+        )
 
         # and a poll for the other org
-        self.poll2 = Poll.create(self.nyaruka, "Code Poll", 'F-002')
-        self.poll2_question1 = Question.create(self.poll2, "Number of bugs", 'N', 1, 'RS-003')
+        self.poll2 = factories.Poll(
+            org=self.nyaruka, name="Code Poll", flow_uuid='F-002')
+        self.poll2_question1 = factories.Question(
+            poll=self.poll2,
+            type=Question.TYPE_NUMERIC,
+            text="Number of bugs",
+            order=1,
+            ruleset_uuid='RS-003',
+        )

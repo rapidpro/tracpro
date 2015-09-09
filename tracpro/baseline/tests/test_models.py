@@ -1,10 +1,9 @@
 from datetime import datetime
 from dateutil import rrule
 
+from tracpro.test import factories
 from tracpro.test.cases import TracProDataTest
-from tracpro.polls.models import (
-    Answer, PollRun, Response, RESPONSE_COMPLETE
-)
+from tracpro.polls.models import Answer, Response
 
 from ..models import BaselineTerm
 
@@ -35,17 +34,17 @@ class BaselineTermTest(TracProDataTest):
             )
 
         # Create a single PollRun for the Baseline Poll
-        self.baseline_pollrun = PollRun.objects.create(poll=self.poll1, conducted_on=self.start_date)
+        self.baseline_pollrun = factories.RegionalPollRun(
+            poll=self.poll1, conducted_on=self.start_date)
         # Create a Response AKA FlowRun for each contact for Baseline
         answer_value = 10  # Baseline values will be 10, 20 and 30
         for contact in contacts:
-            response = Response.objects.create(
+            response = factories.Response(
                 pollrun=self.baseline_pollrun,
                 contact=contact,
                 created_on=self.start_date,
                 updated_on=self.start_date,
-                status=RESPONSE_COMPLETE,
-                is_active=True)
+                status=Response.STATUS_COMPLETE)
             # Create an Answer for each contact for Baseline
             Answer.objects.create(
                 response=response,
@@ -65,17 +64,16 @@ class BaselineTermTest(TracProDataTest):
         # Create a PollRun for each date from start to end dates for the Follow Up Poll
         date_iter = 0
         for follow_up_date in rrule.rrule(rrule.DAILY, dtstart=self.start_date, until=self.end_date):
-            follow_up_pollrun = PollRun.objects.create(
+            follow_up_pollrun = factories.RegionalPollRun(
                 poll=self.poll2, conducted_on=follow_up_date)
             for contact in contacts:
                 # Create a Response AKA FlowRun for each contact for Follow Up
-                response = Response.objects.create(
+                response = factories.Response(
                     pollrun=follow_up_pollrun,
                     contact=contact,
                     created_on=follow_up_date,
                     updated_on=follow_up_date,
-                    status=RESPONSE_COMPLETE,
-                    is_active=True)
+                    status=Response.STATUS_COMPLETE)
                 answer = self.contact_dict[contact]["answers"][date_iter]
                 # Create a randomized Answer for each contact for Follow Up
                 Answer.objects.create(

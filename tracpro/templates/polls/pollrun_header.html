@@ -6,7 +6,8 @@
     {{ pollrun }}
   </h2>
   <ul class='pollrun-details'>
-    <li><strong>{% trans "Region" %}</strong>:
+    <li>
+      <strong>{% trans "Region" %}</strong>:
       {% if pollrun.region %}
         {{ pollrun.region }}
       {% else %}
@@ -18,12 +19,12 @@
         {{ pollrun.poll }}
       </a>
     </li>
-    <li><strong>{% trans "Started by" %}</strong>:
+    <li>
+      <strong>{% trans "Started by" %}</strong>:
       {% if pollrun.created_by_id %}
         {{ pollrun.created_by }}
       {% else %}
         {% trans "RapidPro" %}
-
       {% endif %}
     </li>
   </ul>
@@ -42,8 +43,6 @@
   <li class='{% if_url 'polls.response_by_pollrun' 'active' '' %}'>
     <a href='{% url 'polls.response_by_pollrun' pollrun.pk %}'>
       {% trans "Responses" %}
-
-
     </a>
   </li>
 </ul>
@@ -59,6 +58,5 @@
     padding: 0;
     list-style: none;
   }
-
 /*]]>*/
 </style>
