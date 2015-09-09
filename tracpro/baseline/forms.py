@@ -70,13 +70,11 @@ class SpoofDataForm(forms.Form):
         "Follow up data will start on this date."))
     end_date = forms.DateField(help_text=_("Follow up data will end on this date."))
     baseline_question = QuestionModelChoiceField(queryset=Question.objects.all().order_by('poll__name', 'text'),
-                                               help_text=_(
-                                               "Select a baseline question which " +
-                                               "will have numeric answers only."))
+                                                 help_text=_("Select a baseline question which " +
+                                                             "will have numeric answers only."))
     follow_up_question = QuestionModelChoiceField(queryset=Question.objects.all().order_by('poll__name', 'text'),
-                                                help_text=_(
-                                                "Select a follow up question which " +
-                                                "will have numeric answers only."))
+                                                  help_text=_("Select a follow up question which " +
+                                                              "will have numeric answers only."))
     baseline_minimum = forms.IntegerField(
         help_text=_("A baseline answer will be created for each contact within the minimum/maximum range."))
     baseline_maximum = forms.IntegerField(
