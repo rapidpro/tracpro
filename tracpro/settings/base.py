@@ -210,6 +210,7 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'dash.context_processors.lang_direction',
     'tracpro.orgs_ext.context_processors.user_is_admin',
     'tracpro.orgs_ext.context_processors.available_languages',
+    'tracpro.groups.context_processors.show_subregions_toggle_form',
 )
 
 TEMPLATE_DIRS = (

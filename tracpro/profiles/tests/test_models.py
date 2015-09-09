@@ -20,7 +20,7 @@ class UserPatchTest(TracProDataTest):
         self.assertFalse(user.profile.change_password)
 
         self.assertEqual(user.regions.count(), 2)
-        self.assertEqual(user.get_regions(self.unicef).count(), 2)
+        self.assertEqual(user.get_direct_regions(self.unicef).count(), 2)
 
         self.assertTrue(user.has_region_access(self.region1))
         self.assertTrue(user.has_region_access(self.region2))

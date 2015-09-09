@@ -9,8 +9,8 @@ from temba.types import Broadcast
 
 from tracpro.msgs.models import (
     Message, COHORT_ALL, COHORT_RESPONDENTS, COHORT_NONRESPONDENTS)
-from tracpro.polls.models import (
-    PollRun, Response, RESPONSE_COMPLETE, RESPONSE_PARTIAL, RESPONSE_EMPTY)
+from tracpro.polls.models import Response
+from tracpro.test import factories
 from tracpro.test.cases import TracProDataTest
 
 
@@ -27,18 +27,18 @@ class MessageTest(TracProDataTest):
         now = timezone.now()
 
         # create non-regional pollrun with 3 responses (1 complete, 1 partial, 1 empty)
-        pollrun1 = PollRun.objects.create(
-            poll=self.poll1, region=None, conducted_on=timezone.now())
+        pollrun1 = factories.UniversalPollRun(
+            poll=self.poll1, conducted_on=timezone.now())
 
-        Response.objects.create(
-            flow_run_id=123, pollrun=pollrun1, contact=self.contact1,
-            created_on=now, updated_on=now, status=RESPONSE_COMPLETE)
-        Response.objects.create(
-            flow_run_id=234, pollrun=pollrun1, contact=self.contact2,
-            created_on=now, updated_on=now, status=RESPONSE_PARTIAL)
-        Response.objects.create(
-            flow_run_id=345, pollrun=pollrun1, contact=self.contact4,
-            created_on=now, updated_on=now, status=RESPONSE_EMPTY)
+        factories.Response(
+            pollrun=pollrun1, contact=self.contact1,
+            created_on=now, updated_on=now, status=Response.STATUS_COMPLETE)
+        factories.Response(
+            pollrun=pollrun1, contact=self.contact2,
+            created_on=now, updated_on=now, status=Response.STATUS_PARTIAL)
+        factories.Response(
+            pollrun=pollrun1, contact=self.contact4,
+            created_on=now, updated_on=now, status=Response.STATUS_EMPTY)
 
         msg1 = Message.create(
             self.unicef, self.admin, "Test #1", pollrun1, COHORT_ALL, None)

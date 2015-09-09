@@ -6,7 +6,7 @@
   {% include 'polls/pollrun_header.html' with pollrun=pollrun %}
 
   <div class='clearfix'>
-    {% if request.region and not pollrun.region %}
+    {% if request.region and not pollrun.region.exists %}
       {% blocktrans with region=request.region %}
         These are the responses for <strong>{{ region }}</strong>
 

@@ -45,6 +45,7 @@ class UserFormMixin(object):
 
 
 class UserFieldsMixin(object):
+
     def get_full_name(self, obj):
         return obj.profile.full_name
 
@@ -69,10 +70,13 @@ class UserCRUDL(SmartCRUDL):
             password = self.form.cleaned_data['password']
             change_password = self.form.cleaned_data['change_password']
             regions = self.form.cleaned_data['regions']
-            self.object = User.create(org, full_name, obj.email, password, change_password, regions)
+            self.object = User.create(
+                org, full_name, obj.email, password, change_password, regions)
 
     class Update(OrgPermsMixin, UserFormMixin, SmartUpdateView):
-        fields = ('full_name', 'email', 'new_password', 'confirm_password', 'regions', 'is_active')
+        fields = (
+            'full_name', 'email', 'new_password', 'confirm_password',
+            'regions', 'is_active')
         form_class = UserForm
         permission = 'profiles.profile_user_update'
         success_message = _("Supervisor updated")

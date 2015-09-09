@@ -7,7 +7,8 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 
 from tracpro.contacts.models import Contact
-from tracpro.polls.models import RESPONSE_COMPLETE
+from tracpro.polls.models import Response
+
 from .tasks import send_message
 
 
@@ -65,9 +66,9 @@ class Message(models.Model):
         if cohort == COHORT_ALL:
             responses = pollrun.get_responses(region)
         elif cohort == COHORT_RESPONDENTS:
-            responses = pollrun.get_responses(region).filter(status=RESPONSE_COMPLETE)
+            responses = pollrun.get_responses(region).filter(status=Response.STATUS_COMPLETE)
         elif cohort == COHORT_NONRESPONDENTS:
-            responses = pollrun.get_responses(region).exclude(status=RESPONSE_COMPLETE)
+            responses = pollrun.get_responses(region).exclude(status=Response.STATUS_COMPLETE)
         else:  # pragma: no cover
             raise ValueError("Invalid cohort code: %s" % cohort)
 
@@ -79,13 +80,11 @@ class Message(models.Model):
         return message
 
     @classmethod
-    def get_all(cls, org, region=None):
+    def get_all(cls, org, regions=None):
         messages = cls.objects.filter(org=org)
-
-        if region:
+        if regions is not None:
             # any message to this region or any non-regional message
-            messages = messages.filter(Q(region=None) | Q(region=region))
-
+            messages = messages.filter(Q(region=None) | Q(region__in=regions))
         return messages.select_related('region')
 
     def as_json(self):
@@ -118,7 +117,7 @@ class InboxMessage(models.Model):
     @classmethod
     def get_all(cls, org, regions=None):
         messages = cls.objects.filter(org=org)
-        if regions:
+        if regions is not None:
             messages = messages.filter(contact__region__in=regions)
         return messages
 

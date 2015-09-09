@@ -101,8 +101,11 @@ class Contact(models.Model):
         return cls.objects.create(**cls.kwargs_from_temba(org, temba_contact))
 
     @classmethod
-    def get_all(cls, org):
-        return org.contacts.filter(is_active=True)
+    def get_all(cls, org, regions=None):
+        qs = cls.objects.filter(org=org, is_active=True)
+        if regions is not None:
+            qs = qs.filter(region__in=regions)
+        return qs
 
     @classmethod
     def kwargs_from_temba(cls, org, temba_contact):
@@ -154,11 +157,11 @@ class Contact(models.Model):
         return tuple(self.urn.split(':', 1))
 
     def get_responses(self, include_empty=True):
-        from tracpro.polls.models import RESPONSE_EMPTY
+        from tracpro.polls.models import Response
         qs = self.responses.filter(pollrun__poll__is_active=True, is_active=True)
         qs = qs.select_related('pollrun')
         if not include_empty:
-            qs = qs.exclude(status=RESPONSE_EMPTY)
+            qs = qs.exclude(status=Response.STATUS_EMPTY)
         return qs
 
     def release(self):

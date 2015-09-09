@@ -73,11 +73,11 @@ class AbstractGroup(models.Model):
 
     @classmethod
     def get_response_counts(cls, org, window=None, include_empty=False):
-        from tracpro.polls.models import Response, RESPONSE_EMPTY
+        from tracpro.polls.models import Response
         qs = Response.objects.filter(pollrun__poll__org=org, is_active=True)
 
         if not include_empty:
-            qs = qs.exclude(status=RESPONSE_EMPTY)
+            qs = qs.exclude(status=Response.STATUS_EMPTY)
 
         if window:
             window_min, window_max = window.to_range()

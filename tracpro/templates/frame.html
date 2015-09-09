@@ -1,5 +1,9 @@
 <!doctype html>
-{% load compress thumbnail smartmin i18n %}
+{% load compress %}
+{% load i18n %}
+{% load mptt_tags %}
+{% load smartmin %}
+{% load thumbnail %}
 <html ng-app='trac' dir='{{ lang_direction }}'>
 
   <head>
@@ -200,7 +204,6 @@
                 <li>
                   <a href='/'>
                     {% trans "Home" %}
-
                   </a>
                 </li>
               {% endif %}
@@ -219,7 +222,7 @@
 
                       </p>
                     {% endif %}
-                    {% if request.user_regions.exists %}
+                    {% if request.user_regions %}
                       <li class='dropdown'>
                         <a class='dropdown-toggle' data-toggle='dropdown' href='#' role='button'>
                           <strong>
@@ -232,28 +235,58 @@
                           <span class='caret'></span>
                         </a>
                         <ul class='dropdown-menu' role='menu'>
-                          {% for region in request.user_regions %}
-                            <li>
-                              <a href='{{ request.path }}?_region={{ region.pk }}'>
-                                {{ region.name }}
-                              </a>
-                            </li>
-                          {% endfor %}
                           {% if user_is_admin %}
-                            <li class='divider'></li>
                             <li>
                               <a href='{{ request.path }}?_region=0'>
                                 {% trans "All Regions" %}
                               </a>
                             </li>
                           {% endif %}
+                          {% if show_subregions_toggle_form %}
+                            <li>
+                              <form id="toggle-subregions-form"
+                                    method="POST" action="{% url "toggle-subregions" %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="include_subregions"
+                                       value="{% if request.include_subregions %}0{% else %}1{% endif %}" />
+                                <input type="hidden" name="next"
+                                       value="{{ request.get_full_path }}" />
+                                <input type="submit" class="hidden" />
+                              </form>
+                              {% if request.include_subregions %}
+                                <a class="toggle-subregions" href="#"
+                                   title="Currently showing data for {{ request.region }} and all sub-regions. Click to show data from {{ request.region }} only.">
+                                   Hide sub-region data
+                                 </a>
+                              {% else %}
+                                <a class="toggle-subregions" href="#"
+                                   title="Currently showing data for {{ request.region }} only. Click to show data from {{ request.region }} and all sub-regions.">
+                                  Show sub-region data
+                                </a>
+                              {% endif %}
+                            </li>
+                          {% endif %}
+                          {% if user_is_admin or show_subregions_toggle_form %}
+                            <li class='divider'></li>
+                          {% endif %}
+                          {% recursetree request.user_regions %}
+                            <li{% if node == request.region %} class="active-region"{% endif %}>
+                              <a href='{{ request.path }}?_region={{ node.pk }}'>
+                                <span class="indenter">&nbsp;</span>{{ node.name }}
+                              </a>
+                              {% if children %}
+                                <ul class="submenu{% if node == request.region and request.include_subregions %} active-region{% endif %}">
+                                  {{ children }}
+                                </ul>
+                              {% endif %}
+                            </li>
+                          {% endrecursetree %}
                         </ul>
                       </li>
-                    {% elif request.user_regions.count == 1 %}
+                    {% elif request.user_regions|length == 1 %}
                       <p class='navbar-text' style='float: left;'>
                         <strong>
                           {{ request.region }}
-
                         </strong>
                       </p>
                     {% endif %}
@@ -319,6 +352,7 @@
     <script type="text/javascript" src="{{ STATIC_URL }}js/highcharts.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/select2.min.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/jqcloud-1.0.4.min.js"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}js/trac.js"></script>
 
     {% compress js %}
     <script src='{{ STATIC_URL }}coffee/trac.coffee' type='text/coffeescript'></script>
@@ -367,6 +401,5 @@
 
     {% block extra-script %}{% endblock %}
     {% block script %}{% endblock %}
-
   </body>
 </html>

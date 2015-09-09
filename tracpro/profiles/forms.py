@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.core.validators import MinLengthValidator
 from django.utils.translation import ugettext_lazy as _
 
+from tracpro.groups.fields import ModifiedLevelTreeNodeMultipleChoiceField
 from tracpro.groups.models import Region
 
 
@@ -36,11 +37,12 @@ class UserForm(forms.ModelForm):
         label=_("Require change"),
         required=False,
         help_text=_("Whether user must change password on next login."))
-    regions = forms.ModelMultipleChoiceField(
+    regions = ModifiedLevelTreeNodeMultipleChoiceField(
         label=_("Regions"),
         queryset=Region.objects.all(),
         required=False,
-        help_text=_("Regions which this user can access."))
+        help_text=_("Region(s) which this user can access. User will "
+                    "automatically be granted access to sub-regions."))
 
     class Meta:
         model = User
@@ -50,7 +52,7 @@ class UserForm(forms.ModelForm):
         self.user = kwargs.pop('user')
         super(UserForm, self).__init__(*args, **kwargs)
         if self.user.get_org():
-            regions = Region.get_all(self.user.get_org()).order_by('name')
+            regions = Region.get_all(self.user.get_org())
             self.fields['regions'].queryset = regions
 
     def clean(self):

@@ -14,7 +14,8 @@ class BaselineTerm(models.Model):
                         information for all dates
                         ie. How many students are enrolled?
      follow_up_question: the answers to this question will determine the
-                         follow-up information, over the date range (start_date -> end_date)
+                         follow-up information, over the date range
+                         (start_date -> end_date)
                          ie. How many students attended today?
     """
 
@@ -58,7 +59,8 @@ class BaselineTerm(models.Model):
             submitted_on__lte=self.end_date,  # look into timezone
         ).select_related('response')
         # Retrieve the most recent baseline results per contact
-        baseline_answers = answers.order_by('response__contact', '-submitted_on').distinct('response__contact')
+        baseline_answers = answers.order_by('response__contact', '-submitted_on')
+        baseline_answers = baseline_answers.distinct('response__contact')
 
         if region:
             baseline_answers = baseline_answers.filter(response__contact__region=region)
@@ -70,7 +72,7 @@ class BaselineTerm(models.Model):
         for region in regions:
             region_name = region['response__contact__region__name'].encode('ascii')
             answers_by_region = baseline_answers.filter(response__contact__region__name=region_name)
-            answer_sum = Answer.numeric_sum_all_dates(answers_by_region)
+            answer_sum = answers_by_region.numeric_sum_all_dates()
             region_answers[region_name] = {}
             region_answers[region_name]["values"] = answer_sum
 
@@ -98,7 +100,7 @@ class BaselineTerm(models.Model):
         for region in regions:
             region_name = region['response__contact__region__name'].encode('ascii')
             answers_by_region = answers.filter(response__contact__region__name=region_name)
-            answer_sums, dates = Answer.numeric_sum_group_by_date(answers_by_region)
+            answer_sums, dates = answers_by_region.numeric_sum_group_by_date()
             region_answers[region_name] = {}
             region_answers[region_name]["values"] = answer_sums
 

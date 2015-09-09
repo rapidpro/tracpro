@@ -9,12 +9,14 @@ from django.shortcuts import redirect, get_object_or_404
 from dash.orgs.views import OrgPermsMixin
 from dash.utils import get_obj_cacheable
 
-from smartmin.users.views import SmartCRUDL, SmartListView, SmartCreateView, SmartReadView
+from smartmin.users.views import (
+    SmartCRUDL, SmartListView, SmartCreateView, SmartReadView)
 
 from tracpro.contacts.models import Contact
 from tracpro.polls.models import PollRun
-from .models import Message, InboxMessage
+
 from .forms import InboxMessageResponseForm
+from .models import Message, InboxMessage
 from .tasks import send_unsolicited_message, fetch_inbox_messages
 
 
@@ -39,7 +41,6 @@ class MessageListMixin(object):
     def lookup_field_link(self, context, field, obj):
         if field == 'pollrun':
             return reverse('polls.pollrun_read', args=[obj.pollrun.pk])
-
         return super(MessageListMixin, self).lookup_field_link(context, field, obj)
 
 
@@ -48,13 +49,13 @@ class MessageCRUDL(SmartCRUDL):
     actions = ('list', 'send', 'by_contact')
 
     class Send(OrgPermsMixin, SmartCreateView):
+
         def post(self, request, *args, **kwargs):
             org = self.derive_org()
             text = request.POST.get('text')
             cohort = request.POST.get('cohort')
             pollrun = PollRun.objects.get(poll__org=org, pk=request.POST.get('pollrun'))
             region = self.request.region
-
             msg = Message.create(org, self.request.user, text, pollrun, cohort, region)
             return JsonResponse(msg.as_json())
 
@@ -63,7 +64,7 @@ class MessageCRUDL(SmartCRUDL):
         title = _("Message Log")
 
         def derive_queryset(self, **kwargs):
-            return Message.get_all(self.request.org, self.request.region)
+            return Message.get_all(self.request.org, self.request.data_regions)
 
         def lookup_field_link(self, context, field, obj):
             return super(MessageCRUDL.List, self).lookup_field_link(context, field, obj)
@@ -102,18 +103,22 @@ class InboxMessageCRUDL(SmartCRUDL):
     model = InboxMessage
 
     class List(OrgPermsMixin, SmartListView):
-        fields = ('contact', 'direction', 'text', 'archived', 'created_on', 'delivered_on', 'sent_on')
+        fields = (
+            'contact', 'direction', 'text', 'archived', 'created_on',
+            'delivered_on', 'sent_on')
         link_fields = ('contact', 'text')
         title = "Unsolicited message conversations by most recent message"
 
         def derive_queryset(self, **kwargs):
-            regions = [self.request.region] if self.request.region else None
-            qs = InboxMessage.get_all(self.request.org, regions)
+            qs = InboxMessage.get_all(self.request.org, self.request.data_regions)
+            qs = qs.select_related('contact')
             qs = qs.order_by('contact', '-created_on').distinct('contact')
             return qs
 
         def lookup_field_link(self, context, field, obj):
-            return reverse('msgs.inboxmessage_conversation', kwargs={'contact_id': obj.contact.pk})
+            return reverse('msgs.inboxmessage_conversation', kwargs={
+                'contact_id': obj.contact.pk,
+            })
 
     class Conversation(OrgPermsMixin, SmartListView):
         fields = ('text', 'direction', 'created_on')
@@ -127,11 +132,10 @@ class InboxMessageCRUDL(SmartCRUDL):
             return r'^%s/%s/(?P<contact_id>\d+)/$' % (path, action)
 
         def dispatch(self, request, contact_id, *args, **kwargs):
-            regions = self.request.user.get_regions(self.request.org)
-            self.data = self.request.POST or None
+            regions = self.request.user.get_all_regions(self.request.org)
+            data = self.request.POST or None
             self.contact = get_object_or_404(Contact.objects.filter(region__in=regions), pk=contact_id)
-            self.form = InboxMessageResponseForm(contact=self.contact, data=self.data)
-
+            self.form = InboxMessageResponseForm(contact=self.contact, data=data)
             return super(InboxMessageCRUDL.Conversation, self).dispatch(request, *args, **kwargs)
 
         def get_context_data(self, **kwargs):
@@ -141,12 +145,12 @@ class InboxMessageCRUDL(SmartCRUDL):
             return context
 
         def post(self, request, *args, **kwargs):
-            form = InboxMessageResponseForm(contact=self.contact, data=request.POST)
-            if form.is_valid():
+            if self.form.is_valid():
                 # Send the new inbox message through the temba task
                 send_unsolicited_message(self.request.org, request.POST.get('text'), self.contact)
                 logger.info("Sending a message to %s" % (self.contact))
-                # Run the task to pull all inbox messages for this org into the local InboxMessage table
+                # Run the task to pull all inbox messages for this org into the
+                # local InboxMessage table
                 fetch_inbox_messages(self.request.org)
                 logger.info("Retrieving inbox messages for %s" % (self.request.org))
                 return redirect('msgs.inboxmessage_conversation', contact_id=self.contact.pk)
@@ -156,5 +160,5 @@ class InboxMessageCRUDL(SmartCRUDL):
     class Read(OrgPermsMixin, SmartReadView):
 
         def derive_queryset(self, **kwargs):
-            regions = self.request.user.get_regions(self.request.org)
+            regions = self.request.user.get_all_regions(self.request.org)
             return InboxMessage.get_all(self.request.org, regions)
