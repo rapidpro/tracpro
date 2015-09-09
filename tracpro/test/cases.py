@@ -68,7 +68,8 @@ class TracProTest(TestCase):
 
     def switch_region(self, region):
         session = self.client.session
-        session['region'] = region.pk
+        key = '{org}:region_id'.format(org=region.org.name)
+        session[key] = region.pk
         session.save()
 
     def url_get(self, subdomain, url, params=None, **extra):
