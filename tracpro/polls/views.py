@@ -39,7 +39,7 @@ class PollCRUDL(smartmin.SmartCRUDL):
 
             # if we're viewing "All Regions" don't include regional only pollruns
             if not self.request.region:
-                pollruns = pollruns.filter(regions=None)
+                pollruns = pollruns.universal()
 
             window = self.request.POST.get('window', self.request.GET.get('window', None))
             window = Window[window] if window else Window.last_30_days
