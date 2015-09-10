@@ -1,5 +1,6 @@
 from datetime import datetime
 from dateutil import rrule
+import pytz
 import random
 
 from django.core.urlresolvers import reverse
@@ -127,7 +128,7 @@ class BaselineTermCRUDL(SmartCRUDL):
             return kwargs
 
         def create_baseline(self, poll, date, contacts, baseline_question, baseline_minimum, baseline_maximum):
-            baseline_datetime = datetime.combine(date, datetime.now().time())
+            baseline_datetime = datetime.combine(date, datetime.utcnow().time().replace(tzinfo=pytz.utc))
             baseline_pollrun = PollRun.objects.create(
                 poll=poll, region=None,
                 conducted_on=baseline_datetime)
@@ -169,7 +170,7 @@ class BaselineTermCRUDL(SmartCRUDL):
                 if loop_count > 0 and loop_count % 7 == 0:  # On the seventh day, add another set of baseline data
                     self.create_baseline(baseline_question.poll, follow_up_date, contacts,
                                          baseline_question, baseline_minimum, baseline_maximum)
-                follow_up_datetime = datetime.combine(follow_up_date, datetime.now().time())
+                follow_up_datetime = datetime.combine(follow_up_date, datetime.utcnow().time().replace(tzinfo=pytz.utc))
                 follow_up_pollrun = PollRun.objects.create(
                     poll=follow_up_question.poll, region=None,
                     conducted_on=follow_up_datetime)
