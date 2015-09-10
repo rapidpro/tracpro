@@ -10,6 +10,16 @@
       {% trans "You don't have access to any regions. Contact your administrator." %}
     </div>
   {% else %}
+    <h2>
+        {% trans "Latest Baseline Data" %}
+      </h2>
+      <div class='row' style='margin-bottom: 1em' >
+        <div class='col-md-12'>
+          <div id="container" style="min-width: 310px; height: 200px; max-width: 800px; margin: 0 auto">
+          </div>
+        </div>
+      </div>
+
     <div class='page-header'>
       <div class='btn-group pull-away'>
         <a class='btn btn-default' href='{% url 'polls.pollrun_list' %}'>
