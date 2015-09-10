@@ -1,4 +1,7 @@
 from collections import defaultdict
+import datetime
+
+import pytz
 
 from django.db import models
 from django.db.models import F
@@ -53,17 +56,26 @@ class BaselineTerm(models.Model):
         baseline_terms = cls.objects.filter(org=org)
         return baseline_terms
 
-    def get_baseline(self, regions):
-        """ Get all baseline responses """
+    def _get_answers(self, question, regions):
+        """
+        Retrieve answers to the question that are relevant for this
+        BaselineTerm.
+        """
+        midnight = datetime.time(0, 0, 0, tzinfo=pytz.utc)
+        start = datetime.datetime.combine(self.start_date, midnight)
+        end = datetime.datetime.combine(self.end_date + datetime.timedelta(days=1), midnight)
+
         answers = Answer.objects.filter(
-            question=self.baseline_question,
-            submitted_on__gte=self.start_date,
-            submitted_on__lte=self.end_date,  # TODO: look into timezone
-        )
+            question=question, submitted_on__gte=start, submitted_on__lt=end)
         answers = answers.annotate(region_name=F('response__contact__region__name'))
         answers = answers.select_related('response', 'response__contact')
+        if regions:
+            answers = answers.filter(response__contact__region__in=regions)
+        return answers
 
-        # Results should be limited to the requested region(s).
+    def get_baseline(self, regions):
+        """ Get all baseline responses """
+        answers = self._get_answers(self.baseline_question, regions)
         if regions:
             answers = answers.filter(response__contact__region__in=regions)
 
@@ -78,17 +90,7 @@ class BaselineTerm(models.Model):
 
     def get_follow_up(self, regions):
         """ Get all follow up responses summed by region """
-        answers = Answer.objects.filter(
-            question=self.follow_up_question,
-            submitted_on__gte=self.start_date,
-            submitted_on__lte=self.end_date,  # TODO: look into timezone
-        )
-        answers = answers.annotate(region_name=F('response__contact__region__name'))
-        answers = answers.select_related('response', 'response__contact')
-
-        # Results should be limited to the requested region(s).
-        if regions:
-            answers = answers.filter(response__contact__region__in=regions)
+        answers = self._get_answers(self.follow_up_question, regions)
 
         # Loop through all regions in answers and create
         # a dict of values and dates per Region
