@@ -1,4 +1,3 @@
-from collections import defaultdict
 import datetime
 
 import pytz
@@ -80,12 +79,12 @@ class BaselineTerm(models.Model):
             answers = answers.filter(response__contact__region__in=regions)
 
         # Separate out baseline values per region
-        region_answers = defaultdict(dict)
+        region_answers = {}
         dates = []
         for region_name in set(a.region_name.encode('ascii') for a in answers):
             answers_by_region = answers.filter(region_name=region_name)
             answer_sums, dates = answers_by_region.numeric_sum_group_by_date()
-            region_answers[region_name]["values"] = answer_sums
+            region_answers[region_name] = {'values': answer_sums}
         return region_answers, dates
 
     def get_follow_up(self, regions):
@@ -96,10 +95,10 @@ class BaselineTerm(models.Model):
         # a dict of values and dates per Region
         # ex.
         # { 'Kumpala': {'values': [35,...], 'dates': [datetime.date(2015, 8, 12),...]} }
-        region_answers = defaultdict(dict)
+        region_answers = {}
         dates = []
         for region_name in set(a.region_name.encode('ascii') for a in answers):
             answers_by_region = answers.filter(region_name=region_name)
             answer_sums, dates = answers_by_region.numeric_sum_group_by_date()
-            region_answers[region_name]["values"] = answer_sums
+            region_answers[region_name] = {'values': answer_sums}
         return region_answers, dates
