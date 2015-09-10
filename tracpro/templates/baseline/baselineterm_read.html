@@ -47,11 +47,7 @@ $(function () {
                 type: 'area',
                 name: '{{ key|escapejs }} Baseline',
                 {% for subkey, subvalue in values.items %}
-                    data: [
-                          {% for i in date_count %}
-                            {{ subvalue }},
-                          {% endfor %}
-                          ]
+                    data: {{ subvalue }}
                 {% endfor %}
             },
         {% endfor %}

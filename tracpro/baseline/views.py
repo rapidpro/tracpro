@@ -1,5 +1,6 @@
 from datetime import datetime
 from dateutil import rrule
+import pytz
 import random
 
 from django.core.urlresolvers import reverse
@@ -74,18 +75,34 @@ class BaselineTermCRUDL(SmartCRUDL):
 
             region = self.request.region
 
-            baseline_dict = self.object.get_baseline(region=region)
-            context['baseline_dict'] = baseline_dict
+            baseline_dict, baseline_dates = self.object.get_baseline(region=region)
 
             follow_ups, dates = self.object.get_follow_up(region=region)
 
+            # Create a list of all dates for this poll
+            # Example: date_list =  ['09/01', '09/02', '09/03', ...]
             date_list = []
             for date in dates:
                 date_formatted = date.strftime('%m/%d')
                 date_list.append(date_formatted)
             context['date_list'] = date_list
-            context['date_count'] = range(len(date_list))
 
+            # Loop through all regions to create a list of baseline values over time
+            # Example: {'Kampala': {'values': [100, 100, 120, 120,...] } }
+            for region in baseline_dict:
+                baseline_list_all_dates = []
+                baseline_list = baseline_dict[region]["values"]
+                current_baseline = float(baseline_list[0])
+                for date in dates:
+                    if date in baseline_dates:
+                        current_baseline = float(baseline_list[baseline_dates.index(date)])
+                    baseline_list_all_dates.append(current_baseline)
+                baseline_dict[region]["values"] = baseline_list_all_dates
+            context['baseline_dict'] = baseline_dict
+
+            # Reformat the values lists to remove the Decimal()
+            # Example in:  {'Kampala': {'values': [Decimal(100), Decimal(100)...] } }
+            #         out: {'Kampala': {'values': [100, 100...] } }
             answers_dict = {}
             for follow_up in follow_ups:
                 answers_dict[follow_up] = {}
@@ -110,21 +127,10 @@ class BaselineTermCRUDL(SmartCRUDL):
             kwargs.setdefault('org', self.request.org)
             return kwargs
 
-        def form_valid(self, form):
-            baseline_question = self.form.cleaned_data['baseline_question']
-            follow_up_question = self.form.cleaned_data['follow_up_question']
-            contacts = self.form.cleaned_data['contacts']
-            baseline_minimum = self.form.cleaned_data['baseline_minimum']
-            baseline_maximum = self.form.cleaned_data['baseline_maximum']
-            follow_up_minimum = self.form.cleaned_data['follow_up_minimum']
-            follow_up_maximum = self.form.cleaned_data['follow_up_maximum']
-            start = self.form.cleaned_data['start_date']
-            end = self.form.cleaned_data['end_date']
-
-            # Create a single PollRun for the Baseline Poll
-            baseline_datetime = datetime.combine(start, datetime.now().time())
+        def create_baseline(self, poll, date, contacts, baseline_question, baseline_minimum, baseline_maximum):
+            baseline_datetime = datetime.combine(date, datetime.utcnow().time().replace(tzinfo=pytz.utc))
             baseline_pollrun = PollRun.objects.create(
-                poll=baseline_question.poll, region=None,
+                poll=poll, region=None,
                 conducted_on=baseline_datetime)
             for contact in contacts:
                 # Create a Response AKA FlowRun for each contact for Baseline
@@ -144,9 +150,24 @@ class BaselineTermCRUDL(SmartCRUDL):
                     submitted_on=baseline_datetime,
                     category=u'')
 
+        def form_valid(self, form):
+            baseline_question = self.form.cleaned_data['baseline_question']
+            follow_up_question = self.form.cleaned_data['follow_up_question']
+            contacts = self.form.cleaned_data['contacts']
+            baseline_minimum = self.form.cleaned_data['baseline_minimum']
+            baseline_maximum = self.form.cleaned_data['baseline_maximum']
+            follow_up_minimum = self.form.cleaned_data['follow_up_minimum']
+            follow_up_maximum = self.form.cleaned_data['follow_up_maximum']
+            start = self.form.cleaned_data['start_date']
+            end = self.form.cleaned_data['end_date']
+
             # Create a PollRun for each date from start to end dates for the Follow Up Poll
-            for follow_up_date in rrule.rrule(rrule.DAILY, dtstart=start, until=end):
-                follow_up_datetime = datetime.combine(follow_up_date, datetime.now().time())
+            for loop_count, follow_up_date in enumerate(rrule.rrule(rrule.DAILY, dtstart=start, until=end)):
+                if loop_count % 7 == 0:  # On the seventh day, add another set of baseline data
+                    # Create a single PollRun for the Baseline Poll
+                    self.create_baseline(baseline_question.poll, follow_up_date, contacts,
+                                         baseline_question, baseline_minimum, baseline_maximum)
+                follow_up_datetime = datetime.combine(follow_up_date, datetime.utcnow().time().replace(tzinfo=pytz.utc))
                 follow_up_pollrun = PollRun.objects.create(
                     poll=follow_up_question.poll, region=None,
                     conducted_on=follow_up_datetime)
@@ -167,6 +188,7 @@ class BaselineTermCRUDL(SmartCRUDL):
                         value=random_answer,
                         submitted_on=follow_up_datetime,
                         category=u'')
+                loop_count += 1
 
             return HttpResponseRedirect(self.get_success_url())
 

@@ -7,17 +7,15 @@ from tracpro.polls.models import Answer, Question, Poll
 
 
 class BaselineTerm(models.Model):
-    """
-    e.g., 2015 Term 3 Attendance for P3 Girls
-     A term of time to gather statistics for a baseline chart
-     baseline_question: the answer to this will determine our baseline
-                        information for all dates
-                        ie. How many students are enrolled?
-     follow_up_question: the answers to this question will determine the
-                         follow-up information, over the date range
-                         (start_date -> end_date)
-                         ie. How many students attended today?
-    """
+    # e.g., 2015 Term 3 Attendance for P3 Girls
+    # A term of time to gather statistics for a baseline chart
+    # baseline_question: the answer to this will determine our baseline
+    #                    information for all dates
+    #                    ie. How many students are enrolled?
+    # follow_up_question: the answers to this question will determine the
+    #                     follow-up information, over the date range
+    #                     (start_date -> end_date)
+    #                     ie. How many students attended today?
 
     org = models.ForeignKey("orgs.Org", verbose_name=_(
         "Organization"), related_name="baseline_terms")
@@ -33,7 +31,7 @@ class BaselineTerm(models.Model):
         chained_model_field='poll',
         auto_choose=True,
         related_name="baseline_terms",
-        help_text=_("The most recent response per user will be used as the baseline.")
+        help_text=_("All baseline poll results over time will display in chart.")
     )
 
     follow_up_poll = models.ForeignKey(Poll)
@@ -42,7 +40,7 @@ class BaselineTerm(models.Model):
         chained_field='follow_up_poll',
         chained_model_field='poll',
         auto_choose=True,
-        help_text=_("Responses over time to compare to the baseline.")
+        help_text=_("Follow up poll responses over time to compare to the baseline values.")
     )
     y_axis_title = models.CharField(max_length=255, null=True, blank=True,
                                     help_text=_("The title for the y axis of the chart."))
@@ -53,30 +51,29 @@ class BaselineTerm(models.Model):
         return baseline_terms
 
     def get_baseline(self, region):
-        answers = Answer.objects.filter(
+        """ Get all baseline responses """
+        baseline_answers = Answer.objects.filter(
             question=self.baseline_question,
             submitted_on__gte=self.start_date,
             submitted_on__lte=self.end_date,  # look into timezone
         ).select_related('response')
-        # Retrieve the most recent baseline results per contact
-        baseline_answers = answers.order_by('response__contact', '-submitted_on')
-        baseline_answers = baseline_answers.distinct('response__contact')
-
         if region:
             baseline_answers = baseline_answers.filter(response__contact__region=region)
 
         region_answers = {}
         regions = baseline_answers.values('response__contact__region__name').distinct(
             'response__contact__region__name').order_by('response__contact__region__name')
+        dates = []
         # Separate out baseline values per region
         for region in regions:
             region_name = region['response__contact__region__name'].encode('ascii')
             answers_by_region = baseline_answers.filter(response__contact__region__name=region_name)
-            answer_sum = answers_by_region.numeric_sum_all_dates()
-            region_answers[region_name] = {}
-            region_answers[region_name]["values"] = answer_sum
+            answer_sums, dates = answers_by_region.numeric_sum_group_by_date()
 
-        return region_answers
+            region_answers[region_name] = {}
+            region_answers[region_name]["values"] = answer_sums
+
+        return region_answers, dates
 
     def get_follow_up(self, region):
         """ Get all follow up responses summed by region """
@@ -87,12 +84,10 @@ class BaselineTerm(models.Model):
         ).select_related('response')
         if region:
             answers = answers.filter(response__contact__region=region)
-        """
-        Loop through all regions in answers and create
-        a dict of values and dates per Region
-        ex.
-        { 'Kumpala': {'values': [35,...], 'dates': [datetime.date(2015, 8, 12),...]} }
-        """
+        # Loop through all regions in answers and create
+        # a dict of values and dates per Region
+        # ex.
+        # { 'Kumpala': {'values': [35,...], 'dates': [datetime.date(2015, 8, 12),...]} }
         region_answers = {}
         dates = []
         regions = answers.values('response__contact__region__name').distinct(
