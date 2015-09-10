@@ -24,8 +24,8 @@ class BaselineTerm(models.Model):
         "Organization"), related_name="baseline_terms")
     name = models.CharField(max_length=255, help_text=_(
         "For example: 2015 Term 3 Attendance for P3 Girls"))
-    start_date = models.DateTimeField()
-    end_date = models.DateTimeField()
+    start_date = models.DateField()
+    end_date = models.DateField()
 
     baseline_poll = models.ForeignKey(Poll, related_name="baseline_terms")
     baseline_question = ChainedForeignKey(

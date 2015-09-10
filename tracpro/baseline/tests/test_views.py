@@ -1,3 +1,5 @@
+import datetime
+
 from django.core.urlresolvers import reverse
 
 from tracpro.test.cases import TracProDataTest
@@ -19,8 +21,8 @@ class TestBaselineTermCRUDL(TracProDataTest):
         self.baselineterm = BaselineTerm.objects.create(
             name='Baseline Term SetUp',
             org=self.org,
-            start_date='2015-05-01',
-            end_date='2015-05-10',
+            start_date=datetime.date(2015, 5, 1),
+            end_date=datetime.date(2015, 5, 1),
             baseline_poll=self.poll1,
             baseline_question=self.poll1_question1,
             follow_up_poll=self.poll1,
@@ -30,8 +32,8 @@ class TestBaselineTermCRUDL(TracProDataTest):
         self.data = {
             'name': 'Test Baseline Term',
             'org': self.org.pk,
-            'start_date': '2015-05-01',
-            'end_date': '2015-05-10',
+            'start_date': 'May 1, 2015',
+            'end_date': 'May 1, 2015',
             'baseline_poll': self.poll1.pk,
             'baseline_question': self.poll1_question1.pk,
             'follow_up_poll': self.poll1.pk,
