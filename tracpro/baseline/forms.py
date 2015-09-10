@@ -7,9 +7,7 @@ from .models import BaselineTerm
 
 
 class BaselineTermForm(forms.ModelForm):
-    """
-    Form for Baseline Term
-    """
+    """ Form for Baseline Term """
     class Meta:
         model = BaselineTerm
         fields = ('name', 'org', 'start_date', 'end_date',
@@ -60,9 +58,7 @@ class QuestionModelChoiceField(forms.ModelChoiceField):
 
 
 class SpoofDataForm(forms.Form):
-    """
-    Form to create spoofed poll data
-    """
+    """ Form to create spoofed poll data """
     contacts = forms.ModelMultipleChoiceField(queryset=Contact.objects.all(),
                                               help_text=_("Select contacts for this set of spoofed data."))
     start_date = forms.DateField(help_text=_(

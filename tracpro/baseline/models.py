@@ -7,17 +7,15 @@ from tracpro.polls.models import Answer, Question, Poll
 
 
 class BaselineTerm(models.Model):
-    """
-    e.g., 2015 Term 3 Attendance for P3 Girls
-     A term of time to gather statistics for a baseline chart
-     baseline_question: the answer to this will determine our baseline
-                        information for all dates
-                        ie. How many students are enrolled?
-     follow_up_question: the answers to this question will determine the
-                         follow-up information, over the date range
-                         (start_date -> end_date)
-                         ie. How many students attended today?
-    """
+    # e.g., 2015 Term 3 Attendance for P3 Girls
+    # A term of time to gather statistics for a baseline chart
+    # baseline_question: the answer to this will determine our baseline
+    #                    information for all dates
+    #                    ie. How many students are enrolled?
+    # follow_up_question: the answers to this question will determine the
+    #                     follow-up information, over the date range
+    #                     (start_date -> end_date)
+    #                     ie. How many students attended today?
 
     org = models.ForeignKey("orgs.Org", verbose_name=_(
         "Organization"), related_name="baseline_terms")
@@ -86,12 +84,10 @@ class BaselineTerm(models.Model):
         ).select_related('response')
         if region:
             answers = answers.filter(response__contact__region=region)
-        """
-        Loop through all regions in answers and create
-        a dict of values and dates per Region
-        ex.
-        { 'Kumpala': {'values': [35,...], 'dates': [datetime.date(2015, 8, 12),...]} }
-        """
+        # Loop through all regions in answers and create
+        # a dict of values and dates per Region
+        # ex.
+        # { 'Kumpala': {'values': [35,...], 'dates': [datetime.date(2015, 8, 12),...]} }
         region_answers = {}
         dates = []
         regions = answers.values('response__contact__region__name').distinct(

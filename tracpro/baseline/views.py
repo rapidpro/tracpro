@@ -78,20 +78,16 @@ class BaselineTermCRUDL(SmartCRUDL):
 
             follow_ups, dates = self.object.get_follow_up(region=region)
 
-            """
-            Create a list of all dates for this poll
-            Example: date_list =  ['09/01', '09/02', '09/03', ...]
-            """
+            # Create a list of all dates for this poll
+            # Example: date_list =  ['09/01', '09/02', '09/03', ...]
             date_list = []
             for date in dates:
                 date_formatted = date.strftime('%m/%d')
                 date_list.append(date_formatted)
             context['date_list'] = date_list
 
-            """
-            Loop through all regions to create a list of baseline values over time
-            Example: {'Kampala': {'values': [100, 100, 120, 120,...] } }
-            """
+            # Loop through all regions to create a list of baseline values over time
+            # Example: {'Kampala': {'values': [100, 100, 120, 120,...] } }
             for region in baseline_dict:
                 baseline_list_all_dates = []
                 baseline_list = baseline_dict[region]["values"]
@@ -103,11 +99,9 @@ class BaselineTermCRUDL(SmartCRUDL):
                 baseline_dict[region]["values"] = baseline_list_all_dates
             context['baseline_dict'] = baseline_dict
 
-            """
-            Reformat the values lists to remove the Decimal()
-            Example in:  {'Kampala': {'values': [Decimal(100), Decimal(100)...] } }
-                    out: {'Kampala': {'values': [100, 100...] } }
-            """
+            # Reformat the values lists to remove the Decimal()
+            # Example in:  {'Kampala': {'values': [Decimal(100), Decimal(100)...] } }
+            #         out: {'Kampala': {'values': [100, 100...] } }
             answers_dict = {}
             for follow_up in follow_ups:
                 answers_dict[follow_up] = {}
