@@ -171,9 +171,8 @@ class BaselineTermCRUDL(SmartCRUDL):
                                  baseline_minimum, baseline_maximum)
 
             # Create a PollRun for each date from start to end dates for the Follow Up Poll
-            loop_count = 1
-            for follow_up_date in rrule.rrule(rrule.DAILY, dtstart=start, until=end):
-                if loop_count == 7:  # On the seventh day, add another set of baseline data
+            for loop_count, follow_up_date in enumerate(rrule.rrule(rrule.DAILY, dtstart=start, until=end)):
+                if loop_count > 0 and loop_count % 7 == 0:  # On the seventh day, add another set of baseline data
                     self.create_baseline(baseline_question.poll, follow_up_date, contacts,
                                          baseline_question, baseline_minimum, baseline_maximum)
                 follow_up_datetime = datetime.combine(follow_up_date, datetime.now().time())
