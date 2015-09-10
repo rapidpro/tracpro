@@ -12,8 +12,9 @@ $(function() {
     });
   });
 
-  $(".toggle-subregions").click(function(e) {
-    $("#toggle-subregions-form").submit();
+  $(".submit-form").click(function(e) {
+    var formId = $(this).data("form");
+    $(formId).submit();
     return false;
   });
 });

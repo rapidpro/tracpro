@@ -1,48 +1,40 @@
 from __future__ import absolute_import, unicode_literals
 
-from tracpro.groups.models import Region
-
 
 class UserRegionsMiddleware(object):
 
-    def get_region(self, request, user_regions, region_id):
-        """Try to retrieve the specified region from the user's regions."""
-        region = user_regions.filter(pk=region_id).first()
-        if not region:
-            if request.user.is_authenticated() and request.org:
-                if not request.user.is_admin_for(request.org):
-                    # Only org admins may see "All Regions."
-                    region = user_regions.first()
-        return region
-
     def process_request(self, request):
-        # Whether or not sub-region data should be included.
-        request.include_subregions = request.session.get('include_subregions', True)
+        """Store commonly-used region variables on the request."""
+        self.set_user_regions(request)
+        self.set_include_subregions(request)
+        self.set_region(request)
+        self.set_data_regions(request)
 
+    def set_user_regions(self, request):
         # Determine the org regions the user has access to.
         if request.org and request.user.is_authenticated():
             request.user_regions = request.user.get_all_regions(request.org)
         else:
-            request.user_regions = Region.objects.none()
+            request.user_regions = None
 
-        if '_region' in request.GET:
-            # Update current region information stored in the session.
-            try:
-                region_id = int(request.GET['_region'])
-            except ValueError:
-                region_id = None
+    def set_include_subregions(self, request):
+        # Whether or not sub-region data should be included.
+        request.include_subregions = request.session.get('include_subregions', True)
 
-            request.region = self.get_region(request, request.user_regions, region_id)
-            request.session['region'] = request.region.pk if request.region else None
+    def set_region(self, request):
+        # Find the currently-active region.
+        if request.org and request.user.is_authenticated():
+            region_id = request.session.get(
+                '{org}:region_id'.format(org=request.org.pk))
+            region = request.user_regions.filter(pk=region_id).first()
+            if not region and not request.user.is_admin_for(request.org):
+                # Only org admins may see "All Regions".
+                region = request.user_regions.first()
+            request.region = region
         else:
-            # Retrieve current region information from the session.
-            region_id = request.session.get('region', None)
-            request.region = self.get_region(request, request.user_regions, region_id)
+            request.region = None
 
-            # Set it back in the session in case this is the first request
-            # or the old region is no longer valid.
-            request.session['region'] = request.region.pk if request.region else None
-
+    def set_data_regions(self, request):
         # Calculate which org regions to retrieve data for.
         if request.region:
             if request.include_subregions:

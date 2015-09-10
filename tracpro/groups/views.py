@@ -6,12 +6,14 @@ import json
 from dash.orgs.views import OrgPermsMixin
 
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.core.urlresolvers import reverse
 from django.db import transaction
 from django.db.models import Prefetch
 from django.http import (
     HttpResponseBadRequest, HttpResponseRedirect, JsonResponse)
 from django.shortcuts import redirect
+from django.utils.decorators import method_decorator
 from django.utils.http import is_safe_url
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic import View
@@ -28,24 +30,69 @@ from .forms import ContactGroupsForm
 logger = logging.getLogger(__name__)
 
 
-class ToggleSubregions(View):
-    post_param = "include_subregions"
-    next_param = "next"
-    session_param = "include_subregions"
+class SetRegion(View):
+    """
+    Update the session variable that stores the currently-active region
+    per org.
+    """
 
+    @method_decorator(login_required)
     def post(self, request, *args, **kwargs):
-        """
-        Update session variable that manages whether to include data for
-        sub-regions, or only the current region.
-        """
-        if self.post_param not in request.POST:
-            raise HttpResponseBadRequest(
-                "Request should include '{}'.".format(self.post_param))
+        if 'region' not in request.POST:
+            return HttpResponseBadRequest(
+                "Request data should include `region`.")
 
-        val = request.POST.get(self.post_param)
+        # Determine the requested region.
+        region_id = request.POST.get('region')
+        if region_id == "all":
+            if not request.user.is_admin_for(request.org):
+                return HttpResponseBadRequest(
+                    "Only org admins may see all regions.")
+            else:
+                region = None
+        else:
+            region = request.user_regions.filter(pk=region_id).first()
+            if not region:
+                return HttpResponseBadRequest(
+                    "Either region {} does not exist or you do not have "
+                    "permission to see this region.".format(region_id))
+
+        # Show a message confirming the change.
+        region_name = region.name if region else "all regions"
+        msg = "Now showing data from {}.".format(region_name)
+        messages.info(request, msg)
+
+        # Store the requested region in the session.
+        session_key = '{org}:region_id'.format(org=request.org.pk)
+        request.session[session_key] = str(region.pk) if region else None
+        request.session.save()
+
+        # Redirect the user to the next page (usually set to the page the
+        # user came from).
+        next_path = self.request.POST.get('next')
+        if not (next_path and is_safe_url(next_path, request.get_host())):
+            next_path = reverse('home.home')
+        return redirect(next_path)
+
+
+class ToggleSubregions(View):
+    """
+    Update session variable that manages whether to include data for
+    sub-regions or only the current region.
+    """
+
+    @method_decorator(login_required)
+    def post(self, request, *args, **kwargs):
+        if 'include_subregions' not in request.POST:
+            return HttpResponseBadRequest(
+                "Request data should include `include_subregions`.")
+
+        # Determine whether to include sub-regions and store the value
+        # in the session.
+        val = request.POST.get('include_subregions')
         if val in ('0', '1'):
             val = bool(int(val))
-            request.session[self.session_param] = val
+            request.session['include_subregions'] = val
             request.session.save()
             if val:
                 msg = "Now showing data from {region} and its sub-regions."
@@ -53,11 +100,12 @@ class ToggleSubregions(View):
                 msg = "Showing data from {region} only."
             messages.info(request, msg.format(region=request.region))
         else:
-            raise HttpResponseBadRequest(
-                "{} should be either '0' or '1'".format(self.post_param))
+            return HttpResponseBadRequest(
+                "`include_subregions` should be either '0' or '1'.")
 
-        # Redirect to the next path.
-        next_path = request.POST.get(self.next_param)
+        # Redirect the user to the next page (usually set to the page the
+        # user came from).
+        next_path = request.POST.get('next')
         if not (next_path and is_safe_url(next_path, request.get_host())):
             next_path = reverse("home.home")
         return redirect(next_path)

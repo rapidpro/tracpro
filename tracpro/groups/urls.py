@@ -11,4 +11,7 @@ urlpatterns += [
     url("^toggle-subregions/$",
         views.ToggleSubregions.as_view(),
         name="toggle-subregions"),
+    url("^set-region/$",
+        views.SetRegion.as_view(),
+        name="set-region"),
 ]

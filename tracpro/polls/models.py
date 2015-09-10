@@ -25,27 +25,23 @@ from .utils import auto_range_categories, extract_words
 
 
 class Window(Enum):
-    """Data window."""
+    """A window of time."""
 
-    this_month = (0, 'm', _("This month"))
-    last_30_days = (30, 'd', _("Last 30 days"))
-    last_60_days = (60, 'd', _("Last 60 days"))
-    last_90_days = (90, 'd', _("Last 90 days"))
+    this_month = (0, _("This month"))
+    last_30_days = (30, _("Last 30 days"))
+    last_60_days = (60, _("Last 60 days"))
+    last_90_days = (90, _("Last 90 days"))
 
-    def __init__(self, ordinal, unit, label):
+    def __init__(self, ordinal, label):
         self.ordinal = ordinal
-        self.unit = unit
         self.label = label
 
     def to_range(self, now=None):
-        if not now:
-            now = timezone.now()
+        now = now if now is not None else timezone.now()
         if self.ordinal == 0:
             return get_month_range(now)
         else:
-            UNIT_NAMES = {'d': 'days', 'm': 'months'}
-            since = now - relativedelta(**{UNIT_NAMES[self.unit]: self.ordinal})
-            return since, now
+            return (now - relativedelta(days=self.ordinal), now)
 
 
 @python_2_unicode_compatible
