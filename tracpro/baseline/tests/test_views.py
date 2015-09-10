@@ -148,8 +148,8 @@ class TestBaselineTermCRUDL(TracProDataTest):
             fetch_redirect_response=False)
 
         # Check new spoofed data created successfully
-        # 3 PollRuns, Responses and Answers
+        # 1 PollRun, and 3 each of Responses and Answers
         # for 1 Baseline Date and 2 Follow Up Dates
-        self.assertEqual(PollRun.objects.all().count(), 3)
+        self.assertEqual(PollRun.objects.all().count(), 1)
         self.assertEqual(Response.objects.all().count(), 3)
         self.assertEqual(Answer.objects.all().count(), 3)
