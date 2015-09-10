@@ -180,12 +180,13 @@ class PollRunQuerySet(models.QuerySet):
         return self.filter(poll__org=org)
 
     def universal(self):
-        return self.filter(pollrun_type=PollRun.TYPE_UNIVERSAL)
+        types = (PollRun.TYPE_UNIVERSAL, PollRun.TYPE_SPOOFED)
+        return self.filter(pollrun_type__in=types)
 
 
 class PollRunManager(models.Manager.from_queryset(PollRunQuerySet)):
 
-    def create(self, poll, region, **kwargs):
+    def create(self, poll, region=None, **kwargs):
         if region and poll.org != region.org:
             raise ValueError("Region org must match poll org.")
         return super(PollRunManager, self).create(poll=poll, region=region, **kwargs)
@@ -209,6 +210,10 @@ class PollRunManager(models.Manager.from_queryset(PollRunQuerySet)):
         if do_start:
             pollrun_start.delay(pollrun.pk)
         return pollrun
+
+    def create_spoofed(self, **kwargs):
+        kwargs['pollrun_type'] = PollRun.TYPE_SPOOFED
+        return self.create(**kwargs)
 
     def get_or_create_universal(self, poll, for_date=None, **kwargs):
         """Create a poll run that is for all regions."""
@@ -256,10 +261,12 @@ class PollRun(models.Model):
     """Associates polls conducted on the same day."""
 
     TYPE_UNIVERSAL = 'u'  # Sent to all active regions.
+    TYPE_SPOOFED = 's'  # Universal PollRun created by baseline data spoof.
     TYPE_REGIONAL = 'r'  # Sent to only one region.
     TYPE_PROPAGATED = 'p'  # Sent to one region and its sub-regions.
     TYPE_CHOICES = {
         TYPE_UNIVERSAL: 'Universal',
+        TYPE_SPOOFED: 'Spoofed',
         TYPE_REGIONAL: 'Single Region',
         TYPE_PROPAGATED: 'Propagated to sub-children',
     }
@@ -330,7 +337,7 @@ class PollRun(models.Model):
             # Shortcut to minimize more expensive queries later.
             return True
 
-        if self.pollrun_type == self.TYPE_UNIVERSAL:
+        if self.pollrun_type in (self.TYPE_UNIVERSAL, self.TYPE_SPOOFED):
             return True
         if self.pollrun_type == self.TYPE_REGIONAL:
             if include_subregions:
