@@ -8,8 +8,6 @@ from django.utils.translation import ugettext_lazy as _
 
 from tracpro.groups.models import Region
 
-from .models import Profile
-
 
 # === Monkey patching for the User class === #
 
@@ -18,6 +16,8 @@ def _user_create(cls, org, full_name, email, password, change_password=False,
     """
     Creates a regular user with specific region access
     """
+    from .models import Profile
+
     # create auth user
     user = cls.objects.create(is_active=True, username=email, email=email)
     user.set_password(password)
@@ -43,6 +43,7 @@ def _user_clean(user):
 
 
 def _user_has_profile(user):
+    from .models import Profile
     try:
         return bool(user.profile)
     except Profile.DoesNotExist:
