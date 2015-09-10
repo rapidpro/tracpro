@@ -90,7 +90,7 @@ class TestSetRegion(TracProTest):
         self.assertEqual(self.client.session[self.session_key], str(self.region.pk))
 
     def test_next_invalid(self):
-        """Should not redirect to an invaild `next` URL."""
+        """Should not redirect to an invalid `next` URL."""
         response = self.set_region({
             'region': self.region.pk,
             'next': 'http://example.com/',
@@ -165,7 +165,7 @@ class TestToggleSubregions(TracProTest):
         self.assertFalse(self.client.session['include_subregions'])
 
     def test_next_invalid(self):
-        """Should not redirect to an invaild `next` URL."""
+        """Should not redirect to an invalid `next` URL."""
         response = self.toggle_subregions({
             'include_subregions': '0',
             'next': 'http://example.com/',
