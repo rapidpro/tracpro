@@ -33,7 +33,7 @@ class BaselineTerm(models.Model):
         chained_model_field='poll',
         auto_choose=True,
         related_name="baseline_terms",
-        help_text=_("The least recent response per user will be used as the baseline.")
+        help_text=_("All baseline poll results over time will display in chart.")
     )
 
     follow_up_poll = models.ForeignKey(Poll)
@@ -42,7 +42,7 @@ class BaselineTerm(models.Model):
         chained_field='follow_up_poll',
         chained_model_field='poll',
         auto_choose=True,
-        help_text=_("Responses over time to compare to the baseline.")
+        help_text=_("Follow up poll responses over time to compare to the baseline values.")
     )
     y_axis_title = models.CharField(max_length=255, null=True, blank=True,
                                     help_text=_("The title for the y axis of the chart."))
@@ -59,7 +59,6 @@ class BaselineTerm(models.Model):
             submitted_on__gte=self.start_date,
             submitted_on__lte=self.end_date,  # look into timezone
         ).select_related('response')
-
         if region:
             baseline_answers = baseline_answers.filter(response__contact__region=region)
 
