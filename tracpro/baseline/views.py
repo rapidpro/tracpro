@@ -73,11 +73,8 @@ class BaselineTermCRUDL(SmartCRUDL):
         def get_context_data(self, **kwargs):
             context = super(BaselineTermCRUDL.Read, self).get_context_data(**kwargs)
 
-            region = self.request.region
-
-            baseline_dict, baseline_dates = self.object.get_baseline(region=region)
-
-            follow_ups, dates = self.object.get_follow_up(region=region)
+            baseline_dict, baseline_dates = self.object.get_baseline(self.request.data_regions)
+            follow_ups, dates = self.object.get_follow_up(self.request.data_regions)
 
             # Create a list of all dates for this poll
             # Example: date_list =  ['09/01', '09/02', '09/03', ...]
