@@ -54,6 +54,11 @@ class BaselineTermForm(forms.ModelForm):
         return cleaned_data
 
 
+class QuestionModelChoiceField(forms.ModelChoiceField):
+    def label_from_instance(self, obj):
+        return "%s: %s" % (obj.poll.name, obj.text)
+
+
 class SpoofDataForm(forms.Form):
     """
     Form to create spoofed poll data
@@ -64,14 +69,12 @@ class SpoofDataForm(forms.Form):
         "Baseline poll data will be submitted on this date. " +
         "Follow up data will start on this date."))
     end_date = forms.DateField(help_text=_("Follow up data will end on this date."))
-    baseline_question = forms.ModelChoiceField(queryset=Question.objects.all(),
-                                               help_text=_(
-                                               "Select a baseline question which " +
-                                               "will have numeric answers only."))
-    follow_up_question = forms.ModelChoiceField(queryset=Question.objects.all(),
-                                                help_text=_(
-                                                "Select a follow up question which " +
-                                                "will have numeric answers only."))
+    baseline_question = QuestionModelChoiceField(queryset=Question.objects.all().order_by('poll__name', 'text'),
+                                                 help_text=_("Select a baseline question which " +
+                                                             "will have numeric answers only."))
+    follow_up_question = QuestionModelChoiceField(queryset=Question.objects.all().order_by('poll__name', 'text'),
+                                                  help_text=_("Select a follow up question which " +
+                                                              "will have numeric answers only."))
     baseline_minimum = forms.IntegerField(
         help_text=_("A baseline answer will be created for each contact within the minimum/maximum range."))
     baseline_maximum = forms.IntegerField(
