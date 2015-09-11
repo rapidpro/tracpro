@@ -21,6 +21,7 @@ from tracpro.polls.models import Answer, PollRun, Response
 
 from .models import BaselineTerm
 from .forms import BaselineTermForm, SpoofDataForm
+from .utils import chart_baseline
 
 
 class BaselineTermCRUDL(SmartCRUDL):
@@ -83,38 +84,12 @@ class BaselineTermCRUDL(SmartCRUDL):
             else:
                 region_selected = 0
 
-            baseline_dict, baseline_dates = self.object.get_baseline(self.request.data_regions, region_selected)
-            follow_ups, dates, all_regions = self.object.get_follow_up(self.request.data_regions, region_selected)
-            context['all_regions'] = all_regions  # Return all regions in dataset for region drop-down
+            answers_dict, baseline_dict, all_regions, date_list = chart_baseline(
+                self.object, self.request.data_regions, region_selected)
 
-            # Create a list of all dates for this poll
-            # Example: date_list =  ['09/01', '09/02', '09/03', ...]
-            date_list = []
-            for date in dates:
-                date_formatted = date.strftime('%m/%d')
-                date_list.append(date_formatted)
+            context['all_regions'] = all_regions
             context['date_list'] = date_list
-
-            # Loop through all regions to create a list of baseline values over time
-            # Example: {'Kampala': {'values': [100, 100, 120, 120,...] } }
-            for region in baseline_dict:
-                baseline_list_all_dates = []
-                baseline_list = baseline_dict[region]["values"]
-                current_baseline = float(baseline_list[0])
-                for date in dates:
-                    if date in baseline_dates:
-                        current_baseline = float(baseline_list[baseline_dates.index(date)])
-                    baseline_list_all_dates.append(current_baseline)
-                baseline_dict[region]["values"] = baseline_list_all_dates
             context['baseline_dict'] = baseline_dict
-
-            # Reformat the values lists to remove the Decimal()
-            # Example in:  {'Kampala': {'values': [Decimal(100), Decimal(100)...] } }
-            #         out: {'Kampala': {'values': [100, 100...] } }
-            answers_dict = {}
-            for follow_up in follow_ups:
-                answers_dict[follow_up] = {}
-                answers_dict[follow_up]["values"] = [float(val) for val in follow_ups[follow_up]["values"]]
             context['answers_dict'] = answers_dict
 
             if len(context['answers_dict']) == 0 and len(context['baseline_dict']) == 0:

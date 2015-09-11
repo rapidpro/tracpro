@@ -9,7 +9,7 @@ from smartmin.users.views import SmartTemplateView
 from tracpro.polls.models import Poll
 
 
-class HomeView(OrgPermsMixin, SmartTemplateView, BaselineTermCRUDL):
+class HomeView(OrgPermsMixin, SmartTemplateView):
     """TracPro homepage"""
 
     title = _("Home")
