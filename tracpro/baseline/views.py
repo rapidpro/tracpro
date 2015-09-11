@@ -66,6 +66,8 @@ class BaselineTermCRUDL(SmartCRUDL):
             return kwargs
 
     class Read(OrgObjPermsMixin, SmartReadView):
+        fields = ("start_date", "end_date", "baseline_poll", "baseline_question",
+                  "follow_up_poll", "follow_up_question")
 
         def derive_queryset(self, **kwargs):
             return BaselineTerm.get_all(self.request.org)
