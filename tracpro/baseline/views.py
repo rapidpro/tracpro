@@ -66,6 +66,8 @@ class BaselineTermCRUDL(SmartCRUDL):
             return kwargs
 
     class Read(OrgObjPermsMixin, SmartReadView):
+        fields = ("start_date", "end_date", "baseline_poll", "baseline_question",
+                  "follow_up_poll", "follow_up_question")
 
         def derive_queryset(self, **kwargs):
             return BaselineTerm.get_all(self.request.org)
@@ -73,11 +75,17 @@ class BaselineTermCRUDL(SmartCRUDL):
         def get_context_data(self, **kwargs):
             context = super(BaselineTermCRUDL.Read, self).get_context_data(**kwargs)
 
-            region = self.request.region
+            # Get the region from the region filter drop-down, if it was selected
+            region = int(self.request.GET.get('region', 0))
+            if region:
+                region_selected = region
+                context['region_selected'] = region_selected
+            else:
+                region_selected = 0
 
-            baseline_dict, baseline_dates = self.object.get_baseline(region=region)
-
-            follow_ups, dates = self.object.get_follow_up(region=region)
+            baseline_dict, baseline_dates = self.object.get_baseline(self.request.data_regions, region_selected)
+            follow_ups, dates, all_regions = self.object.get_follow_up(self.request.data_regions, region_selected)
+            context['all_regions'] = all_regions  # Return all regions in dataset for region drop-down
 
             # Create a list of all dates for this poll
             # Example: date_list =  ['09/01', '09/02', '09/03', ...]
@@ -129,9 +137,8 @@ class BaselineTermCRUDL(SmartCRUDL):
 
         def create_baseline(self, poll, date, contacts, baseline_question, baseline_minimum, baseline_maximum):
             baseline_datetime = datetime.combine(date, datetime.utcnow().time().replace(tzinfo=pytz.utc))
-            baseline_pollrun = PollRun.objects.create(
-                poll=poll, region=None,
-                conducted_on=baseline_datetime)
+            baseline_pollrun = PollRun.objects.create_spoofed(
+                poll=poll, conducted_on=baseline_datetime)
             for contact in contacts:
                 # Create a Response AKA FlowRun for each contact for Baseline
                 response = Response.objects.create(
@@ -168,9 +175,8 @@ class BaselineTermCRUDL(SmartCRUDL):
                     self.create_baseline(baseline_question.poll, follow_up_date, contacts,
                                          baseline_question, baseline_minimum, baseline_maximum)
                 follow_up_datetime = datetime.combine(follow_up_date, datetime.utcnow().time().replace(tzinfo=pytz.utc))
-                follow_up_pollrun = PollRun.objects.create(
-                    poll=follow_up_question.poll, region=None,
-                    conducted_on=follow_up_datetime)
+                follow_up_pollrun = PollRun.objects.create_spoofed(
+                    poll=follow_up_question.poll, conducted_on=follow_up_datetime)
                 for contact in contacts:
                     # Create a Response AKA FlowRun for each contact for Follow Up
                     response = Response.objects.create(

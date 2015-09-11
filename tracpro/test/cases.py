@@ -9,6 +9,7 @@ import redis
 from dash.orgs.models import Org
 
 from django.contrib.auth.models import User
+from django.core.urlresolvers import reverse
 from django.test import TestCase
 
 from tracpro.contacts.models import Contact
@@ -68,7 +69,8 @@ class TracProTest(TestCase):
 
     def switch_region(self, region):
         session = self.client.session
-        session['region'] = region.pk
+        key = '{org}:region_id'.format(org=region.org.pk)
+        session[key] = region.pk
         session.save()
 
     def url_get(self, subdomain, url, params=None, **extra):
@@ -86,10 +88,14 @@ class TracProTest(TestCase):
         return datetime.datetime(year, month, day,
                                  hour, minute, second, microsecond, tz)
 
-    def assertLoginRedirect(self, response, subdomain, next):
-        self.assertRedirects(
-            response,
-            'http://%s.testserver/users/login/?next=%s' % (subdomain, next))
+    def assertRedirects(self, response, url, subdomain=None, **kwargs):
+        if subdomain:
+            kwargs.setdefault('host', '{}.testserver'.format(subdomain))
+        return super(TracProTest, self).assertRedirects(response, url, **kwargs)
+
+    def assertLoginRedirect(self, response, subdomain, next_url):
+        url = '{}?next={}'.format(reverse('users.user_login'), next_url)
+        self.assertRedirects(response, url, subdomain)
 
 
 class TracProDataTest(TracProTest):

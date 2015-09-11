@@ -25,27 +25,23 @@ from .utils import auto_range_categories, extract_words
 
 
 class Window(Enum):
-    """Data window."""
+    """A window of time."""
 
-    this_month = (0, 'm', _("This month"))
-    last_30_days = (30, 'd', _("Last 30 days"))
-    last_60_days = (60, 'd', _("Last 60 days"))
-    last_90_days = (90, 'd', _("Last 90 days"))
+    this_month = (0, _("This month"))
+    last_30_days = (30, _("Last 30 days"))
+    last_60_days = (60, _("Last 60 days"))
+    last_90_days = (90, _("Last 90 days"))
 
-    def __init__(self, ordinal, unit, label):
+    def __init__(self, ordinal, label):
         self.ordinal = ordinal
-        self.unit = unit
         self.label = label
 
     def to_range(self, now=None):
-        if not now:
-            now = timezone.now()
+        now = now if now is not None else timezone.now()
         if self.ordinal == 0:
             return get_month_range(now)
         else:
-            UNIT_NAMES = {'d': 'days', 'm': 'months'}
-            since = now - relativedelta(**{UNIT_NAMES[self.unit]: self.ordinal})
-            return since, now
+            return (now - relativedelta(days=self.ordinal), now)
 
 
 @python_2_unicode_compatible
@@ -184,12 +180,13 @@ class PollRunQuerySet(models.QuerySet):
         return self.filter(poll__org=org)
 
     def universal(self):
-        return self.filter(pollrun_type=PollRun.TYPE_UNIVERSAL)
+        types = (PollRun.TYPE_UNIVERSAL, PollRun.TYPE_SPOOFED)
+        return self.filter(pollrun_type__in=types)
 
 
 class PollRunManager(models.Manager.from_queryset(PollRunQuerySet)):
 
-    def create(self, poll, region, **kwargs):
+    def create(self, poll, region=None, **kwargs):
         if region and poll.org != region.org:
             raise ValueError("Region org must match poll org.")
         return super(PollRunManager, self).create(poll=poll, region=region, **kwargs)
@@ -213,6 +210,10 @@ class PollRunManager(models.Manager.from_queryset(PollRunQuerySet)):
         if do_start:
             pollrun_start.delay(pollrun.pk)
         return pollrun
+
+    def create_spoofed(self, **kwargs):
+        kwargs['pollrun_type'] = PollRun.TYPE_SPOOFED
+        return self.create(**kwargs)
 
     def get_or_create_universal(self, poll, for_date=None, **kwargs):
         """Create a poll run that is for all regions."""
@@ -260,10 +261,12 @@ class PollRun(models.Model):
     """Associates polls conducted on the same day."""
 
     TYPE_UNIVERSAL = 'u'  # Sent to all active regions.
+    TYPE_SPOOFED = 's'  # Universal PollRun created by baseline data spoof.
     TYPE_REGIONAL = 'r'  # Sent to only one region.
     TYPE_PROPAGATED = 'p'  # Sent to one region and its sub-regions.
     TYPE_CHOICES = {
         TYPE_UNIVERSAL: 'Universal',
+        TYPE_SPOOFED: 'Spoofed',
         TYPE_REGIONAL: 'Single Region',
         TYPE_PROPAGATED: 'Propagated to sub-children',
     }
@@ -334,7 +337,7 @@ class PollRun(models.Model):
             # Shortcut to minimize more expensive queries later.
             return True
 
-        if self.pollrun_type == self.TYPE_UNIVERSAL:
+        if self.pollrun_type in (self.TYPE_UNIVERSAL, self.TYPE_SPOOFED):
             return True
         if self.pollrun_type == self.TYPE_REGIONAL:
             if include_subregions:

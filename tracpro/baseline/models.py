@@ -1,4 +1,9 @@
+import datetime
+
+import pytz
+
 from django.db import models
+from django.db.models import F
 from django.utils.translation import ugettext_lazy as _
 
 from smart_selects.db_fields import ChainedForeignKey
@@ -21,8 +26,8 @@ class BaselineTerm(models.Model):
         "Organization"), related_name="baseline_terms")
     name = models.CharField(max_length=255, help_text=_(
         "For example: 2015 Term 3 Attendance for P3 Girls"))
-    start_date = models.DateTimeField()
-    end_date = models.DateTimeField()
+    start_date = models.DateField()
+    end_date = models.DateField()
 
     baseline_poll = models.ForeignKey(Poll, related_name="baseline_terms")
     baseline_question = ChainedForeignKey(
@@ -50,53 +55,58 @@ class BaselineTerm(models.Model):
         baseline_terms = cls.objects.filter(org=org)
         return baseline_terms
 
-    def get_baseline(self, region):
+    def _get_answers(self, question, regions, region_selected):
+        """
+        Retrieve answers to the question that are relevant for this
+        BaselineTerm.
+        """
+        midnight = datetime.time(0, 0, 0, tzinfo=pytz.utc)
+        start = datetime.datetime.combine(self.start_date, midnight)
+        end = datetime.datetime.combine(self.end_date + datetime.timedelta(days=1), midnight)
+
+        answers = Answer.objects.filter(
+            question=question, submitted_on__gte=start, submitted_on__lt=end)
+        answers = answers.annotate(region_name=F('response__contact__region__name'))
+        answers = answers.select_related('response', 'response__contact')
+
+        all_regions = answers.values('response__contact__region',
+                                     'region_name').distinct('response__contact__region')
+
+        if regions:
+            answers = answers.filter(response__contact__region__in=regions)
+            all_regions = answers.values('response__contact__region',
+                                         'region_name').distinct('response__contact__region')
+
+        if region_selected:
+            answers = answers.filter(response__contact__region__in=[region_selected])
+
+        return answers, all_regions
+
+    def get_baseline(self, regions, region_selected):
         """ Get all baseline responses """
-        baseline_answers = Answer.objects.filter(
-            question=self.baseline_question,
-            submitted_on__gte=self.start_date,
-            submitted_on__lte=self.end_date,  # look into timezone
-        ).select_related('response')
-        if region:
-            baseline_answers = baseline_answers.filter(response__contact__region=region)
+        answers, all_regions = self._get_answers(self.baseline_question, regions, region_selected)
 
-        region_answers = {}
-        regions = baseline_answers.values('response__contact__region__name').distinct(
-            'response__contact__region__name').order_by('response__contact__region__name')
-        dates = []
         # Separate out baseline values per region
-        for region in regions:
-            region_name = region['response__contact__region__name'].encode('ascii')
-            answers_by_region = baseline_answers.filter(response__contact__region__name=region_name)
+        region_answers = {}
+        dates = []
+        for region_name in set(a.region_name.encode('ascii') for a in answers):
+            answers_by_region = answers.filter(region_name=region_name)
             answer_sums, dates = answers_by_region.numeric_sum_group_by_date()
-
-            region_answers[region_name] = {}
-            region_answers[region_name]["values"] = answer_sums
-
+            region_answers[region_name] = {'values': answer_sums}
         return region_answers, dates
 
-    def get_follow_up(self, region):
+    def get_follow_up(self, regions, region_selected):
         """ Get all follow up responses summed by region """
-        answers = Answer.objects.filter(
-            question=self.follow_up_question,
-            submitted_on__gte=self.start_date,
-            submitted_on__lte=self.end_date,  # look into timezone
-        ).select_related('response')
-        if region:
-            answers = answers.filter(response__contact__region=region)
+        answers, all_regions = self._get_answers(self.follow_up_question, regions, region_selected)
+
         # Loop through all regions in answers and create
         # a dict of values and dates per Region
         # ex.
         # { 'Kumpala': {'values': [35,...], 'dates': [datetime.date(2015, 8, 12),...]} }
         region_answers = {}
         dates = []
-        regions = answers.values('response__contact__region__name').distinct(
-            'response__contact__region__name').order_by('response__contact__region__name')
-        for region in regions:
-            region_name = region['response__contact__region__name'].encode('ascii')
-            answers_by_region = answers.filter(response__contact__region__name=region_name)
+        for region_name in set(a.region_name.encode('ascii') for a in answers):
+            answers_by_region = answers.filter(region_name=region_name)
             answer_sums, dates = answers_by_region.numeric_sum_group_by_date()
-            region_answers[region_name] = {}
-            region_answers[region_name]["values"] = answer_sums
-
-        return region_answers, dates
+            region_answers[region_name] = {'values': answer_sums}
+        return region_answers, dates, all_regions
