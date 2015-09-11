@@ -1,7 +1,7 @@
-def chart_baseline(baselineterm, session_data_regions, region_selected):
+def chart_baseline(baselineterm, regions, region_selected):
     """ Returns data that is used to build context for a baseline chart """
-    baseline_dict, baseline_dates = baselineterm.get_baseline(session_data_regions, region_selected)
-    follow_ups, dates, all_regions = baselineterm.get_follow_up(session_data_regions, region_selected)
+    baseline_dict, baseline_dates = baselineterm.get_baseline(regions, region_selected)
+    follow_ups, dates, all_regions = baselineterm.get_follow_up(regions, region_selected)
 
     # Create a list of all dates for this poll
     # Example: date_list =  ['09/01', '09/02', '09/03', ...]

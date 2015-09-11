@@ -14,10 +14,12 @@
         {% trans "Latest Baseline Data" %}
       </h2>
       <div class='row' style='margin-bottom: 1em' >
-        <div class='col-md-12'>
-          <div id="container" style="min-width: 310px; height: 200px; max-width: 800px; margin: 0 auto">
+        <a href='/baselineterm/read/{{ baselineterm.pk }}/'>
+          <div class='col-md-12'>
+            <div id="container" style="min-width: 210px; height: 300px; max-width: 800px; margin: 0 auto">
+            </div>
           </div>
-        </div>
+        </a>
       </div>
 
     <div class='page-header'>
@@ -264,6 +266,7 @@
 {% endblock content %}
 
 {% block extra-script %}
+  {% include 'baseline/baselineterm_chart.html' %}
   {{ block.super }}
   <script type='text/javascript'>
 // <![CDATA[

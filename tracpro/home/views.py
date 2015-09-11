@@ -7,6 +7,8 @@ from django.utils.translation import ugettext_lazy as _
 from smartmin.users.views import SmartTemplateView
 
 from tracpro.polls.models import Poll
+from tracpro.baseline.models import BaselineTerm
+from tracpro.baseline.utils import chart_baseline
 
 
 class HomeView(OrgPermsMixin, SmartTemplateView):
@@ -22,22 +24,17 @@ class HomeView(OrgPermsMixin, SmartTemplateView):
         context = super(HomeView, self).get_context_data(**kwargs)
         context['polls'] = Poll.get_all(self.request.org).order_by('name')
 
-        # TODO: create a utils.py utility function in baseline app and call that here
-        # and there
-        """
         # Loop through all baseline terms, until we find one with data
         for baselineterm in BaselineTerm.objects.all().order_by('-end_date'):
-            baseline_dict, baseline_dates = baselineterm.get_baseline(region=None)
-            if baseline_dict:
-                follow_ups, dates = baselineterm.get_follow_up(region=None)
-                # Create a list of all dates for this poll
-                # Example: date_list =  ['09/01', '09/02', '09/03', ...]
-                date_list = []
-                for date in dates:
-                    date_formatted = date.strftime('%m/%d')
-                    date_list.append(date_formatted)
+            data_found = baselineterm.check_for_data(self.request.data_regions)
+            if data_found:
+                answers_dict, baseline_dict, all_regions, date_list = chart_baseline(
+                    baselineterm=baselineterm, regions=self.request.data_regions, region_selected=0)
+                context['all_regions'] = all_regions
                 context['date_list'] = date_list
-
-        """
+                context['baseline_dict'] = baseline_dict
+                context['answers_dict'] = answers_dict
+                context['baselineterm'] = baselineterm
+                break  # Found our baseline chart with data, send it back to the view
 
         return context
