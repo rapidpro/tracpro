@@ -22,7 +22,8 @@ class HomeView(OrgPermsMixin, SmartTemplateView, BaselineTermCRUDL):
         context = super(HomeView, self).get_context_data(**kwargs)
         context['polls'] = Poll.get_all(self.request.org).order_by('name')
 
-
+        # TODO: create a utils.py utility function in baseline app and call that here
+        # and there
         """
         # Loop through all baseline terms, until we find one with data
         for baselineterm in BaselineTerm.objects.all().order_by('-end_date'):
