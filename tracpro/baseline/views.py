@@ -126,7 +126,7 @@ class BaselineTermCRUDL(SmartCRUDL):
 
         def create_baseline(self, poll, date, contacts, baseline_question, baseline_minimum, baseline_maximum):
             baseline_datetime = datetime.combine(date, datetime.utcnow().time().replace(tzinfo=pytz.utc))
-            baseline_pollrun = PollRun.objects.get_or_create_universal(
+            baseline_pollrun = PollRun.objects.create_spoofed(
                 poll=poll, conducted_on=baseline_datetime)
             for contact in contacts:
                 # Create a Response AKA FlowRun for each contact for Baseline
@@ -164,7 +164,7 @@ class BaselineTermCRUDL(SmartCRUDL):
                     self.create_baseline(baseline_question.poll, follow_up_date, contacts,
                                          baseline_question, baseline_minimum, baseline_maximum)
                 follow_up_datetime = datetime.combine(follow_up_date, datetime.utcnow().time().replace(tzinfo=pytz.utc))
-                follow_up_pollrun = PollRun.objects.get_or_create_universal(
+                follow_up_pollrun = PollRun.objects.create_spoofed(
                     poll=follow_up_question.poll, conducted_on=follow_up_datetime)
                 for contact in contacts:
                     # Create a Response AKA FlowRun for each contact for Follow Up
