@@ -18,52 +18,7 @@
 
 {% block read-buttons %}{% endblock read-buttons %}
 
+
 {% block extra-script %}
-<script src="http://code.highcharts.com/modules/exporting.js"></script>
-<script>
-$(function () {
-    $('#container').highcharts({
-        title: {
-            text: '{{ baselineterm.name|escapejs }}'
-        },
-        subtitle: {
-            text: 'Baseline: {{ baselineterm.baseline_question|escapejs }}, Follow Up: {{ baselineterm.follow_up_question|escapejs }}'
-        },
-        xAxis: {
-            categories: [
-                        {% for date in date_list %}
-                            '{{ date }}',
-                        {% endfor %}
-                        ]
-        },
-        yAxis: {
-            title: {
-                text: '{{ baselineterm.y_axis_title|escapejs }}'
-            }
-        },
-        series: [
-        // Baseline Data
-        {% for key, values in baseline_dict.items %}
-            {
-                type: 'area',
-                name: '{{ key|escapejs }} Baseline',
-                {% for subkey, subvalue in values.items %}
-                    data: {{ subvalue }}
-                {% endfor %}
-            },
-        {% endfor %}
-        // Follow Up Data
-        {% for key, values in answers_dict.items %}
-            {
-                type: 'area',
-                name: '{{ key|escapejs }} Follow Up',
-                {% for subkey, subvalue in values.items %}
-                    data: {{ subvalue }}
-                {% endfor %}
-            },
-        {% endfor %}
-        ]
-    });
-});
-</script>
+    {% include 'baseline/baselineterm_chart.html' %}
 {% endblock extra-script %}
