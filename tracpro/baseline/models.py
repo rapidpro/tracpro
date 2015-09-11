@@ -55,7 +55,7 @@ class BaselineTerm(models.Model):
         baseline_terms = cls.objects.filter(org=org)
         return baseline_terms
 
-    def _get_answers(self, question, regions):
+    def _get_answers(self, question, regions, region_selected):
         """
         Retrieve answers to the question that are relevant for this
         BaselineTerm.
@@ -68,15 +68,23 @@ class BaselineTerm(models.Model):
             question=question, submitted_on__gte=start, submitted_on__lt=end)
         answers = answers.annotate(region_name=F('response__contact__region__name'))
         answers = answers.select_related('response', 'response__contact')
-        if regions:
-            answers = answers.filter(response__contact__region__in=regions)
-        return answers
 
-    def get_baseline(self, regions):
-        """ Get all baseline responses """
-        answers = self._get_answers(self.baseline_question, regions)
+        all_regions = answers.values('response__contact__region',
+                                     'region_name').distinct('response__contact__region')
+
         if regions:
             answers = answers.filter(response__contact__region__in=regions)
+            all_regions = answers.values('response__contact__region',
+                                         'region_name').distinct('response__contact__region')
+
+        if region_selected:
+            answers = answers.filter(response__contact__region__in=[region_selected])
+
+        return answers, all_regions
+
+    def get_baseline(self, regions, region_selected):
+        """ Get all baseline responses """
+        answers, all_regions = self._get_answers(self.baseline_question, regions, region_selected)
 
         # Separate out baseline values per region
         region_answers = {}
@@ -87,9 +95,9 @@ class BaselineTerm(models.Model):
             region_answers[region_name] = {'values': answer_sums}
         return region_answers, dates
 
-    def get_follow_up(self, regions):
+    def get_follow_up(self, regions, region_selected):
         """ Get all follow up responses summed by region """
-        answers = self._get_answers(self.follow_up_question, regions)
+        answers, all_regions = self._get_answers(self.follow_up_question, regions, region_selected)
 
         # Loop through all regions in answers and create
         # a dict of values and dates per Region
@@ -101,4 +109,4 @@ class BaselineTerm(models.Model):
             answers_by_region = answers.filter(region_name=region_name)
             answer_sums, dates = answers_by_region.numeric_sum_group_by_date()
             region_answers[region_name] = {'values': answer_sums}
-        return region_answers, dates
+        return region_answers, dates, all_regions
