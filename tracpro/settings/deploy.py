@@ -28,7 +28,7 @@ COMPRESS_OFFLINE_CONTEXT = {
     'testing': False,
 }
 
-CSRF_COOKIE_DOMAIN = ".edutrac-staging.cakt.us"
+# CSRF_COOKIE_DOMAIN = ".edutrac-staging.cakt.us"
 
 DATABASES['default'].update({
     'NAME': 'tracpro_{}'.format(ENVIRONMENT),
@@ -42,7 +42,7 @@ DEFAULT_FROM_EMAIL = 'no-reply@caktusgroup.com'
 
 EMAIL_SUBJECT_PREFIX = '[Edutrac] '
 
-HOSTNAME = 'edutrac-staging.cakt.us'
+# HOSTNAME = 'edutrac-staging.cakt.us'
 
 LOGGING['handlers']['file']['filename'] = os.path.join(WEBSERVER_ROOT, 'log', 'tracpro.log')
 
@@ -54,13 +54,13 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'HTTPS')
 
 SESSION_CACHE_ALIAS = "default"
 
-SESSION_COOKIE_DOMAIN = '.edutrac-staging.cakt.us'
+# SESSION_COOKIE_DOMAIN = '.edutrac-staging.cakt.us'
 
 SESSION_COOKIE_SECURE = False
 
 SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
 
-SITE_HOST_PATTERN = 'https://%s.edutrac-staging.cakt.us'
+# SITE_HOST_PATTERN = 'https://%s.edutrac-staging.cakt.us'
 
 STATIC_ROOT = os.path.join(WEBSERVER_ROOT, 'public', 'static')
 

@@ -6,9 +6,13 @@ repo:
   url: git@github.com:rapidpro/tracpro.git
   branch: master
 
-# Addtional public environment variables to set for the project
+# Additional public environment variables to set for the project
 env:
-  FOO: BAR
+  CSRF_COOKIE_DOMAIN: ".edutrac-staging.cakt.us"
+  HOSTNAME: "edutrac-staging.cakt.us"
+  SESSION_COOKIE_DOMAIN: ".edutrac-staging.cakt.us"
+  SITE_HOST_PATTERN: "https://%s.edutrac-staging.cakt.us"
+
 
 # Uncomment and update username/password to enable HTTP basic auth
 # Password must be GPG encrypted.
