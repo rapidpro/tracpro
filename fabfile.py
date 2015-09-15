@@ -145,6 +145,7 @@ def setup_master():
         sudo('apt-get update -qq')
         sudo('apt-get install python-pip git-core python-git '
              'python-gnupg haveged -qq -y')
+        sudo('mkdir -p /etc/salt/')
         put(local_path='conf/master.conf',
             remote_path="/etc/salt/master", use_sudo=True)
         # install salt master if it's not there already, or restart to pick up

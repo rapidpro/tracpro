@@ -1,5 +1,5 @@
 # TODO: Replace with project name
-PROJECT_NAME = edutrac
+PROJECT_NAME = tracpro
 STATIC_LIBS_DIR = ./$(PROJECT_NAME)/static/libs
 
 LESS_VERSION = 2.1.0
