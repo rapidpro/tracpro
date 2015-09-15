@@ -2,17 +2,17 @@
 
 environment: production
 
-# FIXME: Change to match production domain name
-domain: example.com
-
-# FIXME: Update to the correct project repo
+domain: edutrac.io
 repo:
-  url: git@github.com:CHANGEME/CHANGEME.git
+  url: git@github.com:rapidpro/tracpro.git
   branch: master
 
-# Addtional public environment variables to set for the project
+# Additional public environment variables to set for the project
 env:
-  FOO: BAR
+  CSRF_COOKIE_DOMAIN: ".edutrac.io"
+  HOSTNAME: "edutrac.io"
+  SESSION_COOKIE_DOMAIN: ".edutrac.io"
+  SITE_HOST_PATTERN: "https://%s.edutrac.io"
 
 # Uncomment and update username/password to enable HTTP basic auth
 # Password must be GPG encrypted.
