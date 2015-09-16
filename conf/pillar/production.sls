@@ -15,24 +15,6 @@ env:
   SESSION_COOKIE_DOMAIN: ".edutrac.io"
   SITE_HOST_PATTERN: "https://%s.edutrac.io"
 
-# Uncomment and update username/password to enable HTTP basic auth
-# Password must be GPG encrypted.
-http_auth:
-  "tracpro": |-
-    -----BEGIN PGP MESSAGE-----
-    Version: GnuPG v1.4.11 (GNU/Linux)
-
-    hQEMAzBv9PsbguWNAQgAmavQ2p9r3YXp65y2PoGxHERa6UQGlWA9j66bQbSQ3tBu
-    l/4PChFOW1ITb65BdThRZcwhP450h5rln24AWPLhSNGNbjdE/7ITWUSJUl55R+4v
-    tuq07YyylfopOh95ijuVnqEXCxZ0XwBIasSsMuK/sKkO3ByoYCKTxVdw6yzQR/aZ
-    wW6oF/d3BwdQoPeUzEI4O6eHPm7iSar9GCvh05O+CUZpgEwDydFb5KITzw/Xb0nh
-    KjB9R85t5i21ilPjSwoiucZWXWAq6krUnihJAsLNA9TiATbDizJNjzR+Sdn9SAgU
-    0zRzRvUrR4mBR7RMXzlFfXQbL4fGnNhzjcj2LztGZtJBAeuycSfSwzajx1xmFaR5
-    90edvH8hLgv3zlHQIvotJOZ8+pVUauuSzvXkdbl0LeChf9X79xBl0gXIouhP/Wde
-    bWY=
-    =Rp7z
-    -----END PGP MESSAGE-----
-
 # Private environment variables.
 # Must be GPG encrypted.
 secrets:
