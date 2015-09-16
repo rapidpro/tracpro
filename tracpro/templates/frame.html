@@ -88,6 +88,13 @@
           </div>
           <nav id='admin-top-navbar-collapse' class='admin-top-navbar collapse navbar-collapse' role='navigation'>
             <ul class='nav navbar-nav'>
+              {% if org and request.user.is_authenticated %}
+                <li>
+                  <a href='/'>
+                    {% trans "Home" %}
+                  </a>
+                </li>
+              {% endif %}
               {% if request.user.is_superuser %}
                 <li class='dropdown'>
                   <a class='dropdown-toggle' data-toggle='dropdown' href='#'>
@@ -198,13 +205,6 @@
                             </li>
                       {% endif %}
                     </ul>
-                </li>
-              {% endif %}
-              {% if org and request.user.is_authenticated %}
-                <li>
-                  <a href='/'>
-                    {% trans "Home" %}
-                  </a>
                 </li>
               {% endif %}
             </ul>
