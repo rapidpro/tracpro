@@ -19,14 +19,16 @@
           </div>
         </div>
         <div class='col-md-6'>
-          <h2>
-            {% trans "Latest Baseline Terms" %}
-          </h2>
-          <div class='btn-group pull-away'>
-            <a class='btn btn-default' href='{% url 'baseline.baselineterm_list' %}'>
-              <span class='glyphicon glyphicon-th-list'></span>
-              {% trans "View All" %}
-            </a>
+          <div class='page-header'>
+            {% if org_perms.baseline.baselineterm_list %}
+              <a class='btn btn-default pull-away' href='{% url 'baseline.baselineterm_list' %}'>
+                <span class='glyphicon glyphicon-th-list'></span>
+                {% trans "View All" %}
+              </a>
+            {% endif %}
+            <h2>
+              {% trans "Latest Baseline Terms" %}
+            </h2>
           </div>
           <table class='table table-striped' style='width: 100%'>
           <thead>
