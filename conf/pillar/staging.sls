@@ -1,7 +1,12 @@
 #!yaml|gpg
 
 environment: staging
+
 domain: edutrac-staging.cakt.us
+
+subdomains:
+  - caktus
+
 repo:
   url: git@github.com:rapidpro/tracpro.git
   branch: master

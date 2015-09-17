@@ -4,6 +4,10 @@ environment: production
 
 domain: edutrac.io
 
+subdomains:
+  - caktus
+  - zimbabwe
+
 repo:
   url: git@github.com:rapidpro/tracpro.git
   branch: master
