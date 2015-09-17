@@ -5,7 +5,15 @@ environment: staging
 domain: edutrac-staging.cakt.us
 
 subdomains:
+  - afghanistan
   - caktus
+  - car
+  - malawi
+  - mexico
+  - peru
+  - sierra-leone
+  - uganda
+  - zimbabwe
 
 repo:
   url: git@github.com:rapidpro/tracpro.git

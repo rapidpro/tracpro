@@ -5,7 +5,14 @@ environment: production
 domain: edutrac.io
 
 subdomains:
+  - afghanistan
   - caktus
+  - car
+  - malawi
+  - mexico
+  - peru
+  - sierra-leone
+  - uganda
   - zimbabwe
 
 repo:
