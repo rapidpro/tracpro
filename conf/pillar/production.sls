@@ -4,16 +4,7 @@ environment: production
 
 domain: edutrac.io
 
-subdomains:
-  - afghanistan
-  - caktus
-  - car
-  - malawi
-  - mexico
-  - peru
-  - sierra-leone
-  - uganda
-  - zimbabwe
+subdomains: ['afghanistan', 'caktus', 'car', 'malawi', 'mexico', 'peru', 'sierra-leone', 'uganda', 'zimbabwe']
 
 repo:
   url: git@github.com:rapidpro/tracpro.git
