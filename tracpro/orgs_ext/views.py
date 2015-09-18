@@ -22,6 +22,9 @@ class OrgExtCRUDL(OrgCRUDL):
                   'timezone', 'subdomain', 'api_token', 'logo',
                   'administrators')
 
+    class List(OrgCRUDL.List):
+        default_order = ('name',)
+
     class Update(OrgCRUDL.Update):
         form_class = forms.OrgExtForm
         fields = ('is_active', 'name', 'available_languages', 'language',

@@ -5,6 +5,9 @@ from djcelery_transactions import task
 
 from dash.orgs.models import Org
 
+from tracpro.orgs_ext.utils import run_org_task
+
+
 logger = get_task_logger(__name__)
 
 
@@ -50,14 +53,15 @@ def fetch_all_inbox_messages():
     Fetches all unsolicited inbox messages (type="I") into InboxMessage
     """
     logger.info("Starting inbox message fetch for all orgs...")
-
     for org in Org.objects.filter(is_active=True):
-        fetch_inbox_messages(org)
+        run_org_task(org, fetch_inbox_messages)
 
 
-def fetch_inbox_messages(org):
+def fetch_inbox_messages(org_id):
     from .models import InboxMessage
     from tracpro.contacts.models import Contact
+
+    org = Org.objects.get(pk=org_id)
 
     client = org.get_temba_client()
 

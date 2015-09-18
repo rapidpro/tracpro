@@ -9,6 +9,9 @@ from dash.orgs.models import Org
 from dash.utils import datetime_to_ms
 from dash.utils.sync import sync_pull_contacts, sync_push_contact
 
+from tracpro.orgs_ext.utils import run_org_task
+
+
 logger = get_task_logger(__name__)
 
 
@@ -67,6 +70,5 @@ def sync_all_contacts():
     Syncs all contacts for all orgs
     """
     logger.info("Starting contact sync for all orgs...")
-
     for org in Org.objects.filter(is_active=True):
-        sync_org_contacts(org.id)
+        run_org_task(org, sync_org_contacts)
