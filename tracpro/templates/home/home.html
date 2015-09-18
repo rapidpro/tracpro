@@ -54,7 +54,7 @@
             {% for baselinetermitem in baselineterms %}
               <tr>
                 <td>
-                  <a href='/baselineterm/read/{{ baselinetermitem.pk }}/'>
+                  <a href='{% url "baseline.baselineterm_read" baselinetermitem.pk %}'>
                     {{ baselinetermitem.name }}
                   </a>
                   {% if baselinetermitem.pk == baselineterm.pk %}
@@ -62,10 +62,10 @@
                   {% endif %}
                 </td>
                 <td>
-                  {{ baselinetermitem.start_date | date:"F d, Y"  }}
+                  {{ baselinetermitem.start_date|date:"F d, Y"  }}
                 </td>
                 <td>
-                  {{ baselinetermitem.end_date | date:"F d, Y"  }}
+                  {{ baselinetermitem.end_date|date:"F d, Y"  }}
                 </td>
                 <td>
                   {{ baselinetermitem.baseline_question }}
