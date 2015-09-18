@@ -2,8 +2,12 @@ from __future__ import unicode_literals
 
 from celery.utils.log import get_task_logger
 from djcelery_transactions import task
+from requests import HTTPError
+
+from temba.base import TembaAPIError
 
 from dash.orgs.models import Org
+
 
 logger = get_task_logger(__name__)
 
@@ -50,9 +54,20 @@ def fetch_all_inbox_messages():
     Fetches all unsolicited inbox messages (type="I") into InboxMessage
     """
     logger.info("Starting inbox message fetch for all orgs...")
-
     for org in Org.objects.filter(is_active=True):
-        fetch_inbox_messages(org)
+        if not org.api_token:
+            logger.info("Skipping {} because it does not have an API "
+                        "token.".format(org))
+            continue
+
+        try:
+            fetch_inbox_messages(org)
+        except TembaAPIError as e:
+            if isinstance(e.caused_by, HTTPError):
+                if e.caused_by.response.status_code == 403:
+                    logger.warning("API token for {} is invalid.".format(org), exc_info=True)
+                    continue
+            raise
 
 
 def fetch_inbox_messages(org):
