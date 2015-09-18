@@ -106,7 +106,7 @@ def pollrun_start(pollrun_id):
         contacts = contacts.filter(region__in=descendants)
     elif pollrun.pollrun_type == PollRun.TYPE_REGIONAL:
         contacts = contacts.filter(region=pollrun.region)
-    contact_uuids = contacts.values_list('uuid', flat=True)
+    contact_uuids = list(contacts.values_list('uuid', flat=True))
 
     runs = client.create_runs(pollrun.poll.flow_uuid, contact_uuids, restart_participants=True)
     for run in runs:
