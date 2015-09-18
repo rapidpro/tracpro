@@ -151,7 +151,7 @@ class InboxMessageCRUDL(SmartCRUDL):
                 logger.info("Sending a message to %s" % (self.contact))
                 # Run the task to pull all inbox messages for this org into the
                 # local InboxMessage table
-                fetch_inbox_messages(self.request.org)
+                fetch_inbox_messages(self.request.org.pk)
                 logger.info("Retrieving inbox messages for %s" % (self.request.org))
                 return redirect('msgs.inboxmessage_conversation', contact_id=self.contact.pk)
             else:

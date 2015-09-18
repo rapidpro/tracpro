@@ -14,6 +14,7 @@ from temba.utils import parse_iso8601, format_iso8601
 from django.utils import timezone
 
 from tracpro.contacts.models import Contact
+from tracpro.orgs_ext.utils import run_org_task
 
 
 logger = get_task_logger(__name__)
@@ -34,18 +35,20 @@ def fetch_all_runs():
             logger.info("Starting flow run fetch for all orgs...")
 
             for org in Org.objects.filter(is_active=True).prefetch_related('polls'):
-                fetch_org_runs(org)
+                run_org_task(org, fetch_org_runs)
     else:
         logger.warn("Skipping run fetch as it is already running")
 
 
-def fetch_org_runs(org):
+def fetch_org_runs(org_id):
     """
     Fetches new and modified flow runs for the given org and creates/updates
     poll responses.
     """
     from tracpro.orgs_ext.constants import TaskType
     from tracpro.polls.models import Poll, Response
+
+    org = Org.objects.get(pk=org_id)
 
     client = org.get_temba_client()
     r = get_redis_connection()
