@@ -1,6 +1,7 @@
 <script src="http://code.highcharts.com/modules/exporting.js"></script>
 <script>
 $(function () {
+    {% if baselineterm %}
     $('#container').highcharts({
         title: {
             text: '{{ baselineterm.name|escapejs }}'
@@ -43,5 +44,8 @@ $(function () {
         {% endfor %}
         ]
     });
+    {% else %}
+        $('#container').html('<div class="alert alert-info">No baseline data exists.</div>');
+    {% endif %}
 });
 </script>

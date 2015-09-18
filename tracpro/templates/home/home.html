@@ -10,17 +10,75 @@
       {% trans "You don't have access to any regions. Contact your administrator." %}
     </div>
   {% else %}
-    <h2>
-        {% trans "Latest Baseline Data" %}
-      </h2>
-      <div class='row' style='margin-bottom: 1em' >
-        <a href='/baselineterm/read/{{ baselineterm.pk }}/'>
-          <div class='col-md-12'>
-            <div id="container" style="min-width: 210px; height: 300px; max-width: 800px; margin: 0 auto">
-            </div>
+    <div class='row bottom-margin'>
+        <div class='col-md-6'>
+          <h2>
+            {% trans "Latest Baseline Chart" %}
+          </h2>
+          <div id="container" class="chart-home">
           </div>
-        </a>
-      </div>
+        </div>
+        <div class='col-md-6'>
+          <div class='page-header'>
+            {% if org_perms.baseline.baselineterm_list %}
+              <a class='btn btn-default pull-away' href='{% url 'baseline.baselineterm_list' %}'>
+                <span class='glyphicon glyphicon-th-list'></span>
+                {% trans "View All" %}
+              </a>
+            {% endif %}
+            <h2>
+              {% trans "Latest Baseline Terms" %}
+            </h2>
+          </div>
+          <table class='table table-striped' style='width: 100%'>
+          <thead>
+            <tr>
+              <th>
+                {% trans "Name" %}
+              </th>
+              <th>
+                {% trans "Start Date" %}
+              </th>
+              <th>
+                {% trans "End Date" %}
+              </th>
+              <th>
+                {% trans "Baseline Question" %}
+              </th>
+              <th>
+                {% trans "Follow Up Question" %}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for baselinetermitem in baselineterms %}
+              <tr>
+                <td>
+                  <a href='{% url "baseline.baselineterm_read" baselinetermitem.pk %}'>
+                    {{ baselinetermitem.name }}
+                  </a>
+                  {% if baselinetermitem.pk == baselineterm.pk %}
+                    (displayed)
+                  {% endif %}
+                </td>
+                <td>
+                  {{ baselinetermitem.start_date|date:"F d, Y"  }}
+                </td>
+                <td>
+                  {{ baselinetermitem.end_date|date:"F d, Y"  }}
+                </td>
+                <td>
+                  {{ baselinetermitem.baseline_question }}
+                </td>
+                <td>
+                  {{ baselinetermitem.follow_up_question }}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+          </table>
+        </div>
+    </div>
 
     <div class='page-header'>
       <div class='btn-group pull-away'>
@@ -39,7 +97,7 @@
         {% trans "Latest Polling" %}
       </h2>
     </div>
-    <div class='row ng-cloak' ng-cloak='' style='margin-bottom: 1em' ng-controller='LatestPollRunsController'>
+    <div class='row ng-cloak bottom-margin' ng-cloak='' ng-controller='LatestPollRunsController'>
       <div class='col-md-12'>
         <table class='table table-striped' style='width: 100%'>
           <thead>
