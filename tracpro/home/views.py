@@ -24,7 +24,7 @@ class HomeView(OrgPermsMixin, SmartTemplateView):
         context = super(HomeView, self).get_context_data(**kwargs)
         context['polls'] = Poll.get_all(self.request.org).order_by('name')
         # Loop through all baseline terms, until we find one with data
-        baselineterms = BaselineTerm.objects.all().order_by('-end_date')
+        baselineterms = BaselineTerm.get_all(self.request.org).order_by('-end_date')
         for baselineterm in baselineterms:
             data_found = baselineterm.check_for_data(self.request.data_regions)
             if data_found:
