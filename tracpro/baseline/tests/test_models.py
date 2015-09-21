@@ -144,8 +144,7 @@ class BaselineTermTest(TracProDataTest):
         Region 2 values [25, 20]
         """
         follow_ups, dates, all_regions = self.baselineterm.get_follow_up(regions=None, region_selected=0)
-
-        self.assertEqual(len(dates), 3)  # 3 dates
+        self.assertEqual(len(dates[self.region1.name]), 3)  # 3 dates
         self.assertEqual(len(follow_ups), 2)  # 2 regions for the follow up dictionary
         self.assertEqual(len(all_regions), 2)  # 2 regions in all the data
         # Sum the follow up data for two contacts in Region 1
@@ -164,7 +163,7 @@ class BaselineTermTest(TracProDataTest):
         """
         follow_ups, dates, all_regions = self.baselineterm.get_follow_up(regions=[self.region2], region_selected=0)
 
-        self.assertEqual(len(dates), 3)  # 3 dates
+        self.assertEqual(len(dates[self.region2.name]), 3)  # 3 dates
         self.assertEqual(len(follow_ups), 1)  # One region for the follow up dictionary
         self.assertEqual(len(all_regions), 1)  # 1 region
         # Data for Region 2 only from one contact
