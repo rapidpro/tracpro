@@ -113,7 +113,4 @@ class BaselineTerm(models.Model):
 
     def check_for_data(self, regions):
         answers, all_regions = self._get_answers(self.baseline_question, regions, 0)
-        if answers:
-            return True
-        else:
-            return False
+        return bool(answers)
