@@ -78,7 +78,7 @@ class BaselineTerm(models.Model):
                                          'region_name').distinct('response__contact__region')
 
         if region_selected:
-            answers = answers.filter(response__contact__region__in=[region_selected])
+            answers = answers.filter(response__contact__region=region_selected)
 
         return answers, all_regions
 
