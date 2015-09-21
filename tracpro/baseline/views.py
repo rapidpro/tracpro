@@ -77,7 +77,13 @@ class BaselineTermCRUDL(SmartCRUDL):
             context = super(BaselineTermCRUDL.Read, self).get_context_data(**kwargs)
 
             # Get the region from the region filter drop-down, if it was selected
-            region = int(self.request.GET.get('region', 0))
+            try:
+                region = int(self.request.GET.get('region', 0))
+            except:
+                region = None
+                context['error_message'] = _(
+                    "%s is not a valid region. Please select a valid region from the drop-down." % (self.request.GET.get('region', '')))
+
             if region:
                 region_selected = region
                 context['region_selected'] = region_selected
