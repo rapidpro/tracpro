@@ -82,7 +82,8 @@ class BaselineTermCRUDL(SmartCRUDL):
             except:
                 region = None
                 context['error_message'] = _(
-                    "%s is not a valid region. Please select a valid region from the drop-down." % (self.request.GET.get('region', '')))
+                    "%s is not a valid region. Please select a valid region from the drop-down."
+                    % (self.request.GET.get('region', '')))
 
             if region:
                 region_selected = region
