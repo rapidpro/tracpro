@@ -230,7 +230,7 @@ def add_role(name):
 def salt(cmd, target="'*'", loglevel=DEFAULT_SALT_LOGLEVEL):
     """Run arbitrary salt commands."""
     with settings(warn_only=True, host_string=env.master):
-        result = sudo("salt -v {0} -l{1} {2} ".format(target, loglevel, cmd))
+        result = sudo("salt {0} -l{1} {2} ".format(target, loglevel, cmd))
     return result
 
 
