@@ -85,15 +85,16 @@ class BaselineTerm(models.Model):
     def get_baseline(self, regions, region_selected):
         """ Get all baseline responses """
         answers, all_regions = self._get_answers(self.baseline_question, regions, region_selected)
-
         # Separate out baseline values per region
         region_answers = {}
+        dates_dict = {}
         dates = []
         for region_name in set(a.region_name.encode('ascii') for a in answers):
             answers_by_region = answers.filter(region_name=region_name)
             answer_sums, dates = answers_by_region.numeric_sum_group_by_date()
             region_answers[region_name] = {'values': answer_sums}
-        return region_answers, dates
+            dates_dict[region_name] = dates
+        return region_answers, dates_dict
 
     def get_follow_up(self, regions, region_selected):
         """ Get all follow up responses summed by region """
@@ -104,12 +105,14 @@ class BaselineTerm(models.Model):
         # ex.
         # { 'Kumpala': {'values': [35,...], 'dates': [datetime.date(2015, 8, 12),...]} }
         region_answers = {}
+        dates_dict = {}
         dates = []
         for region_name in set(a.region_name.encode('ascii') for a in answers):
             answers_by_region = answers.filter(region_name=region_name)
             answer_sums, dates = answers_by_region.numeric_sum_group_by_date()
             region_answers[region_name] = {'values': answer_sums}
-        return region_answers, dates, all_regions
+            dates_dict[region_name] = dates
+        return region_answers, dates_dict, all_regions
 
     def check_for_data(self, regions):
         answers, all_regions = self._get_answers(self.baseline_question, regions, 0)
