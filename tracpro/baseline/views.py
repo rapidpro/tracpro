@@ -173,12 +173,12 @@ class BaselineTermCRUDL(SmartCRUDL):
 
             return HttpResponseRedirect(self.get_success_url())
 
-    class ClearSpoof(OrgObjPermsMixin, SmartView, View):
+    class ClearSpoof(OrgPermsMixin, SmartView, View):
 
         def post(self, request, *args, **kwargs):
-            # Spoofed data has a NULL flow_run_id in Response
-            responses = Response.objects.filter(flow_run_id__isnull=True)
-            pollruns = PollRun.objects.filter(pk__in=responses.values('pollrun'))
+            # Spoofed data has TYPE_SPOOFED. Filter only for current org.
+            pollruns = PollRun.objects.filter(pollrun_type=PollRun.TYPE_SPOOFED,
+                                              poll__org=self.request.org)
 
             # This will create a cascading delete to clear out all Spoofed Poll data
             # from PollRun, Answer and Response
