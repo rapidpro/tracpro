@@ -245,11 +245,11 @@ class PollRunCRUDL(smartmin.SmartCRUDL):
 
             reporting_groups_by_id = {g.pk: g for g in reporting_groups}
             for response in responses:
+                group_id = response.contact.group_id
                 try:
                     group = reporting_groups_by_id[group_id] if group_id else None
                 except KeyError:
                     continue  # not for a relevant group.
-                group_id = response.contact.group_id
                 status = response.status
 
                 if group:
