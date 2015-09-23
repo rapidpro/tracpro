@@ -44,6 +44,15 @@ class Window(Enum):
             return (now - relativedelta(days=self.ordinal), now)
 
 
+class PollQuerySet(models.QuerySet):
+
+    def active(self):
+        return self.filter(is_active=True)
+
+    def by_org(self, org):
+        return self.filter(org=org)
+
+
 @python_2_unicode_compatible
 class Poll(models.Model):
     """
@@ -59,6 +68,8 @@ class Poll(models.Model):
 
     is_active = models.BooleanField(
         default=True, help_text=_("Whether this item is active"))
+
+    objects = PollQuerySet.as_manager()
 
     def __str__(self):
         return self.name
