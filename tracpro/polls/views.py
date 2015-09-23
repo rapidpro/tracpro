@@ -245,15 +245,15 @@ class PollRunCRUDL(smartmin.SmartCRUDL):
 
             reporting_groups_by_id = {g.pk: g for g in reporting_groups}
             for response in responses:
+                try:
+                    group = reporting_groups_by_id[group_id] if group_id else None
+                except KeyError:
+                    continue  # not for a relevant group.
                 group_id = response.contact.group_id
-                group = reporting_groups_by_id[group_id] if group_id else None
                 status = response.status
 
                 if group:
-                    try:
-                        per_group_counts[group][status] += 1
-                    except KeyError:
-                        continue  # not for a relevant group
+                    per_group_counts[group][status] += 1
                 else:
                     no_group_counts[status] += 1
 
