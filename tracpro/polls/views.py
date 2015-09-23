@@ -12,6 +12,7 @@ from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.http import (
     HttpResponse, HttpResponseBadRequest, HttpResponseRedirect, JsonResponse)
+from django.shortcuts import get_object_or_404
 from django.utils.translation import ugettext_lazy as _
 
 from smartmin import views as smartmin
@@ -310,8 +311,8 @@ class PollRunCRUDL(smartmin.SmartCRUDL):
 
         def derive_poll(self):
             def fetch():
-                return Poll.objects.get(
-                    pk=self.kwargs['poll'], org=self.request.org, is_active=True)
+                poll_qs = Poll.objects.active().by_org(self.request.org)
+                return get_object_or_404(poll_qs, pk=self.kwargs['poll'])
             return get_obj_cacheable(self, '_poll', fetch)
 
         def derive_queryset(self, **kwargs):
