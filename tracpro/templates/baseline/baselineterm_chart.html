@@ -12,7 +12,7 @@ $(function () {
         xAxis: {
             categories: [
                         {% for date in date_list %}
-                            '{{ date }}',
+                            '{{ date }}'{% if not forloop.last %},{% endif %}
                         {% endfor %}
                         ]
         },
@@ -27,8 +27,8 @@ $(function () {
             {
                 type: 'area',
                 name: '{{ key|escapejs }} Baseline',
-                {% for subkey, subvalue in values.items %}
-                    data: {{ subvalue }}
+                {% for subkey, value_list in values.items %}
+                    data: {{ value_list }}
                 {% endfor %}
             },
         {% endfor %}
@@ -37,8 +37,8 @@ $(function () {
             {
                 type: 'area',
                 name: '{{ key|escapejs }} Follow Up',
-                {% for subkey, subvalue in values.items %}
-                    data: {{ subvalue }}
+                {% for subkey, value_list in values.items %}
+                    data: {{ value_list }}
                 {% endfor %}
             },
         {% endfor %}
