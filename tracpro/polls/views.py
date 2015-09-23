@@ -22,15 +22,20 @@ from tracpro.contacts.models import Contact
 from tracpro.groups.models import Group
 
 from . import charts, forms, tasks
-from .models import (
-    Poll, Question, PollRun, Response, Window)
+from .models import Poll, Question, PollRun, Response, Window
 
 
 class PollCRUDL(smartmin.SmartCRUDL):
     model = Poll
     actions = ('read', 'update', 'list', 'select')
 
-    class Read(OrgObjPermsMixin, smartmin.SmartReadView):
+    class PollMixin(object):
+
+        def get_queryset(self):
+            """Only allow viewing active polls for the current org."""
+            return Poll.objects.active().by_org(self.request.org)
+
+    class Read(PollMixin, OrgObjPermsMixin, smartmin.SmartReadView):
 
         def get_context_data(self, **kwargs):
             context = super(PollCRUDL.Read, self).get_context_data(**kwargs)
@@ -60,7 +65,7 @@ class PollCRUDL(smartmin.SmartCRUDL):
             context['questions'] = questions
             return context
 
-    class Update(OrgObjPermsMixin, smartmin.SmartUpdateView):
+    class Update(PollMixin, OrgObjPermsMixin, smartmin.SmartUpdateView):
         exclude = ('is_active', 'flow_uuid', 'org')
         form_class = forms.PollForm
 
@@ -70,14 +75,11 @@ class PollCRUDL(smartmin.SmartCRUDL):
                     question_id = field_key.split('__')[2]
                     Question.objects.filter(pk=question_id, poll=self.object).update(text=value)
 
-    class List(OrgPermsMixin, smartmin.SmartListView):
+    class List(PollMixin, OrgPermsMixin, smartmin.SmartListView):
         fields = ('name', 'questions', 'pollruns', 'last_conducted')
         field_config = {'pollruns': {'label': _("Dates")}}
         link_fields = ('name', 'pollruns')
         default_order = ('name',)
-
-        def derive_queryset(self, **kwargs):
-            return Poll.get_all(self.request.org)
 
         def derive_pollruns(self, obj):
             return obj.get_pollruns(
