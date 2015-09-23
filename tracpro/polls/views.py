@@ -231,7 +231,9 @@ class PollRunCRUDL(smartmin.SmartCRUDL):
         def get_context_data(self, **kwargs):
             context = super(PollRunCRUDL.Participation, self).get_context_data(**kwargs)
             reporting_groups = Group.get_all(self.request.org).order_by('name')
-            responses = self.object.get_responses(self.request.region)
+            responses = self.object.get_responses(
+                self.request.region,
+                self.request.include_subregions)
 
             # initialize an ordered dict of group to response counts
             per_group_counts = OrderedDict()
@@ -248,7 +250,10 @@ class PollRunCRUDL(smartmin.SmartCRUDL):
                 status = response.status
 
                 if group:
-                    per_group_counts[group][status] += 1
+                    try:
+                        per_group_counts[group][status] += 1
+                    except KeyError:
+                        continue  # not for a relevant group
                 else:
                     no_group_counts[status] += 1
 
