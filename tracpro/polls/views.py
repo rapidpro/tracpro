@@ -312,7 +312,8 @@ class PollRunCRUDL(smartmin.SmartCRUDL):
 
         def derive_poll(self):
             def fetch():
-                return get_object_or_404(Poll.get_all(self.request.org), pk=self.kwargs['poll'])
+                poll_qs = Poll.get_all(self.request.org)
+                return get_object_or_404(poll_qs, pk=self.kwargs['poll'])
             return get_obj_cacheable(self, '_poll', fetch)
 
         def derive_queryset(self, **kwargs):
@@ -354,9 +355,9 @@ class ResponseCRUDL(smartmin.SmartCRUDL):
 
         def derive_pollrun(self):
             def fetch():
-                pollruns = PollRun.objects.by_org(self.request.org)
-                pollruns = pollruns.select_related('poll')
-                return pollruns.get(pk=self.kwargs['pollrun'])
+                pollrun_qs = PollRun.objects.by_org(self.request.org)
+                pollrun_qs = pollrun_qs.select_related('poll')
+                return get_object_or_404(pollrun_qs, pk=self.kwargs['pollrun'])
             return get_obj_cacheable(self, '_pollrun', fetch)
 
         def derive_questions(self):
@@ -488,8 +489,9 @@ class ResponseCRUDL(smartmin.SmartCRUDL):
 
         def derive_contact(self):
             def fetch():
-                return Contact.objects.select_related('region').get(
-                    pk=self.kwargs['contact'], org=self.request.org)
+                contact_qs = Contact.objects.filter(org=self.request.org)
+                contact_qs = contact_qs.select_related('region')
+                return get_object_or_404(contact_qs, pk=self.kwargs['contact'])
             return get_obj_cacheable(self, '_contact', fetch)
 
         def derive_queryset(self, **kwargs):
