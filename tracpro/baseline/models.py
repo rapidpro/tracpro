@@ -90,7 +90,9 @@ class BaselineTerm(models.Model):
         dates_dict = {}
         dates = []
         for region_name in set(a.region_name.encode('ascii') for a in answers):
-            answers_by_region = answers.filter(region_name=region_name)
+            # Retrieve the first result per contact for baseline
+            answers_by_region = answers.order_by('response__contact', 'submitted_on').distinct('response__contact')
+            answers_by_region = answers_by_region.filter(region_name=region_name)
             answer_sums, dates = answers_by_region.numeric_sum_group_by_date()
             region_answers[region_name] = {'values': answer_sums}
             dates_dict[region_name] = dates
@@ -109,6 +111,7 @@ class BaselineTerm(models.Model):
         dates = []
         for region_name in set(a.region_name.encode('ascii') for a in answers):
             answers_by_region = answers.filter(region_name=region_name)
+            answers_by_region = answers_by_region.order_by('submitted_on')
             answer_sums, dates = answers_by_region.numeric_sum_group_by_date()
             region_answers[region_name] = {'values': answer_sums}
             dates_dict[region_name] = dates

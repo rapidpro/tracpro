@@ -623,8 +623,7 @@ class AnswerQuerySet(models.QuerySet):
         dates = []
         total = Decimal(0)
         answer_date = ""
-        answers = self.order_by('submitted_on')
-        for answer in answers:
+        for answer in self:
             if answer.category is not None:
                 # ignore answers with no category as they weren't in the
                 # required range
