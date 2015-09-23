@@ -33,7 +33,7 @@ class PollCRUDL(smartmin.SmartCRUDL):
 
         def get_queryset(self):
             """Only allow viewing active polls for the current org."""
-            return Poll.objects.active().by_org(self.request.org)
+            return Poll.get_all(self.request.org)
 
     class Read(PollMixin, OrgObjPermsMixin, smartmin.SmartReadView):
 
@@ -168,8 +168,7 @@ class PollRunCRUDL(smartmin.SmartCRUDL):
 
         def post(self, request, *args, **kwargs):
             try:
-                poll = Poll.objects.get(
-                    org=self.request.org, pk=request.POST.get('poll'))
+                poll = Poll.get_all(self.request.org).get(pk=request.POST.get('poll'))
             except Poll.DoesNotExist:
                 return HttpResponseBadRequest()
 
@@ -313,8 +312,7 @@ class PollRunCRUDL(smartmin.SmartCRUDL):
 
         def derive_poll(self):
             def fetch():
-                poll_qs = Poll.objects.active().by_org(self.request.org)
-                return get_object_or_404(poll_qs, pk=self.kwargs['poll'])
+                return get_object_or_404(Poll.get_all(self.request.org), pk=self.kwargs['poll'])
             return get_obj_cacheable(self, '_poll', fetch)
 
         def derive_queryset(self, **kwargs):

@@ -117,7 +117,7 @@ class Poll(models.Model):
 
     @classmethod
     def get_all(cls, org):
-        return org.polls.filter(is_active=True)
+        return Poll.objects.active().by_org(org)
 
     def get_questions(self):
         return self.questions.filter(is_active=True).order_by('order')
