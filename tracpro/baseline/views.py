@@ -150,12 +150,12 @@ class BaselineTermCRUDL(SmartCRUDL):
             start = self.form.cleaned_data['start_date']
             end = self.form.cleaned_data['end_date']
 
+            # Create a single PollRun for the Baseline Poll for all contacts
+            self.create_baseline(baseline_question.poll, start, contacts,
+                                 baseline_question, baseline_minimum, baseline_maximum)
+
             # Create a PollRun for each date from start to end dates for the Follow Up Poll
             for loop_count, follow_up_date in enumerate(rrule.rrule(rrule.DAILY, dtstart=start, until=end)):
-                if loop_count % 7 == 0:  # On the seventh day, add another set of baseline data
-                    # Create a single PollRun for the Baseline Poll
-                    self.create_baseline(baseline_question.poll, follow_up_date, contacts,
-                                         baseline_question, baseline_minimum, baseline_maximum)
                 follow_up_datetime = datetime.combine(follow_up_date, datetime.utcnow().time().replace(tzinfo=pytz.utc))
                 follow_up_pollrun = PollRun.objects.create_spoofed(
                     poll=follow_up_question.poll, conducted_on=follow_up_datetime)

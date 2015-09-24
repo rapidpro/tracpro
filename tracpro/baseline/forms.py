@@ -65,8 +65,7 @@ class SpoofDataForm(forms.Form):
         "Baseline poll data will be submitted on this date. "
         "Follow up data will start on this date."))
     end_date = forms.DateField(help_text=_(
-        "Follow up data will end on this date. "
-        "If dates go beyond 1 week, a second set of baseline answers will be created."))
+        "Follow up data will end on this date. "))
     baseline_question = QuestionModelChoiceField(queryset=Question.objects.all().order_by('poll__name', 'text'),
                                                  help_text=_("Select a baseline question which " +
                                                              "will have numeric answers only."))

@@ -101,7 +101,6 @@ class BaselineTermTest(TracProDataTest):
     def test_baseline_single_region(self):
         """ Answers were 10 and 20 for region1 """
         baseline_dict, dates = self.baselineterm.get_baseline(regions=[self.region1], region_selected=0)
-
         self.assertEqual(len(baseline_dict), 1)  # One regions, one baseline
         # Two answers sum = 10 + 20 = 30
         self.assertEqual(
@@ -111,8 +110,8 @@ class BaselineTermTest(TracProDataTest):
     def test_baseline_single_region_multiple_answers(self):
         """
         Answers were 10 and 20 for region1
-        Add another answer for both region contacts at a later date
-        Baseline should be retrieved from all responses
+        Add other answers (100) for both region contacts at a later date
+        Baseline should be retrieved from first set of responses
         """
         for contact in [self.contact1, self.contact2]:
             response = factories.Response(
@@ -131,12 +130,11 @@ class BaselineTermTest(TracProDataTest):
         baseline_dict, dates = self.baselineterm.get_baseline(regions=[self.region1], region_selected=0)
 
         self.assertEqual(len(baseline_dict), 1)  # One regions, one baseline
-        # Two sets of baseline answers
+        # One baseline answer
         # sum 1 = 10 + 20 = 30
-        # sum 2 = 100 + 100 = 200
         self.assertEqual(
             baseline_dict[self.region1.name]["values"],
-            [30, 200])
+            [30])
 
     def test_follow_up_all_regions(self):
         """
