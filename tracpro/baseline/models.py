@@ -88,14 +88,13 @@ class BaselineTerm(models.Model):
         # Separate out baseline values per region
         region_answers = {}
         dates_dict = {}
-        dates = []
         for region_name in set(a.region_name.encode('ascii') for a in answers):
             # Retrieve the first result per contact for baseline
             answers_by_region = answers.order_by('response__contact', 'submitted_on').distinct('response__contact')
             answers_by_region = answers_by_region.filter(region_name=region_name)
-            answer_sums, dates = answers_by_region.numeric_sum_group_by_date()
-            region_answers[region_name] = {'values': answer_sums}
-            dates_dict[region_name] = dates
+            answer_sum = answers_by_region.numeric_sum_all_dates()
+            region_answers[region_name] = {'values': [answer_sum]}
+            dates_dict[region_name] = [self.start_date]
         return region_answers, dates_dict
 
     def get_follow_up(self, regions, region_selected):
