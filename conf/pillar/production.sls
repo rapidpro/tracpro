@@ -2,7 +2,7 @@
 
 environment: production
 
-domain: edutrac.io
+domain: tracpro.io
 
 subdomains: ['afghanistan', 'caktus', 'car', 'guinea', 'malawi', 'mexico', 'peru', 'sierra-leone', 'uganda', 'zimbabwe']
 
@@ -12,10 +12,10 @@ repo:
 
 # Additional public environment variables to set for the project
 env:
-  CSRF_COOKIE_DOMAIN: ".edutrac.io"
-  HOSTNAME: "edutrac.io"
-  SESSION_COOKIE_DOMAIN: ".edutrac.io"
-  SITE_HOST_PATTERN: "https://%s.edutrac.io"
+  CSRF_COOKIE_DOMAIN: ".tracpro.io"
+  HOSTNAME: "tracpro.io"
+  SESSION_COOKIE_DOMAIN: ".tracpro.io"
+  SITE_HOST_PATTERN: "https://%s.tracpro.io"
 
 # Private environment variables.
 # Must be GPG encrypted.
