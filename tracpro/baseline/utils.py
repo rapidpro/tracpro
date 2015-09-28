@@ -32,8 +32,8 @@ def chart_baseline(baselineterm, regions, region_selected):
                 current_baseline = float(baseline_list[baseline_dates_dict[region].index(date)])
             baseline_list_all_dates.append(current_baseline)
         baseline_dict[region]["values"] = baseline_list_all_dates
-    baseline_mean = round(numpy.mean(all_baselines), 5)
-    baseline_std = round(numpy.std(all_baselines), 5)
+    baseline_mean = round(numpy.mean(all_baselines), 1)
+    baseline_std = round(numpy.std(all_baselines), 1)
 
     # Reformat the values lists to remove the Decimal()
     # Example in:  {'Kampala': {'values': [Decimal(100), Decimal(100)...] } }
@@ -54,8 +54,8 @@ def chart_baseline(baselineterm, regions, region_selected):
         answers_dict[region] = {}
         answers_dict[region]["values"] = follow_up_list_all_dates
 
-    follow_up_mean = round(numpy.mean(all_follow_ups), 5)
-    follow_up_std = round(numpy.std(all_follow_ups), 5)
+    follow_up_mean = round(numpy.mean(all_follow_ups), 1)
+    follow_up_std = round(numpy.std(all_follow_ups), 1)
 
     return (answers_dict, baseline_dict, all_regions, date_list,
             baseline_mean, baseline_std, follow_up_mean, follow_up_std)
