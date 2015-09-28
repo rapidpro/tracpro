@@ -29,24 +29,21 @@ class BaselineTerm(models.Model):
     start_date = models.DateField()
     end_date = models.DateField()
 
-    baseline_poll = models.ForeignKey(Poll, related_name="baseline_terms")
+    baseline_poll = models.ForeignKey(Poll, related_name="+")
     baseline_question = ChainedForeignKey(
-        Question,
-        chained_field='baseline_poll',
-        chained_model_field='poll',
-        auto_choose=True,
-        related_name="baseline_terms",
+        Question, auto_choose=True, related_name="+",
+        chained_field='baseline_poll', chained_model_field='poll',
         help_text=_("All baseline poll results over time will display in chart.")
     )
 
-    follow_up_poll = models.ForeignKey(Poll)
+    follow_up_poll = models.ForeignKey(Poll, related_name="+")
     follow_up_question = ChainedForeignKey(
-        Question,
-        chained_field='follow_up_poll',
-        chained_model_field='poll',
-        auto_choose=True,
-        help_text=_("Follow up poll responses over time to compare to the baseline values.")
+        Question, auto_choose=True, related_name="+",
+        chained_field='follow_up_poll', chained_model_field='poll',
+        help_text=_("Follow up poll responses over time to compare to the "
+                    "baseline values.")
     )
+
     y_axis_title = models.CharField(max_length=255, null=True, blank=True,
                                     help_text=_("The title for the y axis of the chart."))
 
