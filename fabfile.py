@@ -1,3 +1,4 @@
+import datetime
 import os
 import re
 import tempfile
@@ -59,6 +60,53 @@ def vagrant():
 def initialize_env():
     """Build some common variables into the env dictionary."""
     env.gpg_key = os.path.join(CONF_ROOT, '{}.pub.gpg'.format(env.environment))
+
+
+@task
+def get_remote_db_dump(filename=None):
+    """Dump remote database content to a local file."""
+    # File will be put in the same place both locally and on the remote.
+    if not filename:
+        now = datetime.datetime.now().isoformat()
+        filename = "tracpro-{env}-db-{now}.sql.gz".format(
+            env=env.environment, now=now)
+    output_path = os.path.join("/tmp/", filename)
+
+    with settings(host_string=env.master):
+        # Dump the database to a file on the remote host.
+        cmd = 'pg_dump -Z 5 -U tracpro_{env} -d tracpro_{env} -f {output}'
+        run(cmd.format(env=env.environment, output=output_path))
+
+        # Copy the file from the remote host to the local machine.
+        get(remote_path=output_path, local_path=output_path)
+
+        # Remove the remote copy of the file.
+        run("rm {}".format(output_path))
+
+    return output_path
+
+
+@task
+def load_db_from_file(path, remove_files=True):
+    """Load content from a database dump file.
+
+    Removes the file and its unzipped contents unless specified otherwise.
+    """
+    unzipped = os.path.splitext(path)[0]
+    local("cat {} | gunzip > {}".format(path, unzipped))
+    local("dropdb --if-exists tracpro")
+    local("createdb -E UTF-8 tracpro")
+    local("psql -d tracpro -f {}".format(unzipped))
+    if remove_files:
+        local("rm {}".format(path))
+        local("rm {}".format(unzipped))
+
+
+@task
+def get_db():
+    """Copy the remote database to the local environment."""
+    db_dump = get_remote_db_dump()
+    load_db_from_file(db_dump)
 
 
 def get_salt_version(command):
