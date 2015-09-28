@@ -8,7 +8,7 @@ subdomains: ['afghanistan', 'caktus', 'car', 'guinea', 'malawi', 'mexico', 'peru
 
 repo:
   url: git@github.com:rapidpro/tracpro.git
-  branch: master
+  branch: develop
 
 # Additional public environment variables to set for the project
 env:

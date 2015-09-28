@@ -11,14 +11,14 @@
     </div>
   {% else %}
     <div class='row bottom-margin'>
-        <div class='col-md-6'>
+        <div class='col-md-7'>
           <h2>
             {% trans "Latest Baseline Chart" %}
           </h2>
           <div id="container" class="chart-home">
           </div>
         </div>
-        <div class='col-md-6'>
+        <div class='col-md-5'>
           <div class='page-header'>
             {% if org_perms.baseline.baselineterm_list %}
               <a class='btn btn-default pull-away' href='{% url 'baseline.baselineterm_list' %}'>
