@@ -44,8 +44,9 @@ class BaselineTerm(models.Model):
                     "baseline values.")
     )
 
-    y_axis_title = models.CharField(max_length=255, null=True, blank=True,
-                                    help_text=_("The title for the y axis of the chart."))
+    y_axis_title = models.CharField(
+        max_length=255, blank=True, default="",
+        help_text=_("The title for the y axis of the chart."))
 
     @classmethod
     def get_all(cls, org):
