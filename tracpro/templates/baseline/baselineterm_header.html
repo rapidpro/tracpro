@@ -108,7 +108,7 @@
       <div class="modal-body">
         {% trans "Enter goal data for all baselines charted." %}
         <div>
-          <input type="text" name="goal" id="goal" />
+          <input type="number" name="goal" id="goal" />
         </div>
       </div>
       <div class="modal-footer">
@@ -142,7 +142,9 @@
       $('#delete-form').submit();
     }
     function onChartGoal() {
-      $('#chart-form').submit();
+      if($('#goal').val() != "") {
+        $('#chart-form').submit();
+      }
     }
     function onClearChartGoal(ctrl) {
       $('#chart-clear-form').submit();
