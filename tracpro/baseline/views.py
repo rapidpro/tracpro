@@ -85,6 +85,7 @@ class BaselineTermCRUDL(SmartCRUDL):
                     "%s is not a valid region. Please select a valid region from the drop-down."
                     % (self.request.GET.get('region', '')))
 
+            # If the user selected a region, only retrieve/display data for that region
             if region:
                 region_selected = region
                 context['region_selected'] = region_selected
@@ -93,6 +94,12 @@ class BaselineTermCRUDL(SmartCRUDL):
 
             answers_dict, baseline_dict, all_regions, date_list = chart_baseline(
                 self.object, self.request.data_regions, region_selected)
+
+            # This value is for when the user would rather display a goal they enter manually,
+            # instead of the baseline poll results
+            context['goal_selected'] = int(self.request.GET.get('goal', 0))
+            if context['goal_selected']:
+                context['goal_selected'] = [context['goal_selected']] * len(date_list)
 
             context['all_regions'] = all_regions
             context['date_list'] = date_list
