@@ -4,7 +4,7 @@ environment: production
 
 domain: tracpro.io
 
-subdomains: ['afghanistan', 'caktus', 'car', 'guinea', 'malawi', 'mexico', 'peru', 'sierra-leone', 'uganda', 'zimbabwe']
+subdomains: ['afghanistan', 'caktus', 'car', 'guinea', 'malawi', 'mexico', 'nigeria', 'peru', 'sierra-leone', 'uganda', 'zimbabwe']
 
 repo:
   url: git@github.com:rapidpro/tracpro.git

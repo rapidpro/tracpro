@@ -92,19 +92,27 @@ class BaselineTermCRUDL(SmartCRUDL):
             else:
                 region_selected = 0
 
-            answers_dict, baseline_dict, all_regions, date_list = chart_baseline(
+            (answers_dict, baseline_dict, all_regions, date_list,
+             baseline_mean, baseline_std, follow_up_mean, follow_up_std) = chart_baseline(
                 self.object, self.request.data_regions, region_selected)
-
-            # This value is for when the user would rather display a goal they enter manually,
-            # instead of the baseline poll results
-            context['goal_selected'] = int(self.request.GET.get('goal', 0))
-            if context['goal_selected']:
-                context['goal_selected'] = [context['goal_selected']] * len(date_list)
 
             context['all_regions'] = all_regions
             context['date_list'] = date_list
             context['baseline_dict'] = baseline_dict
             context['answers_dict'] = answers_dict
+            context['baseline_mean'] = baseline_mean
+            context['baseline_std'] = baseline_std
+            context['follow_up_mean'] = follow_up_mean
+            context['follow_up_std'] = follow_up_std
+            context['include_legend_data'] = 1
+
+            # This value is for when the user would rather display a goal they enter manually,
+            # instead of the baseline poll results
+            context['goal_selected'] = int(self.request.GET.get('goal', 0))
+            if context['goal_selected']:
+                context['baseline_mean'] = context['goal_selected']
+                context['baseline_std'] = 0
+                context['goal_selected'] = [context['goal_selected']] * len(date_list)
 
             if len(context['answers_dict']) == 0 and len(context['baseline_dict']) == 0:
                 context['error_message'] = _(

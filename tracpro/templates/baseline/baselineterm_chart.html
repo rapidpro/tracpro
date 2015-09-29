@@ -21,12 +21,30 @@ $(function () {
                 text: '{{ baselineterm.y_axis_title|escapejs }}'
             }
         },
+        {% if include_legend_data %}
+        legend: {
+            align: 'right',
+            verticalAlign: 'top',
+            layout: 'vertical',
+            x: 0,
+            y: 100,
+            labelFormatter: function() {
+              if (this.options.legendValue || this.options.legendValue==0) {
+                return '<hr><br><span style="font-size:1.2em;">' + this.name + '</span>    <span style="font-size:1.2em; font-weight:300">' + this.options.legendValue + '</span>';
+              }
+              else {
+                return this.name;
+              }
+
+          }
+        },
+        {% endif %}
         series: [
         // Baseline Data
         {% for key, values in baseline_dict.items %}
             {
                 type: 'area',
-                name: '{{ key|escapejs }} Baseline {% if goal_selected %}Goal{% endif %}',
+                name: '{{ key|escapejs }}<br>Baseline {% if goal_selected %}Goal{% endif %}',
                 {% for subkey, value_list in values.items %}
                     {% if goal_selected %}
                         data: {{ goal_selected }}
@@ -40,12 +58,51 @@ $(function () {
         {% for key, values in answers_dict.items %}
             {
                 type: 'area',
-                name: '{{ key|escapejs }} Follow Up',
+                name: '{{ key|escapejs }}<br>Follow Up',
                 {% for subkey, value_list in values.items %}
                     data: {{ value_list }}
                 {% endfor %}
             },
         {% endfor %}
+        /* The following are data for the legend only, not actual series data. */
+        {% if include_legend_data %}
+            {
+                type: 'area',
+                name: 'Baseline Mean',
+                legendValue: {{ baseline_mean }},
+                color: '#FFFFFF',
+                events: {
+                    legendItemClick: function () { return false; }
+                }
+            },
+            {
+                type: 'area',
+                name: 'Baseline Standard Deviation',
+                legendValue: {{ baseline_std }},
+                color: '#FFFFFF',
+                events: {
+                    legendItemClick: function () { return false; }
+                }
+            },
+            {
+                type: 'area',
+                name: 'Follow Up Mean',
+                legendValue: {{ follow_up_mean }},
+                color: '#FFFFFF',
+                events: {
+                    legendItemClick: function () { return false; }
+                }
+            },
+            {
+                type: 'area',
+                name: 'Follow Up Standard Deviation',
+                legendValue: {{ follow_up_std }},
+                color: '#FFFFFF',
+                events: {
+                    legendItemClick: function () { return false; }
+                }
+            }
+        {% endif %}
         ]
     });
     {% else %}

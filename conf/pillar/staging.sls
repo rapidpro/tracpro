@@ -4,11 +4,11 @@ environment: staging
 
 domain: edutrac-staging.cakt.us
 
-subdomains: ['afghanistan', 'caktus', 'car', 'guinea', 'malawi', 'mexico', 'peru', 'sierra-leone', 'uganda', 'zimbabwe']
+subdomains: ['afghanistan', 'caktus', 'car', 'guinea', 'malawi', 'mexico', 'nigeria', 'peru', 'sierra-leone', 'uganda', 'zimbabwe']
 
 repo:
   url: git@github.com:rapidpro/tracpro.git
-  branch: master
+  branch: develop
 
 # Additional public environment variables to set for the project
 env:

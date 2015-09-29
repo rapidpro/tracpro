@@ -28,13 +28,15 @@ class HomeView(OrgPermsMixin, SmartTemplateView):
         for baselineterm in baselineterms:
             data_found = baselineterm.check_for_data(self.request.data_regions)
             if data_found:
-                answers_dict, baseline_dict, all_regions, date_list = chart_baseline(
+                (answers_dict, baseline_dict, all_regions, date_list,
+                 baseline_mean, baseline_std, follow_up_mean, follow_up_std) = chart_baseline(
                     baselineterm=baselineterm, regions=self.request.data_regions, region_selected=0)
                 context['all_regions'] = all_regions
                 context['date_list'] = date_list
                 context['baseline_dict'] = baseline_dict
                 context['answers_dict'] = answers_dict
                 context['baselineterm'] = baselineterm
+                context['include_legend_data'] = 0
                 break  # Found our baseline chart with data, send it back to the view
 
         # Return top 5 baseline terms only
