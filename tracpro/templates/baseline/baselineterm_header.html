@@ -57,7 +57,7 @@
   {% endif %}
 </div>
 
-<form id="delete-form" method='get'>
+<form id="delete-form" method="post" action="{% url 'baseline.baselineterm_delete' baselineterm.pk %}">
   {% csrf_token %}
 
 <div class="modal fade" role="dialog" id="confirm-delete-dialog">
