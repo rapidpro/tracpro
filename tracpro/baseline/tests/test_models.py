@@ -86,26 +86,13 @@ class BaselineTermTest(TracProDataTest):
 
     def test_baseline_all_regions(self):
         """ Answers were 10, 20 and 30: Total should be 10 + 20 + 30 = 60 """
-        baseline_dict, dates = self.baselineterm.get_baseline(regions=None, region_selected=0)
-
-        self.assertEqual(len(baseline_dict), 2)  # Two regions, two sets of baseline values
-        # Two answers, 10 + 20 = 30
-        self.assertEqual(
-            baseline_dict[self.region1.name]["values"],
-            [30])
-        # One answer, 30 = 30
-        self.assertEqual(
-            baseline_dict[self.region2.name]["values"],
-            [30])
+        baseline_total, dates = self.baselineterm.get_baseline(regions=None, region_selected=0)
+        self.assertEqual(baseline_total, 60)
 
     def test_baseline_single_region(self):
         """ Answers were 10 and 20 for region1 """
-        baseline_dict, dates = self.baselineterm.get_baseline(regions=[self.region1], region_selected=0)
-        self.assertEqual(len(baseline_dict), 1)  # One regions, one baseline
-        # Two answers sum = 10 + 20 = 30
-        self.assertEqual(
-            baseline_dict[self.region1.name]["values"],
-            [30])
+        baseline_total, dates = self.baselineterm.get_baseline(regions=[self.region1], region_selected=0)
+        self.assertEqual(baseline_total, 30)
 
     def test_baseline_single_region_multiple_answers(self):
         """
@@ -127,44 +114,29 @@ class BaselineTermTest(TracProDataTest):
                 submitted_on=self.end_date,
                 category=u'')
 
-        baseline_dict, dates = self.baselineterm.get_baseline(regions=[self.region1], region_selected=0)
-
-        self.assertEqual(len(baseline_dict), 1)  # One regions, one baseline
-        # One baseline answer
-        # sum 1 = 10 + 20 = 30
-        self.assertEqual(
-            baseline_dict[self.region1.name]["values"],
-            [30])
+        baseline_total, dates = self.baselineterm.get_baseline(regions=[self.region1], region_selected=0)
+        self.assertEqual(baseline_total, 30)
 
     def test_follow_up_all_regions(self):
         """
-        Region 1 values [9, 8] + [15, 10]  = [24, 18]
-        Region 2 values [25, 20]
+        Region 1 values [9, 8, 8] + [15, 10, 10]  = [24, 18, 18]
+        Region 2 values [25, 20, 15]
+        All regions total = [24, 18, 18] + [25, 20, 15] = [49, 38, 33]
         """
         follow_ups, dates, all_regions = self.baselineterm.get_follow_up(regions=None, region_selected=0)
-        self.assertEqual(len(dates[self.region1.name]), 3)  # 3 dates
-        self.assertEqual(len(follow_ups), 2)  # 2 regions for the follow up dictionary
-        self.assertEqual(len(all_regions), 2)  # 2 regions in all the data
-        # Sum the follow up data for two contacts in Region 1
+        self.assertEqual(len(dates), 3)  # 3 dates
+        # Sum the follow up data for all
         self.assertEqual(
-            follow_ups[self.region1.name]["values"],
-            [24, 18, 18])
-        # Data for Region 2 only from one contact
-        self.assertEqual(
-            follow_ups[self.region2.name]["values"],
-            [25, 20, 15])
+            follow_ups,
+            [49, 38, 33])
 
     def test_follow_up_single_region(self):
         """
-        Region 1 values [9, 8] + [15, 10]  = [24, 18]
-        Region 2 values [25, 20]
+        Region 2 values [25, 20, 15]
         """
         follow_ups, dates, all_regions = self.baselineterm.get_follow_up(regions=[self.region2], region_selected=0)
-
-        self.assertEqual(len(dates[self.region2.name]), 3)  # 3 dates
-        self.assertEqual(len(follow_ups), 1)  # One region for the follow up dictionary
-        self.assertEqual(len(all_regions), 1)  # 1 region
-        # Data for Region 2 only from one contact
+        self.assertEqual(len(dates), 3)  # 3 dates
+        # Data for Region 2
         self.assertEqual(
-            follow_ups[self.region2.name]["values"],
+            follow_ups,
             [25, 20, 15])
