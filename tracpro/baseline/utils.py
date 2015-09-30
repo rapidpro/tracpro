@@ -8,12 +8,10 @@ def chart_baseline(baselineterm, regions, region_selected):
 
     # Create a list of all dates for this poll
     # Example: date_list =  ['09/01', '09/02', '09/03', ...]
-    dates = list(set(follow_up_dates_list))  # Get the list of distinct follow up dates
-    dates.sort()  # Sort the list of follow up dates
-    date_list = [date.strftime('%m/%d') for date in dates]
+    date_list = [date.strftime('%m/%d') for date in follow_up_dates_list]
 
     # Format the baseline into a list of baselines ie [100, 110, 90,...]
-    baseline_list = [float(baseline_total)] * len(dates)
+    baseline_list = [float(baseline_total)] * len(date_list)
     baseline_mean = float(baseline_total)
     baseline_std = 0
 
