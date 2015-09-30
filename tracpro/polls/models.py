@@ -125,14 +125,14 @@ class Question(models.Model):
     TYPE_MENU = 'M'
     TYPE_KEYPAD = 'K'
     TYPE_RECORDING = 'R'
-    TYPE_CHOICES = {
-        TYPE_OPEN: _("Open Ended"),
-        TYPE_MULTIPLE_CHOICE: _("Multiple Choice"),
-        TYPE_NUMERIC: _("Numeric"),
-        TYPE_MENU: _("Menu"),
-        TYPE_KEYPAD: _("Keypad"),
-        TYPE_RECORDING: _("Recording"),
-    }
+    TYPE_CHOICES = (
+        (TYPE_OPEN, _("Open Ended")),
+        (TYPE_MULTIPLE_CHOICE, _("Multiple Choice")),
+        (TYPE_NUMERIC, _("Numeric")),
+        (TYPE_MENU, _("Menu")),
+        (TYPE_KEYPAD, _("Keypad")),
+        (TYPE_RECORDING, _("Recording")),
+    )
 
     ruleset_uuid = models.CharField(max_length=36, unique=True)
 
@@ -140,7 +140,7 @@ class Question(models.Model):
 
     text = models.CharField(max_length=64)
 
-    type = models.CharField(max_length=1, choices=TYPE_CHOICES.items())
+    type = models.CharField(max_length=1, choices=TYPE_CHOICES)
 
     order = models.IntegerField()
 
@@ -264,15 +264,15 @@ class PollRun(models.Model):
     TYPE_SPOOFED = 's'  # Universal PollRun created by baseline data spoof.
     TYPE_REGIONAL = 'r'  # Sent to only one region.
     TYPE_PROPAGATED = 'p'  # Sent to one region and its sub-regions.
-    TYPE_CHOICES = {
-        TYPE_UNIVERSAL: 'Universal',
-        TYPE_SPOOFED: 'Spoofed',
-        TYPE_REGIONAL: 'Single Region',
-        TYPE_PROPAGATED: 'Propagated to sub-children',
-    }
+    TYPE_CHOICES = (
+        (TYPE_UNIVERSAL, _('Universal')),
+        (TYPE_SPOOFED, _('Spoofed')),
+        (TYPE_REGIONAL, _('Single Region')),
+        (TYPE_PROPAGATED, _('Propagated to sub-children')),
+    )
 
     pollrun_type = models.CharField(
-        max_length=1, editable=False, choices=TYPE_CHOICES.items())
+        max_length=1, editable=False, choices=TYPE_CHOICES)
 
     poll = models.ForeignKey('polls.Poll', related_name='pollruns')
 
@@ -422,7 +422,7 @@ class PollRun(models.Model):
         status_counts = self.get_responses(region, include_subregions)
         status_counts = status_counts.values('status')
         status_counts = status_counts.annotate(count=Count('status'))
-        results = {status: 0 for status in Response.STATUS_CHOICES.keys()}
+        results = {status[0]: 0 for status in Response.STATUS_CHOICES}
         results.update({sc['status']: sc['count'] for sc in status_counts})
         return results
 
@@ -445,11 +445,11 @@ class Response(models.Model):
     STATUS_EMPTY = 'E'
     STATUS_PARTIAL = 'P'
     STATUS_COMPLETE = 'C'
-    STATUS_CHOICES = {
-        STATUS_EMPTY: _("Empty"),
-        STATUS_PARTIAL: _("Partial"),
-        STATUS_COMPLETE: _("Complete"),
-    }
+    STATUS_CHOICES = (
+        (STATUS_EMPTY, _("Empty")),
+        (STATUS_PARTIAL, _("Partial")),
+        (STATUS_COMPLETE, _("Complete")),
+    )
 
     flow_run_id = models.IntegerField(unique=True, null=True)
 
@@ -464,7 +464,7 @@ class Response(models.Model):
         help_text=_("When the last activity on this response was"))
 
     status = models.CharField(
-        max_length=1, verbose_name=_("Status"), choices=STATUS_CHOICES.items(),
+        max_length=1, verbose_name=_("Status"), choices=STATUS_CHOICES,
         help_text=_("Current status of this response"))
 
     is_active = models.BooleanField(
