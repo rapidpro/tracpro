@@ -33,8 +33,8 @@ class HomeView(OrgPermsMixin, SmartTemplateView):
                     baselineterm=baselineterm, regions=self.request.data_regions, region_selected=0)
                 context['all_regions'] = all_regions
                 context['date_list'] = date_list
-                context['baseline_dict'] = baseline_dict
-                context['answers_dict'] = answers_dict
+                context['baseline_list'] = baseline_dict
+                context['follow_up_list'] = answers_dict
                 context['baselineterm'] = baselineterm
                 context['include_legend_data'] = 0
                 break  # Found our baseline chart with data, send it back to the view

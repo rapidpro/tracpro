@@ -621,7 +621,7 @@ class AnswerQuerySet(models.QuerySet):
         """
         answer_sums = []
         dates = []
-        total = Decimal(0)
+        total = float(0)
         answer_date = ""
         for answer in self:
             if answer.category is not None:
@@ -633,9 +633,9 @@ class AnswerQuerySet(models.QuerySet):
                         answer_sums.append(total)
                         dates.append(answer_date)
                     answer_date = answer.submitted_on.date()
-                    total = Decimal(0)
+                    total = float(0)
                 try:
-                    total += Decimal(answer.value)
+                    total += float(answer.value)
                 except (TypeError, ValueError, InvalidOperation):
                     continue
         # One last value to append, for the final date
