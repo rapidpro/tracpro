@@ -53,7 +53,7 @@ class BaselineTerm(models.Model):
         baseline_terms = cls.objects.filter(org=org)
         return baseline_terms
 
-    def _get_answers(self, question, regions, region_selected):
+    def _get_answers(self, question, regions, region_selected=None):
         """
         Retrieve answers to the question that are relevant for this
         BaselineTerm.
@@ -80,7 +80,7 @@ class BaselineTerm(models.Model):
 
         return answers, all_regions
 
-    def get_baseline(self, regions, region_selected):
+    def get_baseline(self, regions, region_selected=None):
         """ Get all baseline responses """
         answers, all_regions = self._get_answers(self.baseline_question, regions, region_selected)
         # Retrieve the first result per contact for baseline
@@ -89,15 +89,14 @@ class BaselineTerm(models.Model):
         dates_list = [self.start_date]
         return answer_sum, dates_list
 
-    def get_follow_up(self, regions, region_selected):
+    def get_follow_up(self, regions, region_selected=None):
         """ Get all follow up responses """
         answers, all_regions = self._get_answers(self.follow_up_question, regions, region_selected)
 
-        dates = []
         answers = answers.order_by('submitted_on')
         answers_list, dates = answers.numeric_sum_group_by_date()
         return answers_list, dates, all_regions
 
     def check_for_data(self, regions):
         answers, all_regions = self._get_answers(self.baseline_question, regions, 0)
-        return bool(answers)
+        return answers.exists()

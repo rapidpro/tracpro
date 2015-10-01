@@ -1,7 +1,7 @@
 import numpy
 
 
-def chart_baseline(baselineterm, regions, region_selected):
+def chart_baseline(baselineterm, regions, region_selected=None):
     """ Returns data that is used to build context for a baseline chart """
     baseline_total, baseline_dates_list = baselineterm.get_baseline(regions, region_selected)
     follow_up_list, follow_up_dates_list, all_regions = baselineterm.get_follow_up(regions, region_selected)
