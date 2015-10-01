@@ -92,7 +92,8 @@ class BaselineTermTest(TracProDataTest):
 
     def test_baseline_single_region(self):
         """ Answers were 10 and 20 for region1 """
-        baseline_total, dates, response_rate = self.baselineterm.get_baseline(regions=[self.region1], region_selected=None)
+        baseline_total, dates, response_rate = self.baselineterm.get_baseline(
+            regions=[self.region1], region_selected=None)
         self.assertEqual(baseline_total, 30)
         self.assertEqual(response_rate, 100)
 
@@ -116,7 +117,8 @@ class BaselineTermTest(TracProDataTest):
                 submitted_on=self.end_date,
                 category=u'')
 
-        baseline_total, dates, response_rate = self.baselineterm.get_baseline(regions=[self.region1], region_selected=None)
+        baseline_total, dates, response_rate = self.baselineterm.get_baseline(
+            regions=[self.region1], region_selected=None)
         self.assertEqual(baseline_total, 30)
         self.assertEqual(response_rate, 100)
 
@@ -126,7 +128,8 @@ class BaselineTermTest(TracProDataTest):
         Region 2 values [25, 20, 15]
         All regions total = [24, 18, 18] + [25, 20, 15] = [49, 38, 33]
         """
-        follow_ups, dates, all_regions, response_rate = self.baselineterm.get_follow_up(regions=None, region_selected=None)
+        follow_ups, dates, all_regions, response_rate = self.baselineterm.get_follow_up(
+            regions=None, region_selected=None)
         self.assertEqual(len(dates), 3)  # 3 dates
         # Sum the follow up data for all
         self.assertEqual(
@@ -138,7 +141,8 @@ class BaselineTermTest(TracProDataTest):
         """
         Region 2 values [25, 20, 15]
         """
-        follow_ups, dates, all_regions, response_rate = self.baselineterm.get_follow_up(regions=[self.region2], region_selected=None)
+        follow_ups, dates, all_regions, response_rate = self.baselineterm.get_follow_up(
+            regions=[self.region2], region_selected=None)
         self.assertEqual(len(dates), 3)  # 3 dates
         # Data for Region 2
         self.assertEqual(
