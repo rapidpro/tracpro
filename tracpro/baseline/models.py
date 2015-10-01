@@ -108,5 +108,5 @@ class BaselineTerm(models.Model):
         return answers_list, dates, all_regions, response_rate
 
     def check_for_data(self, regions):
-        answers, all_regions, response_rate = self._get_answers(self.baseline_question, regions, 0)
+        answers, all_regions, response_rate = self._get_answers(self.baseline_question, self.baseline_poll, regions, 0)
         return answers.exists()
