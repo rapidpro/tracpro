@@ -3,8 +3,9 @@ import numpy
 
 def chart_baseline(baselineterm, regions, region_selected=None):
     """ Returns data that is used to build context for a baseline chart """
-    baseline_total, baseline_dates_list = baselineterm.get_baseline(regions, region_selected)
-    follow_up_list, follow_up_dates_list, all_regions = baselineterm.get_follow_up(regions, region_selected)
+    baseline_total, baseline_dates_list, baseline_response_rate = baselineterm.get_baseline(regions, region_selected)
+    (follow_up_list, follow_up_dates_list,
+     all_regions, follow_up_response_rate) = baselineterm.get_follow_up(regions, region_selected)
 
     # Create a list of all dates for this poll
     # Example: date_list =  ['09/01', '09/02', '09/03', ...]
@@ -19,4 +20,5 @@ def chart_baseline(baselineterm, regions, region_selected=None):
     follow_up_std = round(numpy.std(follow_up_list), 1)
 
     return (follow_up_list, baseline_list, all_regions, date_list,
-            baseline_mean, baseline_std, follow_up_mean, follow_up_std)
+            baseline_mean, baseline_std, follow_up_mean, follow_up_std,
+            baseline_response_rate, follow_up_response_rate)

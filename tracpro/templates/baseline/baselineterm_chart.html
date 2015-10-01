@@ -89,6 +89,24 @@ $(function () {
                 events: {
                     legendItemClick: function () { return false; }
                 }
+            },
+            {
+                type: 'area',
+                name: 'Baseline Response Rate',
+                legendValue: '{{ baseline_response_rate }}%',
+                color: '#FFFFFF',
+                events: {
+                    legendItemClick: function () { return false; }
+                }
+            },
+            {
+                type: 'area',
+                name: 'Follow Up Response Rate',
+                legendValue: '{{ follow_up_response_rate }}%',
+                color: '#FFFFFF',
+                events: {
+                    legendItemClick: function () { return false; }
+                }
             }
         {% endif %}
         ]
