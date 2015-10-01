@@ -53,7 +53,7 @@ class BaselineTerm(models.Model):
         baseline_terms = cls.objects.filter(org=org)
         return baseline_terms
 
-    def _get_answers(self, question, regions, region_selected):
+    def _get_answers(self, question, regions, region_selected=None):
         """
         Retrieve answers to the question that are relevant for this
         BaselineTerm.
@@ -80,40 +80,23 @@ class BaselineTerm(models.Model):
 
         return answers, all_regions
 
-    def get_baseline(self, regions, region_selected):
+    def get_baseline(self, regions, region_selected=None):
         """ Get all baseline responses """
         answers, all_regions = self._get_answers(self.baseline_question, regions, region_selected)
-        # Separate out baseline values per region
-        region_answers = {}
-        dates_dict = {}
-        for region_name in set(a.region_name.encode('ascii') for a in answers):
-            # Retrieve the first result per contact for baseline
-            answers_by_region = answers.order_by('response__contact', 'submitted_on').distinct('response__contact')
-            answers_by_region = answers_by_region.filter(region_name=region_name)
-            answer_sum = answers_by_region.numeric_sum_all_dates()
-            region_answers[region_name] = {'values': [answer_sum]}
-            dates_dict[region_name] = [self.start_date]
-        return region_answers, dates_dict
+        # Retrieve the first result per contact for baseline
+        answers = answers.order_by('response__contact', 'submitted_on').distinct('response__contact')
+        answer_sum = answers.numeric_sum_all_dates()
+        dates_list = [self.start_date]
+        return answer_sum, dates_list
 
-    def get_follow_up(self, regions, region_selected):
-        """ Get all follow up responses summed by region """
+    def get_follow_up(self, regions, region_selected=None):
+        """ Get all follow up responses """
         answers, all_regions = self._get_answers(self.follow_up_question, regions, region_selected)
 
-        # Loop through all regions in answers and create
-        # a dict of values and dates per Region
-        # ex.
-        # { 'Kumpala': {'values': [35,...], 'dates': [datetime.date(2015, 8, 12),...]} }
-        region_answers = {}
-        dates_dict = {}
-        dates = []
-        for region_name in set(a.region_name.encode('ascii') for a in answers):
-            answers_by_region = answers.filter(region_name=region_name)
-            answers_by_region = answers_by_region.order_by('submitted_on')
-            answer_sums, dates = answers_by_region.numeric_sum_group_by_date()
-            region_answers[region_name] = {'values': answer_sums}
-            dates_dict[region_name] = dates
-        return region_answers, dates_dict, all_regions
+        answers = answers.order_by('submitted_on')
+        answers_list, dates = answers.numeric_sum_group_by_date()
+        return answers_list, dates, all_regions
 
     def check_for_data(self, regions):
         answers, all_regions = self._get_answers(self.baseline_question, regions, 0)
-        return bool(answers)
+        return answers.exists()
