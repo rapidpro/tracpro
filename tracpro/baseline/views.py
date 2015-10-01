@@ -90,16 +90,16 @@ class BaselineTermCRUDL(SmartCRUDL):
                 region_selected = region
                 context['region_selected'] = region_selected
             else:
-                region_selected = 0
+                region_selected = None
 
-            (answers_dict, baseline_dict, all_regions, date_list,
+            (follow_up_list, baseline_list, all_regions, date_list,
              baseline_mean, baseline_std, follow_up_mean, follow_up_std) = chart_baseline(
                 self.object, self.request.data_regions, region_selected)
 
             context['all_regions'] = all_regions
             context['date_list'] = date_list
-            context['baseline_dict'] = baseline_dict
-            context['answers_dict'] = answers_dict
+            context['baseline_list'] = baseline_list
+            context['follow_up_list'] = follow_up_list
             context['baseline_mean'] = baseline_mean
             context['baseline_std'] = baseline_std
             context['follow_up_mean'] = follow_up_mean
@@ -114,7 +114,7 @@ class BaselineTermCRUDL(SmartCRUDL):
                 context['baseline_std'] = 0
                 context['goal_selected'] = [context['goal_selected']] * len(date_list)
 
-            if len(context['answers_dict']) == 0 and len(context['baseline_dict']) == 0:
+            if len(context['follow_up_list']) == 0 and len(context['baseline_list']) == 0:
                 context['error_message'] = _(
                     "No data exists for this baseline chart. You may need to select a different region.")
 

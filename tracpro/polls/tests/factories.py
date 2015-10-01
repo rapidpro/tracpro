@@ -28,7 +28,7 @@ class Poll(factory.django.DjangoModelFactory):
 class PollRun(factory.django.DjangoModelFactory):
     create_method = "create"
 
-    pollrun_type = factory.fuzzy.FuzzyChoice(models.PollRun.TYPE_CHOICES.keys())
+    pollrun_type = factory.fuzzy.FuzzyChoice(c[0] for c in models.PollRun.TYPE_CHOICES)
     poll = factory.SubFactory('tracpro.test.factories.Poll')
     region = factory.SubFactory('tracpro.test.factories.Region')
     created_by = factory.SubFactory('tracpro.test.factories.User')
@@ -77,7 +77,7 @@ class Question(factory.django.DjangoModelFactory):
     ruleset_uuid = FuzzyUUID()
     poll = factory.SubFactory('tracpro.test.factories.Poll')
     text = factory.fuzzy.FuzzyText()
-    type = factory.fuzzy.FuzzyChoice(models.Question.TYPE_CHOICES.keys())
+    type = factory.fuzzy.FuzzyChoice(c[0] for c in models.Question.TYPE_CHOICES)
     order = factory.Sequence(lambda n: n)
 
     class Meta:
@@ -105,7 +105,7 @@ class Response(factory.django.DjangoModelFactory):
         start_date=datetime.date.today() - datetime.timedelta(days=7),
         end_date=datetime.date.today())
     updated_on = factory.LazyAttribute(lambda o: o.created_on)
-    status = factory.fuzzy.FuzzyChoice(models.Response.STATUS_CHOICES.keys())
+    status = factory.fuzzy.FuzzyChoice(c[0] for c in models.Response.STATUS_CHOICES)
 
     class Meta:
         model = models.Response

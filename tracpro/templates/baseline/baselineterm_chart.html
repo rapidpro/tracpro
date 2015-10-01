@@ -41,29 +41,21 @@ $(function () {
         {% endif %}
         series: [
         // Baseline Data
-        {% for key, values in baseline_dict.items %}
-            {
-                type: 'area',
-                name: '{{ key|escapejs }}<br>Baseline {% if goal_selected %}Goal{% endif %}',
-                {% for subkey, value_list in values.items %}
-                    {% if goal_selected %}
-                        data: {{ goal_selected }}
-                    {% else %}
-                        data: {{ value_list }}
-                    {% endif %}
-                {% endfor %}
-            },
-        {% endfor %}
+        {
+            type: 'area',
+            name: 'Baseline {% if goal_selected %}Goal{% endif %}',
+            {% if goal_selected %}
+                data: {{ goal_selected }}
+            {% else %}
+                data: {{ baseline_list }}
+            {% endif %}
+        },
         // Follow Up Data
-        {% for key, values in answers_dict.items %}
-            {
-                type: 'area',
-                name: '{{ key|escapejs }}<br>Follow Up',
-                {% for subkey, value_list in values.items %}
-                    data: {{ value_list }}
-                {% endfor %}
-            },
-        {% endfor %}
+        {
+            type: 'area',
+            name: 'Follow Up',
+            data: {{ follow_up_list }}
+        },
         /* The following are data for the legend only, not actual series data. */
         {% if include_legend_data %}
             {
