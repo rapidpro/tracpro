@@ -89,7 +89,7 @@ class BaselineTermCRUDL(SmartCRUDL):
                 region_selected = region
                 context['region_selected'] = region_selected
             else:
-                region_selected = 0
+                region_selected = None
 
             (follow_up_list, baseline_list, all_regions, date_list,
              baseline_mean, baseline_std, follow_up_mean, follow_up_std) = chart_baseline(

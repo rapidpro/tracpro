@@ -30,7 +30,7 @@ class HomeView(OrgPermsMixin, SmartTemplateView):
             if data_found:
                 (follow_up_list, baseline_list, all_regions, date_list,
                  baseline_mean, baseline_std, follow_up_mean, follow_up_std) = chart_baseline(
-                    baselineterm=baselineterm, regions=self.request.data_regions, region_selected=0)
+                    baselineterm=baselineterm, regions=self.request.data_regions, region_selected=None)
                 context['all_regions'] = all_regions
                 context['date_list'] = date_list
                 context['baseline_list'] = baseline_list
