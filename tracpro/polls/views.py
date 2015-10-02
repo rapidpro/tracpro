@@ -237,27 +237,33 @@ class PollRunCRUDL(smartmin.SmartCRUDL):
 
             # initialize an ordered dict of group to response counts
             per_group_counts = OrderedDict()
+            no_group_counts = {'E': 0, 'P': 0, 'C': 0}
+            overall_counts = {'E': 0, 'P': 0, 'C': 0}
+
             for reporting_group in reporting_groups:
-                per_group_counts[reporting_group] = dict(E=0, P=0, C=0)
-
-            no_group_counts = dict(E=0, P=0, C=0)
-            overall_counts = dict(E=0, P=0, C=0)
-
-            reporting_groups_by_id = {g.pk: g for g in reporting_groups}
-            for response in responses:
-                group_id = response.contact.group_id
-                try:
-                    group = reporting_groups_by_id[group_id] if group_id else None
-                except KeyError:
-                    continue  # not for a relevant group.
-                status = response.status
-
-                if group:
-                    per_group_counts[group][status] += 1
+                responses_group = responses.filter(contact__group=reporting_group)
+                if responses_group:
+                    per_group_counts[reporting_group] = {
+                        "E": responses_group.filter(status=Response.STATUS_EMPTY).count(),
+                        "P": responses_group.filter(status=Response.STATUS_PARTIAL).count(),
+                        "C": responses_group.filter(status=Response.STATUS_COMPLETE).count()
+                    }
+                    overall_counts['E'] = overall_counts['E'] + per_group_counts[reporting_group]['E']
+                    overall_counts['P'] = overall_counts['P'] + per_group_counts[reporting_group]['P']
+                    overall_counts['C'] = overall_counts['C'] + per_group_counts[reporting_group]['C']
                 else:
-                    no_group_counts[status] += 1
+                    per_group_counts[reporting_group] = {'E': 0, 'P': 0, 'C': 0}
 
-                overall_counts[status] += 1
+            responses_no_group = responses.filter(contact__group__isnull=True)
+            if responses_no_group:
+                no_group_counts = {
+                    "E": responses_group.filter(status=Response.STATUS_EMPTY).count(),
+                    "P": responses_group.filter(status=Response.STATUS_PARTIAL).count(),
+                    "C": responses_group.filter(status=Response.STATUS_COMPLETE).count()
+                }
+                overall_counts['E'] = overall_counts['E'] + no_group_counts['E']
+                overall_counts['P'] = overall_counts['P'] + no_group_counts['P']
+                overall_counts['C'] = overall_counts['C'] + no_group_counts['C']
 
             def calc_completion(counts):
                 total = counts['E'] + counts['P'] + counts['C']
