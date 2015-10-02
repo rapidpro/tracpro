@@ -19,7 +19,7 @@ from smartmin import views as smartmin
 from smartmin.templatetags.smartmin import format_datetime
 
 from tracpro.contacts.models import Contact
-from tracpro.groups.models import Group
+from tracpro.groups.models import Group, Region
 
 from . import charts, forms, tasks
 from .models import Poll, Question, PollRun, Response, Window
@@ -230,36 +230,52 @@ class PollRunCRUDL(smartmin.SmartCRUDL):
 
         def get_context_data(self, **kwargs):
             context = super(PollRunCRUDL.Participation, self).get_context_data(**kwargs)
-            reporting_groups = Group.get_all(self.request.org).order_by('name')
             responses = self.object.get_responses(
                 self.request.region,
                 self.request.include_subregions)
+            group_by = self.request.GET.get('group-by', 'reporter')
+            if group_by == "reporter":
+                group_by_reporter_group = True
+                groups_or_regions = Group.get_all(self.request.org).order_by('name')
+            else:
+                group_by_reporter_group = False
+                if self.request.data_regions:
+                    groups_or_regions = self.request.data_regions
+                else:
+                    groups_or_regions = Region.objects.filter(org=self.request.org)
 
             # initialize an ordered dict of group to response counts
             per_group_counts = OrderedDict()
             no_group_counts = {'E': 0, 'P': 0, 'C': 0}
             overall_counts = {'E': 0, 'P': 0, 'C': 0}
 
-            for reporting_group in reporting_groups:
-                responses_group = responses.filter(contact__group=reporting_group)
+            # Calculate all reporter group or region activity per group or region
+            for group_or_region in groups_or_regions:
+                if group_by_reporter_group:
+                    responses_group = responses.filter(contact__group=group_or_region)
+                else:
+                    responses_group = responses.filter(contact__region=group_or_region)
                 if responses_group:
-                    per_group_counts[reporting_group] = {
+                    per_group_counts[group_or_region] = {
                         "E": responses_group.filter(status=Response.STATUS_EMPTY).count(),
                         "P": responses_group.filter(status=Response.STATUS_PARTIAL).count(),
                         "C": responses_group.filter(status=Response.STATUS_COMPLETE).count()
                     }
-                    overall_counts['E'] = overall_counts['E'] + per_group_counts[reporting_group]['E']
-                    overall_counts['P'] = overall_counts['P'] + per_group_counts[reporting_group]['P']
-                    overall_counts['C'] = overall_counts['C'] + per_group_counts[reporting_group]['C']
+                    overall_counts['E'] = overall_counts['E'] + per_group_counts[group_or_region]['E']
+                    overall_counts['P'] = overall_counts['P'] + per_group_counts[group_or_region]['P']
+                    overall_counts['C'] = overall_counts['C'] + per_group_counts[group_or_region]['C']
                 else:
-                    per_group_counts[reporting_group] = {'E': 0, 'P': 0, 'C': 0}
-
-            responses_no_group = responses.filter(contact__group__isnull=True)
+                    per_group_counts[group_or_region] = {'E': 0, 'P': 0, 'C': 0}
+            # Calculate all no-group or no-region activity
+            if group_by_reporter_group:
+                responses_no_group = responses.filter(contact__group__isnull=True)
+            else:
+                responses_no_group = responses.filter(contact__region__isnull=True)
             if responses_no_group:
                 no_group_counts = {
-                    "E": responses_group.filter(status=Response.STATUS_EMPTY).count(),
-                    "P": responses_group.filter(status=Response.STATUS_PARTIAL).count(),
-                    "C": responses_group.filter(status=Response.STATUS_COMPLETE).count()
+                    "E": responses_no_group.filter(status=Response.STATUS_EMPTY).count(),
+                    "P": responses_no_group.filter(status=Response.STATUS_PARTIAL).count(),
+                    "C": responses_no_group.filter(status=Response.STATUS_COMPLETE).count()
                 }
                 overall_counts['E'] = overall_counts['E'] + no_group_counts['E']
                 overall_counts['P'] = overall_counts['P'] + no_group_counts['P']
@@ -292,6 +308,7 @@ class PollRunCRUDL(smartmin.SmartCRUDL):
                 overall_counts['P'],
             ))
             context['complete_count'] = overall_counts['C']
+            context['group_by_reporter_group'] = group_by_reporter_group
             return context
 
     class List(OrgPermsMixin, PollRunListMixin, smartmin.SmartListView):
