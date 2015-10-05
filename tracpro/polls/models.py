@@ -111,8 +111,8 @@ class Poll(models.Model):
     def get_questions(self):
         return self.questions.filter(is_active=True).order_by('order')
 
-    def get_pollruns(self, region=None, include_subregions=True):
-        return PollRun.objects.get_all(region, include_subregions).filter(poll=self)
+    def get_pollruns(self, org, region=None, include_subregions=True):
+        return PollRun.objects.get_all(org, region, include_subregions).filter(poll=self)
 
 
 @python_2_unicode_compatible
@@ -236,12 +236,13 @@ class PollRunManager(models.Manager.from_queryset(PollRunQuerySet)):
         kwargs['conducted_on'] = for_date
         return self.create(**kwargs)
 
-    def get_all(self, region, include_subregions=True):
+    def get_all(self, org, region, include_subregions=True):
         """
         Get all active PollRuns for the region, plus sub-regions if
         specified.
         """
-        qs = self.get_queryset().active().select_related('poll', 'region')
+        qs = self.get_queryset().active().by_org(org)
+        qs = qs.select_related('poll', 'region')
         qs = qs.by_region(region, include_subregions)
         return qs
 

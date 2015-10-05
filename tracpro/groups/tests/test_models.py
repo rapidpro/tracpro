@@ -3,7 +3,7 @@ import mock
 from django.contrib.auth.models import User
 from django.test.utils import override_settings
 
-from temba.types import Group as TembaGroup
+from temba_client.types import Group as TembaGroup
 
 from tracpro.test import factories
 from tracpro.test.cases import TracProDataTest, TracProTest
