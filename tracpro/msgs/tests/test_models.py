@@ -5,7 +5,7 @@ from mock import patch
 from django.test.utils import override_settings
 from django.utils import timezone
 
-from temba.types import Broadcast
+from temba_client.types import Broadcast
 
 from tracpro.msgs.models import (
     Message, COHORT_ALL, COHORT_RESPONDENTS, COHORT_NONRESPONDENTS)

@@ -1,6 +1,6 @@
 import json
 
-from temba.types import Run
+from temba_client.types import Run
 
 from django.core.urlresolvers import reverse
 from django.utils import timezone
