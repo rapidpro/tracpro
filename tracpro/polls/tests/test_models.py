@@ -7,7 +7,7 @@ from mock import patch
 
 import pytz
 
-from temba.types import Flow, RuleSet, Run, RunValueSet
+from temba_client.types import Flow, RuleSet, Run, RunValueSet
 
 from django.utils import timezone
 
