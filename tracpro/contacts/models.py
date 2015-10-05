@@ -10,7 +10,7 @@ from django.utils.translation import ugettext_lazy as _
 from dash.utils import intersection
 from dash.utils.sync import ChangeType
 
-from temba.types import Contact as TembaContact
+from temba_client.types import Contact as TembaContact
 
 from tracpro.groups.models import Region, Group
 

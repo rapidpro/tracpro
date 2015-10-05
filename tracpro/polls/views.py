@@ -41,7 +41,9 @@ class PollCRUDL(smartmin.SmartCRUDL):
             context = super(PollCRUDL.Read, self).get_context_data(**kwargs)
             questions = self.object.get_questions()
             pollruns = self.object.get_pollruns(
-                self.request.region, self.request.include_subregions)
+                self.request.org,
+                self.request.region,
+                self.request.include_subregions)
 
             # if we're viewing "All Regions" don't include regional only pollruns
             if not self.request.region:
@@ -83,7 +85,9 @@ class PollCRUDL(smartmin.SmartCRUDL):
 
         def derive_pollruns(self, obj):
             return obj.get_pollruns(
-                self.request.region, self.request.include_subregions)
+                self.request.org,
+                self.request.region,
+                self.request.include_subregions)
 
         def get_questions(self, obj):
             return obj.get_questions().count()
@@ -207,6 +211,7 @@ class PollRunCRUDL(smartmin.SmartCRUDL):
 
         def get_queryset(self):
             return PollRun.objects.get_all(
+                self.request.org,
                 self.request.region,
                 self.request.include_subregions)
 
@@ -225,6 +230,7 @@ class PollRunCRUDL(smartmin.SmartCRUDL):
 
         def get_queryset(self):
             return PollRun.objects.get_all(
+                self.request.org,
                 self.request.region,
                 self.request.include_subregions)
 
@@ -301,6 +307,7 @@ class PollRunCRUDL(smartmin.SmartCRUDL):
 
         def derive_queryset(self, **kwargs):
             return PollRun.objects.get_all(
+                self.request.org,
                 self.request.region,
                 self.request.include_subregions)
 
@@ -323,7 +330,9 @@ class PollRunCRUDL(smartmin.SmartCRUDL):
 
         def derive_queryset(self, **kwargs):
             return self.derive_poll().get_pollruns(
-                self.request.region, self.request.include_subregions)
+                self.request.org,
+                self.request.region,
+                self.request.include_subregions)
 
         def get_context_data(self, **kwargs):
             context = super(PollRunCRUDL.ByPoll, self).get_context_data(**kwargs)
@@ -334,6 +343,7 @@ class PollRunCRUDL(smartmin.SmartCRUDL):
 
         def get_queryset(self):
             qs = PollRun.objects.get_all(
+                self.request.org,
                 self.request.region,
                 self.request.include_subregions)
             qs = qs.order_by('-conducted_on')[0:5]

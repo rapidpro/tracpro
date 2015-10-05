@@ -3,7 +3,7 @@ from requests import HTTPError
 
 from django.test import TestCase
 
-from temba.base import TembaAPIError
+from temba_client.base import TembaAPIError
 
 from tracpro.test import factories
 
