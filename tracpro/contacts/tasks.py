@@ -6,7 +6,7 @@ from celery.utils.log import get_task_logger
 from djcelery_transactions import task
 from django_redis import get_redis_connection
 
-from temba_client.utils import parse_iso8601, format_iso8601
+from temba_client.utils import format_iso8601
 
 from dash.orgs.models import Org
 from dash.utils import datetime_to_ms
