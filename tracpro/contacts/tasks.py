@@ -4,6 +4,9 @@ from django.utils import timezone
 
 from celery.utils.log import get_task_logger
 from djcelery_transactions import task
+from django_redis import get_redis_connection
+
+from temba_client.utils import parse_iso8601, format_iso8601
 
 from dash.orgs.models import Org
 from dash.utils import datetime_to_ms
@@ -13,6 +16,8 @@ from tracpro.orgs_ext.utils import run_org_task
 
 
 logger = get_task_logger(__name__)
+
+LAST_FETCHED_CONTACTS_RUN_TIME_KEY = 'org:%d:last_fetched_contact_run_time'
 
 
 @task
@@ -49,8 +54,12 @@ def sync_org_contacts(org_id):
 
     sync_groups = [r.uuid for r in Region.get_all(org)] + [g.uuid for g in Group.get_all(org)]
 
+    redis_connection = get_redis_connection()
+    last_time_key = LAST_FETCHED_CONTACTS_RUN_TIME_KEY % org.pk
+    last_time = redis_connection.get(last_time_key)
+
     created, updated, deleted, failed = sync_pull_contacts(
-        org, Contact, fields=(), groups=sync_groups)
+        org, Contact, fields=(), groups=sync_groups, last_time=last_time)
 
     task_result = dict(time=datetime_to_ms(timezone.now()),
                        counts=dict(created=len(created),
@@ -62,6 +71,8 @@ def sync_org_contacts(org_id):
     logger.info("Finished contact sync for org #%d (%d created, "
                 "%d updated, %d deleted, %d failed)" %
                 (org.id, len(created), len(updated), len(deleted), len(failed)))
+
+    redis_connection.set(last_time_key, format_iso8601(timezone.now()))
 
 
 @task
