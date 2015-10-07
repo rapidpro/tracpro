@@ -124,7 +124,7 @@ class BaselineTermCRUDL(SmartCRUDL):
             return kwargs
 
         def random_answer_calculate(self, min_value, max_value):
-            random_value = min_value if min_value==max_value else random.randrange(min_value, max_value)
+            random_value = min_value if min_value == max_value else random.randrange(min_value, max_value)
             return random_value
 
         def create_baseline(self, poll, date, contacts, baseline_question, baseline_minimum, baseline_maximum):
