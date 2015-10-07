@@ -11,14 +11,23 @@
     </div>
   {% else %}
     <div class='row bottom-margin'>
-        <div class='col-md-7'>
+        <div class='col-md-9'>
           <h2>
             {{ baselineterm.name }}
           </h2>
           <div id="container" class="chart-home">
           </div>
+
+          <div class='col-sm-1'></div>
+          <div class='col-sm-6 chart-date'>
+            {{ date_first|date:"F d, Y" }}
+          </div>
+          <div class='col-sm-5 chart-date'>
+            {{ date_last|date:"F d, Y" }}
+          </div>
+
         </div>
-        <div class='col-md-5'>
+        <div class='col-md-3'>
           <div class='page-header'>
             {% if org_perms.baseline.baselineterm_list %}
               <a class='btn btn-default pull-away' href='{% url 'baseline.baselineterm_list' %}'>
@@ -37,16 +46,7 @@
                 {% trans "Name" %}
               </th>
               <th>
-                {% trans "Start Date" %}
-              </th>
-              <th>
                 {% trans "End Date" %}
-              </th>
-              <th>
-                {% trans "Baseline Question" %}
-              </th>
-              <th>
-                {% trans "Follow Up Question" %}
               </th>
             </tr>
           </thead>
@@ -62,16 +62,7 @@
                   {% endif %}
                 </td>
                 <td>
-                  {{ baselinetermitem.start_date|date:"F d, Y"  }}
-                </td>
-                <td>
                   {{ baselinetermitem.end_date|date:"F d, Y"  }}
-                </td>
-                <td>
-                  {{ baselinetermitem.baseline_question }}
-                </td>
-                <td>
-                  {{ baselinetermitem.follow_up_question }}
                 </td>
               </tr>
             {% endfor %}

@@ -29,10 +29,13 @@ class HomeView(OrgPermsMixin, SmartTemplateView):
             data_found = baselineterm.check_for_data(self.request.data_regions)
             if data_found:
                 (follow_up_list, baseline_list, all_regions, date_list,
-                 baseline_mean, baseline_std, follow_up_mean, follow_up_std) = chart_baseline(
+                 baseline_mean, baseline_std, follow_up_mean, follow_up_std,
+                 date_first, date_last) = chart_baseline(
                     baselineterm=baselineterm, regions=self.request.data_regions, region_selected=None)
                 context['all_regions'] = all_regions
                 context['date_list'] = date_list
+                context['date_first'] = date_first
+                context['date_last'] = date_last
                 context['baseline_list'] = baseline_list
                 context['follow_up_list'] = follow_up_list
                 context['baselineterm'] = baselineterm
