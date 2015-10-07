@@ -9,8 +9,6 @@ def chart_baseline(baselineterm, regions, region_selected=None):
     # Create a list of all dates for this poll
     # Example: date_list =  ['09/01', '09/02', '09/03', ...]
     date_list = [date.strftime('%m/%d') for date in follow_up_dates_list]
-    date_first = follow_up_dates_list[0] if follow_up_dates_list else ""
-    date_last = follow_up_dates_list[-1] if follow_up_dates_list else ""
 
     # Format the baseline into a list of baselines ie [100, 110, 90,...]
     baseline_list = [float(baseline_total)] * len(date_list)
@@ -21,5 +19,4 @@ def chart_baseline(baselineterm, regions, region_selected=None):
     follow_up_std = round(numpy.std(follow_up_list), 1)
 
     return (follow_up_list, baseline_list, all_regions, date_list,
-            baseline_mean, baseline_std, follow_up_mean, follow_up_std,
-            date_first, date_last)
+            baseline_mean, baseline_std, follow_up_mean, follow_up_std)

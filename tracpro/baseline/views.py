@@ -92,8 +92,7 @@ class BaselineTermCRUDL(SmartCRUDL):
                 region_selected = None
 
             (follow_up_list, baseline_list, all_regions, date_list,
-             baseline_mean, baseline_std, follow_up_mean, follow_up_std,
-             date_first, date_last) = chart_baseline(
+             baseline_mean, baseline_std, follow_up_mean, follow_up_std) = chart_baseline(
                 self.object, self.request.data_regions, region_selected)
 
             context['all_regions'] = all_regions

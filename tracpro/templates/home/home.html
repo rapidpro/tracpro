@@ -17,15 +17,10 @@
           </h2>
           <div id="container" class="chart-home">
           </div>
-
-          <div class='col-sm-1'></div>
-          <div class='col-sm-6 chart-date'>
-            {{ date_first|date:"F d, Y" }}
+          <div class="chart-dates">
+            {{ baselineterm.start_date|date:"F d, Y" }} -
+            {{ baselineterm.end_date|date:"F d, Y" }}
           </div>
-          <div class='col-sm-5 chart-date'>
-            {{ date_last|date:"F d, Y" }}
-          </div>
-
         </div>
         <div class='col-md-3'>
           <div class='page-header'>
