@@ -117,7 +117,7 @@ class TestRegion(TracProTest):
             self.makerere,
         ]))
         self.assertEqual(mock_get_groups.call_count, 1)
-        self.assertEqual(mock_get_contacts.call_count, 1)
+        self.assertEqual(mock_get_contacts.call_count, 2)
 
     @mock.patch('dash.orgs.models.TembaClient.get_groups')
     @mock.patch('dash.orgs.models.TembaClient.get_contacts')
@@ -138,7 +138,7 @@ class TestRegion(TracProTest):
         self.assertEqual(self.kampala.name, "Changed")
         self.assertEqual(self.kampala.parent, self.uganda)
         self.assertEqual(mock_get_groups.call_count, 1)
-        self.assertEqual(mock_get_contacts.call_count, 1)
+        self.assertEqual(mock_get_contacts.call_count, 2)
 
     @mock.patch('dash.orgs.models.TembaClient.get_groups')
     @mock.patch('dash.orgs.models.TembaClient.get_contacts')
@@ -160,7 +160,7 @@ class TestRegion(TracProTest):
         self.assertEqual(self.entebbe.name, "Entebbe")
         self.assertEqual(self.entebbe.parent, None)
         self.assertEqual(mock_get_groups.call_count, 1)
-        self.assertEqual(mock_get_contacts.call_count, 1)
+        self.assertEqual(mock_get_contacts.call_count, 2)
 
     @mock.patch('dash.orgs.models.TembaClient.get_groups')
     @mock.patch('dash.orgs.models.TembaClient.get_contacts')
@@ -183,7 +183,7 @@ class TestRegion(TracProTest):
         self.assertEqual(new_region.name, "New")
         self.assertIsNone(new_region.parent, None)
         self.assertEqual(mock_get_groups.call_count, 1)
-        self.assertEqual(mock_get_contacts.call_count, 1)
+        self.assertEqual(mock_get_contacts.call_count, 2)
 
     @mock.patch('dash.orgs.models.TembaClient.get_groups')
     @mock.patch('dash.orgs.models.TembaClient.get_contacts')
@@ -203,7 +203,7 @@ class TestRegion(TracProTest):
             self.makerere,
         ]))
         self.assertEqual(mock_get_groups.call_count, 1)
-        self.assertEqual(mock_get_contacts.call_count, 1)
+        self.assertEqual(mock_get_contacts.call_count, 2)
 
 
 class TestGroup(TracProDataTest):
