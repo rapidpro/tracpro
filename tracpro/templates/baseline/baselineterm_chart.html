@@ -51,8 +51,12 @@ $(function () {
         // Baseline Data
         {
             type: 'area',
-            name: 'Baseline',
+            name: 'Baseline {% if goal_selected %}Goal{% endif %}',
+            {% if goal_selected %}
+                data: {{ goal_selected }}
+            {% else %}
                 data: {{ baseline_list }}
+            {% endif %}
         },
         // Follow Up Data
         {
