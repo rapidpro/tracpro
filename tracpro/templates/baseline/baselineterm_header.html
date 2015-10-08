@@ -12,17 +12,11 @@
       <select id='region-select' class='form-control' onchange='onChartRegionChange(this)' name='region'>
         <option value='0'>All Regions</option>
         {% for region in all_regions %}
-          {% for key, value in region.items %}
-              {% if key == "response__contact__region" %}
-                  {% if value == region_selected %}
-                    <option selected='selected' value='{{ value }}'>
-                  {% else %}
-                    <option value='{{ value }}'>
-                  {% endif %}
-              {% else %}
-                  {{ value }}</option>
-              {% endif %}
-          {% endfor %}
+            {% if region.pk == region_selected %}
+              <option selected='selected' value='{{ region.pk }}'>{{ region.name }}</option>
+            {% else %}
+              <option  value='{{ region.pk }}'>{{ region.name }}</option>
+            {% endif %}
         {% endfor %}
       </select>
     </form>

@@ -8,7 +8,8 @@ from django.utils.translation import ugettext_lazy as _
 
 from smart_selects.db_fields import ChainedForeignKey
 
-from tracpro.polls.models import Answer, Question, Poll
+from tracpro.groups.models import Region
+from tracpro.polls.models import Answer, Question, Poll, Response
 
 
 class BaselineTerm(models.Model):
@@ -53,7 +54,7 @@ class BaselineTerm(models.Model):
         baseline_terms = cls.objects.filter(org=org)
         return baseline_terms
 
-    def _get_answers(self, question, regions, region_selected=None):
+    def _get_answers(self, question, poll, regions, region_selected=None):
         """
         Retrieve answers to the question that are relevant for this
         BaselineTerm.
@@ -62,41 +63,50 @@ class BaselineTerm(models.Model):
         start = datetime.datetime.combine(self.start_date, midnight)
         end = datetime.datetime.combine(self.end_date + datetime.timedelta(days=1), midnight)
 
-        answers = Answer.objects.filter(
-            question=question, submitted_on__gte=start, submitted_on__lt=end)
+        responses = Response.objects.filter(
+            pollrun__poll=poll,
+            pollrun__conducted_on__gte=start,
+            pollrun__conducted_on__lt=end)
+
+        region_filter = Region.objects.all()
+        all_regions = Region.objects.filter(id__in=responses.values_list('contact__region', flat=True))
+        if regions:
+            region_filter = regions
+            all_regions = regions
+        if region_selected:
+            region_filter = Region.objects.filter(pk=region_selected)
+
+        responses = responses.filter(contact__region__in=region_filter)
+
+        answers = Answer.objects.filter(response__in=responses, question=question)
         answers = answers.annotate(region_name=F('response__contact__region__name'))
         answers = answers.select_related('response', 'response__contact')
 
-        all_regions = answers.values('response__contact__region',
-                                     'region_name').distinct('response__contact__region')
+        response_rate = 0
+        if responses.count():
+            response_rate = round(float(answers.count())/float(responses.count()) * 100, 1)
 
-        if regions:
-            answers = answers.filter(response__contact__region__in=regions)
-            all_regions = answers.values('response__contact__region',
-                                         'region_name').distinct('response__contact__region')
-
-        if region_selected:
-            answers = answers.filter(response__contact__region=region_selected)
-
-        return answers, all_regions
+        return answers, all_regions, response_rate
 
     def get_baseline(self, regions, region_selected=None):
         """ Get all baseline responses """
-        answers, all_regions = self._get_answers(self.baseline_question, regions, region_selected)
+        answers, all_regions, response_rate = self._get_answers(
+            self.baseline_question, self.baseline_poll, regions, region_selected)
         # Retrieve the first result per contact for baseline
         answers = answers.order_by('response__contact', 'submitted_on').distinct('response__contact')
         answer_sum = answers.numeric_sum_all_dates()
         dates_list = [self.start_date]
-        return answer_sum, dates_list
+        return answer_sum, dates_list, response_rate
 
     def get_follow_up(self, regions, region_selected=None):
         """ Get all follow up responses """
-        answers, all_regions = self._get_answers(self.follow_up_question, regions, region_selected)
+        answers, all_regions, response_rate = self._get_answers(
+            self.follow_up_question, self.follow_up_poll, regions, region_selected)
 
         answers = answers.order_by('submitted_on')
         answers_list, dates = answers.numeric_sum_group_by_date()
-        return answers_list, dates, all_regions
+        return answers_list, dates, all_regions, response_rate
 
     def check_for_data(self, regions):
-        answers, all_regions = self._get_answers(self.baseline_question, regions, 0)
+        answers, all_regions, response_rate = self._get_answers(self.baseline_question, self.baseline_poll, regions, 0)
         return answers.exists()
