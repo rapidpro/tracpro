@@ -178,7 +178,9 @@ class ContactCRUDL(SmartCRUDL):
             def fetch():
                 pollruns = OrderedDict()
                 qs = PollRun.objects.get_all(
-                    self.request.region, self.request.include_subregions)
+                    self.request.org,
+                    self.request.region,
+                    self.request.include_subregions)
                 qs = qs.order_by('-conducted_on')
                 for pollrun in qs[0:3]:
                     pollruns['pollrun_%d' % pollrun.pk] = pollrun

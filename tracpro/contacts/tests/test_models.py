@@ -2,7 +2,7 @@ from __future__ import absolute_import, unicode_literals
 
 import mock
 
-from temba.types import Contact as TembaContact
+from temba_client.types import Contact as TembaContact
 
 from django.test.utils import override_settings
 from django.utils import timezone
