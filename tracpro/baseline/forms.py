@@ -114,14 +114,14 @@ class SpoofDataForm(forms.Form):
         baseline_maximum = cleaned_data.get("baseline_maximum")
         if baseline_minimum and baseline_maximum and baseline_minimum > baseline_maximum:
             raise forms.ValidationError(
-                "Baseline minimum should be lower than maximum."
+                "Baseline maximum should exceed or equal minimum."
             )
 
         follow_up_minimum = cleaned_data.get("follow_up_minimum")
         follow_up_maximum = cleaned_data.get("follow_up_maximum")
         if follow_up_minimum and follow_up_maximum and follow_up_minimum > follow_up_maximum:
             raise forms.ValidationError(
-                "Follow up minimum should be lower than maximum."
+                "Follow up maximum should exceed or equal minimum."
             )
 
         return cleaned_data

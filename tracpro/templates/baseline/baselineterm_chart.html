@@ -38,6 +38,14 @@ $(function () {
 
           }
         },
+        {% else %}
+        legend: {
+            layout: 'vertical',
+            align: 'right',
+            verticalAlign: 'top',
+            floating: true,
+            backgroundColor: '#FFFFFF'
+        },
         {% endif %}
         series: [
         // Baseline Data

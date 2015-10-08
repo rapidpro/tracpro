@@ -2,7 +2,7 @@ import logging
 
 from requests import HTTPError
 
-from temba.base import TembaAPIError
+from temba_client.base import TembaAPIError
 
 
 logger = logging.getLogger(__name__)
