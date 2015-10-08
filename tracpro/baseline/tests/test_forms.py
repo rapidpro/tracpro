@@ -119,7 +119,7 @@ class SpoofDataFormTest(TracProDataTest):
         self.assertEqual(len(form.errors), 1, form.errors)
         self.assertTrue(NON_FIELD_ERRORS in form.errors, form.errors)
         self.assertEqual(form.errors[NON_FIELD_ERRORS],
-                         ['Baseline minimum should be lower than maximum.'],
+                         ['Baseline maximum should exceed or equal minimum.'],
                          form.errors)
 
     def test_min_max_follow_up(self):
@@ -131,5 +131,5 @@ class SpoofDataFormTest(TracProDataTest):
         self.assertEqual(len(form.errors), 1, form.errors)
         self.assertTrue(NON_FIELD_ERRORS in form.errors, form.errors)
         self.assertEqual(form.errors[NON_FIELD_ERRORS],
-                         ['Follow up minimum should be lower than maximum.'],
+                         ['Follow up maximum should exceed or equal minimum.'],
                          form.errors)

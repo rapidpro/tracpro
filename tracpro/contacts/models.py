@@ -115,9 +115,13 @@ class Contact(models.Model):
         region_uuids = intersection(org_region_uuids, temba_contact.groups)
         region = Region.objects.get(org=org, uuid=region_uuids[0]) if region_uuids else None
 
-        if not region:  # pragma: no cover
-            raise ValueError("No region with UUID in %s" %
-                             ", ".join(temba_contact.groups))
+        if not region:
+            raise ValueError(
+                "Unable to save contact {c.uuid} ({c.name}) because none of "
+                "their groups match an active Region for this org: "
+                "{groups}".format(
+                    c=temba_contact,
+                    groups=', '.join(temba_contact.groups)))
 
         org_group_uuids = [g.uuid for g in Group.get_all(org)]
         group_uuids = intersection(org_group_uuids, temba_contact.groups)
