@@ -18,6 +18,55 @@
 
 {% block read-buttons %}{% endblock read-buttons %}
 
+{% block fields %}
+
+<table class="table table-striped">
+<tbody>
+  <tr class="read">
+    <td class="read-label">Dates</td>
+    <td class="read-value">{{ baselineterm.start_date|date:"F d, Y" }} - {{ baselineterm.end_date|date:"F d, Y" }}</td>
+  </tr>
+  <tr class="read">
+    <td class="read-label">Baseline Poll / Question</td>
+    <td class="read-value">{{ baselineterm.baseline_poll }} / {{ baselineterm.baseline_question }}</td>
+  </tr>
+  <tr class="read">
+    <td class="read-label">Follow Up Poll / Question</td>
+    <td class="read-value">{{ baselineterm.follow_up_poll }} / {{ baselineterm.follow_up_question }}</td>
+  </tr>
+
+<!-- Chart Summary Data -->
+  {% if not no_data %}
+  <tr class="read">
+    <td class="read-label">Baseline Mean</td>
+    <td class="read-value">{{ baseline_mean }}</td>
+  </tr>
+  <tr class="read">
+    <td class="read-label">Baseline Standard Deviation</td>
+    <td class="read-value">{{ baseline_std }}</td>
+  </tr>
+  <tr class="read">
+    <td class="read-label">Baseline Response Rate</td>
+    <td class="read-value">{{ baseline_response_rate }}%</td>
+  </tr>
+  <tr class="read">
+    <td class="read-label">Follow Up Mean</td>
+    <td class="read-value">{{ follow_up_mean }}</td>
+  </tr>
+  <tr class="read">
+    <td class="read-label">Follow Up Standard Deviation</td>
+    <td class="read-value">{{ follow_up_std }}</td>
+  </tr>
+  <tr class="read">
+    <td class="read-label">Follow Up Response Rate</td>
+    <td class="read-value">{{ follow_up_response_rate }}%</td>
+  </tr>
+  {% endif %}
+
+</tbody>
+</table>
+{% endblock fields %}
+
 
 {% block extra-script %}
     {% include 'baseline/baselineterm_chart.html' %}

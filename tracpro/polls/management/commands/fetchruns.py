@@ -62,6 +62,9 @@ class Command(BaseCommand):
         created = 0
         updated = 0
         for run in runs:
+            if run.flow not in polls_by_flow_uuids:
+                continue  # Response is for a Poll not tracked for this org.
+
             poll = polls_by_flow_uuids[run.flow]
             try:
                 response = Response.from_run(org, run, poll=poll)

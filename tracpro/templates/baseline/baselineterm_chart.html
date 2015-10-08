@@ -21,76 +21,30 @@ $(function () {
                 text: '{{ baselineterm.y_axis_title|escapejs }}'
             }
         },
-        {% if include_legend_data %}
         legend: {
+            layout: 'vertical',
             align: 'right',
             verticalAlign: 'top',
-            layout: 'vertical',
-            x: 0,
-            y: 100,
-            labelFormatter: function() {
-              if (this.options.legendValue || this.options.legendValue==0) {
-                return '<hr><br><span style="font-size:1.2em;">' + this.name + '</span>    <span style="font-size:1.2em; font-weight:300">' + this.options.legendValue + '</span>';
-              }
-              else {
-                return this.name;
-              }
-
-          }
+            floating: true,
+            backgroundColor: '#FFFFFF'
         },
-        {% endif %}
         series: [
         // Baseline Data
         {
             type: 'area',
-            name: 'Baseline',
+            name: 'Baseline {% if goal_selected %}Goal{% endif %}',
+            {% if goal_selected %}
+                data: {{ goal_selected }}
+            {% else %}
                 data: {{ baseline_list }}
+            {% endif %}
         },
         // Follow Up Data
         {
             type: 'area',
             name: 'Follow Up',
             data: {{ follow_up_list }}
-        },
-        /* The following are data for the legend only, not actual series data. */
-        {% if include_legend_data %}
-            {
-                type: 'area',
-                name: 'Baseline Mean',
-                legendValue: {{ baseline_mean }},
-                color: '#FFFFFF',
-                events: {
-                    legendItemClick: function () { return false; }
-                }
-            },
-            {
-                type: 'area',
-                name: 'Baseline Standard Deviation',
-                legendValue: {{ baseline_std }},
-                color: '#FFFFFF',
-                events: {
-                    legendItemClick: function () { return false; }
-                }
-            },
-            {
-                type: 'area',
-                name: 'Follow Up Mean',
-                legendValue: {{ follow_up_mean }},
-                color: '#FFFFFF',
-                events: {
-                    legendItemClick: function () { return false; }
-                }
-            },
-            {
-                type: 'area',
-                name: 'Follow Up Standard Deviation',
-                legendValue: {{ follow_up_std }},
-                color: '#FFFFFF',
-                events: {
-                    legendItemClick: function () { return false; }
-                }
-            }
-        {% endif %}
+        }
         ]
     });
     {% else %}

@@ -12,23 +12,27 @@
       <select id='region-select' class='form-control' onchange='onChartRegionChange(this)' name='region'>
         <option value='0'>All Regions</option>
         {% for region in all_regions %}
-          {% for key, value in region.items %}
-              {% if key == "response__contact__region" %}
-                  {% if value == region_selected %}
-                    <option selected='selected' value='{{ value }}'>
-                  {% else %}
-                    <option value='{{ value }}'>
-                  {% endif %}
-              {% else %}
-                  {{ value }}</option>
-              {% endif %}
-          {% endfor %}
+            {% if region.pk == region_selected %}
+              <option selected='selected' value='{{ region.pk }}'>{{ region.name }}</option>
+            {% else %}
+              <option  value='{{ region.pk }}'>{{ region.name }}</option>
+            {% endif %}
         {% endfor %}
       </select>
     </form>
   </div>
   {% if org_perms.baseline.baselineterm_update or org_perms.baseline.baselineterm_delete %}
     <div class="btn-group pull-away">
+      <button class="btn btn-default" type="button" data-toggle="modal" data-target="#confirm-goal-dialog">
+        <span class="glyphicon glyphicon-stats">
+          {% trans "Chart Goal Data" %}
+        </span>
+      </button>
+      <button class="btn btn-default" type="button" onclick="onClearChartGoal()">
+        <span class="glyphicon">
+          {% trans "Clear Goal Data" %}
+        </span>
+      </button>
       {% if org_perms.baseline.baselineterm_update %}
         <a class="btn btn-default" href="{% url 'baseline.baselineterm_update' baselineterm.pk %}">
           <span class="glyphicon glyphicon-pencil">
@@ -76,6 +80,53 @@
   </div>
 </div>
 
+</form>
+
+<form id="chart-form" method="get">
+  {% csrf_token %}
+  {% if region_selected %}
+    <input type="hidden" name="region" value="{{ region_selected }}" />
+  {% endif %}
+
+<div class="modal fade" role="dialog" id="confirm-goal-dialog">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button class="close" type="button" data-dismiss="modal">
+          &times;
+        </button>
+        <h4 class="modal-title">
+          {% trans "Chart Goal Data" %}
+        </h4>
+      </div>
+      <div class="modal-body">
+        {% trans "Enter goal data for all baselines charted." %}
+        <div>
+          <input type="number" name="goal" id="goal" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-default" type="button" data-dismiss="modal">
+          {% trans "Cancel" %}
+        </button>
+        <button class="btn btn-danger" type="button" onclick="onChartGoal()">
+          {% trans "Chart" %}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+</form>
+
+<form id="chart-clear-form" method="get">
+  {% csrf_token %}
+  {% if region_selected %}
+    <input type="hidden" name="region" value="{{ region_selected }}" />
+  {% endif %}
+</form>
+
+
+
 {% block extra-script %}
   <script>
     function onChartRegionChange(ctrl) {
@@ -83,6 +134,14 @@
     }
     function onConfirmDelete() {
       $('#delete-form').submit();
+    }
+    function onChartGoal() {
+      if($('#goal').val() != "") {
+        $('#chart-form').submit();
+      }
+    }
+    function onClearChartGoal(ctrl) {
+      $('#chart-clear-form').submit();
     }
   </script>
 {% endblock extra-script %}

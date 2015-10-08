@@ -10,7 +10,21 @@
 {% block content %}
 
   <div class='row'>
-    <div class='col-md-12 buttons'>
+    <div class='col-md-6'>
+      <form class='form-inline' method='get'>
+        <label class='control-label' for='region-select'>{% trans "Group By" %}</label>
+        <select id='group-by' class='form-control' onchange='onGroupByChange(this)' name='group-by'>
+          <option value='reporter' {% if group_by_reporter_group %}selected{% endif %}>
+            {% trans "Reporter Group" %}
+          </option>
+          <option value='region' {% if not group_by_reporter_group %}selected{% endif %}>
+            {% trans "Region" %}
+          </option>
+        </select>
+      </form>
+    </div>
+
+    <div class='col-md-6 buttons'>
       <div class='btn-group pull-right'>
         <a class='btn btn-default' data-toggle='modal' type='button' data-target='#send-message-dialog'>
           <span class='glyphicon glyphicon-comment'></span>
@@ -155,7 +169,11 @@
         <thead>
           <tr>
             <th>
-              {% trans "Reporter Group" %}
+              {% if group_by_reporter_group %}
+                {% trans "Reporter Group" %}
+              {% else %}
+                {% trans "Region" %}
+              {% endif %}
             </th>
             <th>
               {% trans "No response" %}
@@ -194,7 +212,11 @@
           <tr>
             <td>
               <i>
-                {% trans "No group" %}
+                {% if group_by_reporter_group %}
+                  {% trans "No group" %}
+                {% else %}
+                  {% trans "No region" %}
+                {% endif %}
               </i>
             </td>
             <td>
@@ -244,6 +266,7 @@
   </div>
 {% endblock %}
 
+
 {% block extra-script %}
 <script type='text/javascript'>
 // <![CDATA[
@@ -261,6 +284,10 @@
         $('#restart-dialog').modal('hide')
         display_alert('success', "Restarted poll for " + data.contacts + " contacts")
       });
+    }
+
+    function onGroupByChange(ctrl) {
+      ctrl.form.submit();
     }
 // ]]>
 </script>

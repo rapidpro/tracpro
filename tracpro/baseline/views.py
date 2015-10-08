@@ -85,6 +85,7 @@ class BaselineTermCRUDL(SmartCRUDL):
                     "%s is not a valid region. Please select a valid region from the drop-down."
                     % (self.request.GET.get('region', '')))
 
+            # If the user selected a region, only retrieve/display data for that region
             if region:
                 region_selected = region
                 context['region_selected'] = region_selected
@@ -92,7 +93,8 @@ class BaselineTermCRUDL(SmartCRUDL):
                 region_selected = None
 
             (follow_up_list, baseline_list, all_regions, date_list,
-             baseline_mean, baseline_std, follow_up_mean, follow_up_std) = chart_baseline(
+             baseline_mean, baseline_std, follow_up_mean, follow_up_std,
+             baseline_response_rate, follow_up_response_rate) = chart_baseline(
                 self.object, self.request.data_regions, region_selected)
 
             context['all_regions'] = all_regions
@@ -103,9 +105,19 @@ class BaselineTermCRUDL(SmartCRUDL):
             context['baseline_std'] = baseline_std
             context['follow_up_mean'] = follow_up_mean
             context['follow_up_std'] = follow_up_std
-            context['include_legend_data'] = 1
+            context['baseline_response_rate'] = baseline_response_rate
+            context['follow_up_response_rate'] = follow_up_response_rate
+
+            # This value is for when the user would rather display a goal they enter manually,
+            # instead of the baseline poll results
+            context['goal_selected'] = int(self.request.GET.get('goal', 0))
+            if context['goal_selected']:
+                context['baseline_mean'] = context['goal_selected']
+                context['baseline_std'] = 0
+                context['goal_selected'] = [context['goal_selected']] * len(date_list)
 
             if len(context['follow_up_list']) == 0 and len(context['baseline_list']) == 0:
+                context['no_data'] = 1
                 context['error_message'] = _(
                     "No data exists for this baseline chart. You may need to select a different region.")
 
@@ -123,6 +135,10 @@ class BaselineTermCRUDL(SmartCRUDL):
             kwargs.setdefault('org', self.request.org)
             return kwargs
 
+        def random_answer_calculate(self, min_value, max_value):
+            random_value = min_value if min_value == max_value else random.randrange(min_value, max_value)
+            return random_value
+
         def create_baseline(self, poll, date, contacts, baseline_question, baseline_minimum, baseline_maximum):
             baseline_datetime = datetime.combine(date, datetime.utcnow().time().replace(tzinfo=pytz.utc))
             baseline_pollrun = PollRun.objects.create_spoofed(
@@ -136,7 +152,7 @@ class BaselineTermCRUDL(SmartCRUDL):
                     updated_on=baseline_datetime,
                     status=Response.STATUS_COMPLETE,
                     is_active=True)
-                random_answer = random.randrange(baseline_minimum, baseline_maximum)
+                random_answer = self.random_answer_calculate(baseline_minimum, baseline_maximum)
                 # Create a randomized Answer for each contact for Baseline
                 Answer.objects.create(
                     response=response,
@@ -174,7 +190,7 @@ class BaselineTermCRUDL(SmartCRUDL):
                         updated_on=follow_up_datetime,
                         status=Response.STATUS_COMPLETE,
                         is_active=True)
-                    random_answer = random.randrange(follow_up_minimum, follow_up_maximum)
+                    random_answer = self.random_answer_calculate(follow_up_minimum, follow_up_maximum)
                     # Create a randomized Answer for each contact for Follow Up
                     Answer.objects.create(
                         response=response,

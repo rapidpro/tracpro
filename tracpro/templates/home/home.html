@@ -11,14 +11,18 @@
     </div>
   {% else %}
     <div class='row bottom-margin'>
-        <div class='col-md-7'>
+        <div class='col-md-9'>
           <h2>
-            {% trans "Latest Baseline Chart" %}
+            {{ baselineterm.name }}
           </h2>
           <div id="container" class="chart-home">
           </div>
+          <div class="chart-dates">
+            {{ baselineterm.start_date|date:"F d, Y" }} -
+            {{ baselineterm.end_date|date:"F d, Y" }}
+          </div>
         </div>
-        <div class='col-md-5'>
+        <div class='col-md-3'>
           <div class='page-header'>
             {% if org_perms.baseline.baselineterm_list %}
               <a class='btn btn-default pull-away' href='{% url 'baseline.baselineterm_list' %}'>
@@ -27,7 +31,7 @@
               </a>
             {% endif %}
             <h2>
-              {% trans "Latest Baseline Terms" %}
+              {% trans "Recent Indicators" %}
             </h2>
           </div>
           <table class='table table-striped' style='width: 100%'>
@@ -37,16 +41,7 @@
                 {% trans "Name" %}
               </th>
               <th>
-                {% trans "Start Date" %}
-              </th>
-              <th>
                 {% trans "End Date" %}
-              </th>
-              <th>
-                {% trans "Baseline Question" %}
-              </th>
-              <th>
-                {% trans "Follow Up Question" %}
               </th>
             </tr>
           </thead>
@@ -62,16 +57,7 @@
                   {% endif %}
                 </td>
                 <td>
-                  {{ baselinetermitem.start_date|date:"F d, Y"  }}
-                </td>
-                <td>
                   {{ baselinetermitem.end_date|date:"F d, Y"  }}
-                </td>
-                <td>
-                  {{ baselinetermitem.baseline_question }}
-                </td>
-                <td>
-                  {{ baselinetermitem.follow_up_question }}
                 </td>
               </tr>
             {% endfor %}
