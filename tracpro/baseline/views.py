@@ -126,6 +126,10 @@ class BaselineTermCRUDL(SmartCRUDL):
             kwargs.setdefault('org', self.request.org)
             return kwargs
 
+        def random_answer_calculate(self, min_value, max_value):
+            random_value = min_value if min_value == max_value else random.randrange(min_value, max_value)
+            return random_value
+
         def create_baseline(self, poll, date, contacts, baseline_question, baseline_minimum, baseline_maximum):
             baseline_datetime = datetime.combine(date, datetime.utcnow().time().replace(tzinfo=pytz.utc))
             baseline_pollrun = PollRun.objects.create_spoofed(
@@ -139,7 +143,7 @@ class BaselineTermCRUDL(SmartCRUDL):
                     updated_on=baseline_datetime,
                     status=Response.STATUS_COMPLETE,
                     is_active=True)
-                random_answer = random.randrange(baseline_minimum, baseline_maximum)
+                random_answer = self.random_answer_calculate(baseline_minimum, baseline_maximum)
                 # Create a randomized Answer for each contact for Baseline
                 Answer.objects.create(
                     response=response,
@@ -177,7 +181,7 @@ class BaselineTermCRUDL(SmartCRUDL):
                         updated_on=follow_up_datetime,
                         status=Response.STATUS_COMPLETE,
                         is_active=True)
-                    random_answer = random.randrange(follow_up_minimum, follow_up_maximum)
+                    random_answer = self.random_answer_calculate(follow_up_minimum, follow_up_maximum)
                     # Create a randomized Answer for each contact for Follow Up
                     Answer.objects.create(
                         response=response,
