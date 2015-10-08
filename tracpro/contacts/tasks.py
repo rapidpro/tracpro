@@ -58,6 +58,8 @@ def sync_org_contacts(org_id):
     last_time_key = LAST_FETCHED_CONTACTS_RUN_TIME_KEY % org.pk
     last_time = redis_connection.get(last_time_key)
 
+    new_last_time = format_iso8601(timezone.now())
+
     created, updated, deleted, failed = sync_pull_contacts(
         org, Contact, fields=(), groups=sync_groups, last_time=last_time)
 
@@ -72,7 +74,7 @@ def sync_org_contacts(org_id):
                 "%d updated, %d deleted, %d failed)" %
                 (org.id, len(created), len(updated), len(deleted), len(failed)))
 
-    redis_connection.set(last_time_key, format_iso8601(timezone.now()))
+    redis_connection.set(last_time_key, new_last_time)
 
 
 @task
