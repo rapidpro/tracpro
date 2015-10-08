@@ -37,7 +37,6 @@ class HomeView(OrgPermsMixin, SmartTemplateView):
                 context['baseline_list'] = baseline_list
                 context['follow_up_list'] = follow_up_list
                 context['baselineterm'] = baselineterm
-                context['include_legend_data'] = 0
                 break  # Found our baseline chart with data, send it back to the view
 
         # Return top 5 baseline terms only

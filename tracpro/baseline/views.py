@@ -104,11 +104,11 @@ class BaselineTermCRUDL(SmartCRUDL):
             context['baseline_std'] = baseline_std
             context['follow_up_mean'] = follow_up_mean
             context['follow_up_std'] = follow_up_std
-            context['include_legend_data'] = 1
             context['baseline_response_rate'] = baseline_response_rate
             context['follow_up_response_rate'] = follow_up_response_rate
 
             if len(context['follow_up_list']) == 0 and len(context['baseline_list']) == 0:
+                context['no_data'] = 1
                 context['error_message'] = _(
                     "No data exists for this baseline chart. You may need to select a different region.")
 
