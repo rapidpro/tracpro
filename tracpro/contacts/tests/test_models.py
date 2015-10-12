@@ -65,14 +65,14 @@ class ContactTest(TracProDataTest):
         self.assertEqual(contact.name, "Mo Polls")
 
     def test_kwargs_from_temba(self):
+        modified_date = timezone.now()
         temba_contact = TembaContact.create(
             uuid='C-007', name="Jan", urns=['tel:123'],
             groups=['G-001', 'G-007'],
             fields={'facility_code': 'FC234', 'gender': 'M'},
-            language='eng', modified_on=timezone.now())
+            language='eng', modified_on=modified_date)
 
         kwargs = Contact.kwargs_from_temba(self.unicef, temba_contact)
-
         self.assertDictEqual(kwargs, {
             'uuid': 'C-007',
             'org': self.unicef,
@@ -82,6 +82,7 @@ class ContactTest(TracProDataTest):
             'group': self.group3,
             'facility_code': 'FC234',
             'language': 'eng',
+            'temba_modified_on': modified_date,
         })
 
         # try creating contact from them
