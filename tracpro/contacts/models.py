@@ -55,6 +55,9 @@ class Contact(models.Model):
     modified_on = models.DateTimeField(
         auto_now=True,
         help_text="When this item was last modified")
+    temba_modified_on = models.DateTimeField(
+        null=True,
+        help_text="When this item was last modified in Temba")
 
     def __str__(self):
         return self.name or self.get_urn()[1]
@@ -138,6 +141,7 @@ class Contact(models.Model):
             'language': temba_contact.language,
             'facility_code': facility_code,
             'uuid': temba_contact.uuid,
+            'temba_modified_on': temba_contact.modified_on,
         }
 
     def as_temba(self):
