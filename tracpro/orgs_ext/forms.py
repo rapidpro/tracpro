@@ -2,6 +2,7 @@ from django import forms
 from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
 
+from temba_client.base import TembaAPIError
 from dash.orgs.forms import OrgForm
 
 
@@ -57,8 +58,16 @@ class SimpleOrgEditForm(OrgForm):
 
     def __init__(self, *args, **kwargs):
         super(SimpleOrgEditForm, self).__init__(*args, **kwargs)
+
+        try:
+            temba_fields = self.instance.get_temba_client().get_fields()
+        except TembaAPIError:
+            raise ValueError(
+                "This org does not have a functioning RapidPro API Key set up. " +
+                "Edit it via Site Manage drop-down, or ask your administrator to fix it.")
+
         field_choices = [(f.key, '{} ({})'.format(f.label, f.key))
-                         for f in self.instance.get_temba_client().get_fields()]
+                         for f in temba_fields]
         self.fields['facility_code_field'].choices = field_choices
         self.fields['facility_code_field'].initial = self.instance.facility_code_field
 
