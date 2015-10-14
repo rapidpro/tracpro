@@ -130,6 +130,10 @@ LOGGING = {
         }
     },
     'loggers': {
+        'celery': {
+            'handlers': ['file', 'mail_admins'],
+            'level': 'INFO',
+        },
         'httprouterthread': {
             'handlers': ['file'],
             'level': 'INFO',
