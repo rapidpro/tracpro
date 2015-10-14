@@ -57,7 +57,8 @@ class Contact(models.Model):
         help_text="When this item was last modified")
     temba_modified_on = models.DateTimeField(
         null=True,
-        help_text="When this item was last modified in Temba")
+        help_text="When this item was last modified in Temba",
+        editable=False)
 
     def __str__(self):
         return self.name or self.get_urn()[1]

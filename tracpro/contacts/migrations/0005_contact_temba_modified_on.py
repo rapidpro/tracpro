@@ -14,6 +14,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='contact',
             name='temba_modified_on',
-            field=models.DateTimeField(help_text='When this item was last modified in Temba', null=True),
+            field=models.DateTimeField(help_text='When this item was last modified in Temba', null=True, editable=False),
         ),
     ]
