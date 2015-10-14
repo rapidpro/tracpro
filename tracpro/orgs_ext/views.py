@@ -1,9 +1,12 @@
 from __future__ import absolute_import, unicode_literals
 
+from django.utils.translation import ugettext_lazy as _
+from django.http import HttpResponseBadRequest
+
 from dash.orgs.views import OrgCRUDL, InferOrgMixin, OrgPermsMixin
 from dash.utils import ms_to_datetime
 
-from django.utils.translation import ugettext_lazy as _
+from temba_client.base import TembaAPIError
 
 from smartmin.templatetags.smartmin import format_datetime
 from smartmin.views import SmartUpdateView
@@ -65,7 +68,20 @@ class OrgExtCRUDL(OrgCRUDL):
             else:
                 return None
 
-    class Edit(InferOrgMixin, OrgPermsMixin, SmartUpdateView):
+    class APIKeyMixin(object):
+        """ Mixin to determine whether RapidPro API Key is valid """
+
+        def dispatch(self, request, *args, **kwargs):
+            try:
+                self.request.org.get_temba_client().get_fields()
+                return super(OrgExtCRUDL.APIKeyMixin, self).dispatch(request, *args, **kwargs)
+
+            except TembaAPIError:
+                return HttpResponseBadRequest(
+                    _("Org does not have a valid API Key. " +
+                      "Please edit the org through Site Manage or contact your administrator."))
+
+    class Edit(APIKeyMixin, InferOrgMixin, OrgPermsMixin, SmartUpdateView):
         fields = ('name', 'timezone', 'facility_code_field')
         form_class = forms.SimpleOrgEditForm
         permission = 'orgs.org_edit'
