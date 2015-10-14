@@ -49,8 +49,15 @@ def sync_org_contacts(org_id):
 
     sync_groups = [r.uuid for r in Region.get_all(org)] + [g.uuid for g in Group.get_all(org)]
 
+    most_recent_contact = Contact.get_all(org=org).filter(temba_modified_on__isnull=False)
+    most_recent_contact = most_recent_contact.order_by('-temba_modified_on').first()
+    if most_recent_contact:
+        last_time = most_recent_contact.temba_modified_on
+    else:
+        last_time = None
+
     created, updated, deleted, failed = sync_pull_contacts(
-        org, Contact, fields=(), groups=sync_groups)
+        org, Contact, fields=(), groups=sync_groups, last_time=last_time)
 
     task_result = dict(time=datetime_to_ms(timezone.now()),
                        counts=dict(created=len(created),
