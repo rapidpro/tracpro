@@ -5,6 +5,7 @@ from temba_client.base import TembaAPIError
 
 
 class HandleTembaAPIError(object):
+    """ Catch all Temba exception errors """
 
     def process_exception(self, request, exception):
         if isinstance(exception, TembaAPIError):
