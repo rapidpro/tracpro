@@ -95,7 +95,7 @@ class SpoofDataForm(forms.Form):
         super(SpoofDataForm, self).__init__(*args, **kwargs)
 
         if org:
-            contacts = Contact.get_all(org).order_by('name')
+            contacts = Contact.objects.active().by_org(org).order_by('name')
             self.fields['contacts'].queryset = contacts
             questions = Question.objects.filter(poll__in=Poll.get_all(org))
             self.fields['baseline_question'].queryset = questions

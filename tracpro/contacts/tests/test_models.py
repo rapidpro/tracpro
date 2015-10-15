@@ -29,9 +29,9 @@ class ContactTest(TracProDataTest):
             fields={'facility_code': 'FC234'},
             language='eng', modified_on=timezone.now())
 
-        contact = Contact.create(
-            self.unicef, self.user1, "Mo Polls", 'tel:078123',
-            self.region1, self.group1, 'FC234', 'eng')
+        contact = factories.Contact(
+            org=self.unicef, created_by=self.user1, modified_by=self.user1,
+            urn="tel:078123", region=self.region1, group=self.group1)
 
         self.assertEqual(contact.name, "Mo Polls")
         self.assertEqual(contact.urn, 'tel:078123')
@@ -96,9 +96,9 @@ class ContactTest(TracProDataTest):
         self.assertEqual(temba_contact.groups, ['G-001', 'G-005'])
         self.assertEqual(temba_contact.uuid, 'C-001')
 
-    def test_get_all(self):
-        self.assertEqual(len(Contact.get_all(self.unicef)), 5)
-        self.assertEqual(len(Contact.get_all(self.nyaruka)), 1)
+    def test_by_org(self):
+        self.assertEqual(len(Contact.objects.active().by_org(self.unicef)), 5)
+        self.assertEqual(len(Contact.objects.active().by_org(self.nyaruka)), 1)
 
     def test_get_responses(self):
         date1 = self.datetime(2014, 1, 1, 7, 0)

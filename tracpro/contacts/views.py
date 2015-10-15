@@ -82,11 +82,10 @@ class ContactCRUDL(SmartCRUDL):
             initial['region'] = self.request.region
             return initial
 
-        def save(self, obj):
-            org = self.request.user.get_org()
-            self.object = Contact.create(
-                org, self.request.user, obj.name, obj.urn, obj.region,
-                obj.group, obj.facility_code, obj.language)
+        def post_save(self, obj):
+            obj = super(ContactCRUDL.Create, self).post_save(obj)
+            obj.push(ChangeType.created)
+            return obj
 
     class Update(OrgObjPermsMixin, ContactFormMixin, SmartUpdateView):
         fields = ('name', 'urn', 'region', 'group', 'facility_code', 'language')

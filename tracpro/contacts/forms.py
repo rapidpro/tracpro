@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 from django import forms
 from django.utils.translation import ugettext_lazy as _
 
@@ -33,7 +35,17 @@ class ContactForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user')
-        super(ContactForm, self).__init__(*args, **kwargs)
         org = self.user.get_org()
+        super(ContactForm, self).__init__(*args, **kwargs)
+
+        self.instance.org = org
+        self.instance.modified_by = self.user
+        if not self.instance.pk:
+            self.instance.created_by = self.user
+
+            # Since we are creating this contact (rather than RapidPro),
+            # we must create a UUID for it.
+            self.instance.uuid = str(uuid4())
+
         self.fields['region'].queryset = self.user.get_all_regions(org)
         self.fields['group'].queryset = Group.get_all(org).order_by('name')

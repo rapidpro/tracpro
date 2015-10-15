@@ -3,6 +3,7 @@ from __future__ import absolute_import, unicode_literals
 from uuid import uuid4
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
@@ -17,17 +18,31 @@ from tracpro.groups.models import Region, Group
 from .tasks import push_contact_change
 
 
+class ContactQuerySet(models.QuerySet):
+
+    def active(self):
+        return self.filter(is_active=True)
+
+    def by_org(self, org):
+        return self.filter(org=org)
+
+    def by_regions(self, regions):
+        return self.filter(region__in=regions)
+
+
 @python_2_unicode_compatible
 class Contact(models.Model):
     """Corresponds to a RapidPro contact."""
 
-    uuid = models.CharField(max_length=36, unique=True)
+    uuid = models.CharField(
+        max_length=36, unique=True)
     org = models.ForeignKey(
         'orgs.Org', verbose_name=_("Organization"), related_name="contacts")
     name = models.CharField(
         verbose_name=_("Name"), max_length=128, blank=True,
         help_text=_("The name of this contact"))
-    urn = models.CharField(verbose_name=_("URN"), max_length=255)
+    urn = models.CharField(
+        verbose_name=_("URN"), max_length=255)
     region = models.ForeignKey(
         'groups.Region', verbose_name=_("Region"), related_name='contacts',
         help_text=_("Region or state this contact lives in"))
@@ -41,6 +56,7 @@ class Contact(models.Model):
         max_length=3, verbose_name=_("Language"), null=True, blank=True,
         help_text=_("Language for this contact"))
 
+    # Metadata.
     is_active = models.BooleanField(
         default=True, help_text=_("Whether this contact is active"))
     created_by = models.ForeignKey(
@@ -60,35 +76,10 @@ class Contact(models.Model):
         help_text="When this item was last modified in Temba",
         editable=False)
 
+    objects = ContactQuerySet.as_manager()
+
     def __str__(self):
         return self.name or self.get_urn()[1]
-
-    @classmethod
-    def create(cls, org, user, name, urn, region, group, facility_code,
-               language, uuid=None):
-        if org.pk != region.org_id or org.pk != group.org_id:  # pragma: no cover
-            raise ValueError("Region or group does not belong to org")
-
-        # if we don't have a UUID, then we created this contact
-        if not uuid:
-            do_push = True
-            uuid = str(uuid4())
-        else:
-            do_push = False
-
-        if name is None:  # RapidPro can send us blank or null names
-            name = ""
-
-        # create contact
-        contact = cls.objects.create(
-            org=org, name=name, urn=urn, region=region, group=group,
-            facility_code=facility_code, language=language,
-            uuid=uuid, created_by=user, modified_by=user)
-
-        if do_push:
-            contact.push(ChangeType.created)
-
-        return contact
 
     @classmethod
     def get_or_fetch(cls, org, uuid):
@@ -104,11 +95,6 @@ class Contact(models.Model):
         temba_contact = org.get_temba_client().get_contact(uuid)
         return cls.objects.create(**cls.kwargs_from_temba(org, temba_contact))
 
-    @classmethod
-    def get_all(cls, org, regions=None):
-        qs = cls.objects.filter(org=org, is_active=True)
-        if regions is not None:
-            qs = qs.filter(region__in=regions)
         return qs
 
     @classmethod
@@ -177,3 +163,13 @@ class Contact(models.Model):
         self.is_active = False
         self.save()
         self.push(ChangeType.deleted)
+
+    def clean(self):
+        if self.org.pk != self.region.org_id:
+            raise ValidationError("Region does not belong to Org.")
+        if self.group and self.org.pk != self.group.org_id:
+            raise ValidationError("Group does not belong to Org.")
+
+    def save(self, *args, **kwargs):
+        self.name = self.name or ""  # RapidPro might return blank or null values.
+        return super(Contact, self).save(*args, **kwargs)
