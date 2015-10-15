@@ -7,7 +7,7 @@ from tracpro.groups.models import Group, Region
 from tracpro.groups.fields import ModifiedLevelTreeNodeChoiceField
 
 from .fields import URNField
-from .models import Contact
+from . import models
 
 
 class ContactForm(forms.ModelForm):
@@ -16,8 +16,8 @@ class ContactForm(forms.ModelForm):
         label=_("Region"), empty_label="", queryset=Region.objects.none())
 
     class Meta:
-        model = Contact
-        fields = forms.ALL_FIELDS
+        model = models.Contact
+        fields = ['name', 'urn', 'region', 'group', 'language']
         widgets = {
             'language': forms.TextInput(attrs={'class': 'language-field'}),
         }
@@ -31,7 +31,6 @@ class ContactForm(forms.ModelForm):
         self.instance.modified_by = self.user
         if not self.instance.pk:
             self.instance.created_by = self.user
-
             # Since we are creating this contact (rather than RapidPro),
             # we must create a UUID for it.
             self.instance.uuid = str(uuid4())
@@ -42,3 +41,17 @@ class ContactForm(forms.ModelForm):
         self.fields['region'].queryset = self.user.get_all_regions(org)
         self.fields['group'].empty_label = ""
         self.fields['group'].queryset = Group.get_all(org).order_by('name')
+
+        # Add form fields to update contact's DataField values.
+        self.data_field_keys = []
+        values = {v.field.key: v.get_value() for v in self.instance.contactfield_set.all()}
+        for field in org.datafield_set.visible():
+            self.data_field_keys.append(field.key)
+            initial = values.get(field.key, None)
+            self.fields[field.key] = field.get_form_field(initial=initial)
+
+    def save(self, commit=True):
+        # Updating DataField values is managed by a post-save signal.
+        field_values = {f: self.cleaned_data.pop(f, None) for f in self.data_field_keys}
+        self.instance._data_field_values = field_values
+        return super(ContactForm, self).save(commit)

@@ -5,6 +5,7 @@ from uuid import uuid4
 
 from dateutil.parser import parse
 
+from django import forms
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -267,6 +268,15 @@ class DataField(models.Model):
     @property
     def display_name(self):
         return (self.label or self.key).title()
+
+    def get_form_field(self, **kwargs):
+        if self.value_type == DataField.TYPE_DATETIME:
+            field_type = forms.DateTimeField
+        elif self.value_type == DataField.TYPE_DECIMAL:
+            field_type = forms.DecimalField
+        else:
+            field_type = forms.CharField
+        return field_type(label=self.display_name, required=False, **kwargs)
 
 
 class ContactFieldQuerySet(models.QuerySet):
