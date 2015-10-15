@@ -26,7 +26,7 @@ class ContactTest(TracProDataTest):
         mock_create_contact.return_value = TembaContact.create(
             uuid='C-007', name="Mo Polls",
             urns=['tel:078123'], groups=['G-001', 'G-005'],
-            fields={'facility_code': 'FC234'},
+            fields={},
             language='eng', modified_on=timezone.now())
 
         contact = factories.Contact(
@@ -36,7 +36,6 @@ class ContactTest(TracProDataTest):
         self.assertEqual(contact.name, "Mo Polls")
         self.assertEqual(contact.urn, 'tel:078123')
         self.assertEqual(contact.region, self.region1)
-        self.assertEqual(contact.facility_code, 'FC234')
         self.assertEqual(contact.language, 'eng')
         self.assertEqual(contact.created_by, self.user1)
         self.assertIsNotNone(contact.created_on)
@@ -54,7 +53,7 @@ class ContactTest(TracProDataTest):
         mock_get_contact.return_value = TembaContact.create(
             uuid='C-007', name="Mo Polls",
             urns=['tel:078123'], groups=['G-001', 'G-005'],
-            fields={'facility_code': 'FC234'},
+            fields={},
             language='eng', modified_on=timezone.now())
         # get locally
         contact = Contact.get_or_fetch(self.unicef, 'C-001')
@@ -69,7 +68,7 @@ class ContactTest(TracProDataTest):
         temba_contact = TembaContact.create(
             uuid='C-007', name="Jan", urns=['tel:123'],
             groups=['G-001', 'G-007'],
-            fields={'facility_code': 'FC234', 'gender': 'M'},
+            fields={'gender': 'M'},
             language='eng', modified_on=modified_date)
 
         kwargs = Contact.kwargs_from_temba(self.unicef, temba_contact)
@@ -80,7 +79,6 @@ class ContactTest(TracProDataTest):
             'urn': 'tel:123',
             'region': self.region1,
             'group': self.group3,
-            'facility_code': 'FC234',
             'language': 'eng',
             'temba_modified_on': modified_date,
         })
@@ -92,7 +90,7 @@ class ContactTest(TracProDataTest):
         temba_contact = self.contact1.as_temba()
         self.assertEqual(temba_contact.name, "Ann")
         self.assertEqual(temba_contact.urns, ['tel:1234'])
-        self.assertEqual(temba_contact.fields, {'facility_code': 'FC123'})
+        self.assertEqual(temba_contact.fields, {})
         self.assertEqual(temba_contact.groups, ['G-001', 'G-005'])
         self.assertEqual(temba_contact.uuid, 'C-001')
 

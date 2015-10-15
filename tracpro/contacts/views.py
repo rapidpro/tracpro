@@ -75,7 +75,7 @@ class ContactCRUDL(SmartCRUDL):
             return obj.get_urn()[1]  # TODO indicate different urn types with icon?
 
     class Create(OrgPermsMixin, ContactFormMixin, ContactBase, SmartCreateView):
-        fields = ('name', 'urn', 'region', 'group', 'facility_code', 'language')
+        fields = ('name', 'urn', 'region', 'group', 'language')
         form_class = ContactForm
 
         def derive_initial(self):
@@ -89,7 +89,7 @@ class ContactCRUDL(SmartCRUDL):
             return obj
 
     class Update(OrgObjPermsMixin, ContactFormMixin, ContactBase, SmartUpdateView):
-        fields = ('name', 'urn', 'region', 'group', 'facility_code', 'language')
+        fields = ('name', 'urn', 'region', 'group', 'language')
         form_class = ContactForm
 
         def post_save(self, obj):
@@ -100,10 +100,10 @@ class ContactCRUDL(SmartCRUDL):
     class Read(OrgObjPermsMixin, ContactFieldsMixin, ContactBase, SmartReadView):
 
         def derive_fields(self):
-            fields = ['urn', 'region', 'group', 'facility_code', 'language',
-                      'last_response']
+            fields = ['urn', 'region', 'group', 'language', 'last_response']
             if self.object.created_by_id:
                 fields.append('created_by')
+
             return fields
 
         def get_last_response(self, obj):

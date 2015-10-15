@@ -54,9 +54,6 @@ class Contact(models.Model):
         'groups.Group', null=True, verbose_name=_("Reporter group"),
         related_name='contacts',
         help_text=_("Reporter group to which this contact belongs."))
-    facility_code = models.CharField(
-        max_length=160, verbose_name=_("Facility Code"), null=True, blank=True,
-        help_text=_("Facility code for this contact"))
     language = models.CharField(
         max_length=3, verbose_name=_("Language"), null=True, blank=True,
         help_text=_("Language for this contact"))
@@ -95,12 +92,11 @@ class Contact(models.Model):
         temba_contact = TembaContact()
         temba_contact.name = self.name
         temba_contact.urns = [self.urn]
-        temba_contact.fields = {
-            self.org.facility_code_field: self.facility_code,
-        }
+        temba_contact.fields = {}
         temba_contact.groups = groups
         temba_contact.language = self.language
         temba_contact.uuid = self.uuid
+
         return temba_contact
 
     @classmethod
@@ -158,7 +154,6 @@ class Contact(models.Model):
             'region': region,
             'group': group,
             'language': temba_contact.language,
-            'facility_code': temba_contact.fields.get(org.facility_code_field, None),
             'uuid': temba_contact.uuid,
             'temba_modified_on': temba_contact.modified_on,
             'fields': temba_contact.fields,

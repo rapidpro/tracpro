@@ -34,7 +34,7 @@ class ContactCRUDLTest(TracProDataTest):
         data = dict(
             name="Mo Polls", urn_0="tel", urn_1="5678",
             region=self.region1.pk, group=self.group1.pk,
-            facility_code='FC678', language='eng')
+            language='eng')
         response = self.url_post('unicef', url, data)
         self.assertEqual(response.status_code, 302)
 
@@ -43,7 +43,6 @@ class ContactCRUDLTest(TracProDataTest):
         self.assertEqual(contact.name, "Mo Polls")
         self.assertEqual(contact.region, self.region1)
         self.assertEqual(contact.group, self.group1)
-        self.assertEqual(contact.facility_code, 'FC678')
         self.assertEqual(contact.language, 'eng')
 
         # log in as a user
@@ -92,7 +91,7 @@ class ContactCRUDLTest(TracProDataTest):
 
         data = dict(name="Morris", urn_0="tel", urn_1="6789",
                     region=self.region1.pk, group=self.group2.pk,
-                    facility_code='FC678', language='kin')
+                    language='kin')
         response = self.url_post('unicef', url, data)
         self.assertEqual(response.status_code, 302)
 
@@ -102,7 +101,6 @@ class ContactCRUDLTest(TracProDataTest):
         self.assertEqual(contact.urn, 'tel:6789')
         self.assertEqual(contact.region, self.region1)
         self.assertEqual(contact.group, self.group2)
-        self.assertEqual(contact.facility_code, 'FC678')
         self.assertEqual(contact.language, 'kin')
 
         # try to update contact in a region we don't have access to

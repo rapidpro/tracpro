@@ -36,7 +36,6 @@ class TracProTest(TestCase):
             name=name, timezone=timezone, subdomain=subdomain,
             api_token=str(uuid4()), created_by=self.superuser,
             modified_by=self.superuser)
-        org.set_config('facility_code_field', 'facility_code')
         return org
 
     def create_region(self, org, name, uuid):
@@ -60,7 +59,7 @@ class TracProTest(TestCase):
         user = org.administrators.first()
         return factories.Contact(
             org=org, name=name, urn=urn, region=region, group=group, uuid=uuid,
-            facility_code='FC123', language='eng', created_by=user, modified_by=user)
+            language='eng', created_by=user, modified_by=user)
 
     def login(self, user):
         result = self.client.login(username=user.username, password=user.username)
