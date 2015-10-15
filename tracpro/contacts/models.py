@@ -32,6 +32,15 @@ class ContactQuerySet(models.QuerySet):
         return self.filter(region__in=regions)
 
 
+class ContactManager(models.Manager.from_queryset(ContactQuerySet)):
+
+    def create(self, **kwargs):
+        data_field_values = kwargs.pop('_data_field_values', None)
+        contact = super(ContactManager, self).create(**kwargs)
+        contact._data_field_values = data_field_values
+        return contact
+
+
 @python_2_unicode_compatible
 class Contact(models.Model):
     """Corresponds to a RapidPro contact."""
@@ -78,7 +87,7 @@ class Contact(models.Model):
         help_text="When this item was last modified in Temba",
         editable=False)
 
-    objects = ContactQuerySet.as_manager()
+    objects = ContactManager()
 
     def __str__(self):
         return self.name or self.get_urn()[1]
@@ -89,10 +98,12 @@ class Contact(models.Model):
         if self.group_id:
             groups.append(self.group.uuid)
 
+        fields = {f.field.key: f.get_value() for f in self.contactfield_set.all()}
+
         temba_contact = TembaContact()
         temba_contact.name = self.name
         temba_contact.urns = [self.urn]
-        temba_contact.fields = {}
+        temba_contact.fields = fields
         temba_contact.groups = groups
         temba_contact.language = self.language
         temba_contact.uuid = self.uuid
@@ -156,7 +167,7 @@ class Contact(models.Model):
             'language': temba_contact.language,
             'uuid': temba_contact.uuid,
             'temba_modified_on': temba_contact.modified_on,
-            'fields': temba_contact.fields,
+            '_data_field_values': temba_contact.fields,  # managed by post-save signal
         }
 
     def push(self, change_type):
