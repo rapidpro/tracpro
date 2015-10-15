@@ -102,6 +102,12 @@ class ContactCRUDL(SmartCRUDL):
             if self.object.created_by_id:
                 fields.append('created_by')
 
+            # Show values for the visible data fields.
+            # Which data fields to show are configured on the Org edit page.
+            self.data_fields = [(f.key, f) for f in self.object.org.datafield_set.visible()]
+            self.data_fields = OrderedDict(self.data_fields)
+            fields.extend(self.data_fields.keys())
+
             return fields
 
         def get_last_response(self, obj):
@@ -111,10 +117,17 @@ class ContactCRUDL(SmartCRUDL):
         def lookup_field_label(self, context, field, default=None):
             if field == 'urn':
                 scheme = self.object.get_urn()[0]
-                for s, label in URN_SCHEME_CHOICES:
-                    if scheme == s:
-                        return label
+                return dict(URN_SCHEME_CHOICES)[scheme]
+            elif field in self.data_fields:
+                return self.data_fields.get(field).display_name
             return super(ContactCRUDL.Read, self).lookup_field_label(context, field, default)
+
+        def lookup_field_value(self, context, obj, field):
+            if field in self.data_fields:
+                value = self.data_fields.get(field).contactfield_set.filter(contact=obj)
+                value = value.first()
+                return value.get_value() or "-" if value else "Unknown"
+            return super(ContactCRUDL.Read, self).lookup_field_value(context, obj, field)
 
     class List(OrgPermsMixin, ContactFieldsMixin, ContactBase, SmartListView):
         default_order = ('name',)
