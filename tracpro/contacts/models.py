@@ -82,6 +82,7 @@ class Contact(models.Model):
         return self.name or self.get_urn()[1]
 
     def as_temba(self):
+        """Return a Temba object representing this Contact."""
         groups = [self.region.uuid]
         if self.group_id:
             groups.append(self.group.uuid)
@@ -89,12 +90,13 @@ class Contact(models.Model):
         temba_contact = TembaContact()
         temba_contact.name = self.name
         temba_contact.urns = [self.urn]
-        temba_contact.fields = {self.org.facility_code_field: self.facility_code}
+        temba_contact.fields = {
+            self.org.facility_code_field: self.facility_code,
+        }
         temba_contact.groups = groups
         temba_contact.language = self.language
         temba_contact.uuid = self.uuid
         return temba_contact
-
 
     @classmethod
     def get_or_fetch(cls, org, uuid):
@@ -102,15 +104,12 @@ class Contact(models.Model):
 
         If we don't find them locally, we try to fetch them from RapidPro.
         """
-        contacts = Contact.objects.filter(org=org, uuid=uuid)
-        contacts = contacts.select_related('region', 'group')
-        contact = contacts.first()
-        if contact:
-            return contact
-        temba_contact = org.get_temba_client().get_contact(uuid)
-        return cls.objects.create(**cls.kwargs_from_temba(org, temba_contact))
-
-        return qs
+        contacts = cls.objects.filter(org=org).select_related('region', 'group')
+        try:
+            return contacts.get(uuid=uuid)
+        except cls.DoesNotExist:
+            temba_contact = org.get_temba_client().get_contact(uuid)
+            return cls.objects.create(**cls.kwargs_from_temba(org, temba_contact))
 
     def get_responses(self, include_empty=True):
         from tracpro.polls.models import Response
@@ -125,12 +124,11 @@ class Contact(models.Model):
 
     @classmethod
     def kwargs_from_temba(cls, org, temba_contact):
-        name = temba_contact.name or ""
-
-        org_region_uuids = [r.uuid for r in Region.get_all(org)]
+        """Get data to create a Contact instance from a Temba object."""
+        # Set Use the first Temba Group that is used for a region.
+        org_region_uuids = Region.get_all(org).values_list('uuid', flat=True)
         region_uuids = intersection(org_region_uuids, temba_contact.groups)
-        region = Region.objects.get(org=org, uuid=region_uuids[0]) if region_uuids else None
-
+        region = Region.objects.get_all(org).filter(uuid=region_uuids[0])
         if not region:
             raise ValueError(
                 "Unable to save contact {c.uuid} ({c.name}) because none of "
@@ -139,26 +137,26 @@ class Contact(models.Model):
                     c=temba_contact,
                     groups=', '.join(temba_contact.groups)))
 
-        org_group_uuids = [g.uuid for g in Group.get_all(org)]
+        # Set contact's reporter group to first Temba group that matches a
+        # known reporter group.
+        org_group_uuids = Group.get_all(org).values_list('uuid', flat=True)
         group_uuids = intersection(org_group_uuids, temba_contact.groups)
-        group = Group.objects.get(org=org, uuid=group_uuids[0]) if group_uuids else None
-
-        facility_code = temba_contact.fields.get(org.facility_code_field, None)
+        group = Group.objects.get_all(org).filter(uuid=group_uuids[0])
 
         return {
             'org': org,
-            'name': name,
+            'name': temba_contact.name,
             'urn': temba_contact.urns[0],
             'region': region,
             'group': group,
             'language': temba_contact.language,
-            'facility_code': facility_code,
+            'facility_code': temba_contact.fields.get(org.facility_code_field, None),
             'uuid': temba_contact.uuid,
             'temba_modified_on': temba_contact.modified_on,
         }
 
     def push(self, change_type):
-        push_contact_change.delay(self.id, change_type)
+        push_contact_change.delay(self.pk, change_type)
 
     def release(self):
         self.is_active = False
