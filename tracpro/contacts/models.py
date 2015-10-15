@@ -8,7 +8,6 @@ from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 
-from dash.utils import intersection
 from dash.utils.sync import ChangeType
 
 from temba_client.types import Contact as TembaContact
@@ -128,10 +127,16 @@ class Contact(models.Model):
     @classmethod
     def kwargs_from_temba(cls, org, temba_contact):
         """Get data to create a Contact instance from a Temba object."""
-        # Set Use the first Temba Group that is used for a region.
-        org_region_uuids = Region.get_all(org).values_list('uuid', flat=True)
-        region_uuids = intersection(org_region_uuids, temba_contact.groups)
-        region = Region.objects.get_all(org).filter(uuid=region_uuids[0])
+
+        def _get_first(model_class, temba_uuids):
+            """Return first obj from this org that matches one of the given uuids."""
+            queryset = model_class.get_all(org)
+            tracpro_uuids = queryset.values_list('uuid', flat=True)
+            uuid = next((uuid for uuid in temba_uuids if uuid in tracpro_uuids), None)
+            return queryset.get(uuid=uuid) if uuid else None
+
+        # Use the first Temba group that matches one of the org's Regions.
+        region = _get_first(Region, temba_contact.groups)
         if not region:
             raise ValueError(
                 "Unable to save contact {c.uuid} ({c.name}) because none of "
@@ -140,15 +145,12 @@ class Contact(models.Model):
                     c=temba_contact,
                     groups=', '.join(temba_contact.groups)))
 
-        # Set contact's reporter group to first Temba group that matches a
-        # known reporter group.
-        org_group_uuids = Group.get_all(org).values_list('uuid', flat=True)
-        group_uuids = intersection(org_group_uuids, temba_contact.groups)
-        group = Group.objects.get_all(org).filter(uuid=group_uuids[0])
+        # Use the first Temba group that matches one of the org's Groups.
+        group = _get_first(Group, temba_contact.groups)
 
         return {
             'org': org,
-            'name': temba_contact.name,
+            'name': temba_contact.name or "",
             'urn': temba_contact.urns[0],
             'region': region,
             'group': group,
@@ -156,6 +158,7 @@ class Contact(models.Model):
             'facility_code': temba_contact.fields.get(org.facility_code_field, None),
             'uuid': temba_contact.uuid,
             'temba_modified_on': temba_contact.modified_on,
+            'fields': temba_contact.fields,
         }
 
     def push(self, change_type):
