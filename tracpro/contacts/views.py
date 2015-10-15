@@ -22,56 +22,59 @@ from .forms import ContactForm
 from .models import Contact
 
 
-class ContactFormMixin(object):
-    """Mixin for views that use ContactForm."""
-
-    def get_form_kwargs(self):
-        kwargs = super(ContactFormMixin, self).get_form_kwargs()
-        kwargs['user'] = self.request.user
-        return kwargs
-
-    def get(self, request, *args, **kwargs):
-        if 'initial' in self.request.POST or 'initial' in self.request.GET:
-            initial = self.request.POST.get('initial', self.request.GET.get('initial'))
-            results = []
-            if initial:
-                lang = pycountry.languages.get(bibliographic=initial)
-                name = lang.name.split(';')[0]
-                results.append(dict(id=lang.bibliographic, text=name))
-            return JsonResponse(dict(results=results))
-
-        if 'search' in self.request.GET or 'search' in self.request.POST:
-            search = self.request.POST.get('search', self.request.GET.get('search'))
-            search = search.strip().lower()
-            results = []
-            for lang in pycountry.languages:
-                if len(results) == 10:
-                    break
-                if len(search) == 0 or search in lang.name.lower():
-                    results.append(dict(id=lang.bibliographic, text=lang.name))
-            return JsonResponse(dict(results=results))
-
-        return super(ContactFormMixin, self).get(request, *args, **kwargs)
-
-
-class ContactFieldsMixin(object):
-
-    def get_urn(self, obj):
-        # TODO indicate different urn types with icon?
-        return obj.get_urn()[1]
-
-    def lookup_field_label(self, context, field, default=None):
-        if field == 'urn':
-            return _("Phone/Twitter")
-
-        return super(ContactFieldsMixin, self).lookup_field_label(context, field, default)
-
-
 class ContactCRUDL(SmartCRUDL):
     model = Contact
     actions = ('create', 'read', 'update', 'delete', 'list')
 
-    class Create(OrgPermsMixin, ContactFormMixin, SmartCreateView):
+    class ContactBase(object):
+
+        def get_queryset(self):
+            regions = self.request.user.get_all_regions(self.request.org)
+            qs = super(ContactCRUDL.ContactBase, self).get_queryset()
+            qs = qs.by_org(self.request.org).by_regions(regions).active()
+            return qs
+
+    class ContactFormMixin(object):
+
+        def get(self, request, *args, **kwargs):
+            if 'initial' in self.request.POST or 'initial' in self.request.GET:
+                initial = self.request.POST.get('initial', self.request.GET.get('initial'))
+                results = []
+                if initial:
+                    lang = pycountry.languages.get(bibliographic=initial)
+                    name = lang.name.split(';')[0]
+                    results.append(dict(id=lang.bibliographic, text=name))
+                return JsonResponse(dict(results=results))
+
+            if 'search' in self.request.GET or 'search' in self.request.POST:
+                search = self.request.POST.get('search', self.request.GET.get('search'))
+                search = search.strip().lower()
+                results = []
+                for lang in pycountry.languages:
+                    if len(results) == 10:
+                        break
+                    if len(search) == 0 or search in lang.name.lower():
+                        results.append(dict(id=lang.bibliographic, text=lang.name))
+                return JsonResponse(dict(results=results))
+
+            return super(ContactCRUDL.ContactFormMixin, self).get(request, *args, **kwargs)
+
+        def get_form_kwargs(self):
+            kwargs = super(ContactCRUDL.ContactFormMixin, self).get_form_kwargs()
+            kwargs['user'] = self.request.user
+            return kwargs
+
+    class ContactFieldsMixin(object):
+
+        def get_language(self, obj):
+            if obj.language:
+                return pycountry.languages.get(bibliographic=obj.language).name
+            return None
+
+        def get_urn(self, obj):
+            return obj.get_urn()[1]  # TODO indicate different urn types with icon?
+
+    class Create(OrgPermsMixin, ContactFormMixin, ContactBase, SmartCreateView):
         fields = ('name', 'urn', 'region', 'group', 'facility_code', 'language')
         form_class = ContactForm
 
@@ -85,23 +88,16 @@ class ContactCRUDL(SmartCRUDL):
             obj.push(ChangeType.created)
             return obj
 
-    class Update(OrgObjPermsMixin, ContactFormMixin, SmartUpdateView):
+    class Update(OrgObjPermsMixin, ContactFormMixin, ContactBase, SmartUpdateView):
         fields = ('name', 'urn', 'region', 'group', 'facility_code', 'language')
         form_class = ContactForm
-
-        def get_queryset(self):
-            regions = self.request.user.get_all_regions(self.request.org)
-            qs = super(ContactCRUDL.Update, self).get_queryset()
-            qs = qs.filter(org=self.request.org, region__in=regions)
-            qs = qs.filter(is_active=True)
-            return qs
 
         def post_save(self, obj):
             obj = super(ContactCRUDL.Update, self).post_save(obj)
             obj.push(ChangeType.updated)
             return obj
 
-    class Read(OrgObjPermsMixin, SmartReadView):
+    class Read(OrgObjPermsMixin, ContactFieldsMixin, ContactBase, SmartReadView):
 
         def derive_fields(self):
             fields = ['urn', 'region', 'group', 'facility_code', 'language',
@@ -109,21 +105,6 @@ class ContactCRUDL(SmartCRUDL):
             if self.object.created_by_id:
                 fields.append('created_by')
             return fields
-
-        def get_queryset(self):
-            regions = self.request.user.get_all_regions(self.request.org)
-            qs = super(ContactCRUDL.Read, self).get_queryset()
-            qs = qs.filter(org=self.request.org, region__in=regions)
-            qs = qs.filter(is_active=True)
-            return qs
-
-        def get_urn(self, obj):
-            return obj.get_urn()[1]
-
-        def get_language(self, obj):
-            if obj.language:
-                return pycountry.languages.get(bibliographic=obj.language).name
-            return None
 
         def get_last_response(self, obj):
             last_response = obj.responses.order_by('-updated_on').first()
@@ -135,10 +116,9 @@ class ContactCRUDL(SmartCRUDL):
                 for s, label in URN_SCHEME_CHOICES:
                     if scheme == s:
                         return label
-
             return super(ContactCRUDL.Read, self).lookup_field_label(context, field, default)
 
-    class List(OrgPermsMixin, ContactFieldsMixin, SmartListView):
+    class List(OrgPermsMixin, ContactFieldsMixin, ContactBase, SmartListView):
         default_order = ('name',)
         search_fields = ('name__icontains', 'urn__icontains')
 
