@@ -179,3 +179,50 @@ class Contact(models.Model):
     def save(self, *args, **kwargs):
         self.name = self.name or ""  # RapidPro might return blank or null values.
         return super(Contact, self).save(*args, **kwargs)
+
+
+class DataFieldQuerySet(models.QuerySet):
+
+    def visible(self):
+        return self.filter(show_on_tracpro=True)
+
+    def by_org(self, org):
+        return self.filter(org=org)
+
+
+class DataField(models.Model):
+    """Custom contact data fields defined on RapidPro.
+
+    https://app.rapidpro.io/api/v1/fields
+    """
+    TYPE_TEXT = "T"
+    TYPE_DECIMAL = "N"
+    TYPE_DATETIME = "D"
+    TYPE_STATE = "S"
+    TYPE_DISTRICT = "I"
+    TYPE_CHOICES = (
+        (TYPE_TEXT, _("Text")),
+        (TYPE_DECIMAL, _("Decimal Number")),
+        (TYPE_DATETIME, _("Datetime")),
+        (TYPE_STATE, _("State")),
+        (TYPE_DISTRICT, _("District")),
+    )
+
+    org = models.ForeignKey("orgs.Org")
+    label = models.CharField(max_length=255, blank=True)
+    key = models.CharField(max_length=255)
+    value_type = models.CharField(max_length=1, choices=TYPE_CHOICES)
+    show_on_tracpro = models.BooleanField(default=False)
+
+    objects = DataFieldQuerySet.as_manager()
+
+    class Meta:
+        ordering = ('label', 'key')
+        unique_together = [('org', 'key')]
+
+    def __str__(self):
+        return self.display_name
+
+    @property
+    def display_name(self):
+        return (self.label or self.key).title()
