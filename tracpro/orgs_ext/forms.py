@@ -4,6 +4,8 @@ from django.utils.translation import ugettext_lazy as _
 
 from dash.orgs.forms import OrgForm
 
+from tracpro.contacts.models import DataField
+
 
 class OrgExtForm(OrgForm):
     """Also configure available languages for this organization.
@@ -16,6 +18,10 @@ class OrgExtForm(OrgForm):
     available_languages = forms.MultipleChoiceField(
         choices=settings.LANGUAGES,
         help_text=_("The languages used by administrators in your organization"))
+    contact_fields = forms.MultipleChoiceField(
+        choices=[], required=False,
+        help_text=_("Custom contact data fields that should be visible "
+                    "and editable in TracPro."))
 
     def __init__(self, *args, **kwargs):
         super(OrgExtForm, self).__init__(*args, **kwargs)
@@ -29,6 +35,21 @@ class OrgExtForm(OrgForm):
         # available_languages is a config field so must be set explicitly.
         self.fields['available_languages'].initial = self.instance.available_languages or []
 
+        if not self.instance.pk:
+            # We don't have this org's API key yet,
+            # so we can't get available fields from the RapidPro API.
+            self.fields.pop('contact_fields')
+        else:
+            # Make sure we have the most up-to-date field information.
+            # NOTE: This makes an in-band request to an external API.
+            DataField.objects.sync(self.instance)
+
+            queryset = self.instance.datafield_set.all()
+            choices = [(f.key, f.display_name) for f in queryset]
+            initial = list(queryset.visible().values_list('key', flat=True))
+            self.fields['contact_fields'].choices = choices
+            self.fields['contact_fields'].initial = initial
+
     def clean(self):
         """Ensure the default language is chosen from the available languages."""
         language = self.cleaned_data.get('language')
@@ -41,9 +62,15 @@ class OrgExtForm(OrgForm):
         return self.cleaned_data
 
     def save(self, *args, **kwargs):
-        """Save the available languages config field."""
-        available_languages = self.cleaned_data['available_languages'] or []
-        self.instance.available_languages = available_languages
+        # Set the available_languages config field.
+        if 'available_languages' in self.fields:
+            available_languages = self.cleaned_data.get('available_languages')
+            self.instance.available_languages = available_languages or []
+
+        if 'contact_fields' in self.fields:
+            # Set hook that will be picked up by a post-save signal.
+            self.instance._visible_data_fields = self.cleaned_data.get('contact_fields')
+
         return super(OrgExtForm, self).save(*args, **kwargs)
 
 

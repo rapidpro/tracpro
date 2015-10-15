@@ -189,6 +189,38 @@ class DataFieldQuerySet(models.QuerySet):
     def by_org(self, org):
         return self.filter(org=org)
 
+    def show_on_tracpro(self):
+        return self.update(show_on_tracpro=True)
+
+    def hide_on_tracpro(self):
+        return self.update(show_on_tracpro=False)
+
+
+class DataFieldManager(models.Manager.from_queryset(DataFieldQuerySet)):
+
+    def sync(self, org):
+        """Update the org's DataFields from RapidPro."""
+        # Retrieve current DataFields known to RapidPro.
+        temba_fields = {t.key: t for t in org.get_temba_client().get_fields()}
+
+        # Remove DataFields (and corresponding values per contact) that are no
+        # longer on RapidPro.
+        DataField.objects.by_org(org).exclude(key__in=temba_fields.keys()).delete()
+
+        # Create new or update existing DataFields to match RapidPro data.
+        for key, temba_field in temba_fields.items():
+            field, _ = DataField.objects.get_or_create(org=org, key=key)
+            field.label = temba_field.label
+            field.value_type = temba_field.value_type
+            field.save()
+
+        return temba_fields.keys()
+
+    def set_active_for_org(self, org, keys):
+        fields = DataField.objects.by_org(org)
+        fields.filter(key__in=keys).show_on_tracpro()
+        fields.exclude(key__in=keys).hide_on_tracpro()
+
 
 class DataField(models.Model):
     """Custom contact data fields defined on RapidPro.
@@ -214,7 +246,7 @@ class DataField(models.Model):
     value_type = models.CharField(max_length=1, choices=TYPE_CHOICES)
     show_on_tracpro = models.BooleanField(default=False)
 
-    objects = DataFieldQuerySet.as_manager()
+    objects = DataFieldManager()
 
     class Meta:
         ordering = ('label', 'key')

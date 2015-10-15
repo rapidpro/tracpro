@@ -28,8 +28,8 @@ class OrgExtCRUDL(OrgCRUDL):
     class Update(OrgCRUDL.Update):
         form_class = forms.OrgExtForm
         fields = ('is_active', 'name', 'available_languages', 'language',
-                  'timezone', 'subdomain', 'api_token', 'logo',
-                  'administrators')
+                  'contact_fields', 'timezone', 'subdomain', 'api_token',
+                  'logo', 'administrators')
 
     class Home(OrgCRUDL.Home):
         fields = ('name', 'timezone', 'facility_code_field', 'api_token',

@@ -12,6 +12,8 @@ class DashOrgConfig(AppConfig):
 
     def ready(self):
         """Monkey patching for the orgs.Org class."""
+        from . import signals  # noqa
+
         Org = self.get_model('Org')
 
         def _org_clean(org):
