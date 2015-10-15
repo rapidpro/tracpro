@@ -1,5 +1,6 @@
 from __future__ import absolute_import, unicode_literals
 
+from django.db.models.loading import get_model
 from django.utils import timezone
 
 from celery.utils.log import get_task_logger
@@ -79,3 +80,25 @@ def sync_all_contacts():
     logger.info("Starting contact sync for all orgs...")
     for org in Org.objects.filter(is_active=True):
         run_org_task(org, sync_org_contacts)
+
+
+@task
+def sync_all_fields():
+    """Remove any contact fields that have been removed remotely."""
+    logger.info("Syncing DataFields for active orgs.")
+    for org in Org.objects.filter(is_active=True):
+        run_org_task(org, sync_org_fields)
+    logger.info("Finished syncing DataFields for active orgs.")
+
+
+@task
+def sync_org_fields(org_pk):
+    """Sync an org's DataFields.
+
+    Syncs DataField info and removes any DataFields (and associated contact
+    values) that are no longer on the remote.
+    """
+    org = Org.objects.get(pk=org_pk)
+    logger.info("Syncing fields for {}.".format(org.name))
+    get_model('contacts', 'DataField').objects.sync(org)
+    logger.info("Finished syncing fields for {}.".format(org.name))
