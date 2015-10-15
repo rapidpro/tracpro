@@ -368,5 +368,3 @@ SITE_CHOOSER_TEMPLATE = 'org_chooser.html'
 SITE_HOST_PATTERN = 'http://%s.localhost:8000'
 
 SITE_USER_HOME = '/'
-
-TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
