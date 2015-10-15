@@ -39,16 +39,19 @@ class Contact(models.Model):
     org = models.ForeignKey(
         'orgs.Org', verbose_name=_("Organization"), related_name="contacts")
     name = models.CharField(
-        verbose_name=_("Name"), max_length=128, blank=True,
+        verbose_name=_("Full name"), max_length=128, blank=True,
         help_text=_("The name of this contact"))
     urn = models.CharField(
-        verbose_name=_("URN"), max_length=255)
+        verbose_name=_("Phone/Twitter"),
+        max_length=255,
+        help_text=_("Phone number or Twitter handle of this contact."))
     region = models.ForeignKey(
         'groups.Region', verbose_name=_("Region"), related_name='contacts',
-        help_text=_("Region or state this contact lives in"))
+        help_text=_("Region where this contact lives."))
     group = models.ForeignKey(
         'groups.Group', null=True, verbose_name=_("Reporter group"),
-        related_name='contacts')
+        related_name='contacts',
+        help_text=_("Reporter group to which this contact belongs."))
     facility_code = models.CharField(
         max_length=160, verbose_name=_("Facility Code"), null=True, blank=True,
         help_text=_("Facility code for this contact"))
