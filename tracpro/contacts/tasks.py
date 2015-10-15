@@ -1,6 +1,6 @@
 from __future__ import absolute_import, unicode_literals
 
-from django.db.models.loading import get_model
+from django.apps import apps
 from django.utils import timezone
 
 from celery.utils.log import get_task_logger
@@ -100,5 +100,5 @@ def sync_org_fields(org_pk):
     """
     org = Org.objects.get(pk=org_pk)
     logger.info("Syncing fields for {}.".format(org.name))
-    get_model('contacts', 'DataField').objects.sync(org)
+    apps.get_model('contacts', 'DataField').objects.sync(org)
     logger.info("Finished syncing fields for {}.".format(org.name))
