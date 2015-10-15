@@ -1,6 +1,9 @@
 from __future__ import absolute_import, unicode_literals
 
+import datetime
 from uuid import uuid4
+
+from dateutil.parser import parse
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -258,3 +261,41 @@ class DataField(models.Model):
     @property
     def display_name(self):
         return (self.label or self.key).title()
+
+
+class ContactFieldQuerySet(models.QuerySet):
+
+    def visible(self):
+        return self.filter(field__show_on_tracpro=True)
+
+
+class ContactField(models.Model):
+    """Many-to-many relationship to represent a Contact's value for a DataField."""
+    contact = models.ForeignKey('contacts.Contact')
+    field = models.ForeignKey('contacts.DataField')
+    value = models.CharField(max_length=255, null=True)
+
+    objects = ContactFieldQuerySet.as_manager()
+
+    def __str__(self):
+        return "{} {}: {}".format(self.contact, self.field, self.get_value())
+
+    def get_value(self):
+        """Retrieve the value of this instance according to the DataField type."""
+        if self.value is None:
+            return None
+        elif self.field.value_type == DataField.TYPE_DATETIME:
+            return parse(self.value)
+        elif self.field.value_type == DataField.TYPE_DECIMAL:
+            return float(self.value)
+        else:
+            return self.value
+
+    def set_value(self, value):
+        """Serialize the value on this instance according to its type."""
+        if value is None:
+            self.value = None
+        elif isinstance(value, datetime.datetime):
+            self.value = value.isoformat()
+        else:
+            self.value = str(value)
