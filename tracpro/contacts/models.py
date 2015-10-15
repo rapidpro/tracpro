@@ -161,7 +161,8 @@ class Contact(models.Model):
     def push(self, change_type):
         push_contact_change.delay(self.pk, change_type)
 
-    def release(self):
+    def delete(self):
+        """Deactivate the local copy & delete from RapidPro."""
         self.is_active = False
         self.save()
         self.push(ChangeType.deleted)

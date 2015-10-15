@@ -8,9 +8,7 @@ from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from dash.utils import get_obj_cacheable
 from dash.utils.sync import ChangeType
 
-from django.core.exceptions import PermissionDenied
-from django.core.urlresolvers import reverse
-from django.http import HttpResponseRedirect, JsonResponse
+from django.http import JsonResponse
 from django.utils.translation import ugettext_lazy as _
 
 from smartmin.users.views import (
@@ -194,14 +192,6 @@ class ContactCRUDL(SmartCRUDL):
                 qs = qs.filter(region__in=self.request.data_regions)
             return qs
 
-    class Delete(OrgObjPermsMixin, SmartDeleteView):
+    class Delete(OrgObjPermsMixin, ContactBase, SmartDeleteView):
         cancel_url = '@contacts.contact_list'
-
-        def post(self, request, *args, **kwargs):
-            self.object = self.get_object()
-            if self.request.user.has_region_access(self.object.region):
-                self.pre_delete(self.object)
-                self.object.release()
-                return HttpResponseRedirect(reverse('contacts.contact_list'))
-            else:
-                raise PermissionDenied()
+        redirect_url = '@contacts.contact_list'

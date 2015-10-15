@@ -125,8 +125,8 @@ class ContactTest(TracProDataTest):
         BROKER_BACKEND='memory',
     )
     @mock.patch('dash.orgs.models.TembaClient.delete_contact')
-    def test_release(self, mock_delete_contact):
-        self.contact1.release()
+    def test_delete(self, mock_delete_contact):
+        self.contact1.delete()
         self.assertFalse(self.contact1.is_active)
 
         self.assertEqual(mock_delete_contact.call_count, 1)
