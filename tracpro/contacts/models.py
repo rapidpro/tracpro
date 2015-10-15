@@ -81,6 +81,21 @@ class Contact(models.Model):
     def __str__(self):
         return self.name or self.get_urn()[1]
 
+    def as_temba(self):
+        groups = [self.region.uuid]
+        if self.group_id:
+            groups.append(self.group.uuid)
+
+        temba_contact = TembaContact()
+        temba_contact.name = self.name
+        temba_contact.urns = [self.urn]
+        temba_contact.fields = {self.org.facility_code_field: self.facility_code}
+        temba_contact.groups = groups
+        temba_contact.language = self.language
+        temba_contact.uuid = self.uuid
+        return temba_contact
+
+
     @classmethod
     def get_or_fetch(cls, org, uuid):
         """Gets a contact by UUID.
@@ -96,6 +111,17 @@ class Contact(models.Model):
         return cls.objects.create(**cls.kwargs_from_temba(org, temba_contact))
 
         return qs
+
+    def get_responses(self, include_empty=True):
+        from tracpro.polls.models import Response
+        qs = self.responses.filter(pollrun__poll__is_active=True, is_active=True)
+        qs = qs.select_related('pollrun')
+        if not include_empty:
+            qs = qs.exclude(status=Response.STATUS_EMPTY)
+        return qs
+
+    def get_urn(self):
+        return tuple(self.urn.split(':', 1))
 
     @classmethod
     def kwargs_from_temba(cls, org, temba_contact):
@@ -131,33 +157,8 @@ class Contact(models.Model):
             'temba_modified_on': temba_contact.modified_on,
         }
 
-    def as_temba(self):
-        groups = [self.region.uuid]
-        if self.group_id:
-            groups.append(self.group.uuid)
-
-        temba_contact = TembaContact()
-        temba_contact.name = self.name
-        temba_contact.urns = [self.urn]
-        temba_contact.fields = {self.org.facility_code_field: self.facility_code}
-        temba_contact.groups = groups
-        temba_contact.language = self.language
-        temba_contact.uuid = self.uuid
-        return temba_contact
-
     def push(self, change_type):
         push_contact_change.delay(self.id, change_type)
-
-    def get_urn(self):
-        return tuple(self.urn.split(':', 1))
-
-    def get_responses(self, include_empty=True):
-        from tracpro.polls.models import Response
-        qs = self.responses.filter(pollrun__poll__is_active=True, is_active=True)
-        qs = qs.select_related('pollrun')
-        if not include_empty:
-            qs = qs.exclude(status=Response.STATUS_EMPTY)
-        return qs
 
     def release(self):
         self.is_active = False
