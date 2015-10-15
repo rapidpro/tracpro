@@ -1,7 +1,6 @@
 from __future__ import absolute_import, unicode_literals
 
 import datetime
-from uuid import uuid4
 
 from dateutil.parser import parse
 
@@ -35,9 +34,15 @@ class ContactQuerySet(models.QuerySet):
 
 class ContactManager(models.Manager.from_queryset(ContactQuerySet)):
 
-    def create(self, **kwargs):
+    def create(self, org, region, group=None, **kwargs):
+        if org.pk != region.org_id:
+            raise ValidationError("Region does not belong to Org.")
+        if group and org.pk != group.org_id:
+            raise ValidationError("Group does not belong to Org.")
+
         data_field_values = kwargs.pop('_data_field_values', None)
-        contact = super(ContactManager, self).create(**kwargs)
+        contact = super(ContactManager, self).create(
+            org=org, region=region, group=group, **kwargs)
         contact._data_field_values = data_field_values
         return contact
 
@@ -179,12 +184,6 @@ class Contact(models.Model):
         self.is_active = False
         self.save()
         self.push(ChangeType.deleted)
-
-    def clean(self):
-        if self.org.pk != self.region.org_id:
-            raise ValidationError("Region does not belong to Org.")
-        if self.group and self.org.pk != self.group.org_id:
-            raise ValidationError("Group does not belong to Org.")
 
     def save(self, *args, **kwargs):
         self.name = self.name or ""  # RapidPro might return blank or null values.

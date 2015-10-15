@@ -26,16 +26,22 @@ class ContactCRUDLTest(TracProDataTest):
         # submit with no fields entered
         response = self.url_post('unicef', url, dict())
         self.assertEqual(response.status_code, 200)
+        form = response.context['form']
+        self.assertEqual(len(form.errors), 4, form.errors)
         self.assertFormError(response, 'form', 'name', 'This field is required.')
         self.assertFormError(response, 'form', 'urn', 'This field is required.')
         self.assertFormError(response, 'form', 'region', 'This field is required.')
+        self.assertFormError(response, 'form', 'group', 'This field is required.')
 
         # submit again with all fields
-        data = dict(
-            name="Mo Polls", urn_0="tel", urn_1="5678",
-            region=self.region1.pk, group=self.group1.pk,
-            language='eng')
-        response = self.url_post('unicef', url, data)
+        response = self.url_post('unicef', url, {
+            'name': "Mo Polls",
+            'urn_0': "tel",
+            'urn_1': "5678",
+            'region': self.region1.pk,
+            'group': self.group1.pk,
+            'language': 'eng',
+        })
         self.assertEqual(response.status_code, 302)
 
         # check new contact and profile
@@ -49,19 +55,25 @@ class ContactCRUDLTest(TracProDataTest):
         self.login(self.user1)
 
         # try to create contact in region we don't have access to
-        data = dict(
-            name="Mo Polls II", urn_0="tel", urn_1="5678",
-            region=self.region3.pk, group=self.group1.pk)
-        response = self.url_post('unicef', url, data)
+        response = self.url_post('unicef', url, {
+            'name': "Mo Polls II",
+            'urn_0': "tel",
+            'urn_1': "5678",
+            'region': self.region3.pk,
+            'group': self.group1.pk,
+        })
         self.assertFormError(response, 'form', 'region',
                              "Select a valid choice. That choice is not one "
                              "of the available choices.")
 
         # try again but this time in a region we do have access to
-        data = dict(
-            name="Mo Polls II", urn_0="tel", urn_1="5678",
-            region=self.region1.pk, group=self.group1.pk)
-        response = self.url_post('unicef', url, data)
+        response = self.url_post('unicef', url, {
+            'name': "Mo Polls II",
+            'urn_0': "tel",
+            'urn_1': "5678",
+            'region': self.region1.pk,
+            'group': self.group1.pk,
+        })
         self.assertEqual(response.status_code, 302)
 
         # test ajax querying for languages
@@ -89,10 +101,14 @@ class ContactCRUDLTest(TracProDataTest):
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
 
-        data = dict(name="Morris", urn_0="tel", urn_1="6789",
-                    region=self.region1.pk, group=self.group2.pk,
-                    language='kin')
-        response = self.url_post('unicef', url, data)
+        response = self.url_post('unicef', url, {
+            'name': "Morris",
+            'urn_0': "tel",
+            'urn_1': "6789",
+            'region': self.region1.pk,
+            'group': self.group2.pk,
+            'language': 'kin',
+        })
         self.assertEqual(response.status_code, 302)
 
         # check updated contact and profile

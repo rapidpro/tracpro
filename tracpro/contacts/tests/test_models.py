@@ -6,6 +6,7 @@ from temba_client.types import Contact as TembaContact
 
 from django.test.utils import override_settings
 from django.utils import timezone
+from dash.utils.sync import ChangeType
 
 from tracpro.polls.models import Response
 from tracpro.test import factories
@@ -24,14 +25,25 @@ class ContactTest(TracProDataTest):
     @mock.patch('dash.orgs.models.TembaClient.create_contact')
     def test_create(self, mock_create_contact):
         mock_create_contact.return_value = TembaContact.create(
-            uuid='C-007', name="Mo Polls",
-            urns=['tel:078123'], groups=['G-001', 'G-005'],
+            uuid='C-007',
+            name="Mo Polls",
+            urns=['tel:078123'],
+            groups=['G-001', 'G-005'],
             fields={},
-            language='eng', modified_on=timezone.now())
+            language='eng',
+            modified_on=timezone.now(),
+        )
 
         contact = factories.Contact(
-            org=self.unicef, created_by=self.user1, modified_by=self.user1,
-            urn="tel:078123", region=self.region1, group=self.group1)
+            name="Mo Polls",
+            org=self.unicef,
+            created_by=self.user1,
+            modified_by=self.user1,
+            urn="tel:078123",
+            region=self.region1,
+            group=self.group1,
+            language="eng",
+        )
 
         self.assertEqual(contact.name, "Mo Polls")
         self.assertEqual(contact.urn, 'tel:078123')
@@ -42,8 +54,10 @@ class ContactTest(TracProDataTest):
         self.assertEqual(contact.modified_by, self.user1)
         self.assertIsNotNone(contact.modified_on)
 
+        contact.push(ChangeType.created)
+
         # reload and check UUID was updated by push task
-        contact = Contact.objects.get(pk=contact.pk)
+        contact.refresh_from_db()
         self.assertEqual(contact.uuid, 'C-007')
 
         self.assertEqual(mock_create_contact.call_count, 1)
@@ -66,10 +80,16 @@ class ContactTest(TracProDataTest):
     def test_kwargs_from_temba(self):
         modified_date = timezone.now()
         temba_contact = TembaContact.create(
-            uuid='C-007', name="Jan", urns=['tel:123'],
+            uuid='C-007',
+            name="Jan",
+            urns=['tel:123'],
             groups=['G-001', 'G-007'],
-            fields={'gender': 'M'},
-            language='eng', modified_on=modified_date)
+            fields={
+                'gender': 'M',
+            },
+            language='eng',
+            modified_on=modified_date,
+        )
 
         kwargs = Contact.kwargs_from_temba(self.unicef, temba_contact)
         self.assertDictEqual(kwargs, {
@@ -81,6 +101,9 @@ class ContactTest(TracProDataTest):
             'group': self.group3,
             'language': 'eng',
             'temba_modified_on': modified_date,
+            '_data_field_values': {
+                'gender': 'M',
+            },
         })
 
         # try creating contact from them
