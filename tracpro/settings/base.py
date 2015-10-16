@@ -179,6 +179,7 @@ MIDDLEWARE_CLASSES = (
     'dash.orgs.middleware.SetOrgMiddleware',
     'tracpro.profiles.middleware.ForcePasswordChangeMiddleware',
     'tracpro.groups.middleware.UserRegionsMiddleware',
+    'tracpro.orgs_ext.middleware.HandleTembaAPIError',
 )
 
 ROOT_URLCONF = 'tracpro.urls'

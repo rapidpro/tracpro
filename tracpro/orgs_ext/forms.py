@@ -57,8 +57,10 @@ class SimpleOrgEditForm(OrgForm):
 
     def __init__(self, *args, **kwargs):
         super(SimpleOrgEditForm, self).__init__(*args, **kwargs)
+
+        temba_fields = self.instance.get_temba_client().get_fields()
         field_choices = [(f.key, '{} ({})'.format(f.label, f.key))
-                         for f in self.instance.get_temba_client().get_fields()]
+                         for f in temba_fields]
         self.fields['facility_code_field'].choices = field_choices
         self.fields['facility_code_field'].initial = self.instance.facility_code_field
 
