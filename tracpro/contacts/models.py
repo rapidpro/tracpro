@@ -116,6 +116,12 @@ class Contact(models.Model):
 
         return temba_contact
 
+    def delete(self):
+        """Deactivate the local copy & delete from RapidPro."""
+        self.is_active = False
+        self.save()
+        self.push(ChangeType.deleted)
+
     @classmethod
     def get_or_fetch(cls, org, uuid):
         """Gets a contact by UUID.
@@ -178,12 +184,6 @@ class Contact(models.Model):
 
     def push(self, change_type):
         push_contact_change.delay(self.pk, change_type)
-
-    def delete(self):
-        """Deactivate the local copy & delete from RapidPro."""
-        self.is_active = False
-        self.save()
-        self.push(ChangeType.deleted)
 
     def save(self, *args, **kwargs):
         self.name = self.name or ""  # RapidPro might return blank or null values.
