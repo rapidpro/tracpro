@@ -5,48 +5,35 @@ from tracpro.groups.models import Group, Region
 from tracpro.groups.fields import ModifiedLevelTreeNodeChoiceField
 
 from .fields import URNField
-from . import models
+from .models import Contact
 
 
 class ContactForm(forms.ModelForm):
-    urn = URNField(label=_("Phone/Twitter"))
+    name = forms.CharField(max_length=128, label=_("Full name"))
+    urn = URNField(
+        label=_("Phone/Twitter"),
+        help_text=_("Phone number or Twitter handle of this contact."))
     region = ModifiedLevelTreeNodeChoiceField(
-        label=_("Region"), empty_label="", queryset=Region.objects.none())
+        label=_("Region"), empty_label="",
+        queryset=Region.objects.none(),
+        help_text=_("Region where this contact lives."))
+    group = forms.ModelChoiceField(
+        label=_("Reporter Group"), empty_label="",
+        queryset=Group.objects.none(),
+        help_text=_("Reporter Group to which this contact belongs."))
+    facility_code = forms.CharField(
+        label=_("Facility Code"), max_length=16, required=False)
+    language = forms.CharField(
+        label=_("Language"), required=False,
+        widget=forms.TextInput(attrs={'class': 'language-field'}))
 
     class Meta:
-        model = models.Contact
-        fields = ['name', 'urn', 'region', 'group', 'language']
-        widgets = {
-            'language': forms.TextInput(attrs={'class': 'language-field'}),
-        }
+        model = Contact
+        fields = forms.ALL_FIELDS
 
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user')
-        org = self.user.get_org()
         super(ContactForm, self).__init__(*args, **kwargs)
-
-        self.instance.org = org
-        self.instance.modified_by = self.user
-        if not self.instance.pk:
-            self.instance.created_by = self.user
-
-        self.fields['name'].required = True
-        self.fields['group'].required = True
-
+        org = self.user.get_org()
         self.fields['region'].queryset = self.user.get_all_regions(org)
-        self.fields['group'].empty_label = ""
         self.fields['group'].queryset = Group.get_all(org).order_by('name')
-
-        # Add form fields to update contact's DataField values.
-        self.data_field_keys = []
-        values = {v.field.key: v.get_value() for v in self.instance.contactfield_set.all()}
-        for field in org.datafield_set.visible():
-            self.data_field_keys.append(field.key)
-            initial = values.get(field.key, None)
-            self.fields[field.key] = field.get_form_field(initial=initial)
-
-    def save(self, commit=True):
-        # Updating DataField values is managed by a post-save signal.
-        field_values = {f: self.cleaned_data.pop(f, None) for f in self.data_field_keys}
-        self.instance._data_field_values = field_values
-        return super(ContactForm, self).save(commit)
