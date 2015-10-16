@@ -34,31 +34,7 @@ class ContactQuerySet(models.QuerySet):
 
 
 class ContactManager(models.Manager.from_queryset(ContactQuerySet)):
-
-    def create(self, org, region, group=None, uuid=None, **kwargs):
-        if org.pk != region.org_id:
-            raise ValidationError("Region does not belong to Org.")
-        if group and org.pk != group.org_id:
-            raise ValidationError("Group does not belong to Org.")
-
-        if not uuid:
-            # There will be no UUID if we are creating this Contact
-            # (rather than importing from RapidPro).
-            # Create a temporary but unique UUID.
-            # NOTE: This UUID will be updated when the new Contact is pushed
-            # to RapidPro!
-            uuid = str(uuid4())
-            push_created = True
-        else:
-            push_created = False
-
-        contact = super(ContactManager, self).create(
-            org=org, region=region, group=group, uuid=uuid, **kwargs)
-
-        if push_created:
-            contact.push(ChangeType.created)
-
-        return contact
+    pass
 
 
 @python_2_unicode_compatible
@@ -204,8 +180,31 @@ class Contact(models.Model):
         push_contact_change.delay(self.pk, change_type)
 
     def save(self, *args, **kwargs):
-        self.name = self.name or ""  # RapidPro might return blank or null values.
-        return super(Contact, self).save(*args, **kwargs)
+        if self.org.pk != self.region.org_id:
+            raise ValidationError("Region does not belong to Org.")
+        if self.group and self.org.pk != self.group.org_id:
+            raise ValidationError("Group does not belong to Org.")
+
+        # RapidPro might return blank or null values.
+        self.name = self.name or ""
+
+        if not self.uuid:
+            # There will be no UUID if we are creating this Contact
+            # (rather than importing from RapidPro).
+            # Create a temporary but unique UUID.
+            # NOTE: This UUID will be updated when the new Contact is pushed
+            # to RapidPro!
+            self.uuid = str(uuid4())
+            push_created = True
+        else:
+            push_created = False
+
+        contact = super(Contact, self).save(*args, **kwargs)
+
+        if push_created:
+            self.push(ChangeType.created)
+
+        return contact
 
 
 class DataFieldQuerySet(models.QuerySet):
