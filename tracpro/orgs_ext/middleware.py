@@ -10,7 +10,7 @@ class HandleTembaAPIError(object):
     def process_exception(self, request, exception):
 
         rapidProConnectionErrorString = _(
-            "RapidPro appears to be down right now or we cannot connect due to your internet connection. "
+            "RapidPro appears to be down right now. "
             "Please try again later.")
 
         if isinstance(exception, TembaAPIError):
