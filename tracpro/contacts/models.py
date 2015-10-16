@@ -1,17 +1,13 @@
 from __future__ import absolute_import, unicode_literals
 
-import datetime
 from uuid import uuid4
 
-from dateutil.parser import parse
-
-from django import forms
 from django.conf import settings
-from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 
+from dash.utils import intersection
 from dash.utils.sync import ChangeType
 
 from temba_client.types import Contact as TembaContact
@@ -21,49 +17,30 @@ from tracpro.groups.models import Region, Group
 from .tasks import push_contact_change
 
 
-class ContactQuerySet(models.QuerySet):
-
-    def active(self):
-        return self.filter(is_active=True)
-
-    def by_org(self, org):
-        return self.filter(org=org)
-
-    def by_regions(self, regions):
-        return self.filter(region__in=regions)
-
-
-class ContactManager(models.Manager.from_queryset(ContactQuerySet)):
-    pass
-
-
 @python_2_unicode_compatible
 class Contact(models.Model):
     """Corresponds to a RapidPro contact."""
 
-    uuid = models.CharField(
-        max_length=36, unique=True)
+    uuid = models.CharField(max_length=36, unique=True)
     org = models.ForeignKey(
         'orgs.Org', verbose_name=_("Organization"), related_name="contacts")
     name = models.CharField(
-        verbose_name=_("Full name"), max_length=128, blank=True,
+        verbose_name=_("Name"), max_length=128, blank=True,
         help_text=_("The name of this contact"))
-    urn = models.CharField(
-        verbose_name=_("Phone/Twitter"),
-        max_length=255,
-        help_text=_("Phone number or Twitter handle of this contact."))
+    urn = models.CharField(verbose_name=_("URN"), max_length=255)
     region = models.ForeignKey(
         'groups.Region', verbose_name=_("Region"), related_name='contacts',
-        help_text=_("Region where this contact lives."))
+        help_text=_("Region or state this contact lives in"))
     group = models.ForeignKey(
         'groups.Group', null=True, verbose_name=_("Reporter group"),
-        related_name='contacts',
-        help_text=_("Reporter group to which this contact belongs."))
+        related_name='contacts')
+    facility_code = models.CharField(
+        max_length=160, verbose_name=_("Facility Code"), null=True, blank=True,
+        help_text=_("Facility code for this contact"))
     language = models.CharField(
         max_length=3, verbose_name=_("Language"), null=True, blank=True,
         help_text=_("Language for this contact"))
 
-    # Metadata.
     is_active = models.BooleanField(
         default=True, help_text=_("Whether this contact is active"))
     created_by = models.ForeignKey(
@@ -78,43 +55,36 @@ class Contact(models.Model):
     modified_on = models.DateTimeField(
         auto_now=True,
         help_text="When this item was last modified")
-    temba_modified_on = models.DateTimeField(
-        null=True,
-        help_text="When this item was last modified in Temba",
-        editable=False)
-
-    objects = ContactManager()
-
-    def __init__(self, *args, **kwargs):
-        self._data_field_values = kwargs.pop('_data_field_values', None)
-        super(Contact, self).__init__(*args, **kwargs)
 
     def __str__(self):
         return self.name or self.get_urn()[1]
 
-    def as_temba(self):
-        """Return a Temba object representing this Contact."""
-        groups = [self.region.uuid]
-        if self.group_id:
-            groups.append(self.group.uuid)
+    @classmethod
+    def create(cls, org, user, name, urn, region, group, facility_code,
+               language, uuid=None):
+        if org.pk != region.org_id or org.pk != group.org_id:  # pragma: no cover
+            raise ValueError("Region or group does not belong to org")
 
-        fields = {f.field.key: f.get_value() for f in self.contactfield_set.all()}
+        # if we don't have a UUID, then we created this contact
+        if not uuid:
+            do_push = True
+            uuid = str(uuid4())
+        else:
+            do_push = False
 
-        temba_contact = TembaContact()
-        temba_contact.name = self.name
-        temba_contact.urns = [self.urn]
-        temba_contact.fields = fields
-        temba_contact.groups = groups
-        temba_contact.language = self.language
-        temba_contact.uuid = self.uuid
+        if name is None:  # RapidPro can send us blank or null names
+            name = ""
 
-        return temba_contact
+        # create contact
+        contact = cls.objects.create(
+            org=org, name=name, urn=urn, region=region, group=group,
+            facility_code=facility_code, language=language,
+            uuid=uuid, created_by=user, modified_by=user)
 
-    def delete(self):
-        """Deactivate the local copy & delete from RapidPro."""
-        self.is_active = False
-        self.save()
-        self.push(ChangeType.deleted)
+        if do_push:
+            contact.push(ChangeType.created)
+
+        return contact
 
     @classmethod
     def get_or_fetch(cls, org, uuid):
@@ -122,12 +92,73 @@ class Contact(models.Model):
 
         If we don't find them locally, we try to fetch them from RapidPro.
         """
-        contacts = cls.objects.filter(org=org).select_related('region', 'group')
-        try:
-            return contacts.get(uuid=uuid)
-        except cls.DoesNotExist:
-            temba_contact = org.get_temba_client().get_contact(uuid)
-            return cls.objects.create(**cls.kwargs_from_temba(org, temba_contact))
+        contacts = Contact.objects.filter(org=org, uuid=uuid)
+        contacts = contacts.select_related('region', 'group')
+        contact = contacts.first()
+        if contact:
+            return contact
+        temba_contact = org.get_temba_client().get_contact(uuid)
+        return cls.objects.create(**cls.kwargs_from_temba(org, temba_contact))
+
+    @classmethod
+    def get_all(cls, org, regions=None):
+        qs = cls.objects.filter(org=org, is_active=True)
+        if regions is not None:
+            qs = qs.filter(region__in=regions)
+        return qs
+
+    @classmethod
+    def kwargs_from_temba(cls, org, temba_contact):
+        name = temba_contact.name or ""
+
+        org_region_uuids = [r.uuid for r in Region.get_all(org)]
+        region_uuids = intersection(org_region_uuids, temba_contact.groups)
+        region = Region.objects.get(org=org, uuid=region_uuids[0]) if region_uuids else None
+
+        if not region:
+            raise ValueError(
+                "Unable to save contact {c.uuid} ({c.name}) because none of "
+                "their groups match an active Region for this org: "
+                "{groups}".format(
+                    c=temba_contact,
+                    groups=', '.join(temba_contact.groups)))
+
+        org_group_uuids = [g.uuid for g in Group.get_all(org)]
+        group_uuids = intersection(org_group_uuids, temba_contact.groups)
+        group = Group.objects.get(org=org, uuid=group_uuids[0]) if group_uuids else None
+
+        facility_code = temba_contact.fields.get(org.facility_code_field, None)
+
+        return {
+            'org': org,
+            'name': name,
+            'urn': temba_contact.urns[0],
+            'region': region,
+            'group': group,
+            'language': temba_contact.language,
+            'facility_code': facility_code,
+            'uuid': temba_contact.uuid,
+        }
+
+    def as_temba(self):
+        groups = [self.region.uuid]
+        if self.group_id:
+            groups.append(self.group.uuid)
+
+        temba_contact = TembaContact()
+        temba_contact.name = self.name
+        temba_contact.urns = [self.urn]
+        temba_contact.fields = {self.org.facility_code_field: self.facility_code}
+        temba_contact.groups = groups
+        temba_contact.language = self.language
+        temba_contact.uuid = self.uuid
+        return temba_contact
+
+    def push(self, change_type):
+        push_contact_change.delay(self.id, change_type)
+
+    def get_urn(self):
+        return tuple(self.urn.split(':', 1))
 
     def get_responses(self, include_empty=True):
         from tracpro.polls.models import Response
@@ -137,197 +168,7 @@ class Contact(models.Model):
             qs = qs.exclude(status=Response.STATUS_EMPTY)
         return qs
 
-    def get_urn(self):
-        return tuple(self.urn.split(':', 1))
-
-    @classmethod
-    def kwargs_from_temba(cls, org, temba_contact):
-        """Get data to create a Contact instance from a Temba object."""
-
-        def _get_first(model_class, temba_uuids):
-            """Return first obj from this org that matches one of the given uuids."""
-            queryset = model_class.get_all(org)
-            tracpro_uuids = queryset.values_list('uuid', flat=True)
-            uuid = next((uuid for uuid in temba_uuids if uuid in tracpro_uuids), None)
-            return queryset.get(uuid=uuid) if uuid else None
-
-        # Use the first Temba group that matches one of the org's Regions.
-        region = _get_first(Region, temba_contact.groups)
-        if not region:
-            raise ValueError(
-                "Unable to save contact {c.uuid} ({c.name}) because none of "
-                "their groups match an active Region for this org: "
-                "{groups}".format(
-                    c=temba_contact,
-                    groups=', '.join(temba_contact.groups)))
-
-        # Use the first Temba group that matches one of the org's Groups.
-        group = _get_first(Group, temba_contact.groups)
-
-        return {
-            'org': org,
-            'name': temba_contact.name or "",
-            'urn': temba_contact.urns[0],
-            'region': region,
-            'group': group,
-            'language': temba_contact.language,
-            'uuid': temba_contact.uuid,
-            'temba_modified_on': temba_contact.modified_on,
-            '_data_field_values': temba_contact.fields,  # managed by post-save signal
-        }
-
-    def push(self, change_type):
-        push_contact_change.delay(self.pk, change_type)
-
-    def save(self, *args, **kwargs):
-        if self.org.pk != self.region.org_id:
-            raise ValidationError("Region does not belong to Org.")
-        if self.group and self.org.pk != self.group.org_id:
-            raise ValidationError("Group does not belong to Org.")
-
-        # RapidPro might return blank or null values.
-        self.name = self.name or ""
-
-        if not self.uuid:
-            # There will be no UUID if we are creating this Contact
-            # (rather than importing from RapidPro).
-            # Create a temporary but unique UUID.
-            # NOTE: This UUID will be updated when the new Contact is pushed
-            # to RapidPro!
-            self.uuid = str(uuid4())
-            push_created = True
-        else:
-            push_created = False
-
-        contact = super(Contact, self).save(*args, **kwargs)
-
-        if push_created:
-            self.push(ChangeType.created)
-
-        return contact
-
-
-class DataFieldQuerySet(models.QuerySet):
-
-    def visible(self):
-        return self.filter(show_on_tracpro=True)
-
-    def by_org(self, org):
-        return self.filter(org=org)
-
-    def show_on_tracpro(self):
-        return self.update(show_on_tracpro=True)
-
-    def hide_on_tracpro(self):
-        return self.update(show_on_tracpro=False)
-
-
-class DataFieldManager(models.Manager.from_queryset(DataFieldQuerySet)):
-
-    def sync(self, org):
-        """Update the org's DataFields from RapidPro."""
-        # Retrieve current DataFields known to RapidPro.
-        temba_fields = {t.key: t for t in org.get_temba_client().get_fields()}
-
-        # Remove DataFields (and corresponding values per contact) that are no
-        # longer on RapidPro.
-        DataField.objects.by_org(org).exclude(key__in=temba_fields.keys()).delete()
-
-        # Create new or update existing DataFields to match RapidPro data.
-        for key, temba_field in temba_fields.items():
-            field, _ = DataField.objects.get_or_create(org=org, key=key)
-            field.label = temba_field.label
-            field.value_type = temba_field.value_type
-            field.save()
-
-        return temba_fields.keys()
-
-    def set_active_for_org(self, org, keys):
-        fields = DataField.objects.by_org(org)
-        fields.filter(key__in=keys).show_on_tracpro()
-        fields.exclude(key__in=keys).hide_on_tracpro()
-
-
-class DataField(models.Model):
-    """Custom contact data fields defined on RapidPro.
-
-    https://app.rapidpro.io/api/v1/fields
-    """
-    TYPE_TEXT = "T"
-    TYPE_DECIMAL = "N"
-    TYPE_DATETIME = "D"
-    TYPE_STATE = "S"
-    TYPE_DISTRICT = "I"
-    TYPE_CHOICES = (
-        (TYPE_TEXT, _("Text")),
-        (TYPE_DECIMAL, _("Decimal Number")),
-        (TYPE_DATETIME, _("Datetime")),
-        (TYPE_STATE, _("State")),
-        (TYPE_DISTRICT, _("District")),
-    )
-
-    org = models.ForeignKey("orgs.Org")
-    label = models.CharField(max_length=255, blank=True)
-    key = models.CharField(max_length=255)
-    value_type = models.CharField(max_length=1, choices=TYPE_CHOICES)
-    show_on_tracpro = models.BooleanField(default=False)
-
-    objects = DataFieldManager()
-
-    class Meta:
-        ordering = ('label', 'key')
-        unique_together = [('org', 'key')]
-
-    def __str__(self):
-        return self.display_name
-
-    @property
-    def display_name(self):
-        return (self.label or self.key).title()
-
-    def get_form_field(self, **kwargs):
-        if self.value_type == DataField.TYPE_DATETIME:
-            field_type = forms.DateTimeField
-        elif self.value_type == DataField.TYPE_DECIMAL:
-            field_type = forms.DecimalField
-        else:
-            field_type = forms.CharField
-        return field_type(label=self.display_name, required=False, **kwargs)
-
-
-class ContactFieldQuerySet(models.QuerySet):
-
-    def visible(self):
-        return self.filter(field__show_on_tracpro=True)
-
-
-class ContactField(models.Model):
-    """Many-to-many relationship to represent a Contact's value for a DataField."""
-    contact = models.ForeignKey('contacts.Contact')
-    field = models.ForeignKey('contacts.DataField')
-    value = models.CharField(max_length=255, null=True)
-
-    objects = ContactFieldQuerySet.as_manager()
-
-    def __str__(self):
-        return "{} {}: {}".format(self.contact, self.field, self.get_value())
-
-    def get_value(self):
-        """Retrieve the value of this instance according to the DataField type."""
-        if self.value is None:
-            return None
-        elif self.field.value_type == DataField.TYPE_DATETIME:
-            return parse(self.value)
-        elif self.field.value_type == DataField.TYPE_DECIMAL:
-            return float(self.value)
-        else:
-            return self.value
-
-    def set_value(self, value):
-        """Serialize the value on this instance according to its type."""
-        if value is None:
-            self.value = None
-        elif isinstance(value, datetime.datetime):
-            self.value = value.isoformat()
-        else:
-            self.value = str(value)
+    def release(self):
+        self.is_active = False
+        self.save()
+        self.push(ChangeType.deleted)

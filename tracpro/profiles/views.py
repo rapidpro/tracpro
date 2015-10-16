@@ -145,13 +145,11 @@ class UserCRUDL(SmartCRUDL):
             return fields
 
         def get_queryset(self):
+            queryset = super(UserCRUDL.Read, self).get_queryset()
+
             # only allow access to active users attached to this org
             org = self.request.org
-            qs = super(UserCRUDL.Read, self).get_queryset()
-            qs = qs.filter(Q(org_editors=org) | Q(org_admins=org))
-            qs = qs.filter(is_active=True)
-            qs = qs.distinct()
-            return qs
+            return queryset.filter(Q(org_editors=org) | Q(org_admins=org)).filter(is_active=True)
 
         def get_context_data(self, **kwargs):
             context = super(UserCRUDL.Read, self).get_context_data(**kwargs)

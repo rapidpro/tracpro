@@ -78,7 +78,7 @@ class TestBaselineTermCRUDL(TracProDataTest):
         # This should delete the single BaselineTerm and redirect
         self.assertEqual(response.status_code, 302)
         self.assertRedirects(
-            response, 'http://unicef.testserver/indicators/', fetch_redirect_response=False)
+            response, 'http://unicef.testserver/baselineterm/', fetch_redirect_response=False)
         self.assertEqual(BaselineTerm.objects.all().count(), 0)
 
     def test_update(self):
@@ -97,7 +97,7 @@ class TestBaselineTermCRUDL(TracProDataTest):
         baselineterm_updated = BaselineTerm.objects.get(pk=self.baselineterm.pk)
         self.assertRedirects(
             response,
-            'http://unicef.testserver/indicators/read/%d/' % self.baselineterm.pk,
+            'http://unicef.testserver/baselineterm/read/%d/' % self.baselineterm.pk,
             fetch_redirect_response=False)
         self.assertEqual(baselineterm_updated.name, "Baseline Term Updated")
 
@@ -146,7 +146,7 @@ class TestBaselineTermCRUDL(TracProDataTest):
         self.assertEqual(response.status_code, 302)
         self.assertRedirects(
             response,
-            'http://unicef.testserver/indicators/',
+            'http://unicef.testserver/baselineterm/',
             fetch_redirect_response=False)
 
         # Check new spoofed data created successfully
