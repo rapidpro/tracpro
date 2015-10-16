@@ -1,8 +1,10 @@
+from dash.orgs.forms import OrgForm
+
+import requests
+
 from django import forms
 from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
-
-from dash.orgs.forms import OrgForm
 
 from tracpro.contacts.models import DataField
 
@@ -40,9 +42,19 @@ class OrgExtForm(OrgForm):
             # so we can't get available fields from the RapidPro API.
             self.fields.pop('contact_fields')
         else:
-            # Make sure we have the most up-to-date field information.
-            # NOTE: This makes an in-band request to an external API.
-            DataField.objects.sync(self.instance)
+            try:
+                # Make sure we have the most up-to-date DataField info.
+                # NOTE: This makes an in-band request to an external API.
+                DataField.objects.sync(self.instance)
+            except TembaAPIError as e:
+                good = False
+                if isinstance(e.caused_by, requests.HTTPError):
+                    if e.caused_by.response and e.caused_by.response.status_code == 403:
+                        # Org has an invalid API key, but user needs to be
+                        # able to access this form in order to update it.
+                        good = True
+                if not good:
+                    raise
 
             queryset = self.instance.datafield_set.all()
             choices = [(f.key, f.display_name) for f in queryset]
