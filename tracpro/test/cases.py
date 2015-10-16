@@ -12,6 +12,7 @@ from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.test import TestCase
 
+from tracpro.contacts.models import Contact
 from tracpro.groups.models import Group, Region
 from tracpro.polls.models import Question
 
@@ -36,6 +37,7 @@ class TracProTest(TestCase):
             name=name, timezone=timezone, subdomain=subdomain,
             api_token=str(uuid4()), created_by=self.superuser,
             modified_by=self.superuser)
+        org.set_config('facility_code_field', 'facility_code')
         return org
 
     def create_region(self, org, name, uuid):
@@ -57,9 +59,8 @@ class TracProTest(TestCase):
 
     def create_contact(self, org, name, urn, region, group, uuid):
         user = org.administrators.first()
-        return factories.Contact(
-            org=org, name=name, urn=urn, region=region, group=group, uuid=uuid,
-            language='eng', created_by=user, modified_by=user)
+        return Contact.create(
+            org, user, name, urn, region, group, 'FC123', 'eng', uuid)
 
     def login(self, user):
         result = self.client.login(username=user.username, password=user.username)

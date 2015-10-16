@@ -1,7 +1,5 @@
 from __future__ import unicode_literals
 
-import mock
-
 from django.core.exceptions import NON_FIELD_ERRORS
 from django.test import override_settings, TestCase
 
@@ -10,7 +8,6 @@ from tracpro.test import factories
 from .. import forms
 
 
-@mock.patch('tracpro.contacts.models.DataFieldManager.sync')
 @override_settings(LANGUAGES=[
     ('en', 'English'),
     ('es', 'Spanish'),
@@ -33,18 +30,18 @@ class TestOrgExtForm(TestCase):
             'administrators': [self.user.pk],
         }
 
-    def test_available_languages_initial_for_create(self, mock_sync):
+    def test_available_languages_initial_for_create(self):
         """Available languages should default to empty list when creating an org."""
         form = self.form_class(instance=None)
         self.assertEqual(form.fields['available_languages'].initial, [])
 
-    def test_available_languages_initial_for_update(self, mock_sync):
+    def test_available_languages_initial_for_update(self):
         """Available languages should be set from the instance to update."""
         org = factories.Org(available_languages=['en', 'es'])
         form = self.form_class(instance=org)
         self.assertEqual(form.fields['available_languages'].initial, ['en', 'es'])
 
-    def test_default_language_required_for_create(self, mock_sync):
+    def test_default_language_required_for_create(self):
         """Form should require a default language for new orgs."""
         self.data.pop('language')
         form = self.form_class(data=self.data, instance=None)
@@ -54,7 +51,7 @@ class TestOrgExtForm(TestCase):
         self.assertEqual(form.errors['language'],
                          ['This field is required.'])
 
-    def test_default_language_required_for_update(self, mock_sync):
+    def test_default_language_required_for_update(self):
         """Form should require a default language when updating an org."""
         self.data.pop('language')
         form = self.form_class(data=self.data, instance=factories.Org())
@@ -64,7 +61,7 @@ class TestOrgExtForm(TestCase):
         self.assertEqual(form.errors['language'],
                          ['This field is required.'])
 
-    def test_available_languages_required_for_create(self, mock_sync):
+    def test_available_languages_required_for_create(self):
         """Form should require available languages for new orgs."""
         self.data.pop('available_languages')
         form = self.form_class(data=self.data, instance=None)
@@ -74,7 +71,7 @@ class TestOrgExtForm(TestCase):
         self.assertEqual(form.errors['available_languages'],
                          ['This field is required.'])
 
-    def test_available_languages_required_for_update(self, mock_sync):
+    def test_available_languages_required_for_update(self):
         """Form should require available languages for new orgs."""
         self.data.pop('available_languages')
         form = self.form_class(data=self.data, instance=factories.Org())
@@ -84,7 +81,7 @@ class TestOrgExtForm(TestCase):
         self.assertEqual(form.errors['available_languages'],
                          ['This field is required.'])
 
-    def test_default_language_not_in_available_languages(self, mock_sync):
+    def test_default_language_not_in_available_languages(self):
         """Form should require that default language is in available languages."""
         self.data['language'] = 'fr'
         form = self.form_class(data=self.data)
@@ -96,7 +93,7 @@ class TestOrgExtForm(TestCase):
                           'available for this organization.'],
                          form.errors)
 
-    def test_available_languages_no_change(self, mock_sync):
+    def test_available_languages_no_change(self):
         """Form should allow available languages to remain unchanged."""
         org = factories.Org(
             available_languages=['en', 'es'],
@@ -109,7 +106,7 @@ class TestOrgExtForm(TestCase):
         self.assertEqual(org.available_languages, ['en', 'es'])
         self.assertEqual(org.language, 'en')
 
-    def test_add_available_languages(self, mock_sync):
+    def test_add_available_languages(self):
         """Form should allow addition of available language(s)."""
         org = factories.Org(
             available_languages=['en', 'es'],
@@ -123,7 +120,7 @@ class TestOrgExtForm(TestCase):
         self.assertEqual(org.available_languages, ['en', 'es', 'fr'])
         self.assertEqual(org.language, 'en')
 
-    def test_remove_available_languages(self, mock_sync):
+    def test_remove_available_languages(self):
         """Form should allow removal of available language(s)."""
         org = factories.Org(
             available_languages=['en', 'es'],
@@ -137,7 +134,7 @@ class TestOrgExtForm(TestCase):
         self.assertEqual(org.available_languages, ['en'])
         self.assertEqual(org.language, 'en')
 
-    def test_remove_default_from_available(self, mock_sync):
+    def test_remove_default_from_available(self):
         """Form should error if default language is removed from available languages."""
         org = factories.Org(
             available_languages=['en', 'es'],

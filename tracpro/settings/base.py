@@ -130,10 +130,6 @@ LOGGING = {
         }
     },
     'loggers': {
-        'celery': {
-            'handlers': ['file', 'mail_admins'],
-            'level': 'INFO',
-        },
         'httprouterthread': {
             'handlers': ['file'],
             'level': 'INFO',
@@ -179,7 +175,6 @@ MIDDLEWARE_CLASSES = (
     'dash.orgs.middleware.SetOrgMiddleware',
     'tracpro.profiles.middleware.ForcePasswordChangeMiddleware',
     'tracpro.groups.middleware.UserRegionsMiddleware',
-    'tracpro.orgs_ext.middleware.HandleTembaAPIError',
 )
 
 ROOT_URLCONF = 'tracpro.urls'
@@ -247,22 +242,17 @@ CELERYBEAT_SCHEDULE = {
     'sync-contacts': {
         'task': 'tracpro.contacts.tasks.sync_all_contacts',
         'schedule': datetime.timedelta(minutes=5),
-        'args': (),
-    },
-    'sync-fields': {
-        'task': 'tracpro.contacts.tasks.sync_all_fields',
-        'schedule': datetime.timedelta(days=1),
-        'args': (),
+        'args': ()
     },
     'fetch-runs': {
         'task': 'tracpro.polls.tasks.fetch_all_runs',
         'schedule': datetime.timedelta(minutes=5),
-        'args': (),
+        'args': ()
     },
     'fetch-inbox-messages': {
         'task': 'tracpro.msgs.tasks.fetch_all_inbox_messages',
         'schedule': datetime.timedelta(minutes=5),
-        'args': (),
+        'args': ()
     }
 }
 
@@ -314,6 +304,13 @@ GROUP_PERMISSIONS = {
 }
 
 ORG_CONFIG_FIELDS = [
+    {
+        'name': 'facility_code_field',
+        'field': {
+            'help_text': _("Contact field to use as the facility code"),
+            'required': True,
+        },
+    },
     {
         'name': 'available_languages',
         'field': {
@@ -367,3 +364,5 @@ SITE_CHOOSER_TEMPLATE = 'org_chooser.html'
 SITE_HOST_PATTERN = 'http://%s.localhost:8000'
 
 SITE_USER_HOME = '/'
+
+TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
