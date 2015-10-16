@@ -11,7 +11,7 @@ class HandleTembaAPIError(object):
 
     def process_exception(self, request, exception):
 
-        rapidProConnectionErrorString = _(
+        rapidpro_connection_error_string = _(
             "RapidPro appears to be down right now. "
             "Please try again later.")
 
@@ -25,10 +25,10 @@ class HandleTembaAPIError(object):
                               "Please edit the org through Site Manage or contact your administrator."))
 
                     elif response.status_code >= 500:
-                        return HttpResponseBadRequest(rapidProConnectionErrorString)
+                        return HttpResponseBadRequest(rapidpro_connection_error_string)
 
         elif isinstance(exception, TembaConnectionError):
             return HttpResponseBadRequest(
-                rapidProConnectionErrorString)
+                rapidpro_connection_error_string)
 
         return None
