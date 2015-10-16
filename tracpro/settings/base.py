@@ -179,6 +179,7 @@ MIDDLEWARE_CLASSES = (
     'dash.orgs.middleware.SetOrgMiddleware',
     'tracpro.profiles.middleware.ForcePasswordChangeMiddleware',
     'tracpro.groups.middleware.UserRegionsMiddleware',
+    'tracpro.orgs_ext.middleware.HandleTembaAPIError',
 )
 
 ROOT_URLCONF = 'tracpro.urls'
@@ -366,5 +367,3 @@ SITE_CHOOSER_TEMPLATE = 'org_chooser.html'
 SITE_HOST_PATTERN = 'http://%s.localhost:8000'
 
 SITE_USER_HOME = '/'
-
-TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'

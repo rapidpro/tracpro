@@ -1,9 +1,9 @@
 from __future__ import absolute_import, unicode_literals
 
+from django.utils.translation import ugettext_lazy as _
+
 from dash.orgs.views import OrgCRUDL, InferOrgMixin, OrgPermsMixin
 from dash.utils import ms_to_datetime
-
-from django.utils.translation import ugettext_lazy as _
 
 from smartmin.templatetags.smartmin import format_datetime
 from smartmin.views import SmartUpdateView
