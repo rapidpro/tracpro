@@ -27,6 +27,7 @@ from .utils import chart_baseline
 class BaselineTermCRUDL(SmartCRUDL):
     model = BaselineTerm
     actions = ('create', 'read', 'update', 'delete', 'list', 'data_spoof', 'clear_spoof')
+    path = "indicators"
 
     class Create(OrgPermsMixin, SmartCreateView):
         form_class = BaselineTermForm

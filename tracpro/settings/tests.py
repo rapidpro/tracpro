@@ -12,8 +12,6 @@ BROKER_URL = CELERY_RESULT_BACKEND = 'redis://localhost:6379/10'
 
 CELERY_ALWAYS_EAGER = True
 
-INSTALLED_APPS.append('django_nose'),
-
 PASSWORD_HASHERS = [
     'django.contrib.auth.hashers.SHA1PasswordHasher',
     'django.contrib.auth.hashers.MD5PasswordHasher',

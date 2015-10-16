@@ -7,7 +7,7 @@ $(function () {
             text: '{{ baselineterm.name|escapejs }}'
         },
         subtitle: {
-            text: 'Baseline: {{ baselineterm.baseline_question|escapejs }}, Follow Up: {{ baselineterm.follow_up_question|escapejs }}'
+            text: 'Baseline: {{ baselineterm.baseline_question|escapejs }}, Observations: {{ baselineterm.follow_up_question|escapejs }}'
         },
         xAxis: {
             categories: [
@@ -39,10 +39,10 @@ $(function () {
                 data: {{ baseline_list }}
             {% endif %}
         },
-        // Follow Up Data
+        // Observation Data
         {
             type: 'area',
-            name: 'Follow Up',
+            name: 'Observations',
             data: {{ follow_up_list }}
         }
         ]
