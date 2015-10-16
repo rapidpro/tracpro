@@ -1,5 +1,6 @@
 from __future__ import absolute_import, unicode_literals
 
+from django.apps import apps
 from django.utils import timezone
 
 from celery.utils.log import get_task_logger
@@ -49,7 +50,7 @@ def sync_org_contacts(org_id):
 
     sync_groups = [r.uuid for r in Region.get_all(org)] + [g.uuid for g in Group.get_all(org)]
 
-    most_recent_contact = Contact.get_all(org=org).filter(temba_modified_on__isnull=False)
+    most_recent_contact = Contact.objects.by_org(org).active().exclude(temba_modified_on=None)
     most_recent_contact = most_recent_contact.order_by('-temba_modified_on').first()
     if most_recent_contact:
         last_time = most_recent_contact.temba_modified_on
@@ -79,3 +80,25 @@ def sync_all_contacts():
     logger.info("Starting contact sync for all orgs...")
     for org in Org.objects.filter(is_active=True):
         run_org_task(org, sync_org_contacts)
+
+
+@task
+def sync_all_fields():
+    """Remove any contact fields that have been removed remotely."""
+    logger.info("Syncing DataFields for active orgs.")
+    for org in Org.objects.filter(is_active=True):
+        run_org_task(org, sync_org_fields)
+    logger.info("Finished syncing DataFields for active orgs.")
+
+
+@task
+def sync_org_fields(org_pk):
+    """Sync an org's DataFields.
+
+    Syncs DataField info and removes any DataFields (and associated contact
+    values) that are no longer on the remote.
+    """
+    org = Org.objects.get(pk=org_pk)
+    logger.info("Syncing fields for {}.".format(org.name))
+    apps.get_model('contacts', 'DataField').objects.sync(org)
+    logger.info("Finished syncing fields for {}.".format(org.name))

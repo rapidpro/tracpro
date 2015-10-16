@@ -28,12 +28,12 @@ class OrgExtCRUDL(OrgCRUDL):
     class Update(OrgCRUDL.Update):
         form_class = forms.OrgExtForm
         fields = ('is_active', 'name', 'available_languages', 'language',
-                  'timezone', 'subdomain', 'api_token', 'logo',
-                  'administrators')
+                  'contact_fields', 'timezone', 'subdomain', 'api_token',
+                  'logo', 'administrators')
 
     class Home(OrgCRUDL.Home):
-        fields = ('name', 'timezone', 'facility_code_field', 'api_token',
-                  'last_contact_sync', 'last_flow_run_fetch')
+        fields = ('name', 'timezone', 'api_token', 'last_contact_sync',
+                  'last_flow_run_fetch')
         field_config = {
             'api_token': {
                 'label': _("RapidPro API Token"),
@@ -66,8 +66,8 @@ class OrgExtCRUDL(OrgCRUDL):
                 return None
 
     class Edit(InferOrgMixin, OrgPermsMixin, SmartUpdateView):
-        fields = ('name', 'timezone', 'facility_code_field')
-        form_class = forms.SimpleOrgEditForm
+        fields = ('name', 'timezone')
+        form_class = forms.OrgExtForm
         permission = 'orgs.org_edit'
         success_url = '@orgs_ext.org_home'
         title = _("Edit My Organization")

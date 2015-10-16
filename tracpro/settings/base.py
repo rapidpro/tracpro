@@ -247,17 +247,22 @@ CELERYBEAT_SCHEDULE = {
     'sync-contacts': {
         'task': 'tracpro.contacts.tasks.sync_all_contacts',
         'schedule': datetime.timedelta(minutes=5),
-        'args': ()
+        'args': (),
+    },
+    'sync-fields': {
+        'task': 'tracpro.contacts.tasks.sync_all_fields',
+        'schedule': datetime.timedelta(days=1),
+        'args': (),
     },
     'fetch-runs': {
         'task': 'tracpro.polls.tasks.fetch_all_runs',
         'schedule': datetime.timedelta(minutes=5),
-        'args': ()
+        'args': (),
     },
     'fetch-inbox-messages': {
         'task': 'tracpro.msgs.tasks.fetch_all_inbox_messages',
         'schedule': datetime.timedelta(minutes=5),
-        'args': ()
+        'args': (),
     }
 }
 
@@ -309,13 +314,6 @@ GROUP_PERMISSIONS = {
 }
 
 ORG_CONFIG_FIELDS = [
-    {
-        'name': 'facility_code_field',
-        'field': {
-            'help_text': _("Contact field to use as the facility code"),
-            'required': True,
-        },
-    },
     {
         'name': 'available_languages',
         'field': {
