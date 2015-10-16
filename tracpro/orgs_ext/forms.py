@@ -1,12 +1,14 @@
 from dash.orgs.forms import OrgForm
 
-import requests
+from temba_client.base import TembaAPIError
 
 from django import forms
 from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
 
 from tracpro.contacts.models import DataField
+
+from . import utils
 
 
 class OrgExtForm(OrgForm):
@@ -47,13 +49,11 @@ class OrgExtForm(OrgForm):
                 # NOTE: This makes an in-band request to an external API.
                 DataField.objects.sync(self.instance)
             except TembaAPIError as e:
-                good = False
-                if isinstance(e.caused_by, requests.HTTPError):
-                    if e.caused_by.response and e.caused_by.response.status_code == 403:
-                        # Org has an invalid API key, but user needs to be
-                        # able to access this form in order to update it.
-                        good = True
-                if not good:
+                if utils.caused_by_bad_api_key(e):
+                    # Org has an invalid API key, but user needs to be
+                    # able to access this form in order to update it.
+                    pass
+                else:
                     raise
 
             queryset = self.instance.datafield_set.all()
