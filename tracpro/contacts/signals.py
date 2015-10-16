@@ -12,10 +12,12 @@ def set_data_field_values(sender, instance, **kwargs):
     By doing this, we can quickly show meaningful data when DataField
     visibility is toggled.
     """
-    data_field_values = getattr(instance, '_data_field_values', None)
-    if data_field_values is not None:
+    if not hasattr(instance, '_data_field_values'):
+        return
+
+    if instance._data_field_values is not None:
         data_fields = {f.key: f for f in instance.org.datafield_set.all()}
-        for key, value in data_field_values.items():
+        for key, value in instance._data_field_values.items():
             if key not in data_fields:
                 continue  # Don't update fields we don't have a record for.
 
@@ -26,3 +28,5 @@ def set_data_field_values(sender, instance, **kwargs):
                 contact=instance, field=data_fields[key])
             contact_field.set_value(value)
             contact_field.save()
+
+    del instance._data_field_values

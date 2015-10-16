@@ -41,8 +41,6 @@ class ContactManager(models.Manager.from_queryset(ContactQuerySet)):
         if group and org.pk != group.org_id:
             raise ValidationError("Group does not belong to Org.")
 
-        data_field_values = kwargs.pop('_data_field_values', None)
-
         if not uuid:
             # There will be no UUID if we are creating this Contact
             # (rather than importing from RapidPro).
@@ -55,8 +53,7 @@ class ContactManager(models.Manager.from_queryset(ContactQuerySet)):
             push_created = False
 
         contact = super(ContactManager, self).create(
-            org=org, region=region, group=group, **kwargs)
-        contact._data_field_values = data_field_values
+            org=org, region=region, group=group, uuid=uuid, **kwargs)
 
         if push_created:
             contact.push(ChangeType.created)
@@ -111,6 +108,10 @@ class Contact(models.Model):
         editable=False)
 
     objects = ContactManager()
+
+    def __init__(self, *args, **kwargs):
+        self._data_field_values = kwargs.pop('_data_field_values', None)
+        super(Contact, self).__init__(*args, **kwargs)
 
     def __str__(self):
         return self.name or self.get_urn()[1]
