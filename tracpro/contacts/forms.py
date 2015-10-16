@@ -1,5 +1,3 @@
-from uuid import uuid4
-
 from django import forms
 from django.utils.translation import ugettext_lazy as _
 
@@ -31,9 +29,6 @@ class ContactForm(forms.ModelForm):
         self.instance.modified_by = self.user
         if not self.instance.pk:
             self.instance.created_by = self.user
-            # Since we are creating this contact (rather than RapidPro),
-            # we must create a UUID for it.
-            self.instance.uuid = str(uuid4())
 
         self.fields['name'].required = True
         self.fields['group'].required = True
