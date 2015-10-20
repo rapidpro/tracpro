@@ -113,6 +113,7 @@ class InboxMessageCRUDL(SmartCRUDL):
             qs = InboxMessage.get_all(self.request.org, self.request.data_regions)
             qs = qs.select_related('contact')
             qs = qs.order_by('contact', '-created_on').distinct('contact')
+            qs = qs.distinct()
             return qs
 
         def lookup_field_link(self, context, field, obj):
