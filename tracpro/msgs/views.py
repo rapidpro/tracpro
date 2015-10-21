@@ -121,11 +121,15 @@ class InboxMessageCRUDL(SmartCRUDL):
         def order_queryset(self, qs):
             """
             Override the order_queryset() method from smartmin
+            This method errors because of the distinct('contact') filter
+            in derive_queryset so we needed to override it.
             """
             if '_order' in self.request.REQUEST:
                 order_by = self.request.REQUEST['_order']
-                qs = InboxMessage.objects.filter(pk__in=qs.values('pk'))
-                qs = qs.order_by(order_by)
+                # Only sort if order_by is a valid field in this object
+                if order_by.replace('-', '') in self.derive_fields():
+                    qs = InboxMessage.objects.filter(pk__in=qs.values('pk'))
+                    qs = qs.order_by(order_by)
 
             return qs
 
