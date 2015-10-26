@@ -45,7 +45,7 @@ class BaselineTermForm(forms.ModelForm):
         follow_up_question = cleaned_data.get("follow_up_question")
         if baseline_question and follow_up_question and baseline_question == follow_up_question:
             raise forms.ValidationError(
-                _("Baseline and observation questions should be different."))
+                _("Baseline and follow up questions should be different."))
 
         return cleaned_data
 
@@ -62,17 +62,17 @@ class SpoofDataForm(forms.Form):
         help_text=_("Select contacts for this set of spoofed data."))
     start_date = forms.DateField(
         help_text=_("Baseline poll data will be submitted on this date. "
-                    "Observation data will start on this date."))
+                    "Follow up data will start on this date."))
     end_date = forms.DateField(
-        help_text=_("Observation data will end on this date. "))
+        help_text=_("Follow up data will end on this date. "))
     baseline_question = QuestionModelChoiceField(
         queryset=Question.objects.all().order_by('poll__name', 'text'),
         help_text=_("Select a baseline question which will have numeric "
                     "answers only."))
     follow_up_question = QuestionModelChoiceField(
-        label=_("Observation Question"),
+        label=_("Follow Up Question"),
         queryset=Question.objects.all().order_by('poll__name', 'text'),
-        help_text=_("Select an observation up question which will have "
+        help_text=_("Select a follow up question which will have "
                     "numeric answers only."))
     baseline_minimum = forms.IntegerField(
         help_text=_("A baseline answer will be created for each contact "
@@ -81,12 +81,12 @@ class SpoofDataForm(forms.Form):
         help_text=_("A baseline answer will be created for each contact "
                     "within the minimum/maximum range."))
     follow_up_minimum = forms.IntegerField(
-        label=_("Observation Minimum"),
-        help_text=_("Observation answers will be created for each contact "
+        label=_("Follow Up Minimum"),
+        help_text=_("Follow up answers will be created for each contact "
                     "within the minimum/maximum range."))
     follow_up_maximum = forms.IntegerField(
-        label=_("Observation Maximum"),
-        help_text=_("Observation answers will be created for each contact "
+        label=_("Follow Up Maximum"),
+        help_text=_("Follow up answers will be created for each contact "
                     "within the minimum/maximum range."))
 
     def __init__(self, *args, **kwargs):
@@ -114,7 +114,7 @@ class SpoofDataForm(forms.Form):
         follow_up_question = cleaned_data.get("follow_up_question")
         if baseline_question and follow_up_question and baseline_question == follow_up_question:
             raise forms.ValidationError(
-                _("Baseline and observation questions should be different."))
+                _("Baseline and follow up questions should be different."))
 
         baseline_minimum = cleaned_data.get("baseline_minimum")
         baseline_maximum = cleaned_data.get("baseline_maximum")
@@ -126,6 +126,6 @@ class SpoofDataForm(forms.Form):
         follow_up_maximum = cleaned_data.get("follow_up_maximum")
         if follow_up_minimum and follow_up_maximum and follow_up_minimum > follow_up_maximum:
             raise forms.ValidationError(
-                _("Observation maximum should exceed or equal minimum."))
+                _("Follow up maximum should exceed or equal minimum."))
 
         return cleaned_data
