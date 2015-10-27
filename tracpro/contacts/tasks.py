@@ -58,7 +58,8 @@ def sync_org_contacts(org_id):
         last_time = None
 
     created, updated, deleted, failed = sync_pull_contacts(
-        org, Contact, fields=(), groups=sync_groups, last_time=last_time)
+        org, Contact, fields=(), groups=sync_groups, last_time=last_time,
+        delete_blocked=True)
 
     task_result = dict(time=datetime_to_ms(timezone.now()),
                        counts=dict(created=len(created),
