@@ -1,5 +1,6 @@
 from __future__ import absolute_import, unicode_literals
 import logging
+import time
 
 from django.core.urlresolvers import reverse
 from django.http import JsonResponse
@@ -167,8 +168,10 @@ class InboxMessageCRUDL(SmartCRUDL):
                 # Send the new inbox message through the temba task
                 send_unsolicited_message(self.request.org, request.POST.get('text'), self.contact)
                 logger.info("Sending a message to %s" % (self.contact))
-                # Run the task to pull all inbox messages for this org into the
+                # Wait 1 second to allow message to reach server then run the task
+                # to pull all inbox messages for this org into the
                 # local InboxMessage table
+                time.sleep(1)
                 fetch_inbox_messages(self.request.org.pk)
                 logger.info("Retrieving inbox messages for %s" % (self.request.org))
                 return redirect('msgs.inboxmessage_conversation', contact_id=self.contact.pk)
