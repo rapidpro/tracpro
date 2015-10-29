@@ -1,6 +1,8 @@
 from __future__ import absolute_import, unicode_literals
 
 import datetime
+from decimal import Decimal, InvalidOperation
+import logging
 from uuid import uuid4
 
 from dateutil.parser import parse
@@ -19,6 +21,9 @@ from temba_client.types import Contact as TembaContact
 from tracpro.groups.models import Region, Group
 
 from .tasks import push_contact_change
+
+
+logger = logging.getLogger(__name__)
 
 
 class ContactQuerySet(models.QuerySet):
@@ -317,9 +322,21 @@ class ContactField(models.Model):
         if self.value is None:
             return None
         elif self.field.value_type == DataField.TYPE_DATETIME:
-            return parse(self.value)
+            try:
+                return parse(self.value)
+            except ValueError:
+                logger.warning(
+                    "Unable to parse {} value for {} as datetime: {}".format(
+                        self.value, self.contact, self.value))
+                return None
         elif self.field.value_type == DataField.TYPE_DECIMAL:
-            return float(self.value)
+            try:
+                return Decimal(self.value)
+            except InvalidOperation:
+                logger.warning(
+                    "Unable to parse {} value for {} as decimal: {}".format(
+                        self.field, self.contact, self.value))
+                return None
         else:
             return self.value
 
