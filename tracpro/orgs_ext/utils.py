@@ -72,6 +72,6 @@ def caused_by_bad_api_key(exception):
     if isinstance(exception, TembaAPIError):
         if isinstance(exception.caused_by, HTTPError):
             response = exception.caused_by.response
-            if response and response.status_code == 403:
+            if response is not None and response.status_code == 403:
                 return True
     return False
