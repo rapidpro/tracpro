@@ -259,13 +259,13 @@ class DataField(models.Model):
     https://app.rapidpro.io/api/v1/fields
     """
     TYPE_TEXT = "T"
-    TYPE_DECIMAL = "N"
+    TYPE_NUMERIC = "N"
     TYPE_DATETIME = "D"
     TYPE_STATE = "S"
     TYPE_DISTRICT = "I"
     TYPE_CHOICES = (
         (TYPE_TEXT, _("Text")),
-        (TYPE_DECIMAL, _("Decimal Number")),
+        (TYPE_NUMERIC, _("Numeric")),
         (TYPE_DATETIME, _("Datetime")),
         (TYPE_STATE, _("State")),
         (TYPE_DISTRICT, _("District")),
@@ -293,7 +293,7 @@ class DataField(models.Model):
     def get_form_field(self, **kwargs):
         if self.value_type == DataField.TYPE_DATETIME:
             field_type = forms.DateTimeField
-        elif self.value_type == DataField.TYPE_DECIMAL:
+        elif self.value_type == DataField.TYPE_NUMERIC:
             field_type = forms.DecimalField
         else:
             field_type = forms.CharField
@@ -329,7 +329,7 @@ class ContactField(models.Model):
                     "Unable to parse {} value for {} as datetime: {}".format(
                         self.value, self.contact, self.value))
                 return None
-        elif self.field.value_type == DataField.TYPE_DECIMAL:
+        elif self.field.value_type == DataField.TYPE_NUMERIC:
             try:
                 return Decimal(self.value)
             except InvalidOperation:

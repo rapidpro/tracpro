@@ -18,7 +18,7 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('label', models.CharField(max_length=255, blank=True)),
                 ('key', models.CharField(max_length=255)),
-                ('value_type', models.CharField(max_length=1, choices=[('T', 'Text'), ('N', 'Decimal Number'), ('D', 'Datetime'), ('S', 'State'), ('I', 'District')])),
+                ('value_type', models.CharField(max_length=1, choices=[('T', 'Text'), ('N', 'Numeric'), ('D', 'Datetime'), ('S', 'State'), ('I', 'District')])),
                 ('show_on_tracpro', models.BooleanField(default=False)),
                 ('org', models.ForeignKey(to='orgs.Org')),
             ],
