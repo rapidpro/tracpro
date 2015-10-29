@@ -60,9 +60,18 @@ def run_org_task(org, task):
     try:
         return task(org.pk)
     except TembaAPIError as e:
-        if isinstance(e.caused_by, HTTPError):
-            if e.caused_by.response.status_code == 403:
-                logger.warning(
-                    "API token for {} is invalid.".format(org), exc_info=True)
-                return None
+        if caused_by_bad_api_key(e):
+            logger.warning(
+                "API token for {} is invalid.".format(org), exc_info=True)
+            return None
         raise
+
+
+def caused_by_bad_api_key(exception):
+    """Return whether the exception was likely caused by a bad API key."""
+    if isinstance(exception, TembaAPIError):
+        if isinstance(exception.caused_by, HTTPError):
+            response = exception.caused_by.response
+            if response is not None and response.status_code == 403:
+                return True
+    return False

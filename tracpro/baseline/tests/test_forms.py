@@ -58,7 +58,7 @@ class BaselineTermFormTest(TracProDataTest):
         self.assertEqual(len(form.errors), 1, form.errors)
         self.assertTrue(NON_FIELD_ERRORS in form.errors, form.errors)
         self.assertEqual(form.errors[NON_FIELD_ERRORS],
-                         ['Baseline question and follow up question should be different.'],
+                         ['Baseline and follow up questions should be different.'],
                          form.errors)
 
 
@@ -107,7 +107,7 @@ class SpoofDataFormTest(TracProDataTest):
         self.assertEqual(len(form.errors), 1, form.errors)
         self.assertTrue(NON_FIELD_ERRORS in form.errors, form.errors)
         self.assertEqual(form.errors[NON_FIELD_ERRORS],
-                         ['Baseline question and follow up question should be different.'],
+                         ['Baseline and follow up questions should be different.'],
                          form.errors)
 
     def test_min_max_baseline(self):

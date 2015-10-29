@@ -1,5 +1,6 @@
 from __future__ import absolute_import, unicode_literals
 import logging
+import time
 
 from django.core.urlresolvers import reverse
 from django.http import JsonResponse
@@ -112,7 +113,25 @@ class InboxMessageCRUDL(SmartCRUDL):
         def derive_queryset(self, **kwargs):
             qs = InboxMessage.get_all(self.request.org, self.request.data_regions)
             qs = qs.select_related('contact')
-            qs = qs.order_by('contact', '-created_on').distinct('contact')
+
+            qs = qs.order_by('contact', '-created_on')
+            qs = qs.distinct('contact')
+
+            return qs
+
+        def order_queryset(self, qs):
+            """
+            Override the order_queryset() method from smartmin
+            This method errors because of the distinct('contact') filter
+            in derive_queryset so we needed to override it.
+            """
+            if '_order' in self.request.REQUEST:
+                order_by = self.request.REQUEST['_order']
+                # Only sort if order_by is a valid field in this object
+                if order_by.replace('-', '') in self.derive_fields():
+                    qs = InboxMessage.objects.filter(pk__in=qs.values('pk'))
+                    qs = qs.order_by(order_by)
+
             return qs
 
         def lookup_field_link(self, context, field, obj):
@@ -149,8 +168,10 @@ class InboxMessageCRUDL(SmartCRUDL):
                 # Send the new inbox message through the temba task
                 send_unsolicited_message(self.request.org, request.POST.get('text'), self.contact)
                 logger.info("Sending a message to %s" % (self.contact))
-                # Run the task to pull all inbox messages for this org into the
+                # Wait 1 second to allow message to reach server then run the task
+                # to pull all inbox messages for this org into the
                 # local InboxMessage table
+                time.sleep(1)
                 fetch_inbox_messages(self.request.org.pk)
                 logger.info("Retrieving inbox messages for %s" % (self.request.org))
                 return redirect('msgs.inboxmessage_conversation', contact_id=self.contact.pk)

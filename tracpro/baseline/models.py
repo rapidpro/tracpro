@@ -37,9 +37,11 @@ class BaselineTerm(models.Model):
         help_text=_("All baseline poll results over time will display in chart.")
     )
 
-    follow_up_poll = models.ForeignKey(Poll, related_name="+")
+    follow_up_poll = models.ForeignKey(
+        Poll, verbose_name=_("Follow Up Poll"), related_name="+")
     follow_up_question = ChainedForeignKey(
-        Question, auto_choose=True, related_name="+",
+        Question, verbose_name=_("Follow Up Question"), related_name="+",
+        auto_choose=True,
         chained_field='follow_up_poll', chained_model_field='poll',
         help_text=_("Follow up poll responses over time to compare to the "
                     "baseline values.")
@@ -48,6 +50,9 @@ class BaselineTerm(models.Model):
     y_axis_title = models.CharField(
         max_length=255, blank=True, default="",
         help_text=_("The title for the y axis of the chart."))
+
+    class Meta:
+        verbose_name = _("Indicator")
 
     @classmethod
     def get_all(cls, org):
