@@ -52,7 +52,7 @@ class BaselineTerm(models.Model):
         help_text=_("The title for the y axis of the chart."))
 
     class Meta:
-        verbose_name = _("Indictator")
+        verbose_name = _("Indicator")
 
     @classmethod
     def get_all(cls, org):

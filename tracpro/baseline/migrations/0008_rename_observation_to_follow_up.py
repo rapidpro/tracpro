@@ -14,7 +14,7 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AlterModelOptions(
             name='baselineterm',
-            options={'verbose_name': 'Indictator'},
+            options={'verbose_name': 'Indicator'},
         ),
         migrations.AlterField(
             model_name='baselineterm',
