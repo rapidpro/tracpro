@@ -339,6 +339,6 @@ class ContactField(models.Model):
         if value is None:
             self.value = None
         elif isinstance(value, datetime.datetime):
-            self.value = value.isoformat()
+            self.value = unicode(value.isoformat())
         else:
             self.value = force_text(value)
