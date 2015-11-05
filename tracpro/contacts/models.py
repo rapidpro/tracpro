@@ -12,6 +12,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
+from django.utils.text import force_text
 from django.utils.translation import ugettext_lazy as _
 
 from dash.utils.sync import ChangeType
@@ -347,4 +348,4 @@ class ContactField(models.Model):
         elif isinstance(value, datetime.datetime):
             self.value = value.isoformat()
         else:
-            self.value = str(value)
+            self.value = force_text(value)
