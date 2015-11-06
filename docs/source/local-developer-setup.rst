@@ -16,8 +16,8 @@ may be needed for Mac setup. To begin you should have the following applications
 
 #. Clone the repo and switch to the new directory::
 
-    git clone git@github.com:rapidpro/tracpro.git
-    cd tracpro
+    $ git clone git@github.com:rapidpro/tracpro.git
+    $ cd tracpro
 
 #. Create a virtual environment using Python 2.7 and install the project
    requirements::
@@ -45,7 +45,22 @@ may be needed for Mac setup. To begin you should have the following applications
 
     (tracpro)$ python manage.py migrate
 
+#. Background tasks. To run background tasks, you'll also need to start celery::
+
+    (tracrpro)$ celery -A tracpro worker -B -l info
+
 #. TODO: Fabric deploy information
+
+#. Subdomain Setup
+
+   TracPro uses subdomains to determine which organization a user is currently accessing. For example, if you create an organization with the subdomain **testing**, you should configure that as an alias for localhost. On a UNIX-like system you would edit /etc/hosts as follows::
+
+    127.0.0.1   localhost testing.localhost
+
+#. RapidPro Integration
+
+   The default development settings file connects to `app.rapidpro.io <http://app.rapidpro.io>`_.To integrate with a different RapidPro instance, either edit this file or create a new settings file.
+
 
 #. Run the development server and navigate to
    `localhost:8000 <http://localhost:8000>`_::

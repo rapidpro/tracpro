@@ -17,6 +17,7 @@ Developer Guides:
    local-developer-setup.rst
    running-tests.rst
    technical-overview.rst
+   getting-started.rst
 
 Server/Deployment:
 
