@@ -1,7 +1,7 @@
 import uuid
 
+import factory
 import factory.fuzzy
-import factory.django
 
 
 class FuzzyEmail(factory.fuzzy.FuzzyText):

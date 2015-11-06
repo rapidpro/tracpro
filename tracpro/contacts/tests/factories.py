@@ -1,7 +1,6 @@
 import random
 
 import factory
-import factory.django
 import factory.fuzzy
 
 from tracpro.test import factory_utils
