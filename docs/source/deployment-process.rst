@@ -4,7 +4,7 @@ Deployment Process
 Release to staging
 ------------------
 
-See the `Fabric commands documentation <fabric.rst>`_ for information on how to
+See the :doc:`Fabric commands documentation</fabric>` for information on how to
 reset the staging data from production and how to run commands on the servers.
 
 #. Ensure that your work has been pushed to GitHub.
