@@ -24,7 +24,7 @@ class TracproOrgMiddleware(dash_middleware.SetOrgMiddleware):
         Use the org's default language unless user has selected a specific
         language.
         """
-        if org and not self.user_has_set_language(request):
+        if org and org.language and not self.user_has_set_language(request):
             lang = org.language
             translation.activate(lang)
             request.LANGUAGE_CODE = lang
