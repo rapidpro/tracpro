@@ -1,18 +1,34 @@
-<ul class="lang-switcher">
-  {% for code, language in available_languages %}
-    <li>
-      {% if code == request.LANGUAGE_CODE %}
-        {{ language }}
-      {% else %}
+{% load i18n %}
+<ul class="lang-switcher list-inline">
+  {% for code, language in all_languages %}
+    {% if code == request.LANGUAGE_CODE %}
+      <li>{{ language }}</li>
+    {% else %}
+      <li{% if code not in show_languages %} class="hidden"{% endif %}>
         <form action="{% url "set_language" %}" method="POST">
           {% csrf_token %}
           <input type="hidden" name="next" value="{{ request.path }}" />
           <input type="hidden" name="language" value="{{ code }}" />
-          <a class="lang-submit" href="#" onclick="$(this).closest('form').submit();">
+          <button class="btn btn-link" type="submit">
             {{ language }}
-          </a>
+          </button>
         </form>
-      {% endif %}
-    </li>
+      </li>
+    {% endif %}
   {% endfor %}
+  {% if show_languages|length != all_languages|length %}
+    <li title="Show all languages">
+      <button class="btn btn-link" id="show-all-languages">
+        {% trans "Show all" %}...
+      </button>
+    </li>
+    <script>
+      $(function() {
+        $('#show-all-languages').click(function() {
+          $('.lang-switcher li').removeClass('hidden');
+          $(this).parent().remove();
+        });
+      });
+    </script>
+  {% endif %}
 </ul>
