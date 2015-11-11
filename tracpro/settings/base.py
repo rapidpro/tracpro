@@ -174,7 +174,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'smartmin.middleware.AjaxRedirect',
-    'dash.orgs.middleware.SetOrgMiddleware',
+    'tracpro.orgs_ext.middleware.TracproOrgMiddleware',
     'tracpro.profiles.middleware.ForcePasswordChangeMiddleware',
     'tracpro.groups.middleware.UserRegionsMiddleware',
     'tracpro.orgs_ext.middleware.HandleTembaAPIError',

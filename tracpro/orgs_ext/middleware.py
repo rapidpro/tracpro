@@ -1,16 +1,39 @@
-from django.utils.translation import ugettext_lazy as _
+from django.conf import settings
 from django.shortcuts import render
+from django.utils import translation
+from django.utils.translation import ugettext_lazy as _
 
 from requests import HTTPError
 
 from temba_client.base import TembaAPIError, TembaConnectionError
+
+from dash.orgs import middleware as dash_middleware
+
+
+class TracproOrgMiddleware(dash_middleware.SetOrgMiddleware):
+
+    def user_has_set_language(self, request):
+        """Whether user has requested a specific language via site footer."""
+        return any((
+            request.session.get(translation.LANGUAGE_SESSION_KEY),
+            request.COOKIES.get(settings.LANGUAGE_COOKIE_NAME),
+        ))
+
+    def set_language(self, request, org):
+        """
+        Use the org's default language unless user has selected a specific
+        language.
+        """
+        if org and not self.user_has_set_language(request):
+            lang = org.language
+            translation.activate(lang)
+            request.LANGUAGE_CODE = lang
 
 
 class HandleTembaAPIError(object):
     """ Catch all Temba exception errors """
 
     def process_exception(self, request, exception):
-
         rapidpro_connection_error_string = _(
             "RapidPro appears to be down right now. "
             "Please try again later.")
