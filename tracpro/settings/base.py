@@ -182,6 +182,8 @@ MIDDLEWARE_CLASSES = (
 
 ROOT_URLCONF = 'tracpro.urls'
 
+SESSION_COOKIE_NAME = 'tracpro'
+
 SITE_DATE_FORMAT = r'%b %d, %Y'
 
 SITE_ID = 1
