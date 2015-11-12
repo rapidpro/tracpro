@@ -17,13 +17,13 @@ Creating An Organization In TracPro
 ------------------------------------
 
  * Navigate to http://localhost:8000/
- * Login as the superuser
+ * Log in as a superuser
  * Navigate to http://localhost/manage/user/ and add a new administrator user account
  * Navigate to http://localhost/manage/org/ and click *Add* to create a new organization
  * Include the newly created user as an administrator
  * Use the API token provided by your RapidPro organization. If you don't know it then visit the `API explorer <https://app.rapidpro.io/api/v1/explorer>`_.
  * Save new org and navigate to http://SUBDOMAIN.localhost:8000/ where SUBDOMAIN is the subdomain of your new organization
- * Login in as the new administrator user
+ * Log in as the new administrator user
 
 Configuring An Organization
 ----------------------------
