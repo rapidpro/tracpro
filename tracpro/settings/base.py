@@ -58,7 +58,6 @@ INSTALLED_APPS = [
     'djcelery',
     'guardian',
     'mptt',
-    'reversion',
     'sorl.thumbnail',
     'smart_selects',
 
@@ -174,7 +173,6 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    'reversion.middleware.RevisionMiddleware',
     'smartmin.middleware.AjaxRedirect',
     'dash.orgs.middleware.SetOrgMiddleware',
     'tracpro.profiles.middleware.ForcePasswordChangeMiddleware',

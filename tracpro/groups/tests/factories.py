@@ -1,5 +1,4 @@
 import factory
-import factory.django
 import factory.fuzzy
 
 from tracpro.test.factory_utils import FuzzyUUID
