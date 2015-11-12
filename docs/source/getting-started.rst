@@ -8,8 +8,8 @@ Preparing RapidPro
 
 Before setting up your TracPro organization, one should ensure that the RapidPro organization has the following:
 
-* A set of contact groups representing geographical regions, e.g. _Kigali_, _Florida_
-* A set of contact groups representing reporting groups, e.g. _Males_, _Teachers_
+* A set of contact groups representing geographical regions, e.g. *Kigali*, *Florida*
+* A set of contact groups representing reporting groups, e.g. *Males*, *Teachers*
 * A contact field containing a facility code (externally defined identifier for a facility). By default TracPro will look for a field called `facility_code` but this can be changed.
 
 Obviously you will also want to define some flows in RapidPro which are suitable for running as polls.
@@ -20,7 +20,7 @@ Creating An Organization In TracPro
  * Navigate to http://localhost:8000/
  * Login as the superuser
  * Navigate to http://localhost/manage/user/ and add a new administrator user account
- * Navigate to http://localhost/manage/org/ and click _Add_ to create a new organization
+ * Navigate to http://localhost/manage/org/ and click *Add* to create a new organization
  * Include the newly created user as an administrator
  * Use the API token provided by your RapidPro organization. If you don't know it then visit the `API explorer <https://app.rapidpro.io/api/v1/explorer>`_.
  * Save new org and navigate to http://SUBDOMAIN.localhost:8000/ where SUBDOMAIN is the subdomain of your new organization
@@ -33,7 +33,7 @@ There won't be much to see until you tell TracPro about which flows and groups t
 
  * Navigate to **Administration** > **Polls** and click **Select** to select which flows in RapidPro will be used as polls in TracPro
  * Navigate to **Administration** > **Reporter Groups** and click **Select** to select which contact groups in RapidPro will be used as reporter groups in TracPro
- * Navigate to **Administration** > _**Regions** and click **Select** to select which contact groups in RapidPro will be used as regions in TracPro. This will trigger a fetch of all contacts from those groups.
+ * Navigate to **Administration** > **Regions** and click **Select** to select which contact groups in RapidPro will be used as regions in TracPro. This will trigger a fetch of all contacts from those groups.
 
 Management Tasks
 ------------------
