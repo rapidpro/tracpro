@@ -46,6 +46,32 @@
 
 
     </script>
+
+    <div id='chart_{{ question.pk }}' class='chart'></div>
+    <script>
+      $(function () {
+        $('#chart_{{ question.pk }}').highcharts({
+            title: {
+                text: 'Data'
+            },
+            xAxis: {
+                categories: [
+                            {% for date in question.date_list %}
+                                '{{ date }}'{% if not forloop.last %},{% endif %}
+                            {% endfor %}
+                            ]
+            },
+            series: [
+                {
+                type: 'area',
+                name: '{{ question.text }}',
+                data: {{ question.answer_list }}
+                }
+            ]
+        });
+    });
+    </script>
+
   {% endfor %}
 {% endblock %}
 {% block extra-script %}

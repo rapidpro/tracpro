@@ -16,5 +16,6 @@ tracpro/settings/local.py
 .pydevproject/
 .vagrant/
 docs/_build/
+docs/build/
 htmlcov/
 public/

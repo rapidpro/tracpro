@@ -11,7 +11,7 @@ from dash.utils import datetime_to_ms
 
 from django.utils.safestring import mark_safe
 
-from .models import Question
+from .models import Answer, Question, Response
 
 
 class ChartJsonEncoder(json.JSONEncoder):
@@ -101,6 +101,15 @@ def multiple_pollruns(pollruns, question, regions):
         chart_data = []
 
     return chart_type, render_data(chart_data)
+
+def multiple_pollruns_new(pollruns, question, regions):
+    """ Erin Test """
+    """Chart data for multiple pollruns of a poll."""
+    responses = Response.objects.filter(pollrun__in=pollruns)
+    answers = Answer.objects.filter(response__in=responses, question=question)
+    answer_list, date_list = answers.numeric_sum_group_by_date()
+
+    return answer_list, date_list
 
 
 def word_cloud_data(word_counts):

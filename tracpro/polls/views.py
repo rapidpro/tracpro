@@ -65,6 +65,14 @@ class PollCRUDL(smartmin.SmartCRUDL):
             context['window_max'] = datetime_to_ms(window_max)
             context['window_options'] = Window.__members__.values()
             context['questions'] = questions
+
+
+            """ Erin Test """
+            for question in questions:
+                question.answer_list, question.date_list = charts.multiple_pollruns_new(
+                    pollruns, question, self.request.data_regions)
+            context['questions'] = questions
+
             return context
 
     class Update(PollMixin, OrgObjPermsMixin, smartmin.SmartUpdateView):
