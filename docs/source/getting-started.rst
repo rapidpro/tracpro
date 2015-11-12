@@ -1,7 +1,7 @@
 Getting Started
 ======================
 
-The following steps take you through the process of creating a new organization in TracPro. If you are using your local development installation, then ensure that both the webserver and celery are running.
+The following steps take you through the process of creating a new organization in TracPro. If you are using your local development installation, then ensure that both the web server and Celery are running.
 
 Preparing RapidPro
 -----------------------
