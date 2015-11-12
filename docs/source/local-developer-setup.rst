@@ -47,9 +47,7 @@ may be needed for Mac setup. To begin you should have the following applications
 
 #. Background tasks. To run background tasks, you'll also need to start celery::
 
-    (tracrpro)$ celery -A tracpro worker -B -l info
-
-#. TODO: Fabric deploy information
+    (tracpro)$ celery -A tracpro worker -B -l info
 
 #. Subdomain Setup
 
