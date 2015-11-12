@@ -4,7 +4,7 @@
 Running Tests
 =============
 
-The Caktus website uses `Travis CI <https://magnum.travis-ci.com/caktus/caktus-website>`_
+The Caktus website uses `Travis CI <https://travis-ci.org/rapidpro/tracpro>`_
 to automatically build and test code upon each push to GitHub.
 
 For the Travis build to pass, all tests should pass, code coverage should be
