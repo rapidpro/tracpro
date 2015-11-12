@@ -10,7 +10,6 @@ Before setting up your TracPro organization, one should ensure that the RapidPro
 
 * A set of contact groups representing geographical regions, e.g. *Kigali*, *Florida*
 * A set of contact groups representing reporting groups, e.g. *Males*, *Teachers*
-* A contact field containing a facility code (externally defined identifier for a facility). By default TracPro will look for a field called `facility_code` but this can be changed.
 
 Obviously you will also want to define some flows in RapidPro which are suitable for running as polls.
 
