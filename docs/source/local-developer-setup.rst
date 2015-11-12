@@ -35,7 +35,6 @@ may be needed for Mac setup. To begin you should have the following applications
 
    You may edit this file to make environment changes that are local to your machine. This file is listed in the `.gitignore <https://github.com/rapidpro/tracpro/blob/develop/.gitignore>`_ file and should never be checked into GitHub.
 
-
 #. Create a Postgres database and run the initial migrate::
 
     (tracpro)$ createdb -E UTF-8 tracpro
