@@ -1,5 +1,5 @@
 Local Development Environment Setup
-=============================
+====================================
 
 Use this guide to bootstrap your local development environment.
 

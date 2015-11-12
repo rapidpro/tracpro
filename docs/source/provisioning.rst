@@ -202,7 +202,7 @@ to the ``env`` dictionary in ``conf/pillar/<environment>.sls`` without encryptio
 
   # Additional public environment variables to set for the project
   env:
-    FOO: BAR
+  FOO: BAR
 
 For instance the default layout expects the cache server to listen at ``127.0.0.1:11211``
 but if there is a dedicated cache server this can be changed via ``CACHE_HOST``. Similarly
