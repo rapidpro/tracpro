@@ -174,13 +174,15 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'smartmin.middleware.AjaxRedirect',
-    'dash.orgs.middleware.SetOrgMiddleware',
+    'tracpro.orgs_ext.middleware.TracproOrgMiddleware',
     'tracpro.profiles.middleware.ForcePasswordChangeMiddleware',
     'tracpro.groups.middleware.UserRegionsMiddleware',
     'tracpro.orgs_ext.middleware.HandleTembaAPIError',
 )
 
 ROOT_URLCONF = 'tracpro.urls'
+
+SESSION_COOKIE_NAME = 'tracpro'
 
 SITE_DATE_FORMAT = r'%b %d, %Y'
 
@@ -352,6 +354,7 @@ SITE_ALLOW_NO_ORG = (
     'profiles.admin_create',
     'profiles.admin_update',
     'profiles.admin_list',
+    'set_language',
 )
 
 SITE_API_HOST = 'rapidpro.io'
