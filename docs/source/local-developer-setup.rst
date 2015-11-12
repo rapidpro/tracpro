@@ -52,7 +52,7 @@ may be needed for Mac setup. To begin you should have the following applications
 
    TracPro uses subdomains to determine which organization a user is currently accessing. For example, if you create an organization with the subdomain **testing**, you should configure that as an alias for localhost. On a UNIX-like system you would edit /etc/hosts as follows::
 
-    127.0.0.1   localhost testing.localhost
+    127.0.0.1   localhost. testing.localhost
 
 #. RapidPro Integration
 
