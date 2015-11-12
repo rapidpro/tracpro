@@ -18,7 +18,7 @@ Developer Guides:
    running-tests.rst
    technical-overview.rst
    getting-started.rst
-   localization.rst
+   translation.rst
 
 Server/Deployment:
 
