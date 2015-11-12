@@ -102,6 +102,7 @@ def multiple_pollruns(pollruns, question, regions):
 
     return chart_type, render_data(chart_data)
 
+
 def multiple_pollruns_new(pollruns, question, regions):
     """ Erin Test """
     """Chart data for multiple pollruns of a poll."""
