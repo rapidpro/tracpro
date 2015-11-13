@@ -10,11 +10,14 @@ def user_is_admin(request):
 
 
 def available_languages(request):
-    languages = settings.LANGUAGES
+    all_languages = settings.LANGUAGES
     org = getattr(request, 'org')
-    if org:
-        if org.available_languages:
-            languages = filter(lambda lang: lang[0] in org.available_languages, languages)
+    if org and org.available_languages:
+        show_languages = [code for code, name in all_languages
+                          if code in org.available_languages or code == request.LANGUAGE_CODE]
+    else:
+        show_languages = [code for code, name in all_languages]
     return {
-        'available_languages': languages,
+        'all_languages': all_languages,
+        'show_languages': show_languages
     }

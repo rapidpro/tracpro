@@ -5,13 +5,13 @@ from decimal import Decimal, InvalidOperation
 import logging
 from uuid import uuid4
 
-from dateutil.parser import parse
-
 from django import forms
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils.dateparse import parse_datetime
 from django.utils.encoding import python_2_unicode_compatible
+from django.utils.text import force_text
 from django.utils.translation import ugettext_lazy as _
 
 from dash.utils.sync import ChangeType
@@ -322,13 +322,7 @@ class ContactField(models.Model):
         if self.value is None:
             return None
         elif self.field.value_type == DataField.TYPE_DATETIME:
-            try:
-                return parse(self.value)
-            except ValueError:
-                logger.warning(
-                    "Unable to parse {} value for {} as datetime: {}".format(
-                        self.value, self.contact, self.value))
-                return None
+            return parse_datetime(self.value)
         elif self.field.value_type == DataField.TYPE_NUMERIC:
             try:
                 return Decimal(self.value)
@@ -345,6 +339,6 @@ class ContactField(models.Model):
         if value is None:
             self.value = None
         elif isinstance(value, datetime.datetime):
-            self.value = value.isoformat()
+            self.value = unicode(value.isoformat())
         else:
-            self.value = str(value)
+            self.value = force_text(value)
