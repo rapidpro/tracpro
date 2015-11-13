@@ -417,6 +417,7 @@ def manage_run(command):
 def manage_shell():
     manage_run('shell')
 
+
 @task
 def add_swap(size_of_swapfile=2048):
     """
@@ -425,8 +426,8 @@ def add_swap(size_of_swapfile=2048):
     if files.exists('/var/swapfile'):
         print "Swap file exists Exiting now"
         return
-    sudo ('dd if=/dev/zero of=/var/swapfile bs=1M count={0}'.format(size_of_swapfile))
-    sudo ('chmod 600 /var/swapfile')
-    sudo ('mkswap /var/swapfile') 
+    sudo('dd if=/dev/zero of=/var/swapfile bs=1M count={0}'.format(size_of_swapfile))
+    sudo('chmod 600 /var/swapfile')
+    sudo('mkswap /var/swapfile')
     files.append('/etc/fstab', '/var/swapfile none swap defaults 0 0', use_sudo=True)
-    sudo ('swapon -a')
+    sudo('swapon -a')
