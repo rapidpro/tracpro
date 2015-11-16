@@ -8,27 +8,24 @@ TracPro is a minimal, generic dashboard for polls in any `RapidPro <https://app.
 
 TracPro was built for UNICEF by `Nyaruka <http://nyaruka.com/>`_ and is currently maintained by `Caktus Group <https://www.caktusgroup.com/>`_.
 
-User Guides:
-
 .. toctree::
    :maxdepth: 2
+   :caption: User Guides
 
    users/technical-overview.rst
    users/getting-started.rst
 
-Developer Guides:
-
 .. toctree::
    :maxdepth: 2
+   :caption: Developer Guides
 
    developers/local-developer-setup.rst
    developers/running-tests.rst
    developers/translation.rst
 
-Server/Deployment:
-
 .. toctree::
    :maxdepth: 2
+   :caption: Server/Deployment
 
    servers/deployment-process.rst
    servers/fabric.rst
