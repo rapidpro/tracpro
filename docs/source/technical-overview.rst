@@ -11,7 +11,6 @@ Concepts
 * `Administrators` setup TracPro for an org and can manage everything supervisors can, in addition to managing supervisors.
 * `Regions` are administrative areas, and can be anything, for example a city, county, or state in the USA. They must be configured as contact groups in RapidPro first.
 * `Reporter groups` are types of contacts, such as head teachers, or grade 5 teachers. They must be configured as contact groups in RapidPro first.
-* `Facility codes` are a contact field that indicates the facility of the contact. They can be added in TracPro but are better managed in RapidPro. TODO: Update this information.
 * `Recent Indicators` allow users to compare baseline poll results to follow up poll results over time. For instance, if a poll was sent out to gather enrollment numbers at the start of the term, that could be selected as the baseline poll, and a follow up poll could be the poll sent out over the term asking for attendance numbers. Users may also spoof poll data to create sample results to chart on Recent Indicators.
 * `Inbox Messages` allow users to view and send unsolicited messages, that is, messages outside of a flow, to contacts.
 
