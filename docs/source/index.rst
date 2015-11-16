@@ -14,6 +14,7 @@ TracPro was built for UNICEF by `Nyaruka <http://nyaruka.com/>`_ and is currentl
 
    users/technical-overview.rst
    users/getting-started.rst
+   users/question-types.rst
 
 .. toctree::
    :maxdepth: 2
