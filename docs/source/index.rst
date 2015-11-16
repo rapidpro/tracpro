@@ -6,8 +6,15 @@ Welcome to TracPro's documentation!
 
 TracPro is a minimal, generic dashboard for polls in any `RapidPro <https://app.rapidpro.io/>`_ org, such as for a real-time monitoring service for education. TracPro is for simple dashboards that help to create information loops, not for advocacy or flashy visuals. TracPro is open source, anyone can build their own dashboard. Deployment requires advanced Linux systems administration experience, but once running it can be configured and used by anyone.
 
-TracPro was built for UNICEF by `Nyaruka <http://nyaruka.com/>`_ and `Caktus Group <https://www.caktusgroup.com/>`_.
+TracPro was built for UNICEF by `Nyaruka <http://nyaruka.com/>`_ and is currently maintained by `Caktus Group <https://www.caktusgroup.com/>`_.
 
+User Guides:
+
+.. toctree::
+   :maxdepth: 2
+
+   technical-overview.rst
+   getting-started.rst
 
 Developer Guides:
 
@@ -16,8 +23,6 @@ Developer Guides:
 
    local-developer-setup.rst
    running-tests.rst
-   technical-overview.rst
-   getting-started.rst
    translation.rst
 
 Server/Deployment:
@@ -30,11 +35,3 @@ Server/Deployment:
    provisioning.rst
    server-setup.rst
    vagrant.rst
-
-
-Indices and tables
-------------------
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
