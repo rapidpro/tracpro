@@ -13,25 +13,25 @@ User Guides:
 .. toctree::
    :maxdepth: 2
 
-   technical-overview.rst
-   getting-started.rst
+   users/technical-overview.rst
+   users/getting-started.rst
 
 Developer Guides:
 
 .. toctree::
    :maxdepth: 2
 
-   local-developer-setup.rst
-   running-tests.rst
-   translation.rst
+   developers/local-developer-setup.rst
+   developers/running-tests.rst
+   developers/translation.rst
 
 Server/Deployment:
 
 .. toctree::
    :maxdepth: 2
 
-   deployment-process.rst
-   fabric.rst
-   provisioning.rst
-   server-setup.rst
-   vagrant.rst
+   servers/deployment-process.rst
+   servers/fabric.rst
+   servers/provisioning.rst
+   servers/server-setup.rst
+   servers/vagrant.rst

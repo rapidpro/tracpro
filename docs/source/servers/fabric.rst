@@ -2,11 +2,11 @@ Fabric commands
 ===============
 
 TracPro uses the `Caktus project template
-<https://github.com/caktus/django-project-template>`_. See the :doc:`server documentation</server-setup>` to learn more about server architecture and
+<https://github.com/caktus/django-project-template>`_. See the :doc:`server documentation</servers/server-setup>` to learn more about server architecture and
 provisioning.
 
 Before using fabric commands, follow all of the steps in the
-`developer setup docs <setup.rst>`_ to ensure that you have all of the
+:doc:`developer setup docs </developers/local-developer-setup>` to ensure that you have all of the
 required credentials.
 
 You can get a full list of Fabric commands by running ``fab --list``, or read
