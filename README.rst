@@ -1,6 +1,3 @@
-.. image:: https://travis-ci.org/rapidpro/tracpro.svg
-    :target: https://travis-ci.org/rapidpro/tracpro
-
 Tracpro
 =======
 
