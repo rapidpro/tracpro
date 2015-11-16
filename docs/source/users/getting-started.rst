@@ -56,7 +56,7 @@ If a new poll is added, TracPro will only track runs made after the poll has bee
 
 Displaying Calculated Values on Tracpro
 ---------------------------------------
-You can display values that are calculated from user responses on Tracpro. We reference an example flow that uses a calculated variable from results of a `structured message form <http://knowledge.rapidpro.io/knowledgebase/articles/716520-split-by-message-form>`_.
+You can display values that are calculated from user responses on Tracpro. We reference an :download:`example flow <../files/calculated-variable-example.json>` that uses a calculated variable from results of a `structured message form <http://knowledge.rapidpro.io/knowledgebase/articles/716520-split-by-message-form>`_.
 
 **In RapidPro**: After you have built your flow to collect variables that you wish to use for the calculation, add a “Split by Expression” step.
 
