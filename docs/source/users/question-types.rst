@@ -8,7 +8,7 @@ Open-ended questions
 --------------------
 
 To set up an open-ended question, do not change the default choices in the
-"If the message reponse..." section on RapidPro.
+"If the message response..." section on RapidPro.
 
 .. image:: ../images/open-ended-setup.png
 
