@@ -202,7 +202,7 @@ to the ``env`` dictionary in ``conf/pillar/<environment>.sls`` without encryptio
 
   # Additional public environment variables to set for the project
   env:
-    FOO: BAR
+  FOO: BAR
 
 For instance the default layout expects the cache server to listen at ``127.0.0.1:11211``
 but if there is a dedicated cache server this can be changed via ``CACHE_HOST``. Similarly
@@ -285,7 +285,7 @@ As with other passwords this should be encrypted before it is added::
 This would be added in ``conf/pillar/<environment>.sls`` under ``http_auth``:
 
     http_auth:
-      "admin": |-
+      "admin": \|\-
         -----BEGIN PGP MESSAGE-----
         Version: GnuPG v1.4.11 (GNU/Linux)
 
@@ -373,6 +373,6 @@ match the domain for which the certificate is going to be deployed (i.e example.
 
 This signing request (.csr) will be handed off to a trusted Certificate Authority (CA) such as
 StartSSL, NameCheap, GoDaddy, etc. to purchase the signed certificate. The contents of
-the *.key file will be added to the ``ssl_key`` pillar and the signed certificate
+the .key file will be added to the ``ssl_key`` pillar and the signed certificate
 from the CA will be added to the ``ssl_cert`` pillar. These should be encrypted using
 the same proceedure as with the private SSH deploy key.
