@@ -443,7 +443,7 @@ def manage_run(command):
     require('environment')
     project_name = get_project_name()
     manage_sh = u'/var/www/%s/manage.sh ' % project_name
-    with settings(host_string=hostnames_for_role('web')[0]):
+    with settings(host_string=env.master):
         sudo(manage_sh + command, user=project_name)
 
 
