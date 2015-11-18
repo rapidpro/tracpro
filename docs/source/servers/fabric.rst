@@ -26,14 +26,13 @@ branch has migrations that have not yet been run on the remote server.
 Copying production data to staging
 ----------------------------------
 
-To copy the production database and media files to staging::
+To copy the production database to staging::
 
-    fab prod_to_staging
+    fab prod_db_to_staging
 
-**NOTES:** Media files will be synced through the local development
-environment first. Additionally, migrations must run
-(``fab staging manage_run:"migrate"``) if the branch that is deployed on
-staging has new migrations that have not been run on production.
+**NOTES:** Migrations must run (``fab staging manage_run:"migrate"``) if the
+branch that is deployed on staging has new migrations that have not been run
+on production.
 
 Running commands on the server
 ------------------------------
