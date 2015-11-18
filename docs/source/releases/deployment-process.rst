@@ -25,7 +25,7 @@ Release to staging
 Reset staging environment
 -------------------------
 
-These steps will restore the production database aand code states to the
+These steps will restore the production database and code states to the
 staging environment.
 
 #. Copy the production database to staging::
