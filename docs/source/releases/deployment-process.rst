@@ -25,12 +25,12 @@ Release to staging
 Reset staging environment
 -------------------------
 
-These steps will restore the production database, media, and code states to
-the staging environment.
+These steps will restore the production database aand code states to the
+staging environment.
 
-#. Copy the production database and media files to staging::
+#. Copy the production database to staging::
 
-    fab prod_to_staging
+    fab prod_db_to_staging
 
 #. On your local machine, check out the master branch::
 

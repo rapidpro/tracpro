@@ -62,51 +62,83 @@ def initialize_env():
     env.gpg_key = os.path.join(CONF_ROOT, '{}.pub.gpg'.format(env.environment))
 
 
-@task
-def get_remote_db_dump(filename=None):
+def db_get_remote_dump(path=None):
     """Dump remote database content to a local file."""
-    # File will be put in the same place both locally and on the remote.
-    if not filename:
+    if not path:
         now = datetime.datetime.now().isoformat()
-        filename = "tracpro-{env}-db-{now}.sql.gz".format(
-            env=env.environment, now=now)
-    output_path = os.path.join("/tmp/", filename)
+        filename = "tracpro-{env}-db-{now}.sql.gz".format(env=env.environment, now=now)
+        path = os.path.join('/tmp/', filename)
 
     with settings(host_string=env.master):
         # Dump the database to a file on the remote host.
         cmd = 'pg_dump -Z 5 -U tracpro_{env} -d tracpro_{env} -f {output}'
-        run(cmd.format(env=env.environment, output=output_path))
+        run(cmd.format(env=env.environment, output=path))
 
         # Copy the file from the remote host to the local machine.
-        get(remote_path=output_path, local_path=output_path)
+        # File will be put in the same place both locally and on the remote.
+        get(remote_path=path, local_path=path)
 
         # Remove the remote copy of the file.
-        run("rm {}".format(output_path))
+        run("rm {}".format(path))
 
-    return output_path
+    return path
 
 
-@task
-def load_db_from_file(path, remove_files=True):
-    """Load content from a database dump file.
-
-    Removes the file and its unzipped contents unless specified otherwise.
-    """
+def db_load_from_file_local(path, runner, db_name):
+    """Load content from a database dump file to the remote database."""
     unzipped = os.path.splitext(path)[0]
     local("cat {} | gunzip > {}".format(path, unzipped))
-    local("dropdb --if-exists tracpro")
-    local("createdb -E UTF-8 tracpro")
-    local("psql -d tracpro -f {}".format(unzipped))
-    if remove_files:
-        local("rm {}".format(path))
-        local("rm {}".format(unzipped))
+    local("dropdb --if-exists {}".format(db_name))
+    local("createdb -E UTF-8 {}".format(db_name))
+    local("psql -d {} -f {}".format(db_name, unzipped))
+
+
+def db_load_from_file_remote(path):
+    """Load content from a database dump file to the remote database."""
+    unzipped = os.path.splitext(path)[0]
+    run("cat {path} | gunzip > {filename}".format(
+        path=path, filename=unzipped))
+    run("dropdb -U tracpro_{env} --if-exists tracpro_{env}".format(
+        env=env.environment))
+    run("createdb -U tracpro_{env} -E UTF-8 tracpro_{env}".format(
+        env=env.environment))
+    run("psql -U tracpro_{env} -d tracpro_{env} -f {filename}".format(
+        env=env.environment, filename=unzipped))
 
 
 @task
-def get_db():
+def reset_local_db():
     """Copy the remote database to the local environment."""
-    db_dump = get_remote_db_dump()
-    load_db_from_file(db_dump)
+    dump = db_get_remote_dump()
+    db_load_from_file_local(dump)
+    local("rm {}".format(dump))
+
+
+@task
+def prod_db_to_staging():
+    """Copy the production database to staging."""
+    production()
+    dump = db_get_remote_dump()
+    staging()
+    with settings(host_string=env.master):
+        put(local_path=dump, remote_path=dump)
+        stop_server()
+        db_load_from_file_remote(dump)
+        start_server()
+        run("rm {}".format(dump))
+    local("rm {}".format(dump))
+
+
+@task
+def start_server():
+    with settings(host_string=env.master):
+        sudo("supervisorctl start tracpro-server")
+
+
+@task
+def stop_server():
+    with settings(host_string=env.master):
+        sudo("supervisorctl stop tracpro-server")
 
 
 def get_salt_version(command):
