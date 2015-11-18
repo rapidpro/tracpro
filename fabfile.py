@@ -124,6 +124,7 @@ def prod_db_to_staging():
     with settings(host_string=env.master):
         put(local_path=dump, remote_path=dump)
         stop_server()
+        sudo("service postgresql restart")  # kill hanging queries
         db_load_from_file_remote(dump)
         start_server()
         run("rm {}".format(dump))
