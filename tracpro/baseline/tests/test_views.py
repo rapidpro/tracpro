@@ -167,7 +167,7 @@ class TestBaselineTermCRUDL(TracProDataTest):
         # Log in as an org administrator
         self.login(self.admin)
         response = self.url_get('unicef', url)
-        # We should not be able to spoof data after
+        # We should not be able to spoof data
         self.assertEqual(response.status_code, 302)
         self.assertRedirects(
             response,
