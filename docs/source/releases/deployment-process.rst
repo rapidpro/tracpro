@@ -74,7 +74,8 @@ Release to production
 #. Finalize the release number.
 
    * Update the version number according to `semantic versioning`_, and change
-     the version state to ``"final"``.
+     the version state to ``"final"``. Version must be updated in
+     ``tracpro/__init__.py`` and ``docs/source/conf.py``.
 
        * The micro version is incremented with backwards-compatible bugfixes.
 
