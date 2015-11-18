@@ -7,10 +7,10 @@ Tracpro's version is incremented upon each merge to master according to our
 We recommend reviewing the release notes and code diffs before upgrading
 between versions.
 
-v1.0.0 (released 2015-11-18)
-----------------------------
+v1.0.0 (unreleased)
+-------------------
 
-Code diff: https://github.com/rapidpro/tracpro/compare/v0.0.50...v1.0.0
+Code diff: https://github.com/rapidpro/tracpro/compare/v0.0.50...develop
 
 * First Caktus release.
 
