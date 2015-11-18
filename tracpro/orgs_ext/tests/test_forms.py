@@ -31,6 +31,7 @@ class TestOrgExtForm(TestCase):
             'editors': [self.user.pk],
             'viewers': [self.user.pk],
             'administrators': [self.user.pk],
+            'show_spoof_data': True
         }
 
     def test_available_languages_initial_for_create(self, mock_sync):
