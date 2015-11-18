@@ -3,10 +3,8 @@
 
 {% block table-buttons %}
 
-    <form id="delete-form" method="post" action="{% url 'baseline.baselineterm_clear_spoof' %}">
+    <form id="clear-spoof-data-form" method="post" action="{% url 'baseline.baselineterm_clear_spoof' %}">
     {% csrf_token %}
-
-    {{ test }}
 
     <div class="modal fade" role="dialog" id="confirm-delete-dialog">
       <div class="modal-dialog">
@@ -36,10 +34,12 @@
     </form>
 
     <div class="pull-right">
-        <button class="btn btn-danger" type="button" data-toggle="modal" data-target="#confirm-delete-dialog">
-            {% trans "Clear All Spoof Data" %}
-        </button>
-        <a class="btn btn-primary" href="./data_spoof/">{% trans "Spoof Data" %}</a>
+        {% if org.show_spoof_data %}
+          <button class="btn btn-danger" type="button" data-toggle="modal" data-target="#confirm-delete-dialog">
+              {% trans "Clear All Spoof Data" %}
+          </button>
+          <a class="btn btn-primary" href="./data_spoof/">{% trans "Spoof Data" %}</a>
+        {% endif %}
         <a class="btn btn-primary" href="./create/">{% trans "Add" %}</a>
     </div>
 

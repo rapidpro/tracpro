@@ -321,6 +321,13 @@ ORG_CONFIG_FIELDS = [
             'required': True,
         },
     },
+    {
+        'name': 'show_spoof_data',
+        'field': {
+            'help_text': _("Whether to show spoof data for this organization"),
+            'required': False,
+        },
+    },
 ]
 
 PERMISSIONS = {
