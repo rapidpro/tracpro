@@ -6,9 +6,9 @@ include:
   - python
 
 deadsnakes-python2.7:
-  pkgrepo.managed:
-    - humanname: Deadsnakes PPA fro Python 2.7
-    - ppa: fkrull/deadsnakes-python2.7
+  pkgrepo.managed:
+    - humanname: Deadsnakes PPA fro Python 2.7
+    - ppa: fkrull/deadsnakes-python2.7
 
 python-pkgs:
   pkg:
