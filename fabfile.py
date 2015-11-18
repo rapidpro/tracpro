@@ -100,8 +100,9 @@ def db_load_from_file_remote(path):
         path=path, filename=unzipped))
     run("dropdb -U tracpro_{env} --if-exists tracpro_{env}".format(
         env=env.environment))
-    run("createdb -U tracpro_{env} -E UTF-8 tracpro_{env}".format(
-        env=env.environment))
+    with settings(sudo_user="postgres"):
+        sudo("createdb -O tracpro_{env} -E UTF-8 tracpro_{env}".format(
+             env=env.environment))
     run("psql -U tracpro_{env} -d tracpro_{env} -f {filename}".format(
         env=env.environment, filename=unzipped))
 
