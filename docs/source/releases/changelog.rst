@@ -1,5 +1,5 @@
-Releases
-========
+Changelog
+=========
 
 Tracpro's version is incremented upon each merge to master according to our
 :ref:`production deployment process <release-to-production>`.
