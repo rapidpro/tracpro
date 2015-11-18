@@ -1,6 +1,7 @@
 import json
 
 from django.apps import AppConfig
+from django.conf import settings
 from django.core.cache import cache
 
 from .utils import OrgConfigField
@@ -33,5 +34,6 @@ class DashOrgConfig(AppConfig):
 
         # Never set config directly;
         # allow config attributes to be set as if they were normal attributes.
-        Org.add_to_class('available_languages',
-                         OrgConfigField("available_languages"))
+        for config_field in settings.ORG_CONFIG_FIELDS:
+            name = config_field['name']
+            Org.add_to_class(name, OrgConfigField(name))
