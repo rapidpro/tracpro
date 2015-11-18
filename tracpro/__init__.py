@@ -5,6 +5,7 @@ from __future__ import absolute_import
 from .celery import app as celery_app  # noqa
 
 
+# NOTE: Version must be updated in docs/source/conf.py as well.
 VERSION = (1, 0, 0, "dev")
 
 
