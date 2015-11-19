@@ -84,13 +84,13 @@ def db_get_remote_dump(path=None):
     return path
 
 
-def db_load_from_file_local(path, runner, db_name):
+def db_load_from_file_local(path):
     """Load content from a database dump file to the remote database."""
     unzipped = os.path.splitext(path)[0]
     local("cat {} | gunzip > {}".format(path, unzipped))
-    local("dropdb --if-exists {}".format(db_name))
-    local("createdb -E UTF-8 {}".format(db_name))
-    local("psql -d {} -f {}".format(db_name, unzipped))
+    local("dropdb --if-exists tracpro")
+    local("createdb -E UTF-8 tracpro")
+    local("psql -d tracpro -f {}".format(unzipped))
 
 
 def db_load_from_file_remote(path):
