@@ -22,6 +22,9 @@ class OrgExtForm(OrgForm):
     available_languages = forms.MultipleChoiceField(
         choices=settings.LANGUAGES,
         help_text=_("The languages used by administrators in your organization"))
+    show_spoof_data = forms.BooleanField(
+        required=False,
+        help_text=_("Whether to show spoof data for this organization."))
     contact_fields = forms.MultipleChoiceField(
         choices=[], required=False,
         help_text=_("Custom contact data fields that should be visible "
@@ -36,8 +39,9 @@ class OrgExtForm(OrgForm):
         language.label = _("Default language")
         language.help_text = _("The default language for your organization")
 
-        # available_languages is a config field so must be set explicitly.
+        # Config field values are not set automatically.
         self.fields['available_languages'].initial = self.instance.available_languages or []
+        self.fields['show_spoof_data'].initial = self.instance.show_spoof_data or False
 
         if not self.instance.pk:
             # We don't have this org's API key yet,
@@ -74,10 +78,13 @@ class OrgExtForm(OrgForm):
         return self.cleaned_data
 
     def save(self, *args, **kwargs):
-        # Set the available_languages config field.
+        # Config field values are not set automatically.
         if 'available_languages' in self.fields:
             available_languages = self.cleaned_data.get('available_languages')
             self.instance.available_languages = available_languages or []
+        if 'show_spoof_data' in self.fields:
+            show_spoof_data = self.cleaned_data.get('show_spoof_data')
+            self.instance.show_spoof_data = show_spoof_data or False
 
         if 'contact_fields' in self.fields:
             # Set hook that will be picked up by a post-save signal.

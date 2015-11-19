@@ -1,0 +1,222 @@
+{
+  "version": 8, 
+  "flows": [
+    {
+      "base_language": "eng", 
+      "action_sets": [
+        {
+          "y": 0, 
+          "x": 53, 
+          "destination": "3aa53d0d-f0cd-4c3d-8f94-60cca4c811ae", 
+          "uuid": "8118f513-71ed-4d5f-ac7f-6954537b6c25", 
+          "actions": [
+            {
+              "msg": {
+                "eng": "In one SMS, please indicate the number of girls participating in schools clubs this term, and the number of girls in positions of leadership in school clubs this term. Example: 100.10"
+              }, 
+              "type": "reply"
+            }
+          ]
+        }, 
+        {
+          "y": 3, 
+          "x": 457, 
+          "destination": "3aa53d0d-f0cd-4c3d-8f94-60cca4c811ae", 
+          "uuid": "39c5d693-c338-4388-8a1e-e1b1e76e1d1b", 
+          "actions": [
+            {
+              "msg": {
+                "eng": "Your response should be only numbers. Try again with the number of girls participating in school clubs this term, followed by the number of girls in positions of leadership this term. The girl leaders should be a subset of the girl participants: 100.10"
+              }, 
+              "type": "reply"
+            }
+          ]
+        }, 
+        {
+          "y": 573, 
+          "x": 784, 
+          "destination": null, 
+          "uuid": "dc62a553-b751-45b0-9245-1085f925fc33", 
+          "actions": [
+            {
+              "msg": {
+                "eng": "You reported that there are @flow.girl_participants girl participants and @flow.girl_leaders girl leaders. Your school has @flow.calculated_variable% of girl participants as leaders."
+              }, 
+              "type": "reply"
+            }
+          ]
+        }
+      ], 
+      "version": 8, 
+      "flow_type": "F", 
+      "entry": "8118f513-71ed-4d5f-ac7f-6954537b6c25", 
+      "rule_sets": [
+        {
+          "uuid": "3aa53d0d-f0cd-4c3d-8f94-60cca4c811ae", 
+          "webhook_action": null, 
+          "rules": [
+            {
+              "test": {
+                "type": "number"
+              }, 
+              "category": {
+                "eng": "numeric"
+              }, 
+              "destination": "d9a9b7cd-1c65-402d-8d19-2b059fbc7ba7", 
+              "uuid": "c4fdcdd2-fabc-4f59-ad77-69affd712e14", 
+              "destination_type": "R"
+            }, 
+            {
+              "test": {
+                "test": "true", 
+                "type": "true"
+              }, 
+              "category": {
+                "eng": "Other"
+              }, 
+              "destination": "39c5d693-c338-4388-8a1e-e1b1e76e1d1b", 
+              "uuid": "7e7fbe74-1bb8-4730-8124-13f9402be726", 
+              "destination_type": "A"
+            }
+          ], 
+          "webhook": null, 
+          "ruleset_type": "wait_message", 
+          "label": "Girl Numbers", 
+          "operand": "@step.value", 
+          "finished_key": null, 
+          "response_type": "", 
+          "y": 214, 
+          "x": 169, 
+          "config": {}
+        }, 
+        {
+          "uuid": "d9a9b7cd-1c65-402d-8d19-2b059fbc7ba7", 
+          "webhook_action": null, 
+          "rules": [
+            {
+              "test": {
+                "type": "number"
+              }, 
+              "category": {
+                "eng": "numeric"
+              }, 
+              "destination": "22e64417-6c21-4731-857d-9395eeb3e8d1", 
+              "uuid": "5d37f7bc-aaf3-493e-b137-5ae35ea150d2", 
+              "destination_type": "R"
+            }, 
+            {
+              "test": {
+                "test": "true", 
+                "type": "true"
+              }, 
+              "category": {
+                "eng": "Other"
+              }, 
+              "destination": null, 
+              "uuid": "7eb94e8c-1528-4770-bbe8-2d0279b15312"
+            }
+          ], 
+          "webhook": null, 
+          "ruleset_type": "form_field", 
+          "label": "Girl Participants", 
+          "operand": "@flow.girl_numbers", 
+          "finished_key": null, 
+          "response_type": "", 
+          "y": 312, 
+          "x": 252, 
+          "config": {
+            "field_delimiter": ".", 
+            "field_index": 0
+          }
+        }, 
+        {
+          "uuid": "22e64417-6c21-4731-857d-9395eeb3e8d1", 
+          "webhook_action": null, 
+          "rules": [
+            {
+              "test": {
+                "type": "number"
+              }, 
+              "category": {
+                "eng": "numeric"
+              }, 
+              "destination": "d32243e7-1d41-4c9e-a104-8a168e0ca478", 
+              "uuid": "f0f31430-da28-447b-aedd-94944cef474c", 
+              "destination_type": "R"
+            }, 
+            {
+              "test": {
+                "test": "true", 
+                "type": "true"
+              }, 
+              "category": {
+                "eng": "Other"
+              }, 
+              "destination": null, 
+              "uuid": "0e823808-b373-4a31-8148-fc7b0e94accf"
+            }
+          ], 
+          "webhook": null, 
+          "ruleset_type": "form_field", 
+          "label": "Girl Leaders", 
+          "operand": "@flow.girl_numbers", 
+          "finished_key": null, 
+          "response_type": "", 
+          "y": 374, 
+          "x": 489, 
+          "config": {
+            "field_delimiter": ".", 
+            "field_index": 1
+          }
+        }, 
+        {
+          "uuid": "d32243e7-1d41-4c9e-a104-8a168e0ca478", 
+          "webhook_action": null, 
+          "rules": [
+            {
+              "test": {
+                "type": "number"
+              }, 
+              "category": {
+                "eng": "numeric"
+              }, 
+              "destination": "dc62a553-b751-45b0-9245-1085f925fc33", 
+              "uuid": "9cab6cd2-d9ba-4859-81ae-d49108224c55", 
+              "destination_type": "A"
+            }, 
+            {
+              "test": {
+                "test": "true", 
+                "type": "true"
+              }, 
+              "category": {
+                "eng": "Other"
+              }, 
+              "destination": null, 
+              "uuid": "29300324-4676-4603-814b-27c406f1a965", 
+              "destination_type": "A"
+            }
+          ], 
+          "webhook": null, 
+          "ruleset_type": "expression", 
+          "label": "Calculated Variable", 
+          "operand": "@(FIXED(flow.girl_leaders / flow.girl_participants * 100, 1))", 
+          "finished_key": null, 
+          "response_type": "", 
+          "y": 436, 
+          "x": 745, 
+          "config": {}
+        }
+      ], 
+      "metadata": {
+        "name": "Calculated Variable Example", 
+        "notes": [], 
+        "expires": 10080, 
+        "revision": 93, 
+        "id": 19133, 
+        "saved_on": "2015-11-04T15:34:16.783303Z"
+      }
+    }
+  ], 
+  "triggers": []
+}
