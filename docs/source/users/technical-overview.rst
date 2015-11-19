@@ -9,7 +9,7 @@ Concepts
 * `Contacts` are the same as in RapidPro, they are the respondents of polls.
 * `Supervisors` could be, for example, a provincial monitoring officer in a ministry. They are meant to see a particular region or multiple regions, and encourage participation by seeing who is responding, and restart polls. Supervisors also manage contacts.
 * `Administrators` setup TracPro for an org and can manage everything supervisors can, in addition to managing supervisors.
-* `Regions` are administrative areas, and can be anything, for example a city, county, or state in the USA. They must be configured as contact groups in RapidPro first.
+* `Regions` are administrative areas, and can be anything, for example a city, county, or state in the USA. They must be configured as contact groups in RapidPro first. Regions can be made hierarchical in TracPro. For example, a supervisor who has access only to Kampala, would not have access to all of Africa's regional data, and a second supervisor who had access to Africa, would have access to data for all sub-regions within Africa.
 * `Reporter groups` are types of contacts, such as head teachers, or grade 5 teachers. They must be configured as contact groups in RapidPro first.
 * `Recent Indicators` allow users to compare baseline poll results to follow up poll results over time. For instance, if a poll was sent out to gather enrollment numbers at the start of the term, that could be selected as the baseline poll, and a follow up poll could be the poll sent out over the term asking for attendance numbers. Users may also spoof poll data to create sample results to chart on Recent Indicators.
 * `Inbox Messages` allow users to view and send unsolicited messages, that is, messages outside of a flow, to contacts.
