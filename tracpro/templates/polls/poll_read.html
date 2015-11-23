@@ -70,9 +70,9 @@
                 {
                 type: 'area',
                 name: '{{ question.text }}',
-                {% if value_type_selected ==  "sum" %}
+                {% if value_type_selected|lower ==  "sum" %}
                   data: {{ question.answer_sum_list }}
-                {% elif value_type_selected ==  "average" %}
+                {% elif value_type_selected|lower ==  "average" %}
                   data: {{ question.answer_average_list }}
                 {% endif %}
               }

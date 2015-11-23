@@ -68,7 +68,7 @@ class PollCRUDL(smartmin.SmartCRUDL):
             context['window_max'] = datetime_to_ms(window_max)
             context['window_options'] = Window.__members__.values()
             context['value_type_selected'] = value_type
-            context['value_type_options'] = ['sum', 'average']
+            context['value_type_options'] = ['Sum', 'Average']
             context['questions'] = questions
 
             return context
