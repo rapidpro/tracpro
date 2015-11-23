@@ -53,23 +53,22 @@ class PollCRUDL(smartmin.SmartCRUDL):
             window = Window[window] if window else Window.last_30_days
             window_min, window_max = window.to_range()
 
+            value_type = self.request.POST.get('value_type', self.request.GET.get('value_type', 'sum'))
+
             pollruns = pollruns.filter(conducted_on__gte=window_min, conducted_on__lt=window_max)
             pollruns = pollruns.order_by('conducted_on')
 
             for question in questions:
-                question.chart_type, question.chart_data = charts.multiple_pollruns(
+                (question.answer_sum_list, question.answer_average_list,
+                    question.date_list) = charts.multiple_pollruns_sum(
                     pollruns, question, self.request.data_regions)
 
             context['window'] = window
             context['window_min'] = datetime_to_ms(window_min)
             context['window_max'] = datetime_to_ms(window_max)
             context['window_options'] = Window.__members__.values()
-            context['questions'] = questions
-
-            """ Erin Test """
-            for question in questions:
-                question.answer_list, question.date_list = charts.multiple_pollruns_new(
-                    pollruns, question, self.request.data_regions)
+            context['value_type_selected'] = value_type
+            context['value_type_options'] = ['sum', 'average']
             context['questions'] = questions
 
             return context

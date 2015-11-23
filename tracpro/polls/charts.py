@@ -103,14 +103,14 @@ def multiple_pollruns(pollruns, question, regions):
     return chart_type, render_data(chart_data)
 
 
-def multiple_pollruns_new(pollruns, question, regions):
-    """ Erin Test """
+def multiple_pollruns_sum(pollruns, question, regions):
     """Chart data for multiple pollruns of a poll."""
     responses = Response.objects.filter(pollrun__in=pollruns)
     answers = Answer.objects.filter(response__in=responses, question=question)
-    answer_list, date_list = answers.numeric_sum_group_by_date()
+    answers = answers.order_by('response__created_on')
+    answer_sum_list, answer_average_list, date_list = answers.numeric_group_by_date()
 
-    return answer_list, date_list
+    return answer_sum_list, answer_average_list, date_list
 
 
 def word_cloud_data(word_counts):

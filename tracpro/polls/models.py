@@ -612,38 +612,42 @@ class AnswerQuerySet(models.QuerySet):
 
         return float(total / count) if count else 0
 
-    def numeric_sum_group_by_date(self):
+    def numeric_group_by_date(self):
         """
         Parses decimals out of a set of answers and returns the sum for each
-        distinct date.  Returns:
-
+        distinct date.
+        Returns:
         answer_sums: list of sum of each value on each date ie. [33, 40, ...]
+        answer_averages: list of average of each value on each date ie. [33, 40, ...]
         dates: list of distinct dates ie. [datetime.date(2015, 8, 12),...]
         """
         answer_sums = []
+        answer_averages = []
+        total_answers = 0
         dates = []
         total = float(0)
-        answer_date = ""
+        response_date = ""
         for answer in self:
-            if answer.category is not None:
-                # ignore answers with no category as they weren't in the
-                # required range
-                if answer_date != answer.submitted_on.date():
-                    # Append the sum total value for each date
-                    if total:
-                        answer_sums.append(total)
-                        dates.append(answer_date)
-                    answer_date = answer.submitted_on.date()
-                    total = float(0)
-                try:
-                    total += float(answer.value)
-                except (TypeError, ValueError, InvalidOperation):
-                    continue
+            if response_date != answer.response.created_on.date():
+                # Append the sum total value for each date
+                if total:
+                    answer_sums.append(total)
+                    answer_averages.append(float(total/total_answers))
+                    dates.append(response_date)
+                response_date = answer.response.created_on.date()
+                total = float(0)
+                total_answers = 0
+            try:
+                total += float(answer.value)
+                total_answers += 1
+            except (TypeError, ValueError, InvalidOperation):
+                continue
         # One last value to append, for the final date
         if total:
             answer_sums.append(total)
-            dates.append(answer_date)
-        return answer_sums, dates
+            answer_averages.append(float(total/total_answers))
+            dates.append(response_date)
+        return answer_sums, answer_averages, dates
 
     def numeric_sum_all_dates(self):
         """

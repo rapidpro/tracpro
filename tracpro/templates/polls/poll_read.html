@@ -17,7 +17,20 @@
       <form class='form-inline' method='get'>
         <label class='control-label' for='window-select'></label>
         {% trans "Show" %}
-        <select id='window-select' class='form-control' onchange='onChartWindowChange(this)' name='window'>
+        <select id='value-type-select' class='form-control' onchange='onChartChange(this)' name='value_type'>
+          {% for value_type in value_type_options %}
+            {% if value_type == value_type_selected %}
+              <option selected='selected' value='{{ value_type }}'>
+                {{ value_type }}
+              </option>
+            {% else %}
+              <option value='{{ value_type }}'>
+                {{ value_type }}
+              </option>
+            {% endif %}
+          {% endfor %}
+        </select>
+        <select id='window-select' class='form-control' onchange='onChartChange(this)' name='window'>
           {% for win in window_options %}
             {% if win == window %}
               <option selected='selected' value='{{ win.name }}'>
@@ -26,8 +39,6 @@
             {% else %}
               <option value='{{ win.name }}'>
                 {{ win.label }}
-
-
               </option>
             {% endif %}
           {% endfor %}
@@ -40,33 +51,31 @@
       {{ question.order }}. {{ question.text }}
 
     </h3>
-    <div class='chart' data-chart-type='{{ question.chart_type }}' data-unit-text='{{ question.text }}' data-question-id='{{ question.pk }}' data-window-max='{{ window_max }}' data-window-min='{{ window_min }}' dir='ltr'></div>
-    <script type='text/javascript'>
-      var chart_{{ question.pk }}_data = {{ question.chart_data }};
 
-
-    </script>
-
-    <div id='chart_{{ question.pk }}' class='chart'></div>
+    <div id='chart_{{ question.pk }}' class='chart' data-window-max='{{ window_max }}' data-window-min='{{ window_min }}' ></div>
     <script>
       $(function () {
         $('#chart_{{ question.pk }}').highcharts({
             title: {
-                text: 'Data'
+                text: '{{ question.text }}'
             },
             xAxis: {
-                categories: [
-                            {% for date in question.date_list %}
-                                '{{ date }}'{% if not forloop.last %},{% endif %}
-                            {% endfor %}
-                            ]
+              categories: [
+                          {% for date in question.date_list %}
+                            '{{ date }}'{% if not forloop.last %},{% endif %}
+                          {% endfor %}
+                          ]
             },
             series: [
                 {
                 type: 'area',
                 name: '{{ question.text }}',
-                data: {{ question.answer_list }}
-                }
+                {% if value_type_selected ==  "sum" %}
+                  data: {{ question.answer_sum_list }}
+                {% elif value_type_selected ==  "average" %}
+                  data: {{ question.answer_average_list }}
+                {% endif %}
+              }
             ]
         });
     });
@@ -77,7 +86,7 @@
 {% block extra-script %}
 <script type='text/javascript'>
 // <![CDATA[
-    function onChartWindowChange(ctrl) {
+    function onChartChange(ctrl) {
       ctrl.form.submit();
     }
 // ]]>
