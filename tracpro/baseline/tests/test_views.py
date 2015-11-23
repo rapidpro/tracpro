@@ -117,6 +117,9 @@ class TestBaselineTermCRUDL(TracProDataTest):
         self.assertEqual(response.status_code, 404)
 
     def test_data_spoof(self):
+        # Turn on show_spoof_data for this org
+        self.org.show_spoof_data = True
+        self.org.save()
         url = reverse('baseline.baselineterm_data_spoof')
         # Log in as an org administrator
         self.login(self.admin)
@@ -155,3 +158,18 @@ class TestBaselineTermCRUDL(TracProDataTest):
         self.assertEqual(PollRun.objects.all().count(), 3)
         self.assertEqual(Response.objects.all().count(), 3)
         self.assertEqual(Answer.objects.all().count(), 3)
+
+    def test_data_spoof_hide(self):
+        # Turn off show_spoof_data for this org
+        self.org.show_spoof_data = False
+        self.org.save()
+        url = reverse('baseline.baselineterm_data_spoof')
+        # Log in as an org administrator
+        self.login(self.admin)
+        response = self.url_get('unicef', url)
+        # We should not be able to spoof data
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(
+            response,
+            'http://unicef.testserver/indicators/',
+            fetch_redirect_response=False)

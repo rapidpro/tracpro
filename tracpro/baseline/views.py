@@ -131,6 +131,12 @@ class BaselineTermCRUDL(SmartCRUDL):
         cancel_url = '@baseline.baselineterm_list'
         success_url = '@baseline.baselineterm_list'
 
+        def dispatch(self, request, *args, **kwargs):
+            # Prevent Data Spoof for orgs with show_spoof_data turned off
+            if not self.request.org.show_spoof_data:
+                return HttpResponseRedirect(reverse('baseline.baselineterm_list'))
+            return super(BaselineTermCRUDL.DataSpoof, self).dispatch(request, *args, **kwargs)
+
         def get_form_kwargs(self):
             kwargs = super(BaselineTermCRUDL.DataSpoof, self).get_form_kwargs()
             kwargs.setdefault('org', self.request.org)
@@ -204,6 +210,12 @@ class BaselineTermCRUDL(SmartCRUDL):
             return HttpResponseRedirect(self.get_success_url())
 
     class ClearSpoof(OrgPermsMixin, SmartView, View):
+
+        def dispatch(self, request, *args, **kwargs):
+            # Prevent Data Spoof for orgs with show_spoof_data turned off
+            if not self.request.org.show_spoof_data:
+                return HttpResponseRedirect(reverse('baseline.baselineterm_list'))
+            return super(BaselineTermCRUDL.DataSpoof, self).dispatch(request, *args, **kwargs)
 
         def post(self, request, *args, **kwargs):
             # Spoofed data has TYPE_SPOOFED. Filter only for current org.

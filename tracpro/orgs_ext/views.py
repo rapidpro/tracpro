@@ -19,8 +19,8 @@ class OrgExtCRUDL(OrgCRUDL):
     class Create(OrgCRUDL.Create):
         form_class = forms.OrgExtForm
         fields = ('name', 'available_languages', 'language',
-                  'timezone', 'subdomain', 'api_token', 'logo',
-                  'administrators')
+                  'timezone', 'subdomain', 'api_token', 'show_spoof_data',
+                  'logo', 'administrators')
 
     class List(OrgCRUDL.List):
         default_order = ('name',)
@@ -29,7 +29,7 @@ class OrgExtCRUDL(OrgCRUDL):
         form_class = forms.OrgExtForm
         fields = ('is_active', 'name', 'available_languages', 'language',
                   'contact_fields', 'timezone', 'subdomain', 'api_token',
-                  'logo', 'administrators')
+                  'show_spoof_data', 'logo', 'administrators')
 
     class Home(OrgCRUDL.Home):
         fields = ('name', 'timezone', 'api_token', 'last_contact_sync',
