@@ -423,6 +423,11 @@ class ResponseCRUDL(smartmin.SmartCRUDL):
                 include_subregions=self.request.include_subregions,
                 include_empty=False)
 
+        def get_paginate_by(self, queryset):
+            if self.csv:
+                return None
+            return super(ResponseCRUDL.ByPollrun, self).get_paginate_by(queryset)
+
         def lookup_field_label(self, context, field, default=None):
             if field.startswith('question_'):
                 question = self.derive_questions()[field]
