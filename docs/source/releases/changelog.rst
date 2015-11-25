@@ -12,6 +12,8 @@ v1.0.1 (unreleased)
 
 Code diff: https://github.com/rapidpro/tracpro/compare/v1.0.0...develop
 
+* Updated contact sync to run every 30 minutes, rather than every 5.
+
 v1.0.0 (released 2015-11-19)
 ----------------------------
 
