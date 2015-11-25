@@ -7,10 +7,15 @@ Tracpro's version is incremented upon each merge to master according to our
 We recommend reviewing the release notes and code diffs before upgrading
 between versions.
 
-v1.0.1 (released: 2015-11-25)
+v1.0.2 (unreleased)
 -------------------
 
-Code diff: https://github.com/rapidpro/tracpro/compare/v1.0.0...develop
+Code diff: https://github.com/rapidpro/tracpro/compare/v1.0.1...develop
+
+v1.0.1 (released 2015-11-25)
+-----------------------------
+
+Code diff: https://github.com/rapidpro/tracpro/compare/v1.0.0...v1.0.1
 
 * Updated contact sync to run every 30 minutes, rather than every 5.
 
