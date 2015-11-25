@@ -7,10 +7,13 @@ Tracpro's version is incremented upon each merge to master according to our
 We recommend reviewing the release notes and code diffs before upgrading
 between versions.
 
-v1.0.2 (unreleased)
--------------------
+v1.0.2 (released 2015-11-25)
+----------------------------
 
-Code diff: https://github.com/rapidpro/tracpro/compare/v1.0.1...develop
+Code diff: https://github.com/rapidpro/tracpro/compare/v1.0.1...v1.0.2
+
+* Don't paginate results on responses CSV export.
+* Show participant count in participant column on PollRun ByPoll page.
 
 v1.0.1 (released 2015-11-25)
 -----------------------------
