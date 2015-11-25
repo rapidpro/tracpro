@@ -1,7 +1,6 @@
 from __future__ import absolute_import, unicode_literals
 
 from collections import OrderedDict
-from itertools import chain
 
 import unicodecsv
 
@@ -133,7 +132,7 @@ class PollRunListMixin(object):
             return obj.get_response_counts(
                 self.request.region, self.request.include_subregions)
         counts = get_obj_cacheable(obj, '_response_counts', calculate)
-        return chain(counts.values())
+        return sum(counts.values())
 
     def get_responses(self, obj):
         def calculate():
