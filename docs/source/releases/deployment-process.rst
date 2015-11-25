@@ -111,5 +111,7 @@ Release to production
 #. On the ``develop`` branch, increment the micro version and change the code
    state to ``"dev"``. Commit these changes and push to GitHub.
 
+#. Run ReadTheDocs builds for the new release & the latest develop.
+
 
 .. _semantic versioning: http://semver.org/
