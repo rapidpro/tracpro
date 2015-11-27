@@ -627,6 +627,7 @@ class AnswerQuerySet(models.QuerySet):
         dates = []
         total = float(0)
         response_date = ""
+        # import ipdb; ipdb.set_trace()
         for answer in self:
             if response_date != answer.response.created_on.date():
                 # Append the sum total value for each date

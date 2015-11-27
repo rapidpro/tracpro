@@ -52,35 +52,38 @@
 
     </h3>
 
-    <div id='chart_{{ question.pk }}' class='chart' data-window-max='{{ window_max }}' data-window-min='{{ window_min }}' ></div>
-    <script>
-      $(function () {
-        $('#chart_{{ question.pk }}').highcharts({
-            title: {
-                text: '{{ question.text }}'
-            },
-            xAxis: {
-              categories: [
-                          {% for date in question.date_list %}
-                            '{{ date }}'{% if not forloop.last %},{% endif %}
-                          {% endfor %}
-                          ]
-            },
-            series: [
-                {
-                type: 'area',
-                name: '{{ question.text }}',
-                {% if value_type_selected|lower ==  "sum" %}
-                  data: {{ question.answer_sum_list }}
-                {% elif value_type_selected|lower ==  "average" %}
-                  data: {{ question.answer_average_list }}
-                {% endif %}
-              }
-            ]
-        });
-    });
-    </script>
-
+    {% if question.date_list %}
+      <div id='chart_{{ question.pk }}' class='chart' data-window-max='{{ window_max }}' data-window-min='{{ window_min }}' ></div>
+      <script>
+        $(function () {
+          $('#chart_{{ question.pk }}').highcharts({
+              title: {
+                  text: '{{ question.text }}'
+              },
+              xAxis: {
+                categories: [
+                            {% for date in question.date_list %}
+                              '{{ date }}'{% if not forloop.last %},{% endif %}
+                            {% endfor %}
+                            ]
+              },
+              series: [
+                  {
+                  type: 'area',
+                  name: '{{ question.text }}',
+                  {% if value_type_selected|lower ==  "sum" %}
+                    data: {{ question.answer_sum_list }}
+                  {% elif value_type_selected|lower ==  "average" %}
+                    data: {{ question.answer_average_list }}
+                  {% endif %}
+                }
+              ]
+          });
+      });
+      </script>
+    {% else %}
+      <div class="chart-no-data">No data for this date window.</div>
+    {% endif %}
   {% endfor %}
 {% endblock %}
 {% block extra-script %}

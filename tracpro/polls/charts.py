@@ -50,7 +50,7 @@ def single_pollrun(pollrun, question, regions):
     return chart_type, render_data(chart_data)
 
 
-def multiple_pollruns(pollruns, question, regions):
+def multiple_pollruns_old(pollruns, question, regions):
     """Chart data for multiple pollruns of a poll."""
 
     if question.type == Question.TYPE_OPEN:
@@ -103,8 +103,9 @@ def multiple_pollruns(pollruns, question, regions):
     return chart_type, render_data(chart_data)
 
 
-def multiple_pollruns_sum(pollruns, question, regions):
+def multiple_pollruns(pollruns, question, regions):
     """Chart data for multiple pollruns of a poll."""
+    # import ipdb; ipdb.set_trace()
     responses = Response.objects.filter(pollrun__in=pollruns)
     answers = Answer.objects.filter(response__in=responses, question=question)
     answers = answers.order_by('response__created_on')

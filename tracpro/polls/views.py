@@ -60,7 +60,7 @@ class PollCRUDL(smartmin.SmartCRUDL):
 
             for question in questions:
                 (question.answer_sum_list, question.answer_average_list,
-                    question.date_list) = charts.multiple_pollruns_sum(
+                    question.date_list) = charts.multiple_pollruns(
                     pollruns, question, self.request.data_regions)
 
             context['window'] = window
