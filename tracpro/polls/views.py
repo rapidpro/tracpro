@@ -1,7 +1,6 @@
 from __future__ import absolute_import, unicode_literals
 
 from collections import OrderedDict
-from itertools import chain
 
 import unicodecsv
 
@@ -139,7 +138,7 @@ class PollRunListMixin(object):
             return obj.get_response_counts(
                 self.request.region, self.request.include_subregions)
         counts = get_obj_cacheable(obj, '_response_counts', calculate)
-        return chain(counts.values())
+        return sum(counts.values())
 
     def get_responses(self, obj):
         def calculate():
@@ -393,6 +392,11 @@ class ResponseCRUDL(smartmin.SmartCRUDL):
         field_config = {'updated_on': {'label': _("Date")}}
         link_fields = ('contact',)
 
+        def dispatch(self, request, *args, **kwargs):
+            self.csv = request.GET.get('_format') == 'csv'
+            return super(ResponseCRUDL.ByPollrun, self).dispatch(
+                request, *args, **kwargs)
+
         @classmethod
         def derive_url_pattern(cls, path, action):
             return r'^%s/%s/(?P<pollrun>\d+)/$' % (path, action)
@@ -423,6 +427,11 @@ class ResponseCRUDL(smartmin.SmartCRUDL):
                 region=self.request.region,
                 include_subregions=self.request.include_subregions,
                 include_empty=False)
+
+        def get_paginate_by(self, queryset):
+            if self.csv:
+                return None
+            return super(ResponseCRUDL.ByPollrun, self).get_paginate_by(queryset)
 
         def lookup_field_label(self, context, field, default=None):
             if field.startswith('question_'):
@@ -466,7 +475,7 @@ class ResponseCRUDL(smartmin.SmartCRUDL):
             pollrun = self.derive_pollrun()
             context['pollrun'] = pollrun
 
-            if '_format' not in self.request.POST and '_format' not in self.request.GET:
+            if not self.csv:
                 # can only restart regional polls and if they're the last pollrun
                 can_restart = self.request.region and pollrun.is_last_for_region(
                     self.request.region)
@@ -488,9 +497,7 @@ class ResponseCRUDL(smartmin.SmartCRUDL):
             return context
 
         def render_to_response(self, context, **response_kwargs):
-            _format = self.request.POST.get('_format', self.request.GET.get('_format', None))
-
-            if _format == 'csv':
+            if self.csv:
                 response = HttpResponse(content_type='text/csv', status=200)
                 response['Content-Disposition'] = 'attachment; filename="responses.csv"'
                 writer = unicodecsv.writer(response)
@@ -517,9 +524,8 @@ class ResponseCRUDL(smartmin.SmartCRUDL):
                     writer.writerow(resp_cols + contact_cols + answer_cols)
 
                 return response
-            else:
-                return super(ResponseCRUDL.ByPollrun, self).render_to_response(
-                    context, **response_kwargs)
+            return super(ResponseCRUDL.ByPollrun, self).render_to_response(
+                context, **response_kwargs)
 
     class ByContact(OrgPermsMixin, smartmin.SmartListView):
         fields = ('updated_on', 'poll', 'answers')
