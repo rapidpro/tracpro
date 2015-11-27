@@ -215,7 +215,7 @@ class BaselineTermCRUDL(SmartCRUDL):
             # Prevent Data Spoof for orgs with show_spoof_data turned off
             if not self.request.org.show_spoof_data:
                 return HttpResponseRedirect(reverse('baseline.baselineterm_list'))
-            return super(BaselineTermCRUDL.DataSpoof, self).dispatch(request, *args, **kwargs)
+            return super(BaselineTermCRUDL.ClearSpoof, self).dispatch(request, *args, **kwargs)
 
         def post(self, request, *args, **kwargs):
             # Spoofed data has TYPE_SPOOFED. Filter only for current org.
