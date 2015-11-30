@@ -7,10 +7,19 @@ Tracpro's version is incremented upon each merge to master according to our
 We recommend reviewing the release notes and code diffs before upgrading
 between versions.
 
-v1.0.3 (unreleased)
+v1.0.4 (unreleased)
 -------------------
 
-Code diff: https://github.com/rapidpro/tracpro/compare/v1.0.2...develop
+Code diff: https://github.com/rapidpro/tracpro/compare/v1.0.3...develop
+
+v1.0.3 (released 2015-11-30)
+-------------------
+
+Code diff: https://github.com/rapidpro/tracpro/compare/v1.0.2...v1.0.3
+
+* Bug fix for clearing spoof data. See `#100 <https://github.com/rapidpro/tracpro/pull/100>`_.
+* Release notes added for ReadTheDocs builds
+
 
 v1.0.2 (released 2015-11-25)
 ----------------------------
