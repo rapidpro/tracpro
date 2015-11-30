@@ -18,7 +18,7 @@ Copying data for local development
 To copy the database and media files from a remote server to your local
 development environment::
 
-    fab [production|staging] mirror_to_dev
+    fab [production|staging] reset_local_db
 
 **NOTE:** Migrations must be run (``django-admin migrate``) if the local
 branch has migrations that have not yet been run on the remote server.
