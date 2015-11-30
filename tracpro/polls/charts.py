@@ -9,6 +9,7 @@ import operator
 
 from dash.utils import datetime_to_ms
 
+from django.db.models import Count
 from django.utils.safestring import mark_safe
 
 from .models import Answer, Question, Response
@@ -103,6 +104,13 @@ def multiple_pollruns_old(pollruns, question, regions):
     return chart_type, render_data(chart_data)
 
 
+def find_dict_index_in_list(lst, key, value):
+    for i, dic in enumerate(lst):
+        if dic[key] == value:
+            return i
+    return -1
+
+
 def multiple_pollruns(pollruns, question, regions):
     """Chart data for multiple pollruns of a poll."""
     responses = Response.objects.filter(pollrun__in=pollruns)
@@ -110,8 +118,31 @@ def multiple_pollruns(pollruns, question, regions):
     answers = answers.order_by('response__created_on')
     answer_sum_list, answer_average_list, date_list = answers.numeric_group_by_date()
 
-    return answer_sum_list, answer_average_list, date_list
+    # Calculate the response rate per day
+    # import ipdb; ipdb.set_trace()
+    responses = responses.order_by('created_on')
+    responses_complete = responses.filter(status='C')
+    responses_complete = responses_complete.extra({'date_created' : "date(created_on)"})
+    responses_complete = responses_complete.values(
+        'date_created').annotate(created_count=Count('id'))
 
+    responses = responses.extra({'date_created' : "date(created_on)"})
+    responses = responses.values(
+        'date_created').annotate(created_count=Count('id'))
+    # import ipdb; ipdb.set_trace()
+    for i, response_dict in enumerate(responses):
+        response_dict['rate'] = 0  # Set response rate to 0 for any dates with no complete responses
+
+    for i, response_dict in enumerate(responses):
+        index_res_complete = find_dict_index_in_list(
+            responses_complete, 'date_created', response_dict['date_created'])
+        if index_res_complete > -1:
+            response_dict['rate'] = round(
+                float(responses_complete[index_res_complete]['created_count']/\
+                float(response_dict['created_count'])), 2)
+
+    # import ipdb; ipdb.set_trace()
+    return answer_sum_list, answer_average_list, date_list
 
 def word_cloud_data(word_counts):
     return [{'text': word, 'weight': count} for word, count in word_counts]
