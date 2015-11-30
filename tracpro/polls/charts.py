@@ -107,9 +107,15 @@ def multiple_pollruns(pollruns, question, regions):
     """Chart data for multiple pollruns of a poll."""
     # import ipdb; ipdb.set_trace()
     responses = Response.objects.filter(pollrun__in=pollruns)
+    # import ipdb; ipdb.set_trace()
     answers = Answer.objects.filter(response__in=responses, question=question)
     answers = answers.order_by('response__created_on')
     answer_sum_list, answer_average_list, date_list = answers.numeric_group_by_date()
+
+    # TODO response rate
+    # res2 = responses.filter(status='E')
+    # res2 = res2.extra({'date_created':"date(created_on)"})
+    # res2 = res2.values('date_created').annotate(created_count=Count('id'))
 
     return answer_sum_list, answer_average_list, date_list
 
