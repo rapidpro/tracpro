@@ -58,8 +58,10 @@ class PollCRUDL(smartmin.SmartCRUDL):
             pollruns = pollruns.order_by('conducted_on')
 
             for question in questions:
-                (question.answer_sum_list, question.answer_average_list,
-                    question.date_list) = charts.multiple_pollruns(
+                (question.answer_sum_list,
+                 question.answer_average_list,
+                 question.response_rate_list,
+                 question.date_list) = charts.multiple_pollruns(
                     pollruns, question, self.request.data_regions)
 
             context['window'] = window
@@ -67,7 +69,7 @@ class PollCRUDL(smartmin.SmartCRUDL):
             context['window_max'] = datetime_to_ms(window_max)
             context['window_options'] = Window.__members__.values()
             context['value_type_selected'] = value_type
-            context['value_type_options'] = ['Sum', 'Average']
+            context['value_type_options'] = ['Sum', 'Average', 'Response Rate']
             context['questions'] = questions
 
             return context

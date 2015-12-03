@@ -9,6 +9,7 @@ import operator
 
 from dash.utils import datetime_to_ms
 
+from django.db import connection
 from django.utils.safestring import mark_safe
 
 from .models import Answer, Question, Response
@@ -103,6 +104,50 @@ def multiple_pollruns_old(pollruns, question, regions):
     return chart_type, render_data(chart_data)
 
 
+def response_rate_query(pollruns_list):
+    query_string = (
+        "SELECT CASE WHEN polls_response.status='C' THEN 'C'"
+        "            ELSE 'I' END as status_IC,"
+        " CAST(count(polls_response.status) as INT) as count_IC,"
+        " date(polls_response.created_on) as date_created"
+        " FROM polls_pollrun, polls_response"
+        " WHERE polls_response.pollrun_id = polls_pollrun.id"
+        " AND polls_pollrun.id IN %s"
+        " GROUP BY date(polls_response.created_on), status_IC"
+        " ORDER BY date_created, status_IC"
+        )
+    response_list = []
+    cursor = connection.cursor()
+    cursor.execute(query_string, [tuple(pollruns_list)])
+    current_date = ""
+    current_complete = 0
+    current_incomplete = 0
+    first_row_read = False
+    while True:
+        row = cursor.fetchone()
+
+        if row is None:
+            break
+
+        if first_row_read and current_date != row[2]:
+            rate = round(100*float(current_complete)/float(current_complete+current_incomplete), 0)
+            response_list.append(rate)
+            current_complete = 0
+            current_incomplete = 0
+
+        if row[0] == 'C':
+            current_complete = row[1]
+        else:
+            current_incomplete = row[1]
+
+        current_date = row[2]
+        first_row_read = True
+    # Calculate the last response rate in the list
+    rate = round(100*float(current_complete)/float(current_complete+current_incomplete), 0)
+    response_list.append(rate)
+    return response_list
+
+
 def multiple_pollruns(pollruns, question, regions):
     """Chart data for multiple pollruns of a poll."""
     responses = Response.objects.filter(pollrun__in=pollruns)
@@ -110,7 +155,10 @@ def multiple_pollruns(pollruns, question, regions):
     answers = answers.order_by('response__created_on')
     answer_sum_list, answer_average_list, date_list = answers.numeric_group_by_date()
 
-    return answer_sum_list, answer_average_list, date_list
+    # Calculate the response rate per day
+    response_rate_list = list(response_rate_query(pollruns.values_list('id', flat=True)))
+
+    return answer_sum_list, answer_average_list, response_rate_list, date_list
 
 
 def word_cloud_data(word_counts):
