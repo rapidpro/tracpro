@@ -152,6 +152,7 @@ def multiple_pollruns(pollruns, question, regions):
     """Chart data for multiple pollruns of a poll."""
     responses = Response.objects.filter(pollrun__in=pollruns)
     answers = Answer.objects.filter(response__in=responses, question=question)
+    answers = answers.select_related('response')
     answers = answers.order_by('response__created_on')
     answer_sum_list, answer_average_list, date_list = answers.numeric_group_by_date()
 
