@@ -114,6 +114,7 @@ def response_rate_calculation(pollruns):
     responses = Response.objects.filter(pollrun__in=pollruns)
     responses = responses.annotate(is_complete=is_complete)
 
+    # Count responses by completion status per pollrun.
     # When an annotation is applied to a values() result, the annotation
     # results are grouped by the unique combinations of the fields specified
     # in the values() clause. Result looks like:
