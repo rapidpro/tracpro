@@ -9,7 +9,7 @@ import operator
 
 from dash.utils import datetime_to_ms
 
-from django.db import connection
+from django.db.models import Count, F
 from django.utils.safestring import mark_safe
 
 from .models import Answer, Question, Response
@@ -104,48 +104,42 @@ def multiple_pollruns_old(pollruns, question, regions):
     return chart_type, render_data(chart_data)
 
 
-def response_rate_query(pollruns_list):
-    query_string = (
-        "SELECT CASE WHEN polls_response.status='C' THEN 'C'"
-        "            ELSE 'I' END as status_IC,"
-        " CAST(count(polls_response.status) as INT) as count_IC,"
-        " date(polls_response.created_on) as date_created"
-        " FROM polls_pollrun, polls_response"
-        " WHERE polls_response.pollrun_id = polls_pollrun.id"
-        " AND polls_pollrun.id IN %s"
-        " GROUP BY date(polls_response.created_on), status_IC"
-        " ORDER BY date_created, status_IC"
-        )
-    response_list = []
-    cursor = connection.cursor()
-    cursor.execute(query_string, [tuple(pollruns_list)])
-    current_date = ""
-    current_complete = 0
-    current_incomplete = 0
+def response_rate_calculation(pollruns):
+    # A response is complete if its status attribute is 'C'.
+    response_rate_list = []
+
+    is_complete = F('status')._combine(Response.STATUS_COMPLETE, '=', False)
+    responses = Response.objects.filter(pollrun__in=pollruns)
+    responses = responses.annotate(is_complete=is_complete)
+    responses = responses.values_list('pollrun', 'is_complete')
+    responses = responses.order_by('pollrun__conducted_on')
+    responses = responses.annotate(created_count=Count('pk'))
+
+    current_pollrun = ""
+    complete_count = 0
+    incomplete_count = 0
     first_row_read = False
-    while True:
-        row = cursor.fetchone()
-
-        if row is None:
-            break
-
-        if first_row_read and current_date != row[2]:
-            rate = round(100*float(current_complete)/float(current_complete+current_incomplete), 0)
-            response_list.append(rate)
-            current_complete = 0
-            current_incomplete = 0
-
-        if row[0] == 'C':
-            current_complete = row[1]
+    for response in responses:
+        # Calculate Response Rate and append to the list
+        if first_row_read and current_pollrun != response[0]:
+            rate = round(100*float(complete_count)/float(complete_count+incomplete_count), 0)
+            response_rate_list.append(rate)
+            complete_count = 0
+            incomplete_count = 0
+        # Complete Response
+        if response[1]:
+            complete_count = response[2]
+        # Incomplete Response
         else:
-            current_incomplete = row[1]
+            incomplete_count = response[2]
 
-        current_date = row[2]
+        current_pollrun = response[0]
         first_row_read = True
-    # Calculate the last response rate in the list
-    rate = round(100*float(current_complete)/float(current_complete+current_incomplete), 0)
-    response_list.append(rate)
-    return response_list
+
+    # Calculate the last rate and append it to the list
+    rate = round(100*float(complete_count)/float(complete_count+incomplete_count), 2)
+    response_rate_list.append(rate)
+    return response_rate_list
 
 
 def multiple_pollruns(pollruns, question, regions):
@@ -156,7 +150,7 @@ def multiple_pollruns(pollruns, question, regions):
     answer_sum_list, answer_average_list, date_list = answers.numeric_group_by_date()
 
     # Calculate the response rate per day
-    response_rate_list = list(response_rate_query(pollruns.values_list('id', flat=True)))
+    response_rate_list = list(response_rate_calculation(pollruns))
 
     return answer_sum_list, answer_average_list, response_rate_list, date_list
 
