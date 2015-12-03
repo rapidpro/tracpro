@@ -4,8 +4,9 @@ import cgi
 from collections import defaultdict, OrderedDict
 import datetime
 from decimal import Decimal
+from itertools import groupby
 import json
-import operator
+from operator import itemgetter
 
 from dash.utils import datetime_to_ms
 
@@ -63,7 +64,7 @@ def multiple_pollruns_old(pollruns, question, regions):
                 overall_counts[word] += count
 
         sorted_counts = sorted(
-            overall_counts.items(), key=operator.itemgetter(1), reverse=True)
+            overall_counts.items(), key=itemgetter(1), reverse=True)
         chart_type = 'word'
         chart_data = word_cloud_data(sorted_counts[:50])
     elif question.type == Question.TYPE_MULTIPLE_CHOICE:
@@ -105,41 +106,45 @@ def multiple_pollruns_old(pollruns, question, regions):
 
 
 def response_rate_calculation(pollruns):
-    # A response is complete if its status attribute is 'C'.
-    response_rate_list = []
-
+    """Return a list of response rates for the pollruns."""
+    # A response is complete if its status attribute equals STATUS_COMPLETE.
+    # This uses an internal, _combine, because F expressions have not
+    # exposed the SQL '=' operator.
     is_complete = F('status')._combine(Response.STATUS_COMPLETE, '=', False)
     responses = Response.objects.filter(pollrun__in=pollruns)
     responses = responses.annotate(is_complete=is_complete)
-    responses = responses.values_list('pollrun', 'is_complete')
-    responses = responses.order_by('pollrun__conducted_on')
-    responses = responses.annotate(created_count=Count('pk'))
 
-    current_pollrun = ""
-    complete_count = 0
-    incomplete_count = 0
-    first_row_read = False
-    for response in responses:
-        # Calculate Response Rate and append to the list
-        if first_row_read and current_pollrun != response[0]:
-            rate = round(100*float(complete_count)/float(complete_count+incomplete_count), 0)
-            response_rate_list.append(rate)
-            complete_count = 0
-            incomplete_count = 0
-        # Complete Response
-        if response[1]:
-            complete_count = response[2]
-        # Incomplete Response
+    # When an annotation is applied to a values() result, the annotation
+    # results are grouped by the unique combinations of the fields specified
+    # in the values() clause. Result looks like:
+    #   [
+    #       {'pollrun': 123, 'is_complete': True, 'count': 5},
+    #       {'pollrun': 123, 'is_complete': False, 'count': 10},
+    #       {'pollrun': 456, 'is_complete': True, 'count': 7},
+    #       {'pollrun': 456, 'is_complete': False, 'count': 12},
+    #       ...
+    #   ]
+    responses = responses.order_by('pollrun')
+    responses = responses.values('pollrun', 'is_complete')
+    responses = responses.annotate(count=Count('pk'))
+
+    # pollrun id -> response data
+    data_by_pollrun = groupby(responses, itemgetter('pollrun'))
+    data_by_pollrun = dict((k, list(v)) for k, v in data_by_pollrun)
+
+    response_rates = []
+    for pollrun in pollruns:
+        response_data = data_by_pollrun.get(pollrun.pk)
+        if response_data:
+            # completion status (True/False) -> count of responses
+            count_by_status = dict((c['is_complete'], c['count']) for c in response_data)
+
+            complete_responses = count_by_status.get(True, 0)
+            total_responses = sum(count_by_status.values())
+            response_rates.append(round(100.0 * complete_responses / total_responses, 2))
         else:
-            incomplete_count = response[2]
-
-        current_pollrun = response[0]
-        first_row_read = True
-
-    # Calculate the last rate and append it to the list
-    rate = round(100*float(complete_count)/float(complete_count+incomplete_count), 2)
-    response_rate_list.append(rate)
-    return response_rate_list
+            response_rates.append(0)
+    return response_rates
 
 
 def multiple_pollruns(pollruns, question, regions):
