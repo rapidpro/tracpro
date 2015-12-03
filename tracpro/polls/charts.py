@@ -104,13 +104,42 @@ def multiple_pollruns_old(pollruns, question, regions):
     return chart_type, render_data(chart_data)
 
 
-def response_rate_query(pollruns):
+def response_rate_calculation(pollruns):
     # A response is complete if its status attribute is 'C'.
+    response_rate_list = []
+
     is_complete = F('status')._combine(Response.STATUS_COMPLETE, '=', False)
     responses = Response.objects.filter(pollrun__in=pollruns)
     responses = responses.annotate(is_complete=is_complete)
     responses = responses.values_list('pollrun', 'is_complete')
-    return responses.annotate(created_count=Count('pk'))
+    responses = responses.order_by('pollrun__conducted_on')
+    responses = responses.annotate(created_count=Count('pk'))
+
+    current_pollrun = ""
+    complete_count = 0
+    incomplete_count = 0
+    first_row_read = False
+    for response in responses:
+        # Calculate Response Rate and append to the list
+        if first_row_read and current_pollrun != response[0]:
+            rate = round(100*float(complete_count)/float(complete_count+incomplete_count), 0)
+            response_rate_list.append(rate)
+            complete_count = 0
+            incomplete_count = 0
+        # Complete Response
+        if response[1]:
+            complete_count = response[2]
+        # Incomplete Response
+        else:
+            incomplete_count = response[2]
+
+        current_pollrun = response[0]
+        first_row_read = True
+
+    # Calculate the last rate and append it to the list
+    rate = round(100*float(complete_count)/float(complete_count+incomplete_count), 2)
+    response_rate_list.append(rate)
+    return response_rate_list
 
 
 def multiple_pollruns(pollruns, question, regions):
@@ -121,7 +150,7 @@ def multiple_pollruns(pollruns, question, regions):
     answer_sum_list, answer_average_list, date_list = answers.numeric_group_by_date()
 
     # Calculate the response rate per day
-    response_rate_list = list(response_rate_query(pollruns))
+    response_rate_list = list(response_rate_calculation(pollruns))
 
     return answer_sum_list, answer_average_list, response_rate_list, date_list
 
