@@ -635,7 +635,7 @@ class AnswerQuerySet(models.QuerySet):
                 # Append the sum total value for each date
                 if total:
                     answer_sums.append(total)
-                    answer_averages.append(round(float(total/total_answers), 2))
+                    answer_averages.append(round(total/total_answers, 2))
                     dates.append(response_date)
                     pollrun_list.append(pollrun_pk)
                 response_date = answer.response.created_on.date()
@@ -650,7 +650,7 @@ class AnswerQuerySet(models.QuerySet):
         # One last value to append, for the final date
         if total:
             answer_sums.append(total)
-            answer_averages.append(round(float(total/total_answers), 2))
+            answer_averages.append(round(total/total_answers, 2))
             dates.append(response_date)
             pollrun_list.append(pollrun_pk)
         return answer_sums, answer_averages, dates, pollrun_list
