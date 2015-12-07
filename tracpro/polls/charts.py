@@ -172,7 +172,7 @@ def multiple_pollruns(pollruns, question, regions):
     # Calculate the mean, standard deviation and average response rate to display
     answer_mean = round(numpy.mean(answer_average_list), 2)
     answer_stdev = round(numpy.std(answer_average_list), 2)
-    response_rate_average = round(numpy.std(response_rate_list), 2)
+    response_rate_average = round(numpy.mean(response_rate_list), 2)
 
     return (answer_sum_list, answer_average_list, response_rate_list, date_list,
             answer_mean, answer_stdev, response_rate_average)
