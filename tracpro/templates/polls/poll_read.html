@@ -17,7 +17,16 @@
       <form class='form-inline' method='get'>
         <label class='control-label' for='window-select'></label>
         {% trans "Show" %}
-        <select id='window-select' class='form-control' onchange='onChartWindowChange(this)' name='window'>
+        <select id='value-type-select' class='form-control' onchange='onValueTypeChange(this)' name='value_type'>
+          {% for value_type in value_type_options %}
+            {% if value_type == value_type_selected %}
+              <option selected='selected' value='{{ value_type }}'>{{ value_type }}</option>
+            {% else %}
+              <option value='{{ value_type }}'>{{ value_type }}</option>
+            {% endif %}
+          {% endfor %}
+        </select>
+        <select id='window-select' class='form-control' onchange='onWindowChange(this)' name='window'>
           {% for win in window_options %}
             {% if win == window %}
               <option selected='selected' value='{{ win.name }}'>
@@ -26,8 +35,6 @@
             {% else %}
               <option value='{{ win.name }}'>
                 {{ win.label }}
-
-
               </option>
             {% endif %}
           {% endfor %}
@@ -37,23 +44,74 @@
   </div>
   {% for question in questions %}
     <h3>
-      {{ question.order }}. {{ question.text }}
+      {{ question.order }}. {{ question.text }}: {{ value_type_selected }}
 
     </h3>
-    <div class='chart' data-chart-type='{{ question.chart_type }}' data-unit-text='{{ question.text }}' data-question-id='{{ question.pk }}' data-window-max='{{ window_max }}' data-window-min='{{ window_min }}' dir='ltr'></div>
-    <script type='text/javascript'>
-      var chart_{{ question.pk }}_data = {{ question.chart_data }};
 
+    {% if question.date_list %}
+      <div id='chart_{{ question.pk }}' class='chart' data-window-max='{{ window_max }}' data-window-min='{{ window_min }}' ></div>
+      <script>
+        $(function () {
+          $('#chart_{{ question.pk }}').highcharts({
+              title: {
+                  text: ''
+              },
+              xAxis: {
+                categories: [
+                            {% for date in question.date_list %}
+                              '{{ date }}'{% if not forloop.last %},{% endif %}
+                            {% endfor %}
+                            ]
+              },
+              series: [
+                  {
+                  type: 'area',
+                  name: '{{ question.text }}',
+                  {% if value_type_selected|lower ==  "sum" %}
+                    data: {{ question.answer_sum_list }}
+                  {% elif value_type_selected|lower ==  "average" %}
+                    data: {{ question.answer_average_list }}
+                  {% elif value_type_selected|lower ==  "response rate" %}
+                    data: {{ question.response_rate_list }}
+                  {% endif %}
+                }
+              ]
+          });
+      });
+      </script>
+    {% else %}
+      <div class="chart-no-data">No data for this date window.</div>
+    {% endif %}
 
-    </script>
   {% endfor %}
 {% endblock %}
 {% block extra-script %}
 <script type='text/javascript'>
-// <![CDATA[
-    function onChartWindowChange(ctrl) {
+    // <![CDATA[
+    function onWindowChange(ctrl) {
       ctrl.form.submit();
     }
-// ]]>
+    function onValueTypeChange(ctrl) {
+      valueType = $("#value-type-select :selected").text().toLowerCase();
+      if (valueType == "sum") {
+          {% for question in questions %}
+            var chart = $('#chart_{{ question.pk }}').highcharts();
+            chart.series[0].setData({{ question.answer_sum_list }});
+          {% endfor %}
+      }
+      else if (valueType == "average") {
+          {% for question in questions %}
+            var chart = $('#chart_{{ question.pk }}').highcharts();
+            chart.series[0].setData({{ question.answer_average_list }});
+          {% endfor %}
+      }
+      else if (valueType == "response rate") {
+          {% for question in questions %}
+            var chart = $('#chart_{{ question.pk }}').highcharts();
+            chart.series[0].setData({{ question.response_rate_list }});
+          {% endfor %}
+      }
+    }
+    // ]]>
 </script>
 {% endblock %}

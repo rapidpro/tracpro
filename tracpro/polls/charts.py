@@ -4,14 +4,16 @@ import cgi
 from collections import defaultdict, OrderedDict
 import datetime
 from decimal import Decimal
+from itertools import groupby
 import json
-import operator
+from operator import itemgetter
 
 from dash.utils import datetime_to_ms
 
+from django.db.models import Count, F
 from django.utils.safestring import mark_safe
 
-from .models import Question
+from .models import Answer, Question, Response
 
 
 class ChartJsonEncoder(json.JSONEncoder):
@@ -50,7 +52,7 @@ def single_pollrun(pollrun, question, regions):
     return chart_type, render_data(chart_data)
 
 
-def multiple_pollruns(pollruns, question, regions):
+def multiple_pollruns_old(pollruns, question, regions):
     """Chart data for multiple pollruns of a poll."""
 
     if question.type == Question.TYPE_OPEN:
@@ -62,7 +64,7 @@ def multiple_pollruns(pollruns, question, regions):
                 overall_counts[word] += count
 
         sorted_counts = sorted(
-            overall_counts.items(), key=operator.itemgetter(1), reverse=True)
+            overall_counts.items(), key=itemgetter(1), reverse=True)
         chart_type = 'word'
         chart_data = word_cloud_data(sorted_counts[:50])
     elif question.type == Question.TYPE_MULTIPLE_CHOICE:
@@ -101,6 +103,68 @@ def multiple_pollruns(pollruns, question, regions):
         chart_data = []
 
     return chart_type, render_data(chart_data)
+
+
+def response_rate_calculation(responses, pollrun_list):
+    """Return a list of response rates for the pollruns."""
+    # A response is complete if its status attribute equals STATUS_COMPLETE.
+    # This uses an internal, _combine, because F expressions have not
+    # exposed the SQL '=' operator.
+    is_complete = F('status')._combine(Response.STATUS_COMPLETE, '=', False)
+    responses = responses.annotate(is_complete=is_complete)
+
+    # Count responses by completion status per pollrun.
+    # When an annotation is applied to a values() result, the annotation
+    # results are grouped by the unique combinations of the fields specified
+    # in the values() clause. Result looks like:
+    #   [
+    #       {'pollrun': 123, 'is_complete': True, 'count': 5},
+    #       {'pollrun': 123, 'is_complete': False, 'count': 10},
+    #       {'pollrun': 456, 'is_complete': True, 'count': 7},
+    #       {'pollrun': 456, 'is_complete': False, 'count': 12},
+    #       ...
+    #   ]
+    responses = responses.order_by('pollrun')
+    responses = responses.values('pollrun', 'is_complete')
+    responses = responses.annotate(count=Count('pk'))
+
+    # pollrun id -> response data
+    data_by_pollrun = groupby(responses, itemgetter('pollrun'))
+    data_by_pollrun = dict((k, list(v)) for k, v in data_by_pollrun)
+
+    response_rates = []
+    for pollrun in pollrun_list:
+        response_data = data_by_pollrun.get(pollrun)
+        if response_data:
+            # completion status (True/False) -> count of responses
+            count_by_status = dict((c['is_complete'], c['count']) for c in response_data)
+
+            complete_responses = count_by_status.get(True, 0)
+            total_responses = sum(count_by_status.values())
+            response_rates.append(round(100.0 * complete_responses / total_responses, 2))
+        else:
+            response_rates.append(0)
+    return response_rates
+
+
+def multiple_pollruns(pollruns, question, regions):
+    """Chart data for multiple pollruns of a poll."""
+    responses = Response.objects.filter(pollrun__in=pollruns)
+    responses = responses.filter(is_active=True)
+
+    if regions:
+        responses = responses.filter(contact__region__in=regions)
+
+    answers = Answer.objects.filter(response__in=responses, question=question)
+    answers = answers.select_related('response')
+    answers = answers.order_by('response__created_on')
+    (answer_sum_list, answer_average_list,
+        date_list, pollrun_list) = answers.numeric_group_by_date()
+
+    # Calculate the response rate per day
+    response_rate_list = list(response_rate_calculation(responses, pollrun_list))
+
+    return answer_sum_list, answer_average_list, response_rate_list, date_list
 
 
 def word_cloud_data(word_counts):
