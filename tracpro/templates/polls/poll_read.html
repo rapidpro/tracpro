@@ -44,8 +44,8 @@
   </div>
   {% for question in questions %}
     <h3>
-      {{ question.order }}. {{ question.text }}: {{ value_type_selected }}
-
+      {{ question.order }}. {{ question.text }}:
+      <span id="question-heading-value-type">{{ value_type_selected|title }}</span>
     </h3>
 
     {% if question.date_list %}
@@ -97,18 +97,21 @@
           {% for question in questions %}
             var chart = $('#chart_{{ question.pk }}').highcharts();
             chart.series[0].setData({{ question.answer_sum_list }});
+            $("#question-heading-value-type").html("Sum");
           {% endfor %}
       }
       else if (valueType == "average") {
           {% for question in questions %}
             var chart = $('#chart_{{ question.pk }}').highcharts();
             chart.series[0].setData({{ question.answer_average_list }});
+            $("#question-heading-value-type").html("Average");
           {% endfor %}
       }
       else if (valueType == "response rate") {
           {% for question in questions %}
             var chart = $('#chart_{{ question.pk }}').highcharts();
             chart.series[0].setData({{ question.response_rate_list }});
+            $("#question-heading-value-type").html("Response Rate");
           {% endfor %}
       }
     }
