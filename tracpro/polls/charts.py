@@ -6,6 +6,7 @@ import datetime
 from decimal import Decimal
 from itertools import groupby
 import json
+import numpy
 from operator import itemgetter
 
 from dash.utils import datetime_to_ms
@@ -158,13 +159,25 @@ def multiple_pollruns(pollruns, question, regions):
     answers = Answer.objects.filter(response__in=responses, question=question)
     answers = answers.select_related('response')
     answers = answers.order_by('response__created_on')
+
+    # Calculate/retrieve the list of sums, list of averages,
+    # list of pollrun dates, and list of pollrun id's
+    # per pollrun date
     (answer_sum_list, answer_average_list,
         date_list, pollrun_list) = answers.numeric_group_by_date()
 
     # Calculate the response rate per day
     response_rate_list = list(response_rate_calculation(responses, pollrun_list))
 
-    return answer_sum_list, answer_average_list, response_rate_list, date_list
+    # Calculate the mean, standard deviation and average response rate to display
+    average_mean = round(numpy.mean(answer_average_list), 1)
+    average_stdev = round(numpy.std(answer_average_list), 1)
+    sum_mean = round(numpy.mean(answer_sum_list), 1)
+    sum_stdev = round(numpy.std(answer_sum_list), 1)
+    response_rate_average = round(numpy.std(response_rate_list), 1)
+
+    return (answer_sum_list, answer_average_list, response_rate_list, date_list,
+            average_mean, average_stdev, sum_mean, sum_stdev, response_rate_average)
 
 
 def word_cloud_data(word_counts):
