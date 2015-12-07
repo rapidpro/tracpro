@@ -105,13 +105,12 @@ def multiple_pollruns_old(pollruns, question, regions):
     return chart_type, render_data(chart_data)
 
 
-def response_rate_calculation(pollruns):
+def response_rate_calculation(responses, pollrun_list):
     """Return a list of response rates for the pollruns."""
     # A response is complete if its status attribute equals STATUS_COMPLETE.
     # This uses an internal, _combine, because F expressions have not
     # exposed the SQL '=' operator.
     is_complete = F('status')._combine(Response.STATUS_COMPLETE, '=', False)
-    responses = Response.objects.filter(pollrun__in=pollruns)
     responses = responses.annotate(is_complete=is_complete)
 
     # Count responses by completion status per pollrun.
@@ -134,8 +133,8 @@ def response_rate_calculation(pollruns):
     data_by_pollrun = dict((k, list(v)) for k, v in data_by_pollrun)
 
     response_rates = []
-    for pollrun in pollruns:
-        response_data = data_by_pollrun.get(pollrun.pk)
+    for pollrun in pollrun_list:
+        response_data = data_by_pollrun.get(pollrun)
         if response_data:
             # completion status (True/False) -> count of responses
             count_by_status = dict((c['is_complete'], c['count']) for c in response_data)
@@ -151,13 +150,19 @@ def response_rate_calculation(pollruns):
 def multiple_pollruns(pollruns, question, regions):
     """Chart data for multiple pollruns of a poll."""
     responses = Response.objects.filter(pollrun__in=pollruns)
+    responses = responses.filter(is_active=True)
+
+    if regions:
+        responses = responses.filter(contact__region__in=regions)
+
     answers = Answer.objects.filter(response__in=responses, question=question)
     answers = answers.select_related('response')
     answers = answers.order_by('response__created_on')
-    answer_sum_list, answer_average_list, date_list = answers.numeric_group_by_date()
+    (answer_sum_list, answer_average_list,
+        date_list, pollrun_list) = answers.numeric_group_by_date()
 
     # Calculate the response rate per day
-    response_rate_list = list(response_rate_calculation(pollruns))
+    response_rate_list = list(response_rate_calculation(responses, pollrun_list))
 
     return answer_sum_list, answer_average_list, response_rate_list, date_list
 

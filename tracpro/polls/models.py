@@ -620,13 +620,16 @@ class AnswerQuerySet(models.QuerySet):
         answer_sums: list of sum of each value on each date ie. [33, 40, ...]
         answer_averages: list of average of each value on each date ie. [33, 40, ...]
         dates: list of distinct dates ie. [datetime.date(2015, 8, 12),...]
+        pollrun_list: list of pollrun id's for this set of data
         """
         answer_sums = []
         answer_averages = []
         total_answers = 0
         dates = []
+        pollrun_list = []
         total = float(0)
         response_date = ""
+        pollrun_pk = 0
         for answer in self:
             if response_date != answer.response.created_on.date():
                 # Append the sum total value for each date
@@ -634,7 +637,9 @@ class AnswerQuerySet(models.QuerySet):
                     answer_sums.append(total)
                     answer_averages.append(float(total/total_answers))
                     dates.append(response_date)
+                    pollrun_list.append(pollrun_pk)
                 response_date = answer.response.created_on.date()
+                pollrun_pk = answer.response.pollrun.pk
                 total = float(0)
                 total_answers = 0
             try:
@@ -647,7 +652,8 @@ class AnswerQuerySet(models.QuerySet):
             answer_sums.append(total)
             answer_averages.append(float(total/total_answers))
             dates.append(response_date)
-        return answer_sums, answer_averages, dates
+            pollrun_list.append(pollrun_pk)
+        return answer_sums, answer_averages, dates, pollrun_list
 
     def numeric_sum_all_dates(self):
         """

@@ -109,7 +109,7 @@ class BaselineTerm(models.Model):
             self.follow_up_question, self.follow_up_poll, regions, region_selected)
 
         answers = answers.order_by('submitted_on')
-        answers_list, answers_avg_list, dates = answers.numeric_group_by_date()
+        answers_list, answers_avg_list, dates, pollrun_list = answers.numeric_group_by_date()
         return answers_list, dates, all_regions, response_rate
 
     def check_for_data(self, regions):
