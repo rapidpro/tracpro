@@ -50,6 +50,8 @@
 
     {% if question.date_list %}
       <div id='chart_{{ question.pk }}' class='chart' data-window-max='{{ window_max }}' data-window-min='{{ window_min }}' ></div>
+      {{ question.answer_sum_dict_list }}
+      <!-- see http://jsfiddle.net/gh/get/jquery/1.7.2/highslide-software/highcharts.com/tree/master/samples/highcharts/plotoptions/series-point-events-click-url/ -->
       <script>
         $(function () {
           $('#chart_{{ question.pk }}').highcharts({
@@ -68,7 +70,7 @@
                   type: 'area',
                   name: '{{ question.text }}',
                   {% if value_type_selected|lower ==  "sum" %}
-                    data: {{ question.answer_sum_list }}
+                    data: {{ question.answer_sum_dict_list }}
                   {% elif value_type_selected|lower ==  "average" %}
                     data: {{ question.answer_average_list }}
                   {% elif value_type_selected|lower ==  "response rate" %}

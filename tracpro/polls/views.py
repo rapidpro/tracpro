@@ -64,7 +64,9 @@ class PollCRUDL(smartmin.SmartCRUDL):
                  question.date_list,
                  question.answer_mean,
                  question.answer_stdev,
-                 question.response_rate_average) = charts.multiple_pollruns(
+                 question.response_rate_average,
+                 question.pollrun_list,
+                 question.answer_sum_dict_list) = charts.multiple_pollruns(
                     pollruns, question, self.request.data_regions)
 
             context['window'] = window

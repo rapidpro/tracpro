@@ -174,8 +174,13 @@ def multiple_pollruns(pollruns, question, regions):
     answer_stdev = round(numpy.std(answer_average_list), 2)
     response_rate_average = round(numpy.mean(response_rate_list), 2)
 
+    # Create dict lists for the three datasets for data point/url
+    answer_sum_dict_list = []
+    for z in zip(answer_sum_list, pollrun_list):
+        answer_sum_dict_list.append({str('y'): z[0], str('url'): str('/pollrun/read/') + str(z[1])})
+
     return (answer_sum_list, answer_average_list, response_rate_list, date_list,
-            answer_mean, answer_stdev, response_rate_average)
+            answer_mean, answer_stdev, response_rate_average, pollrun_list, answer_sum_dict_list)
 
 
 def word_cloud_data(word_counts):
