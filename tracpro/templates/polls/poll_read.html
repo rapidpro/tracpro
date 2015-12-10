@@ -79,6 +79,22 @@
           });
       });
       </script>
+      <table class="table table-striped">
+        <tbody>
+          <tr class="read">
+            <td class="read-half read-label">Mean</td>
+            <td class="read-half read-value">{{ question.answer_mean }}</td>
+          </tr>
+          <tr class="read">
+            <td class="read-half read-label">Standard Deviation</td>
+            <td class="read-half read-value">{{ question.answer_stdev }}</td>
+          </tr>
+          <tr class="read">
+            <td class="read-half read-label">Response Rate Average</td>
+            <td class="read-half read-value">{{ question.response_rate_average }}%</td>
+          </tr>
+        </tbody>
+      </table>
     {% else %}
       <div class="chart-no-data">No data for this date window.</div>
     {% endif %}
