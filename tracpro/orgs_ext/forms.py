@@ -25,8 +25,8 @@ class OrgExtForm(OrgForm):
     show_spoof_data = forms.BooleanField(
         required=False,
         help_text=_("Whether to show spoof data for this organization."))
-    contact_fields = forms.MultipleChoiceField(
-        choices=[], required=False,
+    contact_fields = forms.ModelMultipleChoiceField(
+        queryset=None, required=False,
         help_text=_("Custom contact data fields that should be visible "
                     "and editable in TracPro."))
 
@@ -60,11 +60,9 @@ class OrgExtForm(OrgForm):
                 else:
                     raise
 
-            queryset = self.instance.datafield_set.all()
-            choices = [(f.key, f.display_name) for f in queryset]
-            initial = list(queryset.visible().values_list('key', flat=True))
-            self.fields['contact_fields'].choices = choices
-            self.fields['contact_fields'].initial = initial
+            data_fields = self.instance.datafield_set.all()
+            self.fields['contact_fields'].queryset = data_fields
+            self.fields['contact_fields'].initial = data_fields.visible()
 
     def clean(self):
         """Ensure the default language is chosen from the available languages."""
