@@ -18,7 +18,9 @@ __all__ = [
 class Poll(factory.django.DjangoModelFactory):
     flow_uuid = FuzzyUUID()
     org = factory.SubFactory("tracpro.test.factories.Org")
+    rapidpro_name = factory.LazyAttribute(lambda o: o.name)
     name = factory.fuzzy.FuzzyText()
+    is_active = True
 
     class Meta:
         model = models.Poll

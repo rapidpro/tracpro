@@ -46,22 +46,41 @@ class Window(Enum):
 
 @python_2_unicode_compatible
 class Poll(models.Model):
+    """Corresponds to a RapidPro flow.
+
+    Keeping track of contact responses to a flow is data-intensive, so Tracpro
+    only tracks flows that the user has selected. Selected flows are managed
+    as Polls.
     """
-    Corresponds to a RapidPro Flow
-    """
-    flow_uuid = models.CharField(max_length=36, unique=True)
+    flow_uuid = models.CharField(max_length=36)
+    org = models.ForeignKey('orgs.Org', related_name='polls')
+    rapidpro_name = models.CharField(max_length=64)
+    name = models.CharField(max_length=64, blank=True)
 
-    org = models.ForeignKey(
-        'orgs.Org', verbose_name=_("Organization"), related_name='polls')
+    # Set this to False rather than deleting a Poll. If the user should
+    # re-select the corresponding flow later, we can avoid re-importing
+    # existing data.
+    is_active = models.BooleanField(default=False, verbose_name=_("Show on TracPro"))
 
-    name = models.CharField(
-        max_length=64, verbose_name=_("Name"))  # taken from flow name
+    class Meta:
+        unique_together = ('org', 'flow_uuid')
 
-    is_active = models.BooleanField(
-        default=True, help_text=_("Whether this item is active"))
+    def __init__(self, *args, **kwargs):
+        """Name should default to the RapidPro name."""
+        super(Poll, self).__init__(*args, **kwargs)
+        self.name = self.name or self.rapidpro_name
 
     def __str__(self):
         return self.name
+
+    def save(self, *args, **kwargs):
+        """Don't save custom name if it is the same as the RapidPro name.
+
+        This allows us to track changes to the name on RapidPro.
+        """
+        self.name = self.name if self.name != self.rapidpro_name else ""
+        super(Poll, self).save(*args, **kwargs)
+        self.name = self.name or self.rapidpro_name
 
     @classmethod
     def sync_with_flows(cls, org, flow_uuids):
