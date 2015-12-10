@@ -44,7 +44,7 @@
   </div>
   {% for question in questions %}
     <h3>
-      {{ question.order }}. {{ question.name }}:
+      {{ forloop.counter }}. {{ question.name }}:
       <span id="question-{{ question.pk }}-heading-value-type">{{ value_type_selected|title }}</span>
     </h3>
 
