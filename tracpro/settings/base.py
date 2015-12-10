@@ -249,8 +249,8 @@ CELERYBEAT_SCHEDULE = {
         'schedule': datetime.timedelta(minutes=30),
         'args': (),
     },
-    'sync-fields': {
-        'task': 'tracpro.contacts.tasks.sync_all_fields',
+    'sync-data-fields': {
+        'task': 'tracpro.contacts.tasks.sync_all_data_fields',
         'schedule': datetime.timedelta(days=1),
         'args': (),
     },
