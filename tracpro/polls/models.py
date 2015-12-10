@@ -121,14 +121,18 @@ class Poll(models.Model):
     as Polls.
     """
     flow_uuid = models.CharField(max_length=36)
-    org = models.ForeignKey('orgs.Org', related_name='polls')
-    rapidpro_name = models.CharField(max_length=64)
-    name = models.CharField(max_length=64, blank=True)
+    org = models.ForeignKey(
+        'orgs.Org', related_name='polls', verbose_name=_('org'))
+    rapidpro_name = models.CharField(
+        max_length=64, verbose_name=_('RapidPro name'))
+    name = models.CharField(
+        max_length=64, blank=True, verbose_name=_('name'))
 
     # Set this to False rather than deleting a Poll. If the user should
     # re-select the corresponding flow later, we can avoid re-importing
     # existing data.
-    is_active = models.BooleanField(default=False, verbose_name=_("Show on TracPro"))
+    is_active = models.BooleanField(
+        default=False, verbose_name=_("show on TracPro"))
 
     objects = PollManager()
 
@@ -204,13 +208,18 @@ class Question(models.Model):
     )
 
     ruleset_uuid = models.CharField(max_length=36)
-    poll = models.ForeignKey('polls.Poll', related_name='questions')
-    rapidpro_name = models.CharField(max_length=64)
-    name = models.CharField(max_length=64, blank=True)
-    question_type = models.CharField(max_length=1, choices=TYPE_CHOICES)
-    order = models.IntegerField(default=0)
-
-    is_active = models.BooleanField(default=True, verbose_name=_("Show on TracPro"))
+    poll = models.ForeignKey(
+        'polls.Poll', related_name='questions', verbose_name=_('poll'))
+    rapidpro_name = models.CharField(
+        max_length=64, verbose_name=_('RapidPro name'))
+    name = models.CharField(
+        max_length=64, blank=True, verbose_name=_('name'))
+    question_type = models.CharField(
+        max_length=1, choices=TYPE_CHOICES, verbose_name=_('question type'))
+    order = models.IntegerField(
+        default=0, verbose_name=_('order'))
+    is_active = models.BooleanField(
+        default=True, verbose_name=_("show on TracPro"))
 
     objects = QuestionManager()
 

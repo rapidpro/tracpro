@@ -272,7 +272,7 @@ class DataField(models.Model):
     value_type = models.CharField(
         max_length=1, choices=TYPE_CHOICES, verbose_name=_("value type"))
     show_on_tracpro = models.BooleanField(
-        default=False, verbose_name=_("show_on_tracpro"))
+        default=False, verbose_name=_("show on TracPro"))
 
     objects = DataFieldManager()
 

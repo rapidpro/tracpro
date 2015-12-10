@@ -14,7 +14,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='poll',
             name='rapidpro_name',
-            field=models.CharField(default='', max_length=64),
+            field=models.CharField(default='', max_length=64, verbose_name='RapidPro name'),
             preserve_default=False,
         ),
         migrations.AlterField(
@@ -25,17 +25,17 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='poll',
             name='is_active',
-            field=models.BooleanField(default=False, verbose_name='Show on TracPro'),
+            field=models.BooleanField(default=False, verbose_name='show on TracPro'),
         ),
         migrations.AlterField(
             model_name='poll',
             name='name',
-            field=models.CharField(max_length=64, blank=True),
+            field=models.CharField(max_length=64, blank=True, verbose_name='name'),
         ),
         migrations.AlterField(
             model_name='poll',
             name='org',
-            field=models.ForeignKey(related_name='polls', to='orgs.Org'),
+            field=models.ForeignKey(related_name='polls', verbose_name='org', to='orgs.Org'),
         ),
         migrations.AlterUniqueTogether(
             name='poll',

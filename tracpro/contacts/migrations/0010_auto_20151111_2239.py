@@ -29,7 +29,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='datafield',
             name='show_on_tracpro',
-            field=models.BooleanField(default=False, verbose_name='show_on_tracpro'),
+            field=models.BooleanField(default=False, verbose_name='show on TracPro'),
         ),
         migrations.AlterField(
             model_name='datafield',
