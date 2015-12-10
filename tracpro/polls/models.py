@@ -154,10 +154,6 @@ class Poll(models.Model):
         super(Poll, self).save(*args, **kwargs)
         self.name = self.name or self.rapidpro_name
 
-    @classmethod
-    def get_all(cls, org):
-        return Poll.objects.active().by_org(org)
-
     def get_pollruns(self, org, region=None, include_subregions=True):
         return PollRun.objects.get_all(org, region, include_subregions).filter(poll=self)
 
@@ -599,7 +595,7 @@ class Response(models.Model):
             return response
 
         if not poll:
-            poll = Poll.get_all(org).get(flow_uuid=run.flow)
+            poll = Poll.objects.active().by_org(org).get(flow_uuid=run.flow)
 
         contact = Contact.get_or_fetch(poll.org, uuid=run.contact)
 

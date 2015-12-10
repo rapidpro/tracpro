@@ -65,7 +65,7 @@ def fetch_org_runs(org_id):
     until = timezone.now()
 
     total_runs = 0
-    for poll in Poll.get_all(org):
+    for poll in Poll.objects.active().by_org(org):
         poll_runs = client.get_runs(flows=[poll.flow_uuid], after=last_time, before=until)
         total_runs += len(poll_runs)
 
