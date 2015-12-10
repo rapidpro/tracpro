@@ -40,8 +40,7 @@ class PollCRUDL(smartmin.SmartCRUDL):
         def get_context_data(self, **kwargs):
             context = super(PollCRUDL.Read, self).get_context_data(**kwargs)
             questions = self.object.questions.active()
-            pollruns = self.object.get_pollruns(
-                self.request.org,
+            pollruns = self.object.pollruns.active().by_region(
                 self.request.region,
                 self.request.include_subregions)
 
@@ -121,8 +120,7 @@ class PollCRUDL(smartmin.SmartCRUDL):
         default_order = ('name',)
 
         def derive_pollruns(self, obj):
-            return obj.get_pollruns(
-                self.request.org,
+            return obj.pollruns.active().by_region(
                 self.request.region,
                 self.request.include_subregions)
 
@@ -389,8 +387,7 @@ class PollRunCRUDL(smartmin.SmartCRUDL):
             return get_obj_cacheable(self, '_poll', fetch)
 
         def derive_queryset(self, **kwargs):
-            return self.derive_poll().get_pollruns(
-                self.request.org,
+            return self.derive_poll().pollruns.active().by_region(
                 self.request.region,
                 self.request.include_subregions)
 

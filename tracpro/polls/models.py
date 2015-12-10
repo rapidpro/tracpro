@@ -154,9 +154,6 @@ class Poll(models.Model):
         super(Poll, self).save(*args, **kwargs)
         self.name = self.name or self.rapidpro_name
 
-    def get_pollruns(self, org, region=None, include_subregions=True):
-        return PollRun.objects.get_all(org, region, include_subregions).filter(poll=self)
-
 
 class QuestionQuerySet(models.QuerySet):
 
