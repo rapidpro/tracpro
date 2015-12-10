@@ -265,11 +265,16 @@ class DataField(models.Model):
         (TYPE_DISTRICT, _("District")),
     )
 
-    org = models.ForeignKey("orgs.Org")
-    label = models.CharField(max_length=255, blank=True)
-    key = models.CharField(max_length=255)
-    value_type = models.CharField(max_length=1, choices=TYPE_CHOICES)
-    show_on_tracpro = models.BooleanField(default=False)
+    org = models.ForeignKey(
+        "orgs.Org", verbose_name=_("org"))
+    label = models.CharField(
+        max_length=255, blank=True, verbose_name=_("label"))
+    key = models.CharField(
+        max_length=255, verbose_name=_("key"))
+    value_type = models.CharField(
+        max_length=1, choices=TYPE_CHOICES, verbose_name=_("value type"))
+    show_on_tracpro = models.BooleanField(
+        default=False, verbose_name=_("show_on_tracpro"))
 
     objects = DataFieldManager()
 
