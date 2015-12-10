@@ -11,10 +11,10 @@
 
   {% for question in questions %}
     <h3>
-      {{ question.order }}. {{ question.text }}
+      {{ question.order }}. {{ question.name }}
 
     </h3>
-    <div class='chart' data-chart-type='{{ question.chart_type }}' data-unit-text='{{ question.text }}' data-question-id='{{ question.pk }}' dir='ltr'></div>
+    <div class='chart' data-chart-type='{{ question.chart_type }}' data-unit-text='{{ question.name }}' data-question-id='{{ question.pk }}' dir='ltr'></div>
     <script type='text/javascript'>
       var chart_{{ question.pk }}_data = {{ question.chart_data }};
 

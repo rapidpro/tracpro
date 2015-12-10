@@ -38,7 +38,7 @@ class PollCRUDL(smartmin.SmartCRUDL):
 
         def get_context_data(self, **kwargs):
             context = super(PollCRUDL.Read, self).get_context_data(**kwargs)
-            questions = self.object.get_questions()
+            questions = self.object.questions.active()
             pollruns = self.object.get_pollruns(
                 self.request.org,
                 self.request.region,
@@ -97,7 +97,7 @@ class PollCRUDL(smartmin.SmartCRUDL):
                 self.request.include_subregions)
 
         def get_questions(self, obj):
-            return obj.get_questions().count()
+            return obj.questions.active().count()
 
         def get_pollruns(self, obj):
             return self.derive_pollruns(obj).count()
@@ -224,7 +224,7 @@ class PollRunCRUDL(smartmin.SmartCRUDL):
 
         def get_context_data(self, **kwargs):
             context = super(PollRunCRUDL.Read, self).get_context_data(**kwargs)
-            questions = self.object.poll.get_questions()
+            questions = self.object.poll.questions.active()
 
             for question in questions:
                 question.chart_type, question.chart_data = charts.single_pollrun(
@@ -413,7 +413,7 @@ class ResponseCRUDL(smartmin.SmartCRUDL):
         def derive_questions(self):
             def fetch():
                 questions = OrderedDict()
-                for question in self.derive_pollrun().poll.get_questions():
+                for question in self.derive_pollrun().poll.questions.active():
                     questions['question_%d' % question.pk] = question
                 return questions
 
@@ -438,7 +438,7 @@ class ResponseCRUDL(smartmin.SmartCRUDL):
         def lookup_field_label(self, context, field, default=None):
             if field.startswith('question_'):
                 question = self.derive_questions()[field]
-                return question.text
+                return question.name
             else:
                 return super(ResponseCRUDL.ByPollrun, self).lookup_field_label(
                     context, field, default)
@@ -452,7 +452,7 @@ class ResponseCRUDL(smartmin.SmartCRUDL):
                 question = self.derive_questions()[field]
                 answer = obj.answers.filter(question=question).first()
                 if answer:
-                    if question.type == Question.TYPE_RECORDING:
+                    if question.question_type == Question.TYPE_RECORDING:
                         return '<a class="answer answer-audio" href="%s" data-answer-id="%d">Play</a>' % (
                             answer.value,
                             answer.pk,
@@ -508,7 +508,7 @@ class ResponseCRUDL(smartmin.SmartCRUDL):
 
                 resp_headers = ['Date']
                 contact_headers = ['Name', 'URN', 'Region', 'Group']
-                question_headers = [q.text for q in questions]
+                question_headers = [q.name for q in questions]
                 writer.writerow(resp_headers + contact_headers + question_headers)
 
                 for resp in context['object_list']:
@@ -561,17 +561,18 @@ class ResponseCRUDL(smartmin.SmartCRUDL):
             if not answers_by_q_id:
                 return '<i>%s</i>' % _("No response")
 
-            questions = obj.pollrun.poll.get_questions()
+            questions = obj.pollrun.poll.questions.active()
             for question in questions:
                 answer = answers_by_q_id.get(question.pk, None)
                 if not answer:
                     answer_display = ""
-                elif question.type == Question.TYPE_OPEN:
+                elif question.question_type == Question.TYPE_OPEN:
                     answer_display = answer.value
                 else:
                     answer_display = answer.category
 
-                answers.append("%d. %s: <em>%s</em>" % (question.order, question.text, answer_display))
+                answers.append("%d. %s: <em>%s</em>" % (
+                    question.order, question.name, answer_display))
 
             return "<br/>".join(answers)
 

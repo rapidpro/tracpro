@@ -16,7 +16,7 @@ class PollForm(forms.ModelForm):
         for question in self.instance.get_questions():
             field_key = '__question__%d__text' % question.pk
             self.fields[field_key] = forms.CharField(
-                max_length=255, initial=question.text,
+                max_length=255, initial=question.display_name,
                 label=_("Question #%d") % question.order)
 
 

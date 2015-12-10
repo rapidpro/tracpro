@@ -75,8 +75,9 @@ class PropagatedPollRun(PollRun):
 class Question(factory.django.DjangoModelFactory):
     ruleset_uuid = FuzzyUUID()
     poll = factory.SubFactory('tracpro.test.factories.Poll')
-    text = factory.fuzzy.FuzzyText()
-    type = factory.fuzzy.FuzzyChoice(c[0] for c in models.Question.TYPE_CHOICES)
+    rapidpro_name = factory.LazyAttribute(lambda o: o.name)
+    name = factory.fuzzy.FuzzyText()
+    question_type = factory.fuzzy.FuzzyChoice(c[0] for c in models.Question.TYPE_CHOICES)
     order = factory.Sequence(lambda n: n)
 
     class Meta:

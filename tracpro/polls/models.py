@@ -93,14 +93,15 @@ class Poll(models.Model):
         for ruleset in rulesets:
             question = self.questions.filter(ruleset_uuid=ruleset.uuid).first()
             if question:
-                question.text = ruleset.label
-                question.type = ruleset.response_type
+                question.rapidpro_name = ruleset.label
+                question.question_type = ruleset.response_type
                 question.order = order
                 question.is_active = True
                 question.save()
             else:
                 Question.objects.create(
-                    poll=self, text=ruleset.label, type=ruleset.response_type,
+                    poll=self, rapidpro_name=ruleset.label,
+                    question_type=ruleset.response_type,
                     order=order, ruleset_uuid=ruleset.uuid)
             order += 1
 
@@ -108,11 +109,14 @@ class Poll(models.Model):
     def get_all(cls, org):
         return org.polls.filter(is_active=True)
 
-    def get_questions(self):
-        return self.questions.filter(is_active=True).order_by('order')
-
     def get_pollruns(self, org, region=None, include_subregions=True):
         return PollRun.objects.get_all(org, region, include_subregions).filter(poll=self)
+
+
+class QuestionQuerySet(models.QuerySet):
+
+    def active(self):
+        return self.filter(is_active=True)
 
 
 @python_2_unicode_compatible
@@ -134,20 +138,37 @@ class Question(models.Model):
         (TYPE_RECORDING, _("Recording")),
     )
 
-    ruleset_uuid = models.CharField(max_length=36, unique=True)
-
+    ruleset_uuid = models.CharField(max_length=36)
     poll = models.ForeignKey('polls.Poll', related_name='questions')
+    rapidpro_name = models.CharField(max_length=64)
+    name = models.CharField(max_length=64, blank=True)
+    question_type = models.CharField(max_length=1, choices=TYPE_CHOICES)
+    order = models.IntegerField(default=0)
 
-    text = models.CharField(max_length=64)
+    is_active = models.BooleanField(default=True, verbose_name=_("Show on TracPro"))
 
-    type = models.CharField(max_length=1, choices=TYPE_CHOICES)
+    objects = QuestionQuerySet.as_manager()
 
-    order = models.IntegerField()
+    class Meta:
+        ordering = ('order',)
+        unique_together = (('ruleset_uuid', 'poll'),)
 
-    is_active = models.BooleanField(default=True, help_text="Whether this item is active")
+    def __init__(self, *args, **kwargs):
+        """Name should default to the RapidPro name."""
+        super(Question, self).__init__(*args, **kwargs)
+        self.name = self.name or self.rapidpro_name
 
     def __str__(self):
-        return self.text
+        return self.name
+
+    def save(self, *args, **kwargs):
+        """Don't save custom name if it is the same as the RapidPro name.
+
+        This allows us to track changes to the name on RapidPro.
+        """
+        self.name = self.name if self.name != self.rapidpro_name else ""
+        super(Question, self).save(*args, **kwargs)
+        self.name = self.name or self.rapidpro_name
 
 
 class PollRunQuerySet(models.QuerySet):
@@ -541,7 +562,7 @@ class Response(models.Model):
             response.is_new = True
 
         # organize values by ruleset UUID
-        questions = poll.get_questions()
+        questions = poll.questions.active()
         valuesets_by_ruleset = {valueset.node: valueset for valueset in run.values}
         valuesets_by_question = {q: valuesets_by_ruleset.get(q.ruleset_uuid, None)
                                  for q in questions}

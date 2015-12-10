@@ -59,14 +59,6 @@ class PollTest(TracProDataTest):
         # existing poll that was inactive should now be active
         self.assertTrue(Poll.objects.get(flow_uuid='F-001').is_active)
 
-    def test_get_questions(self):
-        self.assertEqual(
-            list(self.poll1.get_questions()),
-            [self.poll1_question1, self.poll1_question2])
-        self.assertEqual(
-            list(self.poll2.get_questions()),
-            [self.poll2_question1])
-
 
 class PollRunTest(TracProDataTest):
 
