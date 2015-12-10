@@ -78,6 +78,7 @@ class PollCRUDL(smartmin.SmartCRUDL):
     class Update(PollMixin, OrgObjPermsMixin, smartmin.SmartUpdateView):
         form_class = forms.PollForm
         formset_class = forms.QuestionFormSet
+        success_url = 'id@polls.poll_read'
 
         def dispatch(self, *args, **kwargs):
             self.object = self.get_object()
