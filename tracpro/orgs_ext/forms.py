@@ -86,6 +86,8 @@ class OrgExtForm(OrgForm):
 
         if 'contact_fields' in self.fields:
             # Set hook that will be picked up by a post-save signal.
+            # Must be done post-save to avoid making changes if any earlier
+            # part of the transaction fails.
             self.instance._visible_data_fields = self.cleaned_data.get('contact_fields')
 
         return super(OrgExtForm, self).save(*args, **kwargs)
