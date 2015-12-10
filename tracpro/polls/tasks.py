@@ -1,5 +1,6 @@
 from __future__ import absolute_import, unicode_literals
 
+from django.apps import apps
 from django.utils import timezone
 
 from celery.utils.log import get_task_logger
@@ -138,3 +139,24 @@ def pollrun_restart_participants(pollrun_id, contact_uuids):
         Response.create_empty(org, pollrun, run)
 
     logger.info("Created %d restart runs for poll pollrun #%d" % (len(runs), pollrun.pk))
+
+
+@task
+def sync_all_polls():
+    logger.info("Syncing Polls for active orgs.")
+    for org in Org.objects.filter(is_active=True):
+        run_org_task(org, sync_org_polls)
+    logger.info("Finished syncing Polls for active orgs.")
+
+
+@task
+def sync_org_polls(org_pk):
+    """Sync an org's Polls.
+
+    Syncs Poll info and removes any Polls (and associated questions) that
+    are no longer on the remote.
+    """
+    org = Org.objects.get(pk=org_pk)
+    logger.info("Syncing polls for {}.".format(org.name))
+    apps.get_model('polls', 'Poll').objects.sync(org)
+    logger.info("Finished syncing polls for {}.".format(org.name))

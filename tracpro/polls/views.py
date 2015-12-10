@@ -10,7 +10,7 @@ from dash.utils import datetime_to_ms, get_obj_cacheable
 from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.http import (
-    HttpResponse, HttpResponseBadRequest, HttpResponseRedirect, JsonResponse)
+    HttpResponse, HttpResponseBadRequest, JsonResponse)
 from django.shortcuts import get_object_or_404
 from django.utils.translation import ugettext_lazy as _
 
@@ -114,7 +114,7 @@ class PollCRUDL(smartmin.SmartCRUDL):
 
     class Select(OrgPermsMixin, smartmin.SmartFormView):
         title = _("Poll Flows")
-        form_class = forms.FlowsForm
+        form_class = forms.ActivePollsForm
         success_url = '@polls.poll_list'
         submit_button_name = _("Update")
         success_message = _("Updated flows to track as polls")
@@ -125,8 +125,8 @@ class PollCRUDL(smartmin.SmartCRUDL):
             return kwargs
 
         def form_valid(self, form):
-            Poll.sync_with_flows(self.request.org, form.cleaned_data['flows'])
-            return HttpResponseRedirect(self.get_success_url())
+            form.save()
+            return super(PollCRUDL.Select, self).form_valid(form)
 
 
 class PollRunListMixin(object):
