@@ -150,7 +150,7 @@ class Poll(models.Model):
 
         This allows us to track changes to the name on RapidPro.
         """
-        self.name = self.name if self.name != self.rapidpro_name else ""
+        self.name = "" if self.name == self.rapidpro_name else self.name.strip()
         super(Poll, self).save(*args, **kwargs)
         self.name = self.name or self.rapidpro_name
 
@@ -233,7 +233,7 @@ class Question(models.Model):
 
         This allows us to track changes to the name on RapidPro.
         """
-        self.name = self.name if self.name != self.rapidpro_name else ""
+        self.name = "" if self.name == self.rapidpro_name else self.name.strip()
         super(Question, self).save(*args, **kwargs)
         self.name = self.name or self.rapidpro_name
 
