@@ -5,19 +5,24 @@ from . import models
 
 
 class PollForm(forms.ModelForm):
-    name = forms.CharField(label=_("Name"))
 
     class Meta:
         model = models.Poll
-        fields = forms.ALL_FIELDS
+        fields = ('name',)
 
-    def __init__(self, *args, **kwargs):
-        super(PollForm, self).__init__(*args, **kwargs)
-        for question in self.instance.get_questions():
-            field_key = '__question__%d__text' % question.pk
-            self.fields[field_key] = forms.CharField(
-                max_length=255, initial=question.display_name,
-                label=_("Question #%d") % question.order)
+
+class QuestionForm(forms.ModelForm):
+
+    class Meta:
+        model = models.Question
+        fields = ('name', 'question_type', 'is_active')
+
+
+QuestionFormSet = forms.modelformset_factory(
+    models.Question,
+    form=QuestionForm,
+    extra=0,
+    can_delete=False)
 
 
 class ActivePollsForm(forms.Form):

@@ -8,10 +8,11 @@ from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from dash.utils import datetime_to_ms, get_obj_cacheable
 
 from django.conf import settings
+from django.contrib import messages
 from django.core.urlresolvers import reverse
 from django.http import (
     HttpResponse, HttpResponseBadRequest, JsonResponse)
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 from django.utils.translation import ugettext_lazy as _
 
 from smartmin import views as smartmin
@@ -75,14 +76,42 @@ class PollCRUDL(smartmin.SmartCRUDL):
             return context
 
     class Update(PollMixin, OrgObjPermsMixin, smartmin.SmartUpdateView):
-        exclude = ('is_active', 'flow_uuid', 'org')
         form_class = forms.PollForm
+        formset_class = forms.QuestionFormSet
 
-        def post_save(self, obj):
-            for field_key, value in self.form.cleaned_data.iteritems():
-                if field_key.startswith('__question__'):
-                    question_id = field_key.split('__')[2]
-                    Question.objects.filter(pk=question_id, poll=self.object).update(text=value)
+        def dispatch(self, *args, **kwargs):
+            self.object = self.get_object()
+            self.form = self.get_form()
+            self.formset = self.get_formset()
+            return super(PollCRUDL.Update, self).dispatch(*args, **kwargs)
+
+        def form_invalid(self, form, formset):
+            return self.render_to_response(self.get_context_data())
+
+        def form_valid(self, form, formset):
+            self.object = form.save()
+            formset.save()
+            messages.success(self.request, self.derive_success_message())
+            return redirect(self.get_success_url())
+
+        def get_context_data(self, **kwargs):
+            kwargs.setdefault('object', self.object)
+            kwargs.setdefault('form', self.form)
+            kwargs.setdefault('questions_formset', self.formset)
+            return super(PollCRUDL.Update, self).get_context_data(**kwargs)
+
+        def get_formset(self):
+            questions = self.object.questions.all()
+            data = self.request.POST if self.request.method == 'POST' else None
+            return self.formset_class(data=data, queryset=questions, prefix='questions')
+
+        def post(self, *args, **kwargs):
+            form_valid = self.form.is_valid()
+            formset_valid = self.formset.is_valid()
+            if form_valid and formset_valid:
+                return self.form_valid(self.form, self.formset)
+            else:
+                return self.form_invalid(self.form, self.formset)
 
     class List(PollMixin, OrgPermsMixin, smartmin.SmartListView):
         fields = ('name', 'questions', 'pollruns', 'last_conducted')
