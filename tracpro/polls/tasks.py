@@ -100,7 +100,7 @@ def pollrun_start(pollrun_id):
     org = pollrun.poll.org
     client = org.get_temba_client()
 
-    contacts = Contact.objects.filter(is_active=True)
+    contacts = Contact.objects.active()
     if pollrun.pollrun_type == PollRun.TYPE_PROPAGATED:
         descendants = pollrun.region.get_descendants(include_self=True)
         contacts = contacts.filter(region__in=descendants)
