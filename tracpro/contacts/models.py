@@ -239,8 +239,6 @@ class DataFieldManager(models.Manager.from_queryset(DataFieldQuerySet)):
             field.value_type = temba_field.value_type
             field.save()
 
-        return temba_fields.keys()
-
     def set_active_for_org(self, org, keys):
         fields = DataField.objects.by_org(org)
         fields.filter(key__in=keys).update(show_on_tracpro=True)
