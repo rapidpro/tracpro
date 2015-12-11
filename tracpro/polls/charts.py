@@ -177,7 +177,10 @@ def multiple_pollruns(pollruns, question, regions):
     # Create dict lists for the three datasets for data point/url
     answer_sum_dict_list = []
     for z in zip(answer_sum_list, pollrun_list):
-        answer_sum_dict_list.append({str('y'): z[0], str('url'): str('/pollrun/read/') + str(z[1])})
+        answer_sum_dict_list.append(
+            {str('y'): z[0], str('url'): str('/pollrun/read/') + str(z[1])})
+
+    answer_sum_dict_list = json.dumps(answer_sum_dict_list)
 
     return (answer_sum_list, answer_average_list, response_rate_list, date_list,
             answer_mean, answer_stdev, response_rate_average, pollrun_list, answer_sum_dict_list)
