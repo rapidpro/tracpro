@@ -2,14 +2,29 @@
 
 {% load smartmin %}
 
-{% block post-fields %}
+{% block fields %}
+  <div class="form-group{% if form.name.errors %} error{% endif %}">
+    <label class="col-sm-2 control-label" for="{{ form.name.id_for_label }}">
+      {{ form.name.label }}
+    </label>
+    <div class="col-sm-10 smartmin-form-field">
+      {{ form.name|add_css:"form-control" }}
+    </div>
+    {% if object.rapidpro_name and object.rapidpro_name != object.name %}
+      <div class="col-sm-12 col-sm-offset-2 help-block">
+        <em>On RapidPro: {{ object.rapidpro_name }}</em>
+      </div>
+    {% endif %}
+  </div>
+
   {{ questions_formset.management_form }}
 
   {% for question_form in questions_formset %}
+  {% with question_form.instance as question %}
     <hr>
 
     <h4 class="text-muted">
-      Question: {{ question_form.instance.name }}
+      Question: {{ question.name }}
     </h4>
 
     {{ question_form.id }} {# Hidden field to identify question. #}
@@ -22,6 +37,11 @@
       <div class="col-sm-10 smartmin-form-field">
         {{ question_form.name|add_css:"form-control" }}
       </div>
+      {% if question.rapidpro_name and question.rapidpro_name != question.name %}
+        <div class="col-sm-12 col-sm-offset-2 help-block">
+          <em>On RapidPro: {{ question.rapidpro_name }}</em>
+        </div>
+      {% endif %}
     </div>
 
     <!-- Question type -->
@@ -45,5 +65,6 @@
         </div>
       </div>
     </div>
+  {% endwith %}
   {% endfor %}
-{% endblock post-fields %}
+{% endblock fields %}
