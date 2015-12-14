@@ -155,16 +155,15 @@ class TracProDataTest(TracProTest):
             org=self.unicef, name="Farm Poll", flow_uuid='F-001')
         self.poll1_question1 = factories.Question(
             poll=self.poll1,
-            type=Question.TYPE_NUMERIC,
-            text="Number of sheep",
+            question_type=Question.TYPE_NUMERIC,
+            name="Number of sheep",
             order=1,
             ruleset_uuid='RS-001',
         )
-
         self.poll1_question2 = factories.Question(
             poll=self.poll1,
-            type=Question.TYPE_OPEN,
-            text="How is the weather?",
+            question_type=Question.TYPE_OPEN,
+            name="How is the weather?",
             order=2,
             ruleset_uuid='RS-002',
         )
@@ -174,8 +173,8 @@ class TracProDataTest(TracProTest):
             org=self.nyaruka, name="Code Poll", flow_uuid='F-002')
         self.poll2_question1 = factories.Question(
             poll=self.poll2,
-            type=Question.TYPE_NUMERIC,
-            text="Number of bugs",
+            question_type=Question.TYPE_NUMERIC,
+            name="Number of bugs",
             order=1,
             ruleset_uuid='RS-003',
         )

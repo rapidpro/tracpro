@@ -1,5 +1,6 @@
 from __future__ import absolute_import, unicode_literals
 
+from django.apps import apps
 from django.utils import timezone
 
 from celery.utils.log import get_task_logger
@@ -64,7 +65,7 @@ def fetch_org_runs(org_id):
     until = timezone.now()
 
     total_runs = 0
-    for poll in Poll.get_all(org):
+    for poll in Poll.objects.active().by_org(org):
         poll_runs = client.get_runs(flows=[poll.flow_uuid], after=last_time, before=until)
         total_runs += len(poll_runs)
 
@@ -100,7 +101,7 @@ def pollrun_start(pollrun_id):
     org = pollrun.poll.org
     client = org.get_temba_client()
 
-    contacts = Contact.objects.filter(is_active=True)
+    contacts = Contact.objects.active()
     if pollrun.pollrun_type == PollRun.TYPE_PROPAGATED:
         descendants = pollrun.region.get_descendants(include_self=True)
         contacts = contacts.filter(region__in=descendants)
@@ -138,3 +139,24 @@ def pollrun_restart_participants(pollrun_id, contact_uuids):
         Response.create_empty(org, pollrun, run)
 
     logger.info("Created %d restart runs for poll pollrun #%d" % (len(runs), pollrun.pk))
+
+
+@task
+def sync_all_polls():
+    logger.info("Syncing Polls for active orgs.")
+    for org in Org.objects.filter(is_active=True):
+        run_org_task(org, sync_org_polls)
+    logger.info("Finished syncing Polls for active orgs.")
+
+
+@task
+def sync_org_polls(org_pk):
+    """Sync an org's Polls.
+
+    Syncs Poll info and removes any Polls (and associated questions) that
+    are no longer on the remote.
+    """
+    org = Org.objects.get(pk=org_pk)
+    logger.info("Syncing polls for {}.".format(org.name))
+    apps.get_model('polls', 'Poll').objects.sync(org)
+    logger.info("Finished syncing polls for {}.".format(org.name))

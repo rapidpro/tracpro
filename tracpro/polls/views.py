@@ -8,10 +8,11 @@ from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from dash.utils import datetime_to_ms, get_obj_cacheable
 
 from django.conf import settings
+from django.contrib import messages
 from django.core.urlresolvers import reverse
 from django.http import (
-    HttpResponse, HttpResponseBadRequest, HttpResponseRedirect, JsonResponse)
-from django.shortcuts import get_object_or_404
+    HttpResponse, HttpResponseBadRequest, JsonResponse)
+from django.shortcuts import get_object_or_404, redirect
 from django.utils.translation import ugettext_lazy as _
 
 from smartmin import views as smartmin
@@ -32,15 +33,14 @@ class PollCRUDL(smartmin.SmartCRUDL):
 
         def get_queryset(self):
             """Only allow viewing active polls for the current org."""
-            return Poll.get_all(self.request.org)
+            return Poll.objects.active().by_org(self.request.org)
 
     class Read(PollMixin, OrgObjPermsMixin, smartmin.SmartReadView):
 
         def get_context_data(self, **kwargs):
             context = super(PollCRUDL.Read, self).get_context_data(**kwargs)
-            questions = self.object.get_questions()
-            pollruns = self.object.get_pollruns(
-                self.request.org,
+            questions = self.object.questions.active()
+            pollruns = self.object.pollruns.active().by_region(
                 self.request.region,
                 self.request.include_subregions)
 
@@ -78,14 +78,43 @@ class PollCRUDL(smartmin.SmartCRUDL):
             return context
 
     class Update(PollMixin, OrgObjPermsMixin, smartmin.SmartUpdateView):
-        exclude = ('is_active', 'flow_uuid', 'org')
         form_class = forms.PollForm
+        formset_class = forms.QuestionFormSet
+        success_url = 'id@polls.poll_read'
 
-        def post_save(self, obj):
-            for field_key, value in self.form.cleaned_data.iteritems():
-                if field_key.startswith('__question__'):
-                    question_id = field_key.split('__')[2]
-                    Question.objects.filter(pk=question_id, poll=self.object).update(text=value)
+        def dispatch(self, *args, **kwargs):
+            self.object = self.get_object()
+            self.form = self.get_form()
+            self.formset = self.get_formset()
+            return super(PollCRUDL.Update, self).dispatch(*args, **kwargs)
+
+        def form_invalid(self, form, formset):
+            return self.render_to_response(self.get_context_data())
+
+        def form_valid(self, form, formset):
+            self.object = form.save()
+            formset.save()
+            messages.success(self.request, self.derive_success_message())
+            return redirect(self.get_success_url())
+
+        def get_context_data(self, **kwargs):
+            kwargs.setdefault('object', self.object)
+            kwargs.setdefault('form', self.form)
+            kwargs.setdefault('questions_formset', self.formset)
+            return super(PollCRUDL.Update, self).get_context_data(**kwargs)
+
+        def get_formset(self):
+            questions = self.object.questions.all()
+            data = self.request.POST if self.request.method == 'POST' else None
+            return self.formset_class(data=data, queryset=questions, prefix='questions')
+
+        def post(self, *args, **kwargs):
+            form_valid = self.form.is_valid()
+            formset_valid = self.formset.is_valid()
+            if form_valid and formset_valid:
+                return self.form_valid(self.form, self.formset)
+            else:
+                return self.form_invalid(self.form, self.formset)
 
     class List(PollMixin, OrgPermsMixin, smartmin.SmartListView):
         fields = ('name', 'questions', 'pollruns', 'last_conducted')
@@ -94,13 +123,12 @@ class PollCRUDL(smartmin.SmartCRUDL):
         default_order = ('name',)
 
         def derive_pollruns(self, obj):
-            return obj.get_pollruns(
-                self.request.org,
+            return obj.pollruns.active().by_region(
                 self.request.region,
                 self.request.include_subregions)
 
         def get_questions(self, obj):
-            return obj.get_questions().count()
+            return obj.questions.active().count()
 
         def get_pollruns(self, obj):
             return self.derive_pollruns(obj).count()
@@ -117,7 +145,7 @@ class PollCRUDL(smartmin.SmartCRUDL):
 
     class Select(OrgPermsMixin, smartmin.SmartFormView):
         title = _("Poll Flows")
-        form_class = forms.FlowsForm
+        form_class = forms.ActivePollsForm
         success_url = '@polls.poll_list'
         submit_button_name = _("Update")
         success_message = _("Updated flows to track as polls")
@@ -128,8 +156,8 @@ class PollCRUDL(smartmin.SmartCRUDL):
             return kwargs
 
         def form_valid(self, form):
-            Poll.sync_with_flows(self.request.org, form.cleaned_data['flows'])
-            return HttpResponseRedirect(self.get_success_url())
+            form.save()
+            return super(PollCRUDL.Select, self).form_valid(form)
 
 
 class PollRunListMixin(object):
@@ -182,7 +210,7 @@ class PollRunCRUDL(smartmin.SmartCRUDL):
 
         def post(self, request, *args, **kwargs):
             try:
-                poll = Poll.get_all(self.request.org).get(pk=request.POST.get('poll'))
+                poll = Poll.objects.active().by_org(self.request.org).get(pk=request.POST.get('poll'))
             except Poll.DoesNotExist:
                 return HttpResponseBadRequest()
 
@@ -227,7 +255,7 @@ class PollRunCRUDL(smartmin.SmartCRUDL):
 
         def get_context_data(self, **kwargs):
             context = super(PollRunCRUDL.Read, self).get_context_data(**kwargs)
-            questions = self.object.poll.get_questions()
+            questions = self.object.poll.questions.active()
 
             for question in questions:
                 question.chart_type, question.chart_data = charts.single_pollrun(
@@ -357,13 +385,12 @@ class PollRunCRUDL(smartmin.SmartCRUDL):
 
         def derive_poll(self):
             def fetch():
-                poll_qs = Poll.get_all(self.request.org)
+                poll_qs = Poll.objects.active().by_org(self.request.org)
                 return get_object_or_404(poll_qs, pk=self.kwargs['poll'])
             return get_obj_cacheable(self, '_poll', fetch)
 
         def derive_queryset(self, **kwargs):
-            return self.derive_poll().get_pollruns(
-                self.request.org,
+            return self.derive_poll().pollruns.active().by_region(
                 self.request.region,
                 self.request.include_subregions)
 
@@ -416,7 +443,7 @@ class ResponseCRUDL(smartmin.SmartCRUDL):
         def derive_questions(self):
             def fetch():
                 questions = OrderedDict()
-                for question in self.derive_pollrun().poll.get_questions():
+                for question in self.derive_pollrun().poll.questions.active():
                     questions['question_%d' % question.pk] = question
                 return questions
 
@@ -441,7 +468,7 @@ class ResponseCRUDL(smartmin.SmartCRUDL):
         def lookup_field_label(self, context, field, default=None):
             if field.startswith('question_'):
                 question = self.derive_questions()[field]
-                return question.text
+                return question.name
             else:
                 return super(ResponseCRUDL.ByPollrun, self).lookup_field_label(
                     context, field, default)
@@ -455,7 +482,7 @@ class ResponseCRUDL(smartmin.SmartCRUDL):
                 question = self.derive_questions()[field]
                 answer = obj.answers.filter(question=question).first()
                 if answer:
-                    if question.type == Question.TYPE_RECORDING:
+                    if question.question_type == Question.TYPE_RECORDING:
                         return '<a class="answer answer-audio" href="%s" data-answer-id="%d">Play</a>' % (
                             answer.value,
                             answer.pk,
@@ -511,7 +538,7 @@ class ResponseCRUDL(smartmin.SmartCRUDL):
 
                 resp_headers = ['Date']
                 contact_headers = ['Name', 'URN', 'Region', 'Group']
-                question_headers = [q.text for q in questions]
+                question_headers = [q.name for q in questions]
                 writer.writerow(resp_headers + contact_headers + question_headers)
 
                 for resp in context['object_list']:
@@ -564,17 +591,18 @@ class ResponseCRUDL(smartmin.SmartCRUDL):
             if not answers_by_q_id:
                 return '<i>%s</i>' % _("No response")
 
-            questions = obj.pollrun.poll.get_questions()
-            for question in questions:
+            questions = obj.pollrun.poll.questions.active()
+            for i, question in enumerate(questions, start=1):
                 answer = answers_by_q_id.get(question.pk, None)
                 if not answer:
                     answer_display = ""
-                elif question.type == Question.TYPE_OPEN:
+                elif question.question_type == Question.TYPE_OPEN:
                     answer_display = answer.value
                 else:
                     answer_display = answer.category
 
-                answers.append("%d. %s: <em>%s</em>" % (question.order, question.text, answer_display))
+                answers.append("%d. %s: <em>%s</em>" % (
+                    i, question.name, answer_display))
 
             return "<br/>".join(answers)
 

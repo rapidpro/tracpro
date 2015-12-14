@@ -84,16 +84,16 @@ def sync_all_contacts():
 
 
 @task
-def sync_all_fields():
+def sync_all_data_fields():
     """Remove any contact fields that have been removed remotely."""
     logger.info("Syncing DataFields for active orgs.")
     for org in Org.objects.filter(is_active=True):
-        run_org_task(org, sync_org_fields)
+        run_org_task(org, sync_org_data_fields)
     logger.info("Finished syncing DataFields for active orgs.")
 
 
 @task
-def sync_org_fields(org_pk):
+def sync_org_data_fields(org_pk):
     """Sync an org's DataFields.
 
     Syncs DataField info and removes any DataFields (and associated contact

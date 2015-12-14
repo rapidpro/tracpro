@@ -244,13 +244,18 @@ ANONYMOUS_USER_ID = -1
 BROKER_URL = CELERY_RESULT_BACKEND = 'redis://localhost:6379/4'
 
 CELERYBEAT_SCHEDULE = {
+    'sync-polls': {
+        'task': 'tracpro.polls.tasks.sync_all_polls',
+        'schedule': datetime.timedelta(minutes=5),
+        'args': (),
+    },
     'sync-contacts': {
         'task': 'tracpro.contacts.tasks.sync_all_contacts',
         'schedule': datetime.timedelta(minutes=30),
         'args': (),
     },
-    'sync-fields': {
-        'task': 'tracpro.contacts.tasks.sync_all_fields',
+    'sync-data-fields': {
+        'task': 'tracpro.contacts.tasks.sync_all_data_fields',
         'schedule': datetime.timedelta(days=1),
         'args': (),
     },
