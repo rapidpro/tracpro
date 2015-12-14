@@ -589,7 +589,7 @@ class ResponseCRUDL(smartmin.SmartCRUDL):
                 return '<i>%s</i>' % _("No response")
 
             questions = obj.pollrun.poll.questions.active()
-            for question in questions:
+            for i, question in enumerate(questions, start=1):
                 answer = answers_by_q_id.get(question.pk, None)
                 if not answer:
                     answer_display = ""
@@ -599,7 +599,7 @@ class ResponseCRUDL(smartmin.SmartCRUDL):
                     answer_display = answer.category
 
                 answers.append("%d. %s: <em>%s</em>" % (
-                    question.order, question.name, answer_display))
+                    i, question.name, answer_display))
 
             return "<br/>".join(answers)
 
