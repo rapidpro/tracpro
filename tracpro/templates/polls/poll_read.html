@@ -50,7 +50,7 @@
 
     {% if question.date_list %}
       <div id='chart_{{ question.pk }}' class='chart' data-window-max='{{ window_max }}' data-window-min='{{ window_min }}' ></div>
-      <!-- see http://jsfiddle.net/gh/get/jquery/1.7.2/highslide-software/highcharts.com/tree/master/samples/highcharts/plotoptions/series-point-events-click-url/ -->
+
       <script>
         $(function () {
           $('#chart_{{ question.pk }}').highcharts({
@@ -83,15 +83,16 @@
                   {% if value_type_selected|lower ==  "sum" %}
                     data: {{ question.answer_sum_dict_list|safe }}
                   {% elif value_type_selected|lower ==  "average" %}
-                    data: {{ question.answer_average_list }}
+                    data: {{ question.answer_average_dict_list|safe }}
                   {% elif value_type_selected|lower ==  "response rate" %}
-                    data: {{ question.response_rate_list }}
+                    data: {{ question.response_rate_dict_list|safe }}
                   {% endif %}
                 }
               ]
           });
       });
       </script>
+
       <table class="table table-striped">
         <tbody>
           <tr class="read">
@@ -132,14 +133,14 @@
       else if (valueType == "average") {
           {% for question in questions %}
             var chart = $('#chart_{{ question.pk }}').highcharts();
-            chart.series[0].setData({{ question.answer_average_list }});
+            chart.series[0].setData({{ question.answer_average_dict_list|safe }});
             $("#question-{{ question.pk }}-heading-value-type").html("Average");
           {% endfor %}
       }
       else if (valueType == "response rate") {
           {% for question in questions %}
             var chart = $('#chart_{{ question.pk }}').highcharts();
-            chart.series[0].setData({{ question.response_rate_list }});
+            chart.series[0].setData({{ question.response_rate_dict_list|safe }});
             $("#question-{{ question.pk }}-heading-value-type").html("Response Rate");
           {% endfor %}
       }

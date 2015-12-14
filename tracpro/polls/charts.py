@@ -12,6 +12,7 @@ from operator import itemgetter
 from dash.utils import datetime_to_ms
 
 from django.db.models import Count, F
+from django.core.urlresolvers import reverse
 from django.utils.safestring import mark_safe
 
 from .models import Answer, Question, Response
@@ -176,14 +177,23 @@ def multiple_pollruns(pollruns, question, regions):
 
     # Create dict lists for the three datasets for data point/url
     answer_sum_dict_list = []
-    for z in zip(answer_sum_list, pollrun_list):
+    answer_average_dict_list = []
+    response_rate_dict_list = []
+    for z in zip(answer_sum_list, answer_average_list, response_rate_list, pollrun_list):
+        pollrun_link = reverse('polls.pollrun_read', args=[str(z[3])])
         answer_sum_dict_list.append(
-            {str('y'): z[0], str('url'): str('/pollrun/read/') + str(z[1])})
+            {str('y'): z[0], str('url'): pollrun_link})
+        answer_average_dict_list.append(
+            {str('y'): z[1], str('url'): pollrun_link})
+        response_rate_dict_list.append(
+            {str('y'): z[2], str('url'): pollrun_link})
 
     answer_sum_dict_list = json.dumps(answer_sum_dict_list)
+    answer_average_dict_list = json.dumps(answer_average_dict_list)
+    response_rate_dict_list = json.dumps(response_rate_dict_list)
 
-    return (answer_sum_list, answer_average_list, response_rate_list, date_list,
-            answer_mean, answer_stdev, response_rate_average, pollrun_list, answer_sum_dict_list)
+    return (answer_sum_dict_list, answer_average_dict_list, response_rate_dict_list, date_list,
+            answer_mean, answer_stdev, response_rate_average, pollrun_list)
 
 
 def word_cloud_data(word_counts):
