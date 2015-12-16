@@ -55,6 +55,7 @@ def single_pollrun(pollrun, question, regions):
 
 def multiple_pollruns_old(pollruns, question, regions):
     """Chart data for multiple pollruns of a poll."""
+    import ipdb; ipdb.set_trace()
 
     if question.question_type == Question.TYPE_OPEN:
         overall_counts = defaultdict(int)
@@ -69,6 +70,7 @@ def multiple_pollruns_old(pollruns, question, regions):
         chart_type = 'word'
         chart_data = word_cloud_data(sorted_counts[:50])
     elif question.question_type == Question.TYPE_MULTIPLE_CHOICE:
+        import ipdb; ipdb.set_trace()
         categories = set()
         counts_by_pollrun = OrderedDict()
 
@@ -103,6 +105,7 @@ def multiple_pollruns_old(pollruns, question, regions):
         chart_type = None
         chart_data = []
 
+    import ipdb; ipdb.set_trace()
     return chart_type, render_data(chart_data)
 
 

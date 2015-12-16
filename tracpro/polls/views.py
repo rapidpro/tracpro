@@ -67,6 +67,11 @@ class PollCRUDL(smartmin.SmartCRUDL):
                  question.response_rate_average) = charts.multiple_pollruns(
                     pollruns, question, self.request.data_regions)
 
+            #  http://zimbabwe.localhost:8000/poll/read/10/
+            for question in questions:
+                question.chart_type, question.chart_data = charts.multiple_pollruns_old(
+                    pollruns, question, self.request.data_regions)
+
             context['window'] = window
             context['window_min'] = datetime_to_ms(window_min)
             context['window_max'] = datetime_to_ms(window_max)
