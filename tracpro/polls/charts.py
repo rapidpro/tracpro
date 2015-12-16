@@ -180,13 +180,14 @@ def multiple_pollruns(pollruns, question, regions):
     answer_average_dict_list = []
     response_rate_dict_list = []
     for z in zip(answer_sum_list, answer_average_list, response_rate_list, pollrun_list):
-        pollrun_link = reverse('polls.pollrun_read', args=[str(z[3])])
+        pollrun_link_read = reverse('polls.pollrun_read', args=[str(z[3])])
+        pollrun_link_participation = reverse('polls.pollrun_participation', args=[str(z[3])])
         answer_sum_dict_list.append(
-            {str('y'): z[0], str('url'): pollrun_link})
+            {str('y'): z[0], str('url'): pollrun_link_read})
         answer_average_dict_list.append(
-            {str('y'): z[1], str('url'): pollrun_link})
+            {str('y'): z[1], str('url'): pollrun_link_read})
         response_rate_dict_list.append(
-            {str('y'): z[2], str('url'): pollrun_link})
+            {str('y'): z[2], str('url'): pollrun_link_participation})
 
     answer_sum_dict_list = json.dumps(answer_sum_dict_list)
     answer_average_dict_list = json.dumps(answer_average_dict_list)
