@@ -10,7 +10,7 @@ import pytz
 
 from django.conf import settings
 from django.core.cache import cache
-from django.db import models
+from django.db import models, transaction
 from django.db.models import Q, Count
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
@@ -44,75 +44,148 @@ class Window(Enum):
             return (now - relativedelta(days=self.ordinal), now)
 
 
+class PollQuerySet(models.QuerySet):
+
+    def active(self):
+        return self.filter(is_active=True)
+
+    def by_org(self, org):
+        return self.filter(org=org)
+
+
+class PollManager(models.Manager.from_queryset(PollQuerySet)):
+
+    def from_temba(self, org, temba_poll):
+        """Create new or update existing Poll from RapidPro data."""
+        poll, _ = self.get_or_create(org=org, flow_uuid=temba_poll.uuid)
+
+        if poll.name == poll.rapidpro_name:
+            # Name is tracking RapidPro name so we must update both.
+            poll.name = poll.rapidpro_name = temba_poll.name
+        else:
+            # Custom name will be maintained despite update of RapidPro name.
+            poll.rapidpro_name = temba_poll.name
+
+        # Deactivate archived flows.
+        # Non-archived flows should maintain their current archive status.
+        if temba_poll.archived:
+            poll.is_active = False
+
+        poll.save()
+
+        return poll
+
+    @transaction.atomic
+    def set_active_for_org(self, org, uuids):
+        """Set matching org Polls to be active, and all others to be inactive.
+
+        If an invalid UUID is given, a ValueError is raised and the transaction
+        is rolled back.
+        """
+        active_count = org.polls.filter(flow_uuid__in=uuids).update(is_active=True)
+        if active_count != len(uuids):
+            invalid_uuids = set(uuids) - set(org.polls.values_list('flow_uuid', flat=True))
+            raise ValueError(
+                "No Poll for {} matching these UUIDS: {}".format(
+                    org.name, invalid_uuids))
+        org.polls.exclude(flow_uuid__in=uuids).update(is_active=False)
+
+    def sync(self, org):
+        """Update the org's Polls and Questions from RapidPro."""
+        # Retrieve current Polls known to RapidPro.
+        temba_polls = {p.uuid: p for p in org.get_temba_client().get_flows()}
+
+        # Remove Polls that are no longer on RapidPro.
+        org.polls.exclude(flow_uuid__in=temba_polls.keys()).delete()
+
+        # Create new or update existing Polls to match RapidPro data.
+        for temba_poll in temba_polls.values():
+            poll = Poll.objects.from_temba(org, temba_poll)
+
+            temba_questions = OrderedDict((r.uuid, r) for r in temba_poll.rulesets)
+
+            # Remove questions that are no longer on RapidPro.
+            poll.questions.exclude(ruleset_uuid__in=temba_questions.keys()).delete()
+
+            # Create new or update existing Questions to match RapidPro data.
+            for order, temba_question in enumerate(temba_questions.values(), 1):
+                Question.objects.from_temba(poll, temba_question, order)
+
+
 @python_2_unicode_compatible
 class Poll(models.Model):
-    """
-    Corresponds to a RapidPro Flow
-    """
-    flow_uuid = models.CharField(max_length=36, unique=True)
+    """Corresponds to a RapidPro flow.
 
+    Keeping track of contact responses to a flow is data-intensive, so Tracpro
+    only tracks flows that the user has selected. Selected flows are managed
+    as Polls.
+    """
+    flow_uuid = models.CharField(max_length=36)
     org = models.ForeignKey(
-        'orgs.Org', verbose_name=_("Organization"), related_name='polls')
-
+        'orgs.Org', related_name='polls', verbose_name=_('org'))
+    rapidpro_name = models.CharField(
+        max_length=64, verbose_name=_('RapidPro name'))
     name = models.CharField(
-        max_length=64, verbose_name=_("Name"))  # taken from flow name
+        max_length=64, blank=True, verbose_name=_('name'))
 
+    # Set this to False rather than deleting a Poll. If the user should
+    # re-select the corresponding flow later, we can avoid re-importing
+    # existing data.
     is_active = models.BooleanField(
-        default=True, help_text=_("Whether this item is active"))
+        default=False, verbose_name=_("show on TracPro"))
+
+    objects = PollManager()
+
+    class Meta:
+        unique_together = (
+            ('org', 'flow_uuid'),
+        )
+
+    def __init__(self, *args, **kwargs):
+        """Name should default to the RapidPro name."""
+        super(Poll, self).__init__(*args, **kwargs)
+        self.name = self.name or self.rapidpro_name
 
     def __str__(self):
         return self.name
 
-    @classmethod
-    def sync_with_flows(cls, org, flow_uuids):
-        # de-activate polls whose flows were not selected
-        org.polls.exclude(flow_uuid=flow_uuids).update(is_active=False)
+    def save(self, *args, **kwargs):
+        """Don't save custom name if it is the same as the RapidPro name.
 
-        # fetch flow details
-        temba_flows = org.get_temba_client().get_flows(uuids=flow_uuids)
-        flows_by_uuid = {flow.uuid: flow for flow in temba_flows}
+        This allows us to track changes to the name on RapidPro.
+        """
+        self.name = "" if self.name == self.rapidpro_name else self.name.strip()
+        super(Poll, self).save(*args, **kwargs)
+        self.name = self.name or self.rapidpro_name
 
-        for flow_uuid in flow_uuids:
-            flow = flows_by_uuid[flow_uuid]
 
-            poll = org.polls.filter(flow_uuid=flow.uuid).first()
-            if poll:
-                poll.name = flow.name
-                poll.is_active = True
-                poll.save()
-            else:
-                poll = cls.objects.create(org=org, name=flow.name, flow_uuid=flow.uuid)
+class QuestionQuerySet(models.QuerySet):
 
-            poll.update_questions_from_rulesets(flow.rulesets)
+    def active(self):
+        return self.filter(is_active=True)
 
-    def update_questions_from_rulesets(self, rulesets):
-        # de-activate any existing questions no longer included
-        self.questions.exclude(ruleset_uuid=[r.uuid for r in rulesets]).update(is_active=False)
 
-        order = 1
-        for ruleset in rulesets:
-            question = self.questions.filter(ruleset_uuid=ruleset.uuid).first()
-            if question:
-                question.text = ruleset.label
-                question.type = ruleset.response_type
-                question.order = order
-                question.is_active = True
-                question.save()
-            else:
-                Question.objects.create(
-                    poll=self, text=ruleset.label, type=ruleset.response_type,
-                    order=order, ruleset_uuid=ruleset.uuid)
-            order += 1
+class QuestionManager(models.Manager.from_queryset(QuestionQuerySet)):
 
-    @classmethod
-    def get_all(cls, org):
-        return org.polls.filter(is_active=True)
+    def from_temba(self, poll, temba_question, order):
+        """Create new or update existing Question from RapidPro data."""
+        question, _ = self.get_or_create(poll=poll, ruleset_uuid=temba_question.uuid)
 
-    def get_questions(self):
-        return self.questions.filter(is_active=True).order_by('order')
+        if question.name == question.rapidpro_name:
+            # Name is tracking RapidPro name so we must update both.
+            question.name = question.rapidpro_name = temba_question.label
+        else:
+            # Custom name will be maintained despite update of RapidPro name.
+            question.rapidpro_name = temba_question.label
 
-    def get_pollruns(self, org, region=None, include_subregions=True):
-        return PollRun.objects.get_all(org, region, include_subregions).filter(poll=self)
+        # NOTE: response_type appears to be deprecated in RapidPro.
+        # Already it returns from a reduced subset of former types.
+        question.question_type = temba_question.response_type
+
+        question.order = order
+        question.save()
+
+        return question
 
 
 @python_2_unicode_compatible
@@ -134,20 +207,44 @@ class Question(models.Model):
         (TYPE_RECORDING, _("Recording")),
     )
 
-    ruleset_uuid = models.CharField(max_length=36, unique=True)
+    ruleset_uuid = models.CharField(max_length=36)
+    poll = models.ForeignKey(
+        'polls.Poll', related_name='questions', verbose_name=_('poll'))
+    rapidpro_name = models.CharField(
+        max_length=64, verbose_name=_('RapidPro name'))
+    name = models.CharField(
+        max_length=64, blank=True, verbose_name=_('name'))
+    question_type = models.CharField(
+        max_length=1, choices=TYPE_CHOICES, verbose_name=_('question type'))
+    order = models.IntegerField(
+        default=0, verbose_name=_('order'))
+    is_active = models.BooleanField(
+        default=True, verbose_name=_("show on TracPro"))
 
-    poll = models.ForeignKey('polls.Poll', related_name='questions')
+    objects = QuestionManager()
 
-    text = models.CharField(max_length=64)
+    class Meta:
+        ordering = ('order',)
+        unique_together = (
+            ('ruleset_uuid', 'poll'),
+        )
 
-    type = models.CharField(max_length=1, choices=TYPE_CHOICES)
-
-    order = models.IntegerField()
-
-    is_active = models.BooleanField(default=True, help_text="Whether this item is active")
+    def __init__(self, *args, **kwargs):
+        """Name should default to the RapidPro name."""
+        super(Question, self).__init__(*args, **kwargs)
+        self.name = self.name or self.rapidpro_name
 
     def __str__(self):
-        return self.text
+        return self.name
+
+    def save(self, *args, **kwargs):
+        """Don't save custom name if it is the same as the RapidPro name.
+
+        This allows us to track changes to the name on RapidPro.
+        """
+        self.name = "" if self.name == self.rapidpro_name else self.name.strip()
+        super(Question, self).save(*args, **kwargs)
+        self.name = self.name or self.rapidpro_name
 
 
 class PollRunQuerySet(models.QuerySet):
@@ -504,7 +601,7 @@ class Response(models.Model):
             return response
 
         if not poll:
-            poll = Poll.get_all(org).get(flow_uuid=run.flow)
+            poll = Poll.objects.active().by_org(org).get(flow_uuid=run.flow)
 
         contact = Contact.get_or_fetch(poll.org, uuid=run.contact)
 
@@ -541,7 +638,7 @@ class Response(models.Model):
             response.is_new = True
 
         # organize values by ruleset UUID
-        questions = poll.get_questions()
+        questions = poll.questions.active()
         valuesets_by_ruleset = {valueset.node: valueset for valueset in run.values}
         valuesets_by_question = {q: valuesets_by_ruleset.get(q.ruleset_uuid, None)
                                  for q in questions}

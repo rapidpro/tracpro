@@ -10,4 +10,5 @@ from tracpro.contacts.models import DataField
 def set_visible_data_fields(sender, instance, **kwargs):
     """Hook to update the visible DataFields for an org."""
     if hasattr(instance, '_visible_data_fields'):
-        DataField.objects.set_active_for_org(instance, instance._visible_data_fields)
+        keys = instance._visible_data_fields.values_list('key', flat=True)
+        DataField.objects.set_active_for_org(instance, keys)

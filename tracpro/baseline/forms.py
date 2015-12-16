@@ -28,7 +28,7 @@ class BaselineTermForm(forms.ModelForm):
         super(BaselineTermForm, self).__init__(*args, **kwargs)
 
         if org:
-            polls = Poll.get_all(org).order_by('name')
+            polls = Poll.objects.active().by_org(org).order_by('name')
             self.fields['baseline_poll'].queryset = polls
             self.fields['follow_up_poll'].queryset = polls
 
@@ -52,7 +52,7 @@ class BaselineTermForm(forms.ModelForm):
 
 class QuestionModelChoiceField(forms.ModelChoiceField):
     def label_from_instance(self, obj):
-        return "%s: %s" % (obj.poll.name, obj.text)
+        return "%s: %s" % (obj.poll.name, obj.name)
 
 
 class SpoofDataForm(forms.Form):
@@ -97,7 +97,7 @@ class SpoofDataForm(forms.Form):
         if org:
             contacts = Contact.objects.active().by_org(org).order_by('name')
             self.fields['contacts'].queryset = contacts
-            questions = Question.objects.filter(poll__in=Poll.get_all(org))
+            questions = Question.objects.filter(poll__in=Poll.objects.active().by_org(org))
             self.fields['baseline_question'].queryset = questions
             self.fields['follow_up_question'].queryset = questions
 

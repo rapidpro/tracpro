@@ -1,0 +1,70 @@
+{% extends "smartmin/update.html" %}
+
+{% load smartmin %}
+
+{% block fields %}
+  <div class="form-group{% if form.name.errors %} error{% endif %}">
+    <label class="col-sm-2 control-label" for="{{ form.name.id_for_label }}">
+      {{ form.name.label }}
+    </label>
+    <div class="col-sm-10 smartmin-form-field">
+      {{ form.name|add_css:"form-control" }}
+    </div>
+    {% if object.rapidpro_name and object.rapidpro_name != object.name %}
+      <div class="col-sm-12 col-sm-offset-2 help-block">
+        <em>On RapidPro: {{ object.rapidpro_name }}</em>
+      </div>
+    {% endif %}
+  </div>
+
+  {{ questions_formset.management_form }}
+
+  {% for question_form in questions_formset %}
+  {% with question_form.instance as question %}
+    <hr>
+
+    <h4 class="text-muted">
+      Question: {{ question.name }}
+    </h4>
+
+    {{ question_form.id }} {# Hidden field to identify question. #}
+
+    <!-- Question name -->
+    <div class="form-group{% if question_form.name.errors %} error{% endif %}">
+      <label class="col-sm-2 control-label" for="{{ question_form.name.id_for_label }}">
+        {{ question_form.name.label }}
+      </label>
+      <div class="col-sm-10 smartmin-form-field">
+        {{ question_form.name|add_css:"form-control" }}
+      </div>
+      {% if question.rapidpro_name and question.rapidpro_name != question.name %}
+        <div class="col-sm-12 col-sm-offset-2 help-block">
+          <em>On RapidPro: {{ question.rapidpro_name }}</em>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Question type -->
+    <div class="form-group{% if question_form.question_type.errors %} error{% endif %}">
+      <label class="col-sm-2 control-label" for="{{ question_form.question_type.id_for_label }}">
+        {{ question_form.question_type.label }}
+      </label>
+      <div class="col-sm-6 smartmin-form-field">
+        {{ question_form.question_type|add_css:"form-control" }}
+      </div>
+    </div>
+
+    <!-- Question is_active -->
+    <div class="form-group{% if question_form.is_active.errors %} error{% endif %}">
+      <div class="col-sm-offset-2 col-sm-10">
+        <div class="checkbox">
+          <label for="{{ question_form.is_active.id_for_label }}">
+            {{ question_form.is_active }}
+            {{ question_form.is_active.label }}
+          </label>
+        </div>
+      </div>
+    </div>
+  {% endwith %}
+  {% endfor %}
+{% endblock fields %}

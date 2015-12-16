@@ -44,7 +44,7 @@
   </div>
   {% for question in questions %}
     <h3>
-      {{ question.order }}. {{ question.text }}:
+      {{ forloop.counter }}. {{ question.name }}:
       <span id="question-{{ question.pk }}-heading-value-type">{{ value_type_selected|title }}</span>
     </h3>
 
@@ -79,7 +79,7 @@
               series: [
                   {
                   type: 'area',
-                  name: '{{ question.text }}',
+                  name: '{{ question.name }}',
                   {% if value_type_selected|lower ==  "sum" %}
                     data: {{ question.answer_sum_dict_list|safe }}
                   {% elif value_type_selected|lower ==  "average" %}

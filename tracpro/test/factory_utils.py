@@ -13,7 +13,7 @@ class FuzzyEmail(factory.fuzzy.FuzzyText):
 class FuzzyUUID(factory.fuzzy.BaseFuzzyAttribute):
 
     def fuzz(self):
-        return uuid.uuid4()
+        return str(uuid.uuid4())
 
 
 class SmartModelFactory(factory.django.DjangoModelFactory):

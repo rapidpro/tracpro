@@ -22,7 +22,7 @@ class HomeView(OrgPermsMixin, SmartTemplateView):
 
     def get_context_data(self, **kwargs):
         context = super(HomeView, self).get_context_data(**kwargs)
-        context['polls'] = Poll.get_all(self.request.org).order_by('name')
+        context['polls'] = Poll.objects.active().by_org(self.request.org).order_by('name')
         # Loop through all baseline terms, until we find one with data
         baselineterms = BaselineTerm.get_all(self.request.org).order_by('-end_date')
         for baselineterm in baselineterms:
