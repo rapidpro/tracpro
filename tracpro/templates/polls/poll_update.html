@@ -10,7 +10,7 @@
     <div class="col-sm-10 smartmin-form-field">
       {{ form.name|add_css:"form-control" }}
     </div>
-    {% if object.rapidpro_name and object.rapidpro_name != object.name %}
+    {% if object.rapidpro_name %}
       <div class="col-sm-12 col-sm-offset-2 help-block">
         <em>On RapidPro: {{ object.rapidpro_name }}</em>
       </div>
@@ -37,7 +37,7 @@
       <div class="col-sm-10 smartmin-form-field">
         {{ question_form.name|add_css:"form-control" }}
       </div>
-      {% if question.rapidpro_name and question.rapidpro_name != question.name %}
+      {% if question.rapidpro_name %}
         <div class="col-sm-12 col-sm-offset-2 help-block">
           <em>On RapidPro: {{ question.rapidpro_name }}</em>
         </div>
