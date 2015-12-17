@@ -71,13 +71,18 @@ class TestPollManager(TracProTest):
     def test_set_active_for_org__invalid_uuids(self):
         """An error is raised when an invalid UUID for the org is passed."""
         org = factories.Org()
-        factories.Poll(org=org, is_active=False, flow_uuid='a')
+        poll = factories.Poll(org=org, is_active=False, flow_uuid='a')
 
         other_org = factories.Org()
-        factories.Poll(org=other_org, is_active=False, flow_uuid='b')
+        other_poll = factories.Poll(org=other_org, is_active=False, flow_uuid='b')
 
         with self.assertRaises(ValueError):
             Poll.objects.set_active_for_org(org, ['a', 'b'])
+
+        poll.refresh_from_db()
+        self.assertFalse(poll.is_active)
+        other_poll.refresh_from_db()
+        self.assertFalse(other_poll.is_active)
 
     def test_from_temba__existing(self):
         """Fields on an existing Poll should be updated from RapidPro."""
