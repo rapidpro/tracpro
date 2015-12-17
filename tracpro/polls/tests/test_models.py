@@ -3,7 +3,7 @@ from __future__ import absolute_import, unicode_literals
 
 import datetime
 
-from mock import patch
+import mock
 
 import pytz
 
@@ -126,36 +126,34 @@ class TestPollManager(TracProTest):
 
         self.assertFalse(poll.is_active)
 
-    @patch('dash.orgs.models.TembaClient.get_flows')
-    def test_sync__delete_non_existant_poll(self, mock_get_flows):
+    def test_sync__delete_non_existant_poll(self):
         """Sync should delete Polls that track a flow that does not exist."""
         org = factories.Org()
         poll = factories.Poll(org=org)  # noqa
-        mock_get_flows.return_value = []
+        self.mock_temba_client.get_flows.return_value = []
         models.Poll.objects.sync(org)
 
         self.assertEqual(models.Poll.objects.count(), 0)
 
-    @patch('dash.orgs.models.TembaClient.get_flows')
-    def test_sync__delete_non_existant_question(self, mock_get_flows):
+    def test_sync__delete_non_existant_question(self):
         org = factories.Org()
         poll = factories.Poll(org=org)
         question = factories.Question(poll=poll)  # noqa
         flow = factories.TembaFlow(uuid=poll.flow_uuid)  # no questions
-        mock_get_flows.return_value = [flow]
+        self.mock_temba_client.get_flows.return_value = [flow]
         models.Poll.objects.sync(org)
 
         self.assertEqual(models.Poll.objects.count(), 1)
         self.assertEqual(models.Question.objects.count(), 0)
 
-    @patch('dash.orgs.models.TembaClient.get_flows')
-    def test_sync__add_new(self, mock_get_flows):
+    @mock.patch('tracpro.polls.models.Question.objects.from_temba')
+    def test_sync__add_new(self, mock_question_from_temba):
         """Sync should create an inactive poll to track a new flow."""
         org = factories.Org()
         flow = factories.TembaFlow()
         ruleset = factories.TembaRuleSet()
         flow.rulesets = [ruleset]
-        mock_get_flows.return_value = [flow]
+        self.mock_temba_client.get_flows.return_value = [flow]
         models.Poll.objects.sync(org)
 
         self.assertEqual(models.Poll.objects.count(), 1)
@@ -164,16 +162,9 @@ class TestPollManager(TracProTest):
         self.assertEqual(poll.rapidpro_name, flow.name)
         self.assertEqual(poll.name, flow.name)
 
-        self.assertEqual(models.Question.objects.count(), 1)
-        question = models.Question.objects.get()
-        self.assertEqual(question.poll, poll)
-        self.assertEqual(question.ruleset_uuid, ruleset.uuid)
-        self.assertEqual(question.rapidpro_name, ruleset.label)
-        self.assertEqual(question.name, ruleset.label)
-        self.assertEqual(question.order, 1)
+        self.assertEqual(mock_question_from_temba.call_count, 1)
 
-    @patch('dash.orgs.models.TembaClient.get_flows')
-    def test_sync__update_existing(self, mock_get_flows):
+    def test_sync__update_existing(self):
         """Sync should update existing objects if they have changed on RapidPro."""
         org = factories.Org()
         poll = factories.Poll(org=org, is_active=True)
@@ -181,7 +172,7 @@ class TestPollManager(TracProTest):
         flow = factories.TembaFlow(uuid=poll.flow_uuid)
         ruleset = factories.TembaRuleSet(uuid=question.ruleset_uuid)
         flow.rulesets = [ruleset]
-        mock_get_flows.return_value = [flow]
+        self.mock_temba_client.get_flows.return_value = [flow]
         models.Poll.objects.sync(org)
 
         self.assertEqual(models.Poll.objects.count(), 1)
@@ -200,13 +191,12 @@ class TestPollManager(TracProTest):
         self.assertEqual(question.name, ruleset.label)
         self.assertEqual(question.order, 1)
 
-    @patch('dash.orgs.models.TembaClient.get_flows')
-    def test_sync__archive_poll(self, mock_get_flows):
+    def test_sync__archive_poll(self):
         """Sync should deactivate the Poll if it is archived on RapidPro."""
         org = factories.Org()
         poll = factories.Poll(org=org, is_active=True)
         flow = factories.TembaFlow(uuid=poll.flow_uuid, archived=True)
-        mock_get_flows.return_value = [flow]
+        self.mock_temba_client.get_flows.return_value = [flow]
         models.Poll.objects.sync(org)
 
         self.assertEqual(models.Poll.objects.count(), 1)
@@ -327,7 +317,7 @@ class PollRunTest(TracProDataTest):
 
     def test_get_or_create_universal(self):
         # 2014-Jan-01 04:30 in org's Afg timezone
-        with patch.object(timezone, 'now') as mock_now:
+        with mock.patch.object(timezone, 'now') as mock_now:
             mock_now.return_value = datetime.datetime(2014, 1, 1, 0, 0, 0, 0, pytz.utc)
             # no existing pollruns so one is created
             pollrun1 = PollRun.objects.get_or_create_universal(self.poll1)
@@ -336,14 +326,14 @@ class PollRunTest(TracProDataTest):
                 datetime.datetime(2014, 1, 1, 0, 0, 0, 0, pytz.utc))
 
         # 2014-Jan-01 23:30 in org's Afg timezone
-        with patch.object(timezone, 'now') as mock_now:
+        with mock.patch.object(timezone, 'now') as mock_now:
             mock_now.return_value = datetime.datetime(2014, 1, 1, 19, 0, 0, 0, pytz.utc)
             # existing pollrun on same day is returned
             pollrun2 = PollRun.objects.get_or_create_universal(self.poll1)
             self.assertEqual(pollrun1, pollrun2)
 
         # 2014-Jan-02 00:30 in org's Afg timezone
-        with patch.object(timezone, 'now') as mock_now:
+        with mock.patch.object(timezone, 'now') as mock_now:
             mock_now.return_value = datetime.datetime(2014, 1, 1, 20, 0, 0, 0, pytz.utc)
             # different day locally so new pollrun
             pollrun3 = PollRun.objects.get_or_create_universal(self.poll1)
@@ -353,7 +343,7 @@ class PollRunTest(TracProDataTest):
                 datetime.datetime(2014, 1, 1, 20, 0, 0, 0, pytz.utc))
 
         # 2014-Jan-02 04:30 in org's Afg timezone
-        with patch.object(timezone, 'now') as mock_now:
+        with mock.patch.object(timezone, 'now') as mock_now:
             mock_now.return_value = datetime.datetime(2014, 1, 2, 0, 0, 0, 0, pytz.utc)
             # same day locally so no new pollrun
             pollrun4 = PollRun.objects.get_or_create_universal(self.poll1)

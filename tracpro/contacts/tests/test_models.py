@@ -3,7 +3,6 @@ from __future__ import absolute_import, unicode_literals
 import datetime
 from decimal import Decimal
 
-import mock
 import pytz
 
 from temba_client.types import Contact as TembaContact
@@ -26,9 +25,8 @@ class ContactTest(TracProDataTest):
         CELERY_EAGER_PROPAGATES_EXCEPTIONS=True,
         BROKER_BACKEND='memory',
     )
-    @mock.patch('dash.orgs.models.TembaClient.create_contact')
-    def test_create(self, mock_create_contact):
-        mock_create_contact.return_value = TembaContact.create(
+    def test_create(self):
+        self.mock_temba_client.create_contact.return_value = TembaContact.create(
             uuid='C-007',
             name="Mo Polls",
             urns=['tel:078123'],
@@ -64,11 +62,10 @@ class ContactTest(TracProDataTest):
         contact.refresh_from_db()
         self.assertEqual(contact.uuid, 'C-007')
 
-        self.assertEqual(mock_create_contact.call_count, 1)
+        self.assertEqual(self.mock_temba_client.create_contact.call_count, 1)
 
-    @mock.patch('dash.orgs.models.TembaClient.get_contact')
-    def test_get_or_fetch(self, mock_get_contact):
-        mock_get_contact.return_value = TembaContact.create(
+    def test_get_or_fetch(self):
+        self.mock_temba_client.get_contact.return_value = TembaContact.create(
             uuid='C-007', name="Mo Polls",
             urns=['tel:078123'], groups=['G-001', 'G-005'],
             fields={},
@@ -149,12 +146,11 @@ class ContactTest(TracProDataTest):
         CELERY_EAGER_PROPAGATES_EXCEPTIONS=True,
         BROKER_BACKEND='memory',
     )
-    @mock.patch('dash.orgs.models.TembaClient.delete_contact')
-    def test_delete(self, mock_delete_contact):
+    def test_delete(self):
         self.contact1.delete()
         self.assertFalse(self.contact1.is_active)
 
-        self.assertEqual(mock_delete_contact.call_count, 1)
+        self.assertEqual(self.mock_temba_client.delete_contact.call_count, 1)
 
     def test_str(self):
         self.assertEqual(str(self.contact1), "Ann")

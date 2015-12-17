@@ -1,5 +1,3 @@
-import mock
-
 from django.contrib.auth.models import User
 from django.test.utils import override_settings
 
@@ -19,7 +17,8 @@ from .. import models
 class TestRegion(TracProTest):
 
     def setUp(self):
-        super(TracProTest, self).setUp()
+        super(TestRegion, self).setUp()
+
         self.org = factories.Org()
 
         self.temba_groups = {
@@ -40,6 +39,8 @@ class TestRegion(TracProTest):
         self.inactive = factories.Region(
             org=self.org, uuid='5', name="inactive", parent=self.kampala,
             is_active=False)
+
+        self.mock_temba_client.get_contacts.return_value = []
 
     def refresh_regions(self):
         """Refresh all regions from the database."""
@@ -102,11 +103,9 @@ class TestRegion(TracProTest):
         self.assertEqual(self.makerere.parent, self.kampala)
         self.assertEqual(self.inactive.parent, self.kampala)
 
-    @mock.patch('dash.orgs.models.TembaClient.get_groups')
-    @mock.patch('dash.orgs.models.TembaClient.get_contacts')
-    def test_sync_deactivate(self, mock_get_contacts, mock_get_groups):
+    def test_sync_deactivate(self):
         """Deactivate any group whose UUID is not given."""
-        mock_get_groups.return_value = self.temba_groups.values()
+        self.mock_temba_client.get_groups.return_value = self.temba_groups.values()
         uuids = ['1', '2', '4']  # no Entebbe
         models.Region.sync_with_temba(self.org, uuids)
         self.refresh_regions()
@@ -116,15 +115,13 @@ class TestRegion(TracProTest):
             self.kampala,
             self.makerere,
         ]))
-        self.assertEqual(mock_get_groups.call_count, 1)
-        self.assertEqual(mock_get_contacts.call_count, 2)
+        self.assertEqual(self.mock_temba_client.get_groups.call_count, 1)
+        self.assertEqual(self.mock_temba_client.get_contacts.call_count, 2)
 
-    @mock.patch('dash.orgs.models.TembaClient.get_groups')
-    @mock.patch('dash.orgs.models.TembaClient.get_contacts')
-    def test_sync_update_existing(self, mock_get_contacts, mock_get_groups):
+    def test_sync_update_existing(self):
         """Update existing group with new information from remote."""
         self.temba_groups['2'].name = "Changed"  # Kampala
-        mock_get_groups.return_value = self.temba_groups.values()
+        self.mock_temba_client.get_groups.return_value = self.temba_groups.values()
         uuids = ['1', '2', '3', '4']
         models.Region.sync_with_temba(self.org, uuids)
         self.refresh_regions()
@@ -137,14 +134,12 @@ class TestRegion(TracProTest):
         ]))
         self.assertEqual(self.kampala.name, "Changed")
         self.assertEqual(self.kampala.parent, self.uganda)
-        self.assertEqual(mock_get_groups.call_count, 1)
-        self.assertEqual(mock_get_contacts.call_count, 2)
+        self.assertEqual(self.mock_temba_client.get_groups.call_count, 1)
+        self.assertEqual(self.mock_temba_client.get_contacts.call_count, 2)
 
-    @mock.patch('dash.orgs.models.TembaClient.get_groups')
-    @mock.patch('dash.orgs.models.TembaClient.get_contacts')
-    def test_sync_reactivate(self, mock_get_contacts, mock_get_groups):
+    def test_sync_reactivate(self):
         """Reactivate a group that existed previously."""
-        mock_get_groups.return_value = self.temba_groups.values()
+        self.mock_temba_client.get_groups.return_value = self.temba_groups.values()
         self.entebbe.deactivate()
         uuids = ['1', '2', '3', '4']
         models.Region.sync_with_temba(self.org, uuids)
@@ -159,15 +154,13 @@ class TestRegion(TracProTest):
         self.assertTrue(self.entebbe.is_active)
         self.assertEqual(self.entebbe.name, "Entebbe")
         self.assertEqual(self.entebbe.parent, None)
-        self.assertEqual(mock_get_groups.call_count, 1)
-        self.assertEqual(mock_get_contacts.call_count, 2)
+        self.assertEqual(self.mock_temba_client.get_groups.call_count, 1)
+        self.assertEqual(self.mock_temba_client.get_contacts.call_count, 2)
 
-    @mock.patch('dash.orgs.models.TembaClient.get_groups')
-    @mock.patch('dash.orgs.models.TembaClient.get_contacts')
-    def test_sync_create_new(self, mock_get_contacts, mock_get_groups):
+    def test_sync_create_new(self):
         """Create a new group if the UUID hasn't been seen before."""
         self.temba_groups['6'] = TembaGroup.create(uuid='6', name="New")
-        mock_get_groups.return_value = self.temba_groups.values()
+        self.mock_temba_client.get_groups.return_value = self.temba_groups.values()
         uuids = ['1', '2', '3', '4', '6']
         models.Region.sync_with_temba(self.org, uuids)
         self.refresh_regions()
@@ -182,15 +175,13 @@ class TestRegion(TracProTest):
         ]))
         self.assertEqual(new_region.name, "New")
         self.assertIsNone(new_region.parent, None)
-        self.assertEqual(mock_get_groups.call_count, 1)
-        self.assertEqual(mock_get_contacts.call_count, 2)
+        self.assertEqual(self.mock_temba_client.get_groups.call_count, 1)
+        self.assertEqual(self.mock_temba_client.get_contacts.call_count, 2)
 
-    @mock.patch('dash.orgs.models.TembaClient.get_groups')
-    @mock.patch('dash.orgs.models.TembaClient.get_contacts')
-    def test_sync_removed_remote(self, mock_get_contacts, mock_get_groups):
+    def test_sync_removed_remote(self):
         """Deactivate a group locally if it has been removed from the remote."""
         self.temba_groups.pop('3')  # Entebbe
-        mock_get_groups.return_value = self.temba_groups.values()
+        self.mock_temba_client.get_groups.return_value = self.temba_groups.values()
         uuids = ['1', '2', '3', '4']
         models.Region.sync_with_temba(self.org, uuids)
         self.refresh_regions()
@@ -202,8 +193,8 @@ class TestRegion(TracProTest):
             self.kampala,
             self.makerere,
         ]))
-        self.assertEqual(mock_get_groups.call_count, 1)
-        self.assertEqual(mock_get_contacts.call_count, 2)
+        self.assertEqual(self.mock_temba_client.get_groups.call_count, 1)
+        self.assertEqual(self.mock_temba_client.get_contacts.call_count, 2)
 
 
 class TestGroup(TracProDataTest):
