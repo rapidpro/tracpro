@@ -254,6 +254,7 @@ class TestQuestionManager(TracProTest):
 
         # Should create a new Question object that matches the incoming data.
         question = models.Question.objects.from_temba(poll, ruleset, order=100)
+        self.assertEqual(models.Question.objects.count(), 1)
         self.assertEqual(question.ruleset_uuid, ruleset.uuid)
         self.assertEqual(question.poll, poll)
         self.assertEqual(question.rapidpro_name, ruleset.label)
@@ -263,21 +264,27 @@ class TestQuestionManager(TracProTest):
     def test_from_temba__existing(self):
         """Should update an existing Question for the Poll and uuid."""
         poll = factories.Poll()
-        question = factories.Question(poll=poll)
-        ruleset = factories.TembaRuleSet(uuid=question.ruleset_uuid)
+        question = factories.Question(
+            poll=poll, question_type=models.Question.TYPE_OPEN)
+        ruleset = factories.TembaRuleSet(
+            uuid=question.ruleset_uuid,
+            response_type=models.Question.TYPE_MULTIPLE_CHOICE)
 
         # Should return the existing Question object.
         ret_val = models.Question.objects.from_temba(poll, ruleset, order=100)
         self.assertEqual(ret_val, question)
         self.assertEqual(ret_val.ruleset_uuid, question.ruleset_uuid)
+        self.assertEqual(models.Question.objects.count(), 1)
 
         # Existing Question should be updated to match the incoming data.
         question.refresh_from_db()
         self.assertEqual(question.ruleset_uuid, ruleset.uuid)
         self.assertEqual(question.poll, poll)
         self.assertEqual(question.rapidpro_name, ruleset.label)
-        self.assertEqual(question.question_type, ruleset.response_type)
         self.assertEqual(question.order, 100)
+
+        # Question type should not be updated.
+        self.assertEqual(question.question_type, models.Question.TYPE_OPEN)
 
     def test_from_temba__another_org(self):
         """Both uuid and Poll must match in order to update existing."""
@@ -289,6 +296,7 @@ class TestQuestionManager(TracProTest):
         # Should return a Question that is distinct from the existing
         # Question for another poll.
         ret_val = models.Question.objects.from_temba(poll, ruleset, order=100)
+        self.assertEqual(models.Question.objects.count(), 2)
         other_question.refresh_from_db()
         self.assertNotEqual(ret_val, other_question)
         self.assertNotEqual(ret_val.poll, other_question.poll)

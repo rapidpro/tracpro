@@ -169,7 +169,7 @@ class QuestionManager(models.Manager.from_queryset(QuestionQuerySet)):
 
     def from_temba(self, poll, temba_question, order):
         """Create new or update existing Question from RapidPro data."""
-        question, _ = self.get_or_create(poll=poll, ruleset_uuid=temba_question.uuid)
+        question, created = self.get_or_create(poll=poll, ruleset_uuid=temba_question.uuid)
 
         if question.name == question.rapidpro_name:
             # Name is tracking RapidPro name so we must update both.
@@ -180,7 +180,10 @@ class QuestionManager(models.Manager.from_queryset(QuestionQuerySet)):
 
         # NOTE: response_type appears to be deprecated in RapidPro.
         # Already it returns from a reduced subset of former types.
-        question.question_type = temba_question.response_type
+        # Because of this, we allow users to edit the question type
+        # after it is initially set.
+        if created:
+            question.question_type = temba_question.response_type
 
         question.order = order
         question.save()
