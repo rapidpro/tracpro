@@ -7,7 +7,7 @@ import mock
 
 import pytz
 
-from temba_client.types import Run, RunValueSet
+from temba_client.types import Run, RunValueSet, FlowDefinition
 
 from django.db import IntegrityError
 from django.utils import timezone
@@ -230,6 +230,20 @@ class TestPoll(TracProTest):
         factories.Poll(org=factories.Org(), flow_uuid='abc')
         factories.Poll(org=factories.Org(), flow_uuid='abc')
 
+    def test_get_flow_definition(self):
+        """Flow definition should be retrieved from the API and cached on the poll."""
+        definition = FlowDefinition()
+        self.mock_temba_client.get_flow_definition.return_value = definition
+        poll = factories.Poll()
+        self.assertFalse(hasattr(poll, '_flow_definition'))
+        for i in range(2):
+            # The result of the method should be cached on the poll.
+            self.assertEqual(poll.get_flow_definition(), definition)
+            self.assertEqual(poll._flow_definition, definition)
+
+            # API call count should not go up.
+            self.assertEqual(self.mock_temba_client.get_flow_definition.call_count, 1)
+
 
 class TestQuestionQueryset(TracProTest):
 
@@ -242,6 +256,12 @@ class TestQuestionQueryset(TracProTest):
 
 class TestQuestionManager(TracProTest):
 
+    def setUp(self):
+        super(TestQuestionManager, self).setUp()
+        self.definition = FlowDefinition()
+        self.definition.rule_sets = []
+        self.mock_temba_client.get_flow_definition.return_value = self.definition
+
     def test_from_temba__new(self):
         """Should create a new Question to match the Poll and uuid."""
         poll = factories.Poll()
@@ -253,7 +273,7 @@ class TestQuestionManager(TracProTest):
         self.assertEqual(question.ruleset_uuid, ruleset.uuid)
         self.assertEqual(question.poll, poll)
         self.assertEqual(question.rapidpro_name, ruleset.label)
-        self.assertEqual(question.question_type, ruleset.response_type)
+        self.assertEqual(question.question_type, models.Question.TYPE_OPEN)
         self.assertEqual(question.order, 100)
 
     def test_from_temba__existing(self):
@@ -316,6 +336,48 @@ class TestQuestion(TracProTest):
         """ruleset_uuid can be repeated with different Polls."""
         factories.Question(poll=factories.Poll(), ruleset_uuid='abc')
         factories.Question(poll=factories.Poll(), ruleset_uuid='abc')
+
+    @mock.patch.object(models.Poll, 'get_flow_definition')
+    def test_guess_question_type_numeric(self, mock_get_flow_definition):
+        """Guess NUMERIC if rule types are all numeric."""
+        definition = FlowDefinition()
+        definition.rule_sets = [{
+            'uuid': 'a',
+            'rules': [
+                {'test': {'type': 'number'}},
+                {'test': {'type': 'number'}},
+            ],
+        }]
+        mock_get_flow_definition.return_value = definition
+        question = factories.Question(ruleset_uuid='a')
+        self.assertEqual(question._guess_question_type(), models.Question.TYPE_NUMERIC)
+
+    @mock.patch.object(models.Poll, 'get_flow_definition')
+    def test_guess_question_type_open(self, mock_get_flow_definition):
+        """Guess OPEN if there are no rules."""
+        definition = FlowDefinition()
+        definition.rule_sets = [{
+            'uuid': 'a',
+            'rules': [],
+        }]
+        mock_get_flow_definition.return_value = definition
+        question = factories.Question(ruleset_uuid='a')
+        self.assertEqual(question._guess_question_type(), models.Question.TYPE_OPEN)
+
+    @mock.patch.object(models.Poll, 'get_flow_definition')
+    def test_guess_question_type_multiple_choice(self, mock_get_flow_definition):
+        """Guess MULTIPLE_CHOICE if not all rules are numeric."""
+        definition = FlowDefinition()
+        definition.rule_sets = [{
+            'uuid': 'a',
+            'rules': [
+                {'test': {'type': 'number'}},
+                {'test': {'type': 'text'}},
+            ],
+        }]
+        mock_get_flow_definition.return_value = definition
+        question = factories.Question(ruleset_uuid='a')
+        self.assertEqual(question._guess_question_type(), models.Question.TYPE_NUMERIC)
 
 
 class PollRunTest(TracProDataTest):
