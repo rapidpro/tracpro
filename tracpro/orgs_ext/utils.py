@@ -50,19 +50,20 @@ class OrgConfigField(object):
 
 
 def run_org_task(org, task):
-    """Handle common errors when running a task for an Org."""
+    """Common protocol for running a task for an Org."""
+    task_name = task.__name__
 
     if not org.api_token:
-        logger.info(
-            "Skipping {} because it does not have an API token.".format(org))
+        msg = "{}: Skipping {} because it does not have an API token."
+        logger.info(msg.format(task_name, org))
         return None
 
     try:
         return task(org.pk)
     except TembaAPIError as e:
         if caused_by_bad_api_key(e):
-            logger.warning(
-                "API token for {} is invalid.".format(org), exc_info=True)
+            msg = "{}: API token for {} is invalid."
+            logger.warning(msg.format(task_name, org), exc_info=True)
             return None
         raise
 
