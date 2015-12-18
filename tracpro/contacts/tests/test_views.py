@@ -1,6 +1,6 @@
 import json
 
-from temba_client.types import Run
+from temba_client.types import Contact as TembaContact, Run
 
 from django.core.urlresolvers import reverse
 from django.utils import timezone
@@ -34,6 +34,9 @@ class ContactCRUDLTest(TracProDataTest):
         self.assertFormError(response, 'form', 'group', 'This field is required.')
 
         # submit again with all fields
+        temba_contact = TembaContact()
+        temba_contact.uuid = "uuid"
+        self.mock_temba_client.create_contact.return_value = temba_contact
         response = self.url_post('unicef', url, {
             'name': "Mo Polls",
             'urn_0': "tel",
@@ -43,6 +46,7 @@ class ContactCRUDLTest(TracProDataTest):
             'language': 'eng',
         })
         self.assertEqual(response.status_code, 302)
+        self.assertEqual(self.mock_temba_client.create_contact.call_count, 1)
 
         # check new contact and profile
         contact = Contact.objects.get(urn='tel:5678')
