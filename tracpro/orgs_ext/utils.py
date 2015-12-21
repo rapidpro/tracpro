@@ -1,11 +1,18 @@
 import logging
 
+from celery.task.sets import subtask
+from celery.utils.log import get_task_logger
+
+from djcelery_transactions import PostTransactionTask
+
+from django.apps import apps
+
 from requests import HTTPError
 
 from temba_client.base import TembaAPIError
 
 
-logger = logging.getLogger(__name__)
+logger = get_task_logger(__name__)
 
 
 class OrgConfigField(object):
@@ -66,6 +73,65 @@ def run_org_task(org, task):
             logger.warning(msg.format(task_name, org), exc_info=True)
             return None
         raise
+
+
+class TracProTaskBase(PostTransactionTask):
+    abstract = True
+
+    def get_log_name(self):
+        raise NotImplementedError("Class must define a name to use in the logs.")
+
+    def log(self, level, msg, *args, **kwargs):
+        exc_info = kwargs.pop('exc_info', False)
+        msg = msg.format(*args, **kwargs)
+        logger.log(level, "{}: {}".format(self.__name__, msg), exc_info=exc_info)
+
+    def info(self, msg, *args, **kwargs):
+        return self.log(logging.INFO, msg, *args, **kwargs)
+
+    def warning(self, msg, *args, **kwargs):
+        return self.log(logging.WARNING, msg, exc_info=True, *args, **kwargs)
+
+
+class ActiveOrgsTaskScheduler(TracProTaskBase):
+    """Common scaffolding to schedule an OrgTask to be run for each active org."""
+    abstract = True
+
+    @property
+    def task(self):
+        raise NotImplementedError("Class must define an org task to schedule.")
+
+    def run(self):
+        self.info("Starting scheduling task for each active org.")
+        for org in apps.get_model('orgs', 'Org').objects.filter(is_active=True):
+            if not org.api_token:
+                self.info("Skipping {} because it has no API token.", org.name)
+            else:
+                subtask(self.task.__name__, args=[org.pk])  # asynchronous
+                self.info("Scheduled task for {}.", org.name)
+        self.info("Finished scheduling task for active orgs.")
+
+
+class OrgTask(TracProTaskBase):
+    """Common scaffolding to run a task that operates on a single org."""
+    abstract = True
+
+    def org_task(self, org):
+        raise NotImplementedError("Class must define the action to take on the org.")
+
+    def run(self, org_pk):
+        org = apps.get_model('orgs', 'Org').objects.get(pk=org_pk)
+        self.info("Starting task for {}.", org.name)
+        try:
+            result = self.org_task(org)
+        except TembaAPIError as e:
+            if caused_by_bad_api_key(e):
+                self.warning("API token for {} is invalid.", org.name)
+                return None
+            else:
+                raise
+        self.info("Finished task for {}.", org.name)
+        return result
 
 
 def caused_by_bad_api_key(exception):
