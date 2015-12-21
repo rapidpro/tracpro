@@ -59,7 +59,7 @@ def run_org_task(org, task):
         return None
 
     try:
-        return task(org.pk)
+        return task.delay(org.pk)
     except TembaAPIError as e:
         if caused_by_bad_api_key(e):
             msg = "{}: API token for {} is invalid."
