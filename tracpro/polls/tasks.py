@@ -32,8 +32,7 @@ def fetch_all_runs():
     if not redis_connection.get(FETCH_ALL_RUNS_LOCK):
         with redis_connection.lock(FETCH_ALL_RUNS_LOCK, timeout=600):
             logger.info("Starting flow run fetch for all orgs...")
-
-            for org in Org.objects.filter(is_active=True).prefetch_related('polls'):
+            for org in Org.objects.filter(is_active=True):
                 run_org_task(org, fetch_org_runs)
     else:
         logger.warn("Skipping run fetch as it is already running")
