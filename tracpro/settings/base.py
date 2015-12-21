@@ -245,27 +245,27 @@ BROKER_URL = CELERY_RESULT_BACKEND = 'redis://localhost:6379/4'
 
 CELERYBEAT_SCHEDULE = {
     'sync-polls': {
-        'task': 'tracpro.polls.tasks.sync_all_polls',
+        'task': 'tracpro.polls.tasks.SyncAllPolls',
         'schedule': datetime.timedelta(minutes=5),
         'args': (),
     },
     'sync-contacts': {
-        'task': 'tracpro.contacts.tasks.sync_all_contacts',
+        'task': 'tracpro.contacts.tasks.SyncAllContacts',
         'schedule': datetime.timedelta(minutes=30),
         'args': (),
     },
     'sync-data-fields': {
-        'task': 'tracpro.contacts.tasks.sync_all_data_fields',
+        'task': 'tracpro.contacts.tasks.SyncAllDataFields',
         'schedule': datetime.timedelta(days=1),
         'args': (),
     },
     'fetch-runs': {
-        'task': 'tracpro.polls.tasks.fetch_all_runs',
+        'task': 'tracpro.polls.tasks.FetchAllRuns',
         'schedule': datetime.timedelta(minutes=5),
         'args': (),
     },
     'fetch-inbox-messages': {
-        'task': 'tracpro.msgs.tasks.fetch_all_inbox_messages',
+        'task': 'tracpro.msgs.tasks.FetchAllInboxMessages',
         'schedule': datetime.timedelta(minutes=5),
         'args': (),
     }

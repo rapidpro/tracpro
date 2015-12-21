@@ -56,25 +56,6 @@ class OrgConfigField(object):
         instance.__dict__.pop(self.cache_name, None)
 
 
-def run_org_task(org, task):
-    """Common protocol for running a task for an Org."""
-    task_name = task.__name__
-
-    if not org.api_token:
-        msg = "{}: Skipping {} because it does not have an API token."
-        logger.info(msg.format(task_name, org))
-        return None
-
-    try:
-        return task.delay(org.pk)
-    except TembaAPIError as e:
-        if caused_by_bad_api_key(e):
-            msg = "{}: API token for {} is invalid."
-            logger.warning(msg.format(task_name, org), exc_info=True)
-            return None
-        raise
-
-
 class TracProTaskBase(PostTransactionTask):
     abstract = True
 
