@@ -284,7 +284,7 @@ CELERYBEAT_SCHEDULE = {
     }
 }
 
-CELERYD_CONCURRENCY = 8
+CELERYD_CONCURRENCY = 6
 
 COMPRESS_PRECOMPILERS = (
     ('text/coffeescript', 'coffee --compile --stdio'),
