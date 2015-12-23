@@ -243,8 +243,9 @@ ANONYMOUS_USER_ID = -1
 
 BROKER_URL = CELERY_RESULT_BACKEND = 'redis://localhost:6379/4'
 
-ORG_SCHEDULER_TASK = 'tracpro.orgs_ext.tasks.ScheduleTaskForActiveOrgs'
+CELERY_TIMEZONE = 'UTC'
 
+ORG_SCHEDULER_TASK = 'tracpro.orgs_ext.tasks.ScheduleTaskForActiveOrgs'
 CELERYBEAT_SCHEDULE = {
     'sync-polls': {
         'task': ORG_SCHEDULER_TASK,
@@ -283,7 +284,7 @@ CELERYBEAT_SCHEDULE = {
     }
 }
 
-CELERY_TIMEZONE = 'UTC'
+CELERYD_CONCURRENCY = 8
 
 COMPRESS_PRECOMPILERS = (
     ('text/coffeescript', 'coffee --compile --stdio'),
