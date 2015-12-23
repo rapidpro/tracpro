@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 from celery.utils.log import get_task_logger
 from djcelery_transactions import task
 
-from tracpro.orgs_ext.utils import ActiveOrgsTaskScheduler, OrgTask
+from tracpro.orgs_ext.tasks import OrgTask
 
 
 logger = get_task_logger(__name__)
@@ -86,8 +86,3 @@ class FetchOrgInboxMessages(OrgTask):
                         sent_on=inbox_message.sent_on,
                         direction=inbox_message.direction,
                     )
-
-
-@task
-class FetchAllInboxMessages(ActiveOrgsTaskScheduler):
-    task = FetchOrgInboxMessages

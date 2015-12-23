@@ -9,7 +9,7 @@ from djcelery_transactions import task
 from dash.utils import datetime_to_ms
 from dash.utils.sync import sync_pull_contacts, sync_push_contact
 
-from tracpro.orgs_ext.utils import ActiveOrgsTaskScheduler, OrgTask
+from tracpro.orgs_ext.tasks import OrgTask
 
 
 logger = get_task_logger(__name__)
@@ -70,11 +70,6 @@ class SyncOrgContacts(OrgTask):
 
 
 @task
-class SyncAllContacts(ActiveOrgsTaskScheduler):
-    task = SyncOrgContacts
-
-
-@task
 class SyncOrgDataFields(OrgTask):
 
     def org_task(self, org):
@@ -83,8 +78,3 @@ class SyncOrgDataFields(OrgTask):
         contact values) that are no longer on the remote.
         """
         apps.get_model('contacts', 'DataField').objects.sync(org)
-
-
-@task
-class SyncAllDataFields(ActiveOrgsTaskScheduler):
-    task = SyncOrgDataFields

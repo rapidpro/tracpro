@@ -243,31 +243,43 @@ ANONYMOUS_USER_ID = -1
 
 BROKER_URL = CELERY_RESULT_BACKEND = 'redis://localhost:6379/4'
 
+ORG_SCHEDULER_TASK = 'tracpro.orgs_ext.tasks.ScheduleTaskForActiveOrgs'
+
 CELERYBEAT_SCHEDULE = {
     'sync-polls': {
-        'task': 'tracpro.polls.tasks.SyncAllPolls',
+        'task': ORG_SCHEDULER_TASK,
         'schedule': datetime.timedelta(minutes=5),
-        'args': (),
+        'kwargs': {
+            'task_name': 'tracpro.polls.tasks.SyncOrgPolls',
+        },
     },
     'sync-contacts': {
-        'task': 'tracpro.contacts.tasks.SyncAllContacts',
+        'task': ORG_SCHEDULER_TASK,
         'schedule': datetime.timedelta(minutes=30),
-        'args': (),
+        'kwargs': {
+            'task_name': 'tracpro.contacts.tasks.SyncOrgContacts',
+        },
     },
     'sync-data-fields': {
-        'task': 'tracpro.contacts.tasks.SyncAllDataFields',
+        'task': ORG_SCHEDULER_TASK,
         'schedule': datetime.timedelta(days=1),
-        'args': (),
+        'kwargs': {
+            'task_name': 'tracpro.contacts.tasks.SyncDataFields',
+        },
     },
     'fetch-runs': {
-        'task': 'tracpro.polls.tasks.FetchAllRuns',
+        'task': ORG_SCHEDULER_TASK,
         'schedule': datetime.timedelta(minutes=5),
-        'args': (),
+        'kwargs': {
+            'task_name': 'tracpro.polls.tasks.FetchOrgRuns',
+        },
     },
     'fetch-inbox-messages': {
-        'task': 'tracpro.msgs.tasks.FetchAllInboxMessages',
+        'task': ORG_SCHEDULER_TASK,
         'schedule': datetime.timedelta(minutes=5),
-        'args': (),
+        'kwargs': {
+            'task_name': 'tracpro.msgs.tasks.FetchOrgInboxMessages',
+        },
     }
 }
 

@@ -12,7 +12,7 @@ from temba_client.utils import parse_iso8601, format_iso8601
 from dash.utils import datetime_to_ms
 
 from tracpro.contacts.models import Contact
-from tracpro.orgs_ext.utils import ActiveOrgsTaskScheduler, OrgTask
+from tracpro.orgs_ext.tasks import OrgTask
 
 
 logger = get_task_logger(__name__)
@@ -66,11 +66,6 @@ class FetchOrgRuns(OrgTask):
         org.set_task_result(TaskType.fetch_runs, task_result)
 
         redis_connection.set(last_time_key, format_iso8601(until))
-
-
-@task
-class FetchAllRuns(ActiveOrgsTaskScheduler):
-    task = FetchOrgRuns
 
 
 @task
@@ -137,8 +132,3 @@ class SyncOrgPolls(OrgTask):
         are no longer on the remote.
         """
         apps.get_model('polls', 'Poll').objects.sync(org)
-
-
-@task
-class SyncAllPolls(ActiveOrgsTaskScheduler):
-    task = SyncOrgPolls
