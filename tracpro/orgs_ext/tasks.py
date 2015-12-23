@@ -1,4 +1,4 @@
-from celery import subtask
+from celery import signature
 from celery.utils.log import get_task_logger
 
 from django.apps import apps
@@ -17,9 +17,9 @@ logger = get_task_logger(__name__)
 
 @task
 class ScheduleTaskForActiveOrgs(PostTransactionTask):
-    """Schedule an OrgTask to be run for each active org."""
 
     def run(self, task_name):
+        """Schedule the OrgTask to be run for each active org."""
         if task_name not in celery_app.tasks:
             logger.error(
                 "{}: No task named '{}' is registered".format(
@@ -39,7 +39,7 @@ class ScheduleTaskForActiveOrgs(PostTransactionTask):
                     "{}: Skipping {} for {} because it has no API token.".format(
                         self.__name__, task_name, org.name))
             else:
-                subtask(task_name, args=[org.pk])  # asynchronous
+                signature(task_name, args=[org.pk]).delay()  # asynchronous
                 logger.info(
                     "{}: Scheduled {} for {}.".format(
                         self.__name__, task_name, org.name))
