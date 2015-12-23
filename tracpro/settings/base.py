@@ -264,7 +264,7 @@ CELERYBEAT_SCHEDULE = {
         'task': ORG_SCHEDULER_TASK,
         'schedule': datetime.timedelta(days=1),
         'kwargs': {
-            'task_name': 'tracpro.contacts.tasks.SyncDataFields',
+            'task_name': 'tracpro.contacts.tasks.SyncOrgDataFields',
         },
     },
     'fetch-runs': {
