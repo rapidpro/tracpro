@@ -112,25 +112,6 @@ class TestPollManager(TracProTest):
         self.assertEqual(poll.name, flow.name)
         self.assertFalse(poll.is_active)
 
-    def test_from_temba__existing_archived(self):
-        """Existing Poll should be deactivated if RapidPro flow is archived."""
-        org = factories.Org()
-        poll = factories.Poll(org=org, flow_uuid='abc', is_active=True)
-        flow = factories.TembaFlow(uuid='abc', archived=True)
-
-        poll = Poll.objects.from_temba(org, flow)
-
-        self.assertFalse(poll.is_active)
-
-    def test_from_temba__new_archive(self):
-        """New Poll should be created as inactive if RapidPro flow is archived."""
-        org = factories.Org()
-        flow = factories.TembaFlow(archived=True)
-
-        poll = Poll.objects.from_temba(org, flow)
-
-        self.assertFalse(poll.is_active)
-
     def test_sync__delete_non_existant_poll(self):
         """Sync should delete Polls that track a flow that does not exist."""
         org = factories.Org()
@@ -195,20 +176,6 @@ class TestPollManager(TracProTest):
         self.assertEqual(question.rapidpro_name, ruleset.label)
         self.assertEqual(question.name, ruleset.label)
         self.assertEqual(question.order, 1)
-
-    def test_sync__archive_poll(self):
-        """Sync should deactivate the Poll if it is archived on RapidPro."""
-        org = factories.Org()
-        poll = factories.Poll(org=org, is_active=True)
-        flow = factories.TembaFlow(uuid=poll.flow_uuid, archived=True)
-        self.mock_temba_client.get_flows.return_value = [flow]
-        models.Poll.objects.sync(org)
-
-        self.assertEqual(models.Poll.objects.count(), 1)
-        poll = models.Poll.objects.get()
-        self.assertEqual(poll.org, org)
-        self.assertEqual(poll.flow_uuid, flow.uuid)
-        self.assertFalse(poll.is_active)
 
 
 class TestPoll(TracProTest):

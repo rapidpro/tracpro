@@ -66,11 +66,6 @@ class PollManager(models.Manager.from_queryset(PollQuerySet)):
             # Custom name will be maintained despite update of RapidPro name.
             poll.rapidpro_name = temba_poll.name
 
-        # Deactivate archived flows.
-        # Non-archived flows should maintain their current archive status.
-        if temba_poll.archived:
-            poll.is_active = False
-
         poll.save()
 
         return poll
@@ -93,7 +88,8 @@ class PollManager(models.Manager.from_queryset(PollQuerySet)):
     def sync(self, org):
         """Update the org's Polls and Questions from RapidPro."""
         # Retrieve current Polls known to RapidPro.
-        temba_polls = {p.uuid: p for p in org.get_temba_client().get_flows()}
+        temba_polls = org.get_temba_client().get_flows(archived=False)
+        temba_polls = {p.uuid: p for p in temba_polls}
 
         # Remove Polls that are no longer on RapidPro.
         org.polls.exclude(flow_uuid__in=temba_polls.keys()).delete()
