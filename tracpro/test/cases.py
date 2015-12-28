@@ -3,10 +3,13 @@ from __future__ import unicode_literals
 import datetime
 from uuid import uuid4
 
+import mock
 import pytz
 import redis
 
 from dash.orgs.models import Org
+
+from temba_client.client import TembaClient
 
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
@@ -22,8 +25,20 @@ class TracProTest(TestCase):
     """Base class for all test cases in TracPro."""
 
     def setUp(self):
-        super(TracProTest, self).setUp()
         self.clear_cache()
+
+        # Mock the RapidPro client for all tests at all times
+        # so that the tests never reach out to the API server.
+        self.mock_temba_client = mock.Mock(spec=TembaClient)
+        self.patcher = mock.patch.object(Org, 'get_temba_client')
+        self.mock_get_temba_client = self.patcher.start()
+        self.mock_get_temba_client.return_value = self.mock_temba_client
+
+        super(TracProTest, self).setUp()
+
+    def tearDown(self):
+        super(TracProTest, self).tearDown()
+        self.patcher.stop()
 
     def clear_cache(self):
         # we are extra paranoid here and actually hardcode redis to 'localhost'

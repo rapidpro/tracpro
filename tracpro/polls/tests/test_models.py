@@ -3,11 +3,11 @@ from __future__ import absolute_import, unicode_literals
 
 import datetime
 
-from mock import patch
+import mock
 
 import pytz
 
-from temba_client.types import Run, RunValueSet
+from temba_client.types import Run, RunValueSet, FlowDefinition
 
 from django.db import IntegrityError
 from django.utils import timezone
@@ -71,13 +71,18 @@ class TestPollManager(TracProTest):
     def test_set_active_for_org__invalid_uuids(self):
         """An error is raised when an invalid UUID for the org is passed."""
         org = factories.Org()
-        factories.Poll(org=org, is_active=False, flow_uuid='a')
+        poll = factories.Poll(org=org, is_active=False, flow_uuid='a')
 
         other_org = factories.Org()
-        factories.Poll(org=other_org, is_active=False, flow_uuid='b')
+        other_poll = factories.Poll(org=other_org, is_active=False, flow_uuid='b')
 
         with self.assertRaises(ValueError):
             Poll.objects.set_active_for_org(org, ['a', 'b'])
+
+        poll.refresh_from_db()
+        self.assertFalse(poll.is_active)
+        other_poll.refresh_from_db()
+        self.assertFalse(other_poll.is_active)
 
     def test_from_temba__existing(self):
         """Fields on an existing Poll should be updated from RapidPro."""
@@ -107,55 +112,34 @@ class TestPollManager(TracProTest):
         self.assertEqual(poll.name, flow.name)
         self.assertFalse(poll.is_active)
 
-    def test_from_temba__existing_archived(self):
-        """Existing Poll should be deactivated if RapidPro flow is archived."""
-        org = factories.Org()
-        poll = factories.Poll(org=org, flow_uuid='abc', is_active=True)
-        flow = factories.TembaFlow(uuid='abc', archived=True)
-
-        poll = Poll.objects.from_temba(org, flow)
-
-        self.assertFalse(poll.is_active)
-
-    def test_from_temba__new_archive(self):
-        """New Poll should be created as inactive if RapidPro flow is archived."""
-        org = factories.Org()
-        flow = factories.TembaFlow(archived=True)
-
-        poll = Poll.objects.from_temba(org, flow)
-
-        self.assertFalse(poll.is_active)
-
-    @patch('dash.orgs.models.TembaClient.get_flows')
-    def test_sync__delete_non_existant_poll(self, mock_get_flows):
+    def test_sync__delete_non_existant_poll(self):
         """Sync should delete Polls that track a flow that does not exist."""
         org = factories.Org()
         poll = factories.Poll(org=org)  # noqa
-        mock_get_flows.return_value = []
+        self.mock_temba_client.get_flows.return_value = []
         models.Poll.objects.sync(org)
 
         self.assertEqual(models.Poll.objects.count(), 0)
 
-    @patch('dash.orgs.models.TembaClient.get_flows')
-    def test_sync__delete_non_existant_question(self, mock_get_flows):
+    def test_sync__delete_non_existant_question(self):
         org = factories.Org()
         poll = factories.Poll(org=org)
         question = factories.Question(poll=poll)  # noqa
         flow = factories.TembaFlow(uuid=poll.flow_uuid)  # no questions
-        mock_get_flows.return_value = [flow]
+        self.mock_temba_client.get_flows.return_value = [flow]
         models.Poll.objects.sync(org)
 
         self.assertEqual(models.Poll.objects.count(), 1)
         self.assertEqual(models.Question.objects.count(), 0)
 
-    @patch('dash.orgs.models.TembaClient.get_flows')
-    def test_sync__add_new(self, mock_get_flows):
+    @mock.patch('tracpro.polls.models.Question.objects.from_temba')
+    def test_sync__add_new(self, mock_question_from_temba):
         """Sync should create an inactive poll to track a new flow."""
         org = factories.Org()
         flow = factories.TembaFlow()
         ruleset = factories.TembaRuleSet()
         flow.rulesets = [ruleset]
-        mock_get_flows.return_value = [flow]
+        self.mock_temba_client.get_flows.return_value = [flow]
         models.Poll.objects.sync(org)
 
         self.assertEqual(models.Poll.objects.count(), 1)
@@ -164,16 +148,9 @@ class TestPollManager(TracProTest):
         self.assertEqual(poll.rapidpro_name, flow.name)
         self.assertEqual(poll.name, flow.name)
 
-        self.assertEqual(models.Question.objects.count(), 1)
-        question = models.Question.objects.get()
-        self.assertEqual(question.poll, poll)
-        self.assertEqual(question.ruleset_uuid, ruleset.uuid)
-        self.assertEqual(question.rapidpro_name, ruleset.label)
-        self.assertEqual(question.name, ruleset.label)
-        self.assertEqual(question.order, 1)
+        self.assertEqual(mock_question_from_temba.call_count, 1)
 
-    @patch('dash.orgs.models.TembaClient.get_flows')
-    def test_sync__update_existing(self, mock_get_flows):
+    def test_sync__update_existing(self):
         """Sync should update existing objects if they have changed on RapidPro."""
         org = factories.Org()
         poll = factories.Poll(org=org, is_active=True)
@@ -181,7 +158,7 @@ class TestPollManager(TracProTest):
         flow = factories.TembaFlow(uuid=poll.flow_uuid)
         ruleset = factories.TembaRuleSet(uuid=question.ruleset_uuid)
         flow.rulesets = [ruleset]
-        mock_get_flows.return_value = [flow]
+        self.mock_temba_client.get_flows.return_value = [flow]
         models.Poll.objects.sync(org)
 
         self.assertEqual(models.Poll.objects.count(), 1)
@@ -199,21 +176,6 @@ class TestPollManager(TracProTest):
         self.assertEqual(question.rapidpro_name, ruleset.label)
         self.assertEqual(question.name, ruleset.label)
         self.assertEqual(question.order, 1)
-
-    @patch('dash.orgs.models.TembaClient.get_flows')
-    def test_sync__archive_poll(self, mock_get_flows):
-        """Sync should deactivate the Poll if it is archived on RapidPro."""
-        org = factories.Org()
-        poll = factories.Poll(org=org, is_active=True)
-        flow = factories.TembaFlow(uuid=poll.flow_uuid, archived=True)
-        mock_get_flows.return_value = [flow]
-        models.Poll.objects.sync(org)
-
-        self.assertEqual(models.Poll.objects.count(), 1)
-        poll = models.Poll.objects.get()
-        self.assertEqual(poll.org, org)
-        self.assertEqual(poll.flow_uuid, flow.uuid)
-        self.assertFalse(poll.is_active)
 
 
 class TestPoll(TracProTest):
@@ -235,6 +197,20 @@ class TestPoll(TracProTest):
         factories.Poll(org=factories.Org(), flow_uuid='abc')
         factories.Poll(org=factories.Org(), flow_uuid='abc')
 
+    def test_get_flow_definition(self):
+        """Flow definition should be retrieved from the API and cached on the poll."""
+        definition = FlowDefinition()
+        self.mock_temba_client.get_flow_definition.return_value = definition
+        poll = factories.Poll()
+        self.assertFalse(hasattr(poll, '_flow_definition'))
+        for i in range(2):
+            # The result of the method should be cached on the poll.
+            self.assertEqual(poll.get_flow_definition(), definition)
+            self.assertEqual(poll._flow_definition, definition)
+
+            # API call count should not go up.
+            self.assertEqual(self.mock_temba_client.get_flow_definition.call_count, 1)
+
 
 class TestQuestionQueryset(TracProTest):
 
@@ -247,6 +223,12 @@ class TestQuestionQueryset(TracProTest):
 
 class TestQuestionManager(TracProTest):
 
+    def setUp(self):
+        super(TestQuestionManager, self).setUp()
+        self.definition = FlowDefinition()
+        self.definition.rule_sets = []
+        self.mock_temba_client.get_flow_definition.return_value = self.definition
+
     def test_from_temba__new(self):
         """Should create a new Question to match the Poll and uuid."""
         poll = factories.Poll()
@@ -254,30 +236,37 @@ class TestQuestionManager(TracProTest):
 
         # Should create a new Question object that matches the incoming data.
         question = models.Question.objects.from_temba(poll, ruleset, order=100)
+        self.assertEqual(models.Question.objects.count(), 1)
         self.assertEqual(question.ruleset_uuid, ruleset.uuid)
         self.assertEqual(question.poll, poll)
         self.assertEqual(question.rapidpro_name, ruleset.label)
-        self.assertEqual(question.question_type, ruleset.response_type)
+        self.assertEqual(question.question_type, models.Question.TYPE_OPEN)
         self.assertEqual(question.order, 100)
 
     def test_from_temba__existing(self):
         """Should update an existing Question for the Poll and uuid."""
         poll = factories.Poll()
-        question = factories.Question(poll=poll)
-        ruleset = factories.TembaRuleSet(uuid=question.ruleset_uuid)
+        question = factories.Question(
+            poll=poll, question_type=models.Question.TYPE_OPEN)
+        ruleset = factories.TembaRuleSet(
+            uuid=question.ruleset_uuid,
+            response_type=models.Question.TYPE_MULTIPLE_CHOICE)
 
         # Should return the existing Question object.
         ret_val = models.Question.objects.from_temba(poll, ruleset, order=100)
         self.assertEqual(ret_val, question)
         self.assertEqual(ret_val.ruleset_uuid, question.ruleset_uuid)
+        self.assertEqual(models.Question.objects.count(), 1)
 
         # Existing Question should be updated to match the incoming data.
         question.refresh_from_db()
         self.assertEqual(question.ruleset_uuid, ruleset.uuid)
         self.assertEqual(question.poll, poll)
         self.assertEqual(question.rapidpro_name, ruleset.label)
-        self.assertEqual(question.question_type, ruleset.response_type)
         self.assertEqual(question.order, 100)
+
+        # Question type should not be updated.
+        self.assertEqual(question.question_type, models.Question.TYPE_OPEN)
 
     def test_from_temba__another_org(self):
         """Both uuid and Poll must match in order to update existing."""
@@ -289,6 +278,7 @@ class TestQuestionManager(TracProTest):
         # Should return a Question that is distinct from the existing
         # Question for another poll.
         ret_val = models.Question.objects.from_temba(poll, ruleset, order=100)
+        self.assertEqual(models.Question.objects.count(), 2)
         other_question.refresh_from_db()
         self.assertNotEqual(ret_val, other_question)
         self.assertNotEqual(ret_val.poll, other_question.poll)
@@ -314,12 +304,54 @@ class TestQuestion(TracProTest):
         factories.Question(poll=factories.Poll(), ruleset_uuid='abc')
         factories.Question(poll=factories.Poll(), ruleset_uuid='abc')
 
+    @mock.patch.object(models.Poll, 'get_flow_definition')
+    def test_guess_question_type_numeric(self, mock_get_flow_definition):
+        """Guess NUMERIC if rule types are all numeric."""
+        definition = FlowDefinition()
+        definition.rule_sets = [{
+            'uuid': 'a',
+            'rules': [
+                {'test': {'type': 'number'}},
+                {'test': {'type': 'number'}},
+            ],
+        }]
+        mock_get_flow_definition.return_value = definition
+        question = factories.Question(ruleset_uuid='a')
+        self.assertEqual(question._guess_question_type(), models.Question.TYPE_NUMERIC)
+
+    @mock.patch.object(models.Poll, 'get_flow_definition')
+    def test_guess_question_type_open(self, mock_get_flow_definition):
+        """Guess OPEN if there are no rules."""
+        definition = FlowDefinition()
+        definition.rule_sets = [{
+            'uuid': 'a',
+            'rules': [],
+        }]
+        mock_get_flow_definition.return_value = definition
+        question = factories.Question(ruleset_uuid='a')
+        self.assertEqual(question._guess_question_type(), models.Question.TYPE_OPEN)
+
+    @mock.patch.object(models.Poll, 'get_flow_definition')
+    def test_guess_question_type_multiple_choice(self, mock_get_flow_definition):
+        """Guess MULTIPLE_CHOICE if not all rules are numeric."""
+        definition = FlowDefinition()
+        definition.rule_sets = [{
+            'uuid': 'a',
+            'rules': [
+                {'test': {'type': 'number'}},
+                {'test': {'type': 'text'}},
+            ],
+        }]
+        mock_get_flow_definition.return_value = definition
+        question = factories.Question(ruleset_uuid='a')
+        self.assertEqual(question._guess_question_type(), models.Question.TYPE_NUMERIC)
+
 
 class PollRunTest(TracProDataTest):
 
     def test_get_or_create_universal(self):
         # 2014-Jan-01 04:30 in org's Afg timezone
-        with patch.object(timezone, 'now') as mock_now:
+        with mock.patch.object(timezone, 'now') as mock_now:
             mock_now.return_value = datetime.datetime(2014, 1, 1, 0, 0, 0, 0, pytz.utc)
             # no existing pollruns so one is created
             pollrun1 = PollRun.objects.get_or_create_universal(self.poll1)
@@ -328,14 +360,14 @@ class PollRunTest(TracProDataTest):
                 datetime.datetime(2014, 1, 1, 0, 0, 0, 0, pytz.utc))
 
         # 2014-Jan-01 23:30 in org's Afg timezone
-        with patch.object(timezone, 'now') as mock_now:
+        with mock.patch.object(timezone, 'now') as mock_now:
             mock_now.return_value = datetime.datetime(2014, 1, 1, 19, 0, 0, 0, pytz.utc)
             # existing pollrun on same day is returned
             pollrun2 = PollRun.objects.get_or_create_universal(self.poll1)
             self.assertEqual(pollrun1, pollrun2)
 
         # 2014-Jan-02 00:30 in org's Afg timezone
-        with patch.object(timezone, 'now') as mock_now:
+        with mock.patch.object(timezone, 'now') as mock_now:
             mock_now.return_value = datetime.datetime(2014, 1, 1, 20, 0, 0, 0, pytz.utc)
             # different day locally so new pollrun
             pollrun3 = PollRun.objects.get_or_create_universal(self.poll1)
@@ -345,7 +377,7 @@ class PollRunTest(TracProDataTest):
                 datetime.datetime(2014, 1, 1, 20, 0, 0, 0, pytz.utc))
 
         # 2014-Jan-02 04:30 in org's Afg timezone
-        with patch.object(timezone, 'now') as mock_now:
+        with mock.patch.object(timezone, 'now') as mock_now:
             mock_now.return_value = datetime.datetime(2014, 1, 2, 0, 0, 0, 0, pytz.utc)
             # same day locally so no new pollrun
             pollrun4 = PollRun.objects.get_or_create_universal(self.poll1)

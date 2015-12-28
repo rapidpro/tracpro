@@ -68,11 +68,6 @@ class PollManager(models.Manager.from_queryset(PollQuerySet)):
             # Custom name will be maintained despite update of RapidPro name.
             poll.rapidpro_name = temba_poll.name
 
-        # Deactivate archived flows.
-        # Non-archived flows should maintain their current archive status.
-        if temba_poll.archived:
-            poll.is_active = False
-
         poll.save()
 
         return poll
@@ -95,7 +90,8 @@ class PollManager(models.Manager.from_queryset(PollQuerySet)):
     def sync(self, org):
         """Update the org's Polls and Questions from RapidPro."""
         # Retrieve current Polls known to RapidPro.
-        temba_polls = {p.uuid: p for p in org.get_temba_client().get_flows()}
+        temba_polls = org.get_temba_client().get_flows(archived=False)
+        temba_polls = {p.uuid: p for p in temba_polls}
 
         # Remove Polls that are no longer on RapidPro.
         org.polls.exclude(flow_uuid__in=temba_polls.keys()).delete()
@@ -151,6 +147,16 @@ class Poll(models.Model):
     def __str__(self):
         return self.name
 
+    def get_flow_definition(self):
+        """Retrieve extra metadata about the RapidPro flow."""
+        if not hasattr(self, '_flow_definition'):
+            # NOTE: Flow definition endpoint is not documented in the
+            # RapidPro API docs.
+            client = self.org.get_temba_client()
+            definition = client.get_flow_definition(self.flow_uuid)
+            self._flow_definition = definition
+        return self._flow_definition
+
     def save(self, *args, **kwargs):
         """Don't save custom name if it is the same as the RapidPro name.
 
@@ -180,9 +186,10 @@ class QuestionManager(models.Manager.from_queryset(QuestionQuerySet)):
             # Custom name will be maintained despite update of RapidPro name.
             question.rapidpro_name = temba_question.label
 
-        # NOTE: response_type appears to be deprecated in RapidPro.
-        # Already it returns from a reduced subset of former types.
-        question.question_type = temba_question.response_type
+        # The user can alter or correct the question's type after it is
+        # initially set, so we shouldn't override the existing type.
+        if not question.question_type:
+            question.question_type = question._guess_question_type()
 
         question.order = order
         question.save()
@@ -193,6 +200,9 @@ class QuestionManager(models.Manager.from_queryset(QuestionQuerySet)):
 @python_2_unicode_compatible
 class Question(models.Model):
     """Corresponds to RapidPro RuleSet."""
+    # Types of rules that RapidPro applies to incoming messages
+    # that suggest the expected data is numeric.
+    _NUMERIC_TESTS = ('number', 'lt', 'eq', 'gt', 'between')
 
     TYPE_OPEN = 'O'
     TYPE_MULTIPLE_CHOICE = 'C'
@@ -238,6 +248,27 @@ class Question(models.Model):
 
     def __str__(self):
         return self.name
+
+    def _guess_question_type(self):
+        """Inspect rules applied to question input to guess data type.
+
+        Historically, the "response_type" field on the ruleset was used to
+        determine question type. This field appears to have been deprecated
+        and currently returns from a limited subset of possible types.
+        """
+        # Collect the type of each test applied to question input, e.g.,
+        # "has any of these words", "has a number", "has a number between", etc.
+        defn = self.poll.get_flow_definition()
+        rules = {r['uuid']: r['rules'] for r in defn.rule_sets}.get(self.ruleset_uuid)
+        tests = [r['test']['type'] for r in rules] if rules else []
+        tests = tests[:-1]  # The last test is always "Other".
+
+        if not tests:
+            return self.TYPE_OPEN
+        elif all(t in self._NUMERIC_TESTS for t in tests):
+            return self.TYPE_NUMERIC
+        else:
+            return self.TYPE_MULTIPLE_CHOICE
 
     def save(self, *args, **kwargs):
         """Don't save custom name if it is the same as the RapidPro name.

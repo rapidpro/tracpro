@@ -39,6 +39,9 @@ class OrgExtForm(OrgForm):
         language.label = _("Default language")
         language.help_text = _("The default language for your organization")
 
+        # All orgs must use a subdomain.
+        self.fields['subdomain'].required = True
+
         # Config field values are not set automatically.
         self.fields['available_languages'].initial = self.instance.available_languages or []
         self.fields['show_spoof_data'].initial = self.instance.show_spoof_data or False
