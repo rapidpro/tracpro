@@ -284,8 +284,6 @@ CELERYBEAT_SCHEDULE = {
     }
 }
 
-CELERYD_CONCURRENCY = 4
-
 COMPRESS_PRECOMPILERS = (
     ('text/coffeescript', 'coffee --compile --stdio'),
     ('text/less', 'tracpro.compress.LessFilter'),
