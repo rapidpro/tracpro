@@ -18,7 +18,7 @@ from tracpro.polls.models import PollRun
 
 from .forms import InboxMessageResponseForm
 from .models import Message, InboxMessage
-from .tasks import send_unsolicited_message, fetch_inbox_messages
+from .tasks import send_unsolicited_message, FetchOrgInboxMessages
 
 
 logger = logging.getLogger(__name__)
@@ -172,7 +172,7 @@ class InboxMessageCRUDL(SmartCRUDL):
                 # to pull all inbox messages for this org into the
                 # local InboxMessage table
                 time.sleep(1)
-                fetch_inbox_messages(self.request.org.pk)
+                FetchOrgInboxMessages(self.request.org.pk)
                 logger.info("Retrieving inbox messages for %s" % (self.request.org))
                 return redirect('msgs.inboxmessage_conversation', contact_id=self.contact.pk)
             else:
