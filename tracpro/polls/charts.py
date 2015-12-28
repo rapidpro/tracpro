@@ -54,9 +54,10 @@ def single_pollrun(pollrun, question, regions):
     return chart_type, render_data(chart_data)
 
 
-def multiple_pollruns_old(pollruns, question, regions):
+def multiple_pollruns_non_numeric(pollruns, question, regions):
     """Chart data for multiple pollruns of a poll."""
-    import ipdb; ipdb.set_trace()
+    # good chart for testing
+    # http://zimbabwe.localhost:8000/poll/read/9/?value_type=Sum&window=last_150_days
 
     if question.question_type == Question.TYPE_OPEN:
         overall_counts = defaultdict(int)
@@ -96,12 +97,6 @@ def multiple_pollruns_old(pollruns, question, regions):
         chart_type = 'time-area'
         chart_data = [{'name': cgi.escape(category), 'data': data}
                       for category, data in category_series.iteritems()]
-    elif question.question_type == Question.TYPE_NUMERIC:
-        chart_type = 'time-line'
-        chart_data = []
-        for pollrun in pollruns:
-            average = pollrun.get_answer_numeric_average(question, regions)
-            chart_data.append((pollrun.conducted_on, average))
     else:
         chart_type = None
         chart_data = []
@@ -152,7 +147,7 @@ def response_rate_calculation(responses, pollrun_list):
     return response_rates
 
 
-def multiple_pollruns(pollruns, question, regions):
+def multiple_pollruns_numeric(pollruns, question, regions):
     """Chart data for multiple pollruns of a poll."""
     responses = Response.objects.filter(pollrun__in=pollruns)
     responses = responses.filter(is_active=True)

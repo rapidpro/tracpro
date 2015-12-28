@@ -58,20 +58,19 @@ class PollCRUDL(smartmin.SmartCRUDL):
             pollruns = pollruns.order_by('conducted_on')
 
             for question in questions:
-                (question.answer_sum_dict_list,
-                 question.answer_average_dict_list,
-                 question.response_rate_dict_list,
-                 question.date_list,
-                 question.answer_mean,
-                 question.answer_stdev,
-                 question.response_rate_average,
-                 question.pollrun_list) = charts.multiple_pollruns(
-                    pollruns, question, self.request.data_regions)
-
-            #  http://zimbabwe.localhost:8000/poll/read/10/
-            for question in questions:
-                question.chart_type, question.chart_data = charts.multiple_pollruns_old(
-                    pollruns, question, self.request.data_regions)
+                if question.question_type == Question.TYPE_NUMERIC:
+                    (question.answer_sum_dict_list,
+                     question.answer_average_dict_list,
+                     question.response_rate_dict_list,
+                     question.date_list,
+                     question.answer_mean,
+                     question.answer_stdev,
+                     question.response_rate_average,
+                     question.pollrun_list) = charts.multiple_pollruns_numeric(
+                        pollruns, question, self.request.data_regions)
+                else:
+                    question.chart_type, question.chart_data = charts.multiple_pollruns_non_numeric(
+                        pollruns, question, self.request.data_regions)
 
             context['window'] = window
             context['window_min'] = datetime_to_ms(window_min)
