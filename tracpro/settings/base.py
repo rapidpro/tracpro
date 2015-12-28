@@ -250,6 +250,9 @@ def _org_scheduler_task(task_name):
     return {
         'task': 'tracpro.orgs_ext.tasks.ScheduleTaskForActiveOrgs',
         'schedule': datetime.timedelta(minutes=5),
+        'options': {
+            'queue': 'org_scheduler',
+        },
         'kwargs': {
             'task_name': task_name,
         },
