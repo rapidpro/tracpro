@@ -49,7 +49,10 @@ class ScheduleTaskForActiveOrgs(PostTransactionTask):
                     "{}: Skipping {} for {} because it has no API token.".format(
                         self.__name__, task_name, org.name))
             else:
-                signature(task_name, args=[org.pk]).delay()  # asynchronous
+                signature(task_name, args=[org.pk], options={
+                    'queue': 'org_task',
+                    'expires': settings.ORG_TASK_TIMEOUT,
+                }).deplay()
                 logger.info(
                     "{}: Scheduled {} for {}.".format(
                         self.__name__, task_name, org.name))
