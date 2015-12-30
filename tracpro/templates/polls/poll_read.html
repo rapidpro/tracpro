@@ -1,17 +1,16 @@
 {% extends "smartmin/base.html" %}
-{% load smartmin i18n %}
+
+{% load i18n %}
+{% load smartmin %}
 
 {% block pre-content %}
-
   {% include 'polls/poll_header.html' with poll=object %}
-
-{% endblock %}
+{% endblock pre-content %}
 
 {% block content %}
   <div>
     {% if not request.region %}
       {% trans "Charts only include data from non-regional poll runs" %}
-
     {% endif %}
     <div class='pull-away'>
       <form class='form-inline' method='get'>
@@ -112,11 +111,11 @@
     {% else %}
       <div class="chart-no-data">No data for this date window.</div>
     {% endif %}
-
   {% endfor %}
-{% endblock %}
+{% endblock content %}
+
 {% block extra-script %}
-<script type='text/javascript'>
+  <script type='text/javascript'>
     // <![CDATA[
     function onWindowChange(ctrl) {
       ctrl.form.submit();
@@ -146,5 +145,5 @@
       }
     }
     // ]]>
-</script>
-{% endblock %}
+  </script>
+{% endblock extra-script %}
