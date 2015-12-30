@@ -1,9 +1,8 @@
-import datetime
-
 from celery import signature
 from celery.utils.log import get_task_logger
 
 from django.apps import apps
+from django.conf import settings
 from django.core.cache import cache
 from django.utils.timezone import now as get_now
 
@@ -23,7 +22,7 @@ LAST_RUN_KEY = 'last_run_time:{task}:{org}'
 
 ORG_TASK_LOCK = 'org_task:{task}:{org}'
 
-LOCK_EXPIRE = 60  # 1 minute
+LOCK_EXPIRE = 60 * 60  # 1 hour
 
 
 @task
@@ -81,7 +80,7 @@ class OrgTask(PostTransactionTask):
         last_run_time = cache.get(last_run_key)
         if last_run_time is not None:
             last_run_time = parse_iso8601(last_run_time)
-            if now - last_run_time < datetime.timedelta(minutes=5):
+            if now - last_run_time < settings.ORG_TASK_TIMEOUT:
                 return True
         cache.set(last_run_key, format_iso8601(now))
         return False

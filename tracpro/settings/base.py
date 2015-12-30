@@ -247,13 +247,15 @@ CELERYD_PREFETCH_MULTIPLIER = 1
 
 CELERY_TIMEZONE = 'UTC'
 
+ORG_TASK_TIMEOUT = datetime.timedelta(minutes=5)
+
 
 def _org_scheduler_task(task_name):
     return {
         'task': 'tracpro.orgs_ext.tasks.ScheduleTaskForActiveOrgs',
-        'schedule': datetime.timedelta(minutes=5),
+        'schedule': ORG_TASK_TIMEOUT,
         'options': {
-            'expires': datetime.timedelta(minutes=5),
+            'expires': ORG_TASK_TIMEOUT,
             'queue': 'org_scheduler',
         },
         'kwargs': {
