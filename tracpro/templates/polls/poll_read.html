@@ -8,39 +8,41 @@
 {% endblock pre-content %}
 
 {% block content %}
-  <div>
-    {% if not request.region %}
-      {% trans "Charts only include data from non-regional poll runs" %}
-    {% endif %}
-    <div class='pull-away'>
-      <form class='form-inline' method='get'>
-        <label class='control-label' for='window-select'></label>
-        {% trans "Show" %}
-        <select id='value-type-select' class='form-control' onchange='onValueTypeChange(this)' name='value_type'>
-          {% for value_type in value_type_options %}
-            {% if value_type == value_type_selected %}
-              <option selected='selected' value='{{ value_type }}'>{{ value_type }}</option>
-            {% else %}
-              <option value='{{ value_type }}'>{{ value_type }}</option>
-            {% endif %}
-          {% endfor %}
-        </select>
-        <select id='window-select' class='form-control' onchange='onWindowChange(this)' name='window'>
-          {% for win in window_options %}
-            {% if win == window %}
-              <option selected='selected' value='{{ win.name }}'>
-                {{ win.label }}
-              </option>
-            {% else %}
-              <option value='{{ win.name }}'>
-                {{ win.label }}
-              </option>
-            {% endif %}
-          {% endfor %}
-        </select>
-      </form>
-    </div>
+  <div class='pull-away'>
+    <form class='form-inline' method='get'>
+      <label class='control-label' for='window-select'></label>
+      {% trans "Show" %}
+      <select id='value-type-select' class='form-control' onchange='onValueTypeChange(this)' name='value_type'>
+        {% for value_type in value_type_options %}
+          {% if value_type == value_type_selected %}
+            <option selected='selected' value='{{ value_type }}'>{{ value_type }}</option>
+          {% else %}
+            <option value='{{ value_type }}'>{{ value_type }}</option>
+          {% endif %}
+        {% endfor %}
+      </select>
+      <select id='window-select' class='form-control' onchange='onWindowChange(this)' name='window'>
+        {% for win in window_options %}
+          {% if win == window %}
+            <option selected='selected' value='{{ win.name }}'>
+              {{ win.label }}
+            </option>
+          {% else %}
+            <option value='{{ win.name }}'>
+              {{ win.label }}
+            </option>
+          {% endif %}
+        {% endfor %}
+      </select>
+    </form>
   </div>
+
+  <div class="clearfix"></div>
+
+  {% if not request.region %}
+    <p>{% trans "Charts only include data from non-regional poll runs." %}</p>
+  {% endif %}
+
   {% for question in questions %}
     <h3>
       {{ forloop.counter }}. {{ question.name }}:
