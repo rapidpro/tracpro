@@ -45,10 +45,14 @@
   {% for question in questions %}
     <h3>
       {{ forloop.counter }}. {{ question.name }}:
-      <span id="question-{{ question.pk }}-heading-value-type">{{ value_type_selected|title }}</span>
+      {% if question.question_type == question.TYPE_NUMERIC %}
+        <span id="question-{{ question.pk }}-heading-value-type">{{ value_type_selected|title }}</span>
+      {% elif question.question_type == question.TYPE_MULTIPLE_CHOICE %}
+        <span>Categorical</span>
+      {% endif %}
     </h3>
 
-    {% if question.date_list %}
+    {% if question.question_type == question.TYPE_NUMERIC and question.date_list %}
       <div id='chart_{{ question.pk }}' class='chart' data-window-max='{{ window_max }}' data-window-min='{{ window_min }}' ></div>
 
       <script>
@@ -109,12 +113,76 @@
           </tr>
         </tbody>
       </table>
+
+    {% elif question.question_type == question.TYPE_MULTIPLE_CHOICE and question.pollrun_dict %}
+      <div id='chart_{{ question.pk }}' class='chart' data-window-max='{{ window_max }}' data-window-min='{{ window_min }}' ></div>
+      <script type='text/javascript'>
+        $(function () {
+          $('#chart_{{ question.pk }}').highcharts({
+              chart: {
+                  type: 'area'
+              },
+              title: {
+                  text: ''
+              },
+              xAxis: {
+                  categories: [
+                            {% for date in question.date_list %}
+                              '{{ date }}'{% if not forloop.last %},{% endif %}
+                            {% endfor %}
+                            ],
+                  tickmarkPlacement: 'on',
+                  title: {
+                      enabled: false
+                  }
+              },
+              yAxis: {
+                  title: {
+                      text: 'Percent'
+                  }
+              },
+              tooltip: {
+                  pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.percentage:.1f}%</b> ({point.y:,.0f})<br/>',
+                  shared: true
+              },
+              plotOptions: {
+                  area: {
+                      stacking: 'percent',
+                      lineColor: '#ffffff',
+                      lineWidth: 1,
+                      marker: {
+                          lineWidth: 1,
+                          lineColor: '#ffffff'
+                      }
+                  }
+              },
+              series:
+              [
+              {% for category, count_list in question.pollrun_dict.items %}
+              {
+                name: '{{ category }}',
+                data: {{ count_list }}
+              },
+              {% endfor %}
+              ]
+          });
+        });
+      </script>
+
+    {% elif question.question_type == question.TYPE_OPEN and question.pollrun_dict|length > 2 %}
+      <!-- word cloud chart -->
+      <div id='chart_{{ question.pk }}' class='chart' ></div>
+      <script type="text/javascript">
+        var words = {{ question.pollrun_dict|safe }};
+        $('#chart_{{ question.pk }}').jQCloud(words);
+      </script>
+
     {% else %}
       <div class="chart-no-data">No data for this date window.</div>
     {% endif %}
-
   {% endfor %}
 {% endblock %}
+
 {% block extra-script %}
 <script type='text/javascript'>
     // <![CDATA[

@@ -69,7 +69,7 @@ class PollCRUDL(smartmin.SmartCRUDL):
                      question.pollrun_list) = charts.multiple_pollruns_numeric(
                         pollruns, question, self.request.data_regions)
                 else:
-                    question.chart_type, question.chart_data = charts.multiple_pollruns_non_numeric(
+                    question.date_list, question.pollrun_dict = charts.multiple_pollruns_non_numeric(
                         pollruns, question, self.request.data_regions)
 
             context['window'] = window
