@@ -29,6 +29,7 @@
       <![endif]-->
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}js/jqcloud-1.0.4.min.js"></script>
 
     <!-- Mobile viewport optimized: j.mp/bplateviewport -->
     <meta content='width=device-width, initial-scale=1.0' name='viewport' />
@@ -370,11 +371,9 @@
     <script type="text/javascript" src="{{ STATIC_URL }}js/angular.min.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}libs/highcharts-4.1.8/highcharts.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/select2.min.js"></script>
-    <script type="text/javascript" src="{{ STATIC_URL }}js/jqcloud-1.0.4.min.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/trac.js"></script>
 
     {% compress js %}
-    <script src='{{ STATIC_URL }}coffee/trac.coffee' type='text/coffeescript'></script>
     <script src='{{ STATIC_URL }}coffee/services.coffee' type='text/coffeescript'></script>
     <script src='{{ STATIC_URL }}coffee/controllers.coffee' type='text/coffeescript'></script>
     <script src='{{ STATIC_URL }}coffee/filters.coffee' type='text/coffeescript'></script>
