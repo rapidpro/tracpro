@@ -79,10 +79,6 @@ class OrgTask(PostTransactionTask):
         kwargs.setdefault('expires', settings.ORG_TASK_TIMEOUT)
         return super(OrgTask, self).apply_async(*args, **kwargs)
 
-    def release_lock(self, org):
-        key = ORG_TASK_LOCK.format(task=self.__name__, org=org.pk)
-        return cache.delete(key)
-
     def check_rate_limit(self, org):
         """Return True if the task has been run for this org in the last 5 minutes."""
         now = get_now()
@@ -95,8 +91,12 @@ class OrgTask(PostTransactionTask):
         cache.set(last_run_key, format_iso8601(now))
         return False
 
+    def release_lock(self, org):
+        key = ORG_TASK_LOCK.format(task=self.__name__, org=org.pk)
+        return cache.delete(key)
+
     def run(self, org_pk):
-        """Run the org_task with appropriate logging."""
+        """Run the org_task with locks and logging."""
         org = apps.get_model('orgs', 'Org').objects.get(pk=org_pk)
         if self.acquire_lock(org):
             try:
@@ -119,9 +119,10 @@ class OrgTask(PostTransactionTask):
                         return None
                     else:
                         raise
-                logger.info(
-                    "{}: Finished task for {}.".format(self.__name__, org.name))
-                return result
+                else:
+                    logger.info(
+                        "{}: Finished task for {}.".format(self.__name__, org.name))
+                    return result
             finally:
                 self.release_lock(org)
         logger.info(
