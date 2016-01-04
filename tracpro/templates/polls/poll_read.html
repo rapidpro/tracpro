@@ -17,7 +17,7 @@
       <form class='form-inline' method='get'>
         <label class='control-label' for='window-select'></label>
         {% trans "Show" %}
-        <select id='value-type-select' class='form-control' onchange='onValueTypeChange(this)' name='value_type'>
+        <select id='value-type-select' class='form-control' onchange='onValueTypeChange()' name='value_type'>
           {% for value_type in value_type_options %}
             {% if value_type == value_type_selected %}
               <option selected='selected' value='{{ value_type }}'>{{ value_type }}</option>
@@ -26,6 +26,7 @@
             {% endif %}
           {% endfor %}
         </select>
+        <input type="hidden" id="value-type-cache" value="">
         <select id='window-select' class='form-control' onchange='onWindowChange(this)' name='window'>
           {% for win in window_options %}
             {% if win == window %}
@@ -114,37 +115,44 @@
     {% endif %}
 
   {% endfor %}
-{% endblock %}
-{% block extra-script %}
-<script type='text/javascript'>
-    // <![CDATA[
+
+<script>
+    $(function () {
+      // Run this once, in the case that the user has
+      // hit the Back button.
+      onValueTypeChange();
+    });
     function onWindowChange(ctrl) {
       ctrl.form.submit();
     }
-    function onValueTypeChange(ctrl) {
+    function onValueTypeChange() {
       valueType = $("#value-type-select :selected").text().toLowerCase();
+      changeChartValueType(valueType);
+      // Keep track of this value in a "cached" hidden variable for Back button click
+      $("#value-type-cache").val(valueType);
+    }
+    function changeChartValueType(valueType) {
       if (valueType == "sum") {
-          {% for question in questions %}
-            var chart = $('#chart_{{ question.pk }}').highcharts();
-            chart.series[0].setData({{ question.answer_sum_dict_list|safe }});
-            $("#question-{{ question.pk }}-heading-value-type").html("Sum");
-          {% endfor %}
+        {% for question in questions %}
+          var chart = $('#chart_{{ question.pk }}').highcharts();
+          chart.series[0].setData({{ question.answer_sum_dict_list|safe }});
+          $("#question-{{ question.pk }}-heading-value-type").html("Sum");
+        {% endfor %}
       }
       else if (valueType == "average") {
-          {% for question in questions %}
-            var chart = $('#chart_{{ question.pk }}').highcharts();
-            chart.series[0].setData({{ question.answer_average_dict_list|safe }});
-            $("#question-{{ question.pk }}-heading-value-type").html("Average");
-          {% endfor %}
+        {% for question in questions %}
+          var chart = $('#chart_{{ question.pk }}').highcharts();
+          chart.series[0].setData({{ question.answer_average_dict_list|safe }});
+          $("#question-{{ question.pk }}-heading-value-type").html("Average");
+        {% endfor %}
       }
       else if (valueType == "response rate") {
-          {% for question in questions %}
-            var chart = $('#chart_{{ question.pk }}').highcharts();
-            chart.series[0].setData({{ question.response_rate_dict_list|safe }});
-            $("#question-{{ question.pk }}-heading-value-type").html("Response Rate");
-          {% endfor %}
+        {% for question in questions %}
+          var chart = $('#chart_{{ question.pk }}').highcharts();
+          chart.series[0].setData({{ question.response_rate_dict_list|safe }});
+          $("#question-{{ question.pk }}-heading-value-type").html("Response Rate");
+        {% endfor %}
       }
     }
-    // ]]>
 </script>
 {% endblock %}
