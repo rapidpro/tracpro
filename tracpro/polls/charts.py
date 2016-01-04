@@ -76,6 +76,8 @@ def multiple_pollruns_non_numeric(pollruns, question, regions):
     elif question.question_type == Question.TYPE_MULTIPLE_CHOICE:
         answers = Answer.objects.filter(response__pollrun=pollruns, response__is_active=True)
         answers = answers.exclude(response__status=Response.STATUS_EMPTY)
+        if regions:
+            answers = answers.filter(response__contact__region__in=regions)
         categories = answers.distinct('category')
         categories = categories.order_by('category').values_list('category', flat=True)
 
