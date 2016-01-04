@@ -254,10 +254,6 @@ def _org_scheduler_task(task_name):
     return {
         'task': 'tracpro.orgs_ext.tasks.ScheduleTaskForActiveOrgs',
         'schedule': ORG_TASK_TIMEOUT,
-        'options': {
-            'expires': ORG_TASK_TIMEOUT,
-            'queue': 'org_scheduler',
-        },
         'kwargs': {
             'task_name': task_name,
         },

@@ -22,11 +22,16 @@ LAST_RUN_KEY = 'last_run_time:{task}:{org}'
 
 ORG_TASK_LOCK = 'org_task:{task}:{org}'
 
-LOCK_EXPIRE = 60 * 60  # 1 hour
+LOCK_EXPIRE = (settings.ORG_TASK_TIMEOUT * 12).seconds
 
 
 @task
 class ScheduleTaskForActiveOrgs(PostTransactionTask):
+
+    def apply_async(self, *args, **kwargs):
+        kwargs.setdefault('queue', 'org_scheduler')
+        kwargs.setdefault('expires', settings.ORG_TASK_TIMEOUT)
+        return super(OrgTask, self).apply_async(*args, **kwargs)
 
     def run(self, task_name):
         """Schedule the OrgTask to be run for each active org."""
@@ -49,10 +54,7 @@ class ScheduleTaskForActiveOrgs(PostTransactionTask):
                     "{}: Skipping {} for {} because it has no API token.".format(
                         self.__name__, task_name, org.name))
             else:
-                signature(task_name, args=[org.pk], options={
-                    'queue': 'org_task',
-                    'expires': settings.ORG_TASK_TIMEOUT,
-                }).deplay()
+                signature(task_name, args=[org.pk])
                 logger.info(
                     "{}: Scheduled {} for {}.".format(
                         self.__name__, task_name, org.name))
@@ -71,6 +73,11 @@ class OrgTask(PostTransactionTask):
     def acquire_lock(self, org):
         key = ORG_TASK_LOCK.format(task=self.__name__, org=org.pk)
         return cache.add(key, 'true', LOCK_EXPIRE)
+
+    def apply_async(self, *args, **kwargs):
+        kwargs.setdefault('queue', 'org_task')
+        kwargs.setdefault('expires', settings.ORG_TASK_TIMEOUT)
+        return super(OrgTask, self).apply_async(*args, **kwargs)
 
     def release_lock(self, org):
         key = ORG_TASK_LOCK.format(task=self.__name__, org=org.pk)
