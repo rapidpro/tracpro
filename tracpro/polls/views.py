@@ -38,6 +38,7 @@ class PollCRUDL(smartmin.SmartCRUDL):
     class Read(PollMixin, OrgObjPermsMixin, smartmin.SmartReadView):
 
         def get_context_data(self, **kwargs):
+            kwargs.setdefault('filter_form', forms.ChartFilterForm())
             context = super(PollCRUDL.Read, self).get_context_data(**kwargs)
             questions = self.object.questions.active()
             pollruns = self.object.pollruns.active().by_region(

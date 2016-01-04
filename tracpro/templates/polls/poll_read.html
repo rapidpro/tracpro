@@ -2,12 +2,19 @@
 
 {% load i18n %}
 {% load smartmin %}
+{% load poll_tags %}
 
 {% block pre-content %}
   {% include 'polls/poll_header.html' with poll=object %}
 {% endblock pre-content %}
 
 {% block content %}
+  <form class="filter-form form-horizontal" method="GET">
+    {% fieldset filter_form "data_type" %}
+    {% fieldset filter_form "date_range" %}
+    {% fieldset filter_form "start_date" "end_date" %}
+  </form>
+
   <div class='pull-away'>
     <form class='form-inline' method='get'>
       <label class='control-label' for='window-select'></label>
@@ -85,7 +92,7 @@
                     data: {{ question.answer_sum_dict_list|safe }}
                   {% elif value_type_selected|lower ==  "average" %}
                     data: {{ question.answer_average_dict_list|safe }}
-                  {% elif value_type_selected|lower ==  "response rate" %}
+                  {% elif value_type_selected|lower ==  "response-rate" %}
                     data: {{ question.response_rate_dict_list|safe }}
                   {% endif %}
                 }
