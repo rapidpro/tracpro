@@ -58,7 +58,7 @@ class ChartFilterForm(forms.Form):
         ('', ''),
         ('sum', _("Sum of responses")),
         ('average', _("Average of responses")),
-        ('response-rate', _("Response rate")),
+        ('responseRate', _("Response rate")),
     )
 
     DATE_WINDOW_CHOICES = (

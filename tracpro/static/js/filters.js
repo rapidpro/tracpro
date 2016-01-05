@@ -1,19 +1,58 @@
 $(function() {
-  /* Initialize date fields.*/
-  $("input[class^='datepicker']").datepicker();
+    /* Initialize date fields. */
+    $("input[class^='datepicker']").datepicker();
 
-  /* Update text on filter toggle button. */
-  $('#filters').on('show.bs.collapse', function() {
-    $('#toggle-filters').text('Hide filters...');
-  });
-  $('#filters').on('hide.bs.collapse', function() {
-    $('#toggle-filters').text('Show filters...');
-  });
+    /* Update button text when filter form display is toggled. */
+    $('#filters').on('show.bs.collapse', function() {
+        $('#toggle-filters').text('Hide filters...');
+    });
+    $('#filters').on('hide.bs.collapse', function() {
+        $('#toggle-filters').text('Show filters...');
+    });
 
-  /* Don't submit unused fields. */
-  $('.filter-form #id_date_range').on('change blur', function() {
-    var show_dates = $(this).val() === 'other';
-    $('#filter-dates').toggleClass('hidden', !show_dates);
-    $('#filter-dates').find('input').prop('disabled', !show_dates)
-  }).blur();
+    /* Don't submit unused fields. */
+    $('.filter-form #id_date_range').on('change', function() {
+        var showDates = $(this).val() === 'other';
+        $('#filter-dates').toggleClass('hidden', !showDates);
+        $('#filter-dates').find('input').prop('disabled', !showDates)
+    }).change();
+
+    /* Update numeric data display on the client side. */
+    $('#id_data_type').on('change', function() {
+        var dataType = $(this).val();
+        if (dataType) {
+            var label = $(this).find(':selected').text();
+            $('.chart').each(function(i, item) {
+                var chart = $(item);
+                chart.closest('.poll-question').find('.data-type').text(label);
+                chart.highcharts({
+                    title: {
+                        text: ""
+                    },
+                    categories: chart.data('categories'),
+                    plotOptions: {
+                        series: {
+                            cursor: "pointer",
+                            point: {
+                                events: {
+                                    click: function() {
+                                        // Take user to pollrun detail page
+                                        // when they click on a specific date.
+                                        location.href = this.options.url;
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    series: [
+                        {
+                            type: "area",
+                            name: chart.data('name'),
+                            data: chart.data(dataType)
+                        }
+                    ]
+                });
+            });
+        }
+    }).change();
 });

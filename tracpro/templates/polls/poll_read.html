@@ -12,11 +12,15 @@
         href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/themes/smoothness/jquery-ui.css">
 {% endblock extra-style %}
 
+{% block extra-script %}
+  <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
+  <script src="{% static "js/filters.js" %}"></script>
+{% endblock extra-script %}
+
 {% block content %}
   {% include "polls/_filters.html" with form=filter_form %}
 
-  {% if filter_form.is_valid or not filter_form.is_bound %}
-  {% if not request.region %}
+  {% if questions and not request.region %}
     <p>
       {% blocktrans %}
         Charts only include data from non-regional poll runs.
@@ -26,111 +30,42 @@
   {% endif %}
 
   {% for question in questions %}
-    <h3>
-      {{ forloop.counter }}. {{ question.name }}:
-      <span id="question-{{ question.pk }}-heading-value-type">{{ value_type_selected|title }}</span>
-    </h3>
+    <div class="poll-question">
+      <h3>
+        {{ forloop.counter }}. {{ question.name }}:
+        <span class="data-type"></span>
+      </h3>
 
-    {% if question.date_list %}
-      <div id='chart_{{ question.pk }}' class='chart' data-window-max='{{ window_max }}' data-window-min='{{ window_min }}' ></div>
-
-      <script>
-        $(function () {
-          $('#chart_{{ question.pk }}').highcharts({
-              title: {
-                  text: ''
-              },
-              xAxis: {
-                categories: [
-                            {% for date in question.date_list %}
-                              '{{ date }}'{% if not forloop.last %},{% endif %}
-                            {% endfor %}
-                            ]
-              },
-              plotOptions: {
-                series: {
-                    cursor: 'pointer',
-                    point: {
-                        events: {
-                            click: function () {
-                                location.href = this.options.url;
-                            }
-                        }
-                    }
-                }
-            },
-              series: [
-                  {
-                  type: 'area',
-                  name: '{{ question.name }}',
-                  {% if value_type_selected|lower ==  "sum" %}
-                    data: {{ question.answer_sum_dict_list|safe }}
-                  {% elif value_type_selected|lower ==  "average" %}
-                    data: {{ question.answer_average_dict_list|safe }}
-                  {% elif value_type_selected|lower ==  "response-rate" %}
-                    data: {{ question.response_rate_dict_list|safe }}
-                  {% endif %}
-                }
-              ]
-          });
-      });
-      </script>
-
-      <table class="table table-striped">
-        <tbody>
-          <tr class="read">
-            <td class="read-half read-label">Mean</td>
-            <td class="read-half read-value">{{ question.answer_mean }}</td>
-          </tr>
-          <tr class="read">
-            <td class="read-half read-label">Standard Deviation</td>
-            <td class="read-half read-value">{{ question.answer_stdev }}</td>
-          </tr>
-          <tr class="read">
-            <td class="read-half read-label">Response Rate Average</td>
-            <td class="read-half read-value">{{ question.response_rate_average }}%</td>
-          </tr>
-        </tbody>
-      </table>
-    {% else %}
-      <div class="chart-no-data">No data for this date window.</div>
-    {% endif %}
+      {% if question.date_list %}
+        <div class="chart"
+             data-name="{{ question.name }}"
+             data-categories='[{% for d in question.date_list %}"{{ d|date:"Y-m-d" }}"{% if not forloop.last %},{% endif %}{% endfor %}]'
+             data-window-min="{{ filter_form.start_date.value|date:"Y-m-d" }}"
+             data-window-max="{{ filter_form.end_date.value|date:"Y-m-d" }}"
+             data-type="{{ filter_form.data_type.value|lower }}"
+             data-sum='{{ question.answer_sum_dict_list|safe }}'
+             data-average='{{ question.answer_average_dict_list|safe }}'
+             data-response-rate='{{ question.response_rate_dict_list|safe }}'>
+        </div>
+        <table class="table table-striped">
+          <tbody>
+            <tr class="read">
+              <td class="read-half read-label">Mean</td>
+              <td class="read-half read-value">{{ question.answer_mean }}</td>
+            </tr>
+            <tr class="read">
+              <td class="read-half read-label">Standard Deviation</td>
+              <td class="read-half read-value">{{ question.answer_stdev }}</td>
+            </tr>
+            <tr class="read">
+              <td class="read-half read-label">Response Rate Average</td>
+              <td class="read-half read-value">{{ question.response_rate_average }}%</td>
+            </tr>
+          </tbody>
+        </table>
+      {% else %}
+        <div class="chart-no-data">No data for this date window.</div>
+      {% endif %}
+    </div>
   {% endfor %}
-  {% endif %}
 {% endblock content %}
-
-{% block extra-script %}
-  <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
-  <script src="{% static "js/filters.js" %}"></script>
-  <script type='text/javascript'>
-    // <![CDATA[
-    function onWindowChange(ctrl) {
-      ctrl.form.submit();
-    }
-    function onValueTypeChange(ctrl) {
-      valueType = $("#value-type-select :selected").text().toLowerCase();
-      if (valueType == "sum") {
-          {% for question in questions %}
-            var chart = $('#chart_{{ question.pk }}').highcharts();
-            chart.series[0].setData({{ question.answer_sum_dict_list|safe }});
-            $("#question-{{ question.pk }}-heading-value-type").html("Sum");
-          {% endfor %}
-      }
-      else if (valueType == "average") {
-          {% for question in questions %}
-            var chart = $('#chart_{{ question.pk }}').highcharts();
-            chart.series[0].setData({{ question.answer_average_dict_list|safe }});
-            $("#question-{{ question.pk }}-heading-value-type").html("Average");
-          {% endfor %}
-      }
-      else if (valueType == "response rate") {
-          {% for question in questions %}
-            var chart = $('#chart_{{ question.pk }}').highcharts();
-            chart.series[0].setData({{ question.response_rate_dict_list|safe }});
-            $("#question-{{ question.pk }}-heading-value-type").html("Response Rate");
-          {% endfor %}
-      }
-    }
-    // ]]>
-  </script>
-{% endblock extra-script %}

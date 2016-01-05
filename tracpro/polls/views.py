@@ -5,7 +5,7 @@ from collections import OrderedDict
 import unicodecsv
 
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
-from dash.utils import datetime_to_ms, get_obj_cacheable
+from dash.utils import get_obj_cacheable
 
 from django.conf import settings
 from django.contrib import messages
@@ -37,17 +37,25 @@ class PollCRUDL(smartmin.SmartCRUDL):
 
     class Read(PollMixin, OrgObjPermsMixin, smartmin.SmartReadView):
 
-        def get_pollruns(self):
-            if self.filter_form.is_bound and not self.filter_form.is_valid():
-                return []
+        def get(self, request, *args, **kwargs):
+            self.object = self.get_object()
+            self.filter_form = forms.ChartFilterForm(data=request.GET or None)
+            return self.render_to_response(self.get_context_data())
 
-            start_date = self.filter_form.get_value('start_date')
-            end_date = self.filter_form.get_value('end_date')
+        def get_context_data(self, **kwargs):
+            kwargs.setdefault('object', self.object)
+            kwargs.setdefault('filter_form', self.filter_form)
+            kwargs.setdefault('questions', self.get_questions())
+            return super(PollCRUDL.Read, self).get_context_data(**kwargs)
+
+        def get_questions(self):
+            if self.filter_form.is_bound and not self.filter_form.is_valid():
+                return None
+
             pollruns = self.object.pollruns.active().order_by('conducted_on')
             pollruns = pollruns.filter(
-                conducted_on__gte=start_date,
-                conducted_on__lt=end_date)
-
+                conducted_on__gte=self.filter_form.get_value('start_date'),
+                conducted_on__lt=self.filter_form.get_value('end_date'))
             if self.request.region:
                 pollruns = pollruns.by_region(
                     self.request.region,
@@ -55,15 +63,6 @@ class PollCRUDL(smartmin.SmartCRUDL):
             else:
                 pollruns = pollruns.universal()
 
-            return pollruns
-
-        def get(self, request, *args, **kwargs):
-            self.object = self.get_object()
-            self.filter_form = forms.ChartFilterForm(data=request.GET or None)
-            self.pollruns = self.get_pollruns()
-            return self.render_to_response(self.get_context_data())
-
-        def get_context_data(self, **kwargs):
             questions = self.object.questions.active()
             for question in questions:
                 (question.answer_sum_dict_list,
@@ -74,24 +73,9 @@ class PollCRUDL(smartmin.SmartCRUDL):
                  question.answer_stdev,
                  question.response_rate_average,
                  question.pollrun_list) = charts.multiple_pollruns(
-                    self.pollruns, question, self.request.data_regions)
+                    pollruns, question, self.request.data_regions)
 
-            kwargs.setdefault('object', self.object)
-            kwargs.setdefault('filter_form', self.filter_form)
-            kwargs.setdefault('questions', questions)
-
-            if not self.filter_form.is_bound or self.filter_form.is_valid():
-                kwargs.setdefault(
-                    'window_min',
-                    datetime_to_ms(self.filter_form.get_value('start_date')))
-                kwargs.setdefault(
-                    'window_max',
-                    datetime_to_ms(self.filter_form.get_value('end_date')))
-                kwargs.setdefault(
-                    'value_type_selected',
-                    self.filter_form.get_value('data_type'))
-
-            return super(PollCRUDL.Read, self).get_context_data(**kwargs)
+            return questions
 
     class Update(PollMixin, OrgObjPermsMixin, smartmin.SmartUpdateView):
         form_class = forms.PollForm
