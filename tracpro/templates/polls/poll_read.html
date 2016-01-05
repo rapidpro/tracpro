@@ -142,8 +142,13 @@
           $("#question-{{ question.pk }}-heading-value-type").html("Response Rate");
         {% endfor %}
       }
-    }).change()
-    // Run this once on initial page load via .change(),
+    })
+
+    // Run this once on initial page load,
     // in the case that the user has hit the Back button.
+    $(function () {
+      $('#value-type-select').change();
+    });
+
 </script>
 {% endblock %}
