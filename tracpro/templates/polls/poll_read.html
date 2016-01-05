@@ -26,7 +26,6 @@
             {% endif %}
           {% endfor %}
         </select>
-        <input type="hidden" id="value-type-cache" value="">
         <select id='window-select' class='form-control' onchange='onWindowChange(this)' name='window'>
           {% for win in window_options %}
             {% if win == window %}
@@ -118,8 +117,8 @@
 
 <script>
     $(function () {
-      // Run this once, in the case that the user has
-      // hit the Back button.
+      // Run this once on initial page load,
+      // in the case that the user has hit the Back button.
       onValueTypeChange();
     });
     function onWindowChange(ctrl) {
@@ -128,8 +127,6 @@
     function onValueTypeChange() {
       valueType = $("#value-type-select :selected").text().toLowerCase();
       changeChartValueType(valueType);
-      // Keep track of this value in a "cached" hidden variable for Back button click
-      $("#value-type-cache").val(valueType);
     }
     function changeChartValueType(valueType) {
       if (valueType == "sum") {
