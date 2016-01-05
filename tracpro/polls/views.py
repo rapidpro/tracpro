@@ -22,7 +22,7 @@ from tracpro.contacts.models import Contact
 from tracpro.groups.models import Group, Region
 
 from . import charts, forms, tasks
-from .models import Poll, Question, PollRun, Response, Window
+from .models import Poll, Question, PollRun, Response
 
 
 class PollCRUDL(smartmin.SmartCRUDL):
@@ -37,27 +37,34 @@ class PollCRUDL(smartmin.SmartCRUDL):
 
     class Read(PollMixin, OrgObjPermsMixin, smartmin.SmartReadView):
 
-        def get_context_data(self, **kwargs):
-            kwargs.setdefault('filter_form', forms.ChartFilterForm())
-            context = super(PollCRUDL.Read, self).get_context_data(**kwargs)
-            questions = self.object.questions.active()
-            pollruns = self.object.pollruns.active().by_region(
-                self.request.region,
-                self.request.include_subregions)
+        def get_pollruns(self):
+            if self.filter_form.is_bound and not self.filter_form.is_valid():
+                return []
 
-            # if we're viewing "All Regions" don't include regional only pollruns
-            if not self.request.region:
+            start_date = self.filter_form.get_value('start_date')
+            end_date = self.filter_form.get_value('end_date')
+            pollruns = self.object.pollruns.active().order_by('conducted_on')
+            pollruns = pollruns.filter(
+                conducted_on__gte=start_date,
+                conducted_on__lt=end_date)
+
+            if self.request.region:
+                pollruns = pollruns.by_region(
+                    self.request.region,
+                    self.request.include_subregions)
+            else:
                 pollruns = pollruns.universal()
 
-            window = self.request.POST.get('window', self.request.GET.get('window', None))
-            window = Window[window] if window else Window.last_30_days
-            window_min, window_max = window.to_range()
+            return pollruns
 
-            value_type = self.request.POST.get('value_type', self.request.GET.get('value_type', 'sum'))
+        def get(self, request, *args, **kwargs):
+            self.object = self.get_object()
+            self.filter_form = forms.ChartFilterForm(data=request.GET or None)
+            self.pollruns = self.get_pollruns()
+            return self.render_to_response(self.get_context_data())
 
-            pollruns = pollruns.filter(conducted_on__gte=window_min, conducted_on__lt=window_max)
-            pollruns = pollruns.order_by('conducted_on')
-
+        def get_context_data(self, **kwargs):
+            questions = self.object.questions.active()
             for question in questions:
                 (question.answer_sum_dict_list,
                  question.answer_average_dict_list,
@@ -67,17 +74,24 @@ class PollCRUDL(smartmin.SmartCRUDL):
                  question.answer_stdev,
                  question.response_rate_average,
                  question.pollrun_list) = charts.multiple_pollruns(
-                    pollruns, question, self.request.data_regions)
+                    self.pollruns, question, self.request.data_regions)
 
-            context['window'] = window
-            context['window_min'] = datetime_to_ms(window_min)
-            context['window_max'] = datetime_to_ms(window_max)
-            context['window_options'] = Window.__members__.values()
-            context['value_type_selected'] = value_type
-            context['value_type_options'] = ['Sum', 'Average', 'Response Rate']
-            context['questions'] = questions
+            kwargs.setdefault('object', self.object)
+            kwargs.setdefault('filter_form', self.filter_form)
+            kwargs.setdefault('questions', questions)
 
-            return context
+            if not self.filter_form.is_bound or self.filter_form.is_valid():
+                kwargs.setdefault(
+                    'window_min',
+                    datetime_to_ms(self.filter_form.get_value('start_date')))
+                kwargs.setdefault(
+                    'window_max',
+                    datetime_to_ms(self.filter_form.get_value('end_date')))
+                kwargs.setdefault(
+                    'value_type_selected',
+                    self.filter_form.get_value('data_type'))
+
+            return super(PollCRUDL.Read, self).get_context_data(**kwargs)
 
     class Update(PollMixin, OrgObjPermsMixin, smartmin.SmartUpdateView):
         form_class = forms.PollForm
