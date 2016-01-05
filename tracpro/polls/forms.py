@@ -67,7 +67,7 @@ class ChartFilterForm(forms.Form):
         ('30', _("Last 30 days")),
         ('60', _("Last 60 days")),
         ('90', _("Last 90 days")),
-        ('other', _("Other date range...")),
+        ('other', _("Custom range...")),
     )
 
     data_type = forms.ChoiceField(
