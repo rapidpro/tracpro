@@ -17,7 +17,7 @@
       <form class='form-inline' method='get'>
         <label class='control-label' for='window-select'></label>
         {% trans "Show" %}
-        <select id='value-type-select' class='form-control' onchange='onValueTypeChange(this)' name='value_type'>
+        <select id='value-type-select' class='form-control' name='value_type'>
           {% for value_type in value_type_options %}
             {% if value_type == value_type_selected %}
               <option selected='selected' value='{{ value_type }}'>{{ value_type }}</option>
@@ -26,7 +26,7 @@
             {% endif %}
           {% endfor %}
         </select>
-        <select id='window-select' class='form-control' onchange='onWindowChange(this)' name='window'>
+        <select id='window-select' class='form-control' name='window'>
           {% for win in window_options %}
             {% if win == window %}
               <option selected='selected' value='{{ win.name }}'>
@@ -181,38 +181,41 @@
       <div class="chart-no-data">No data for this date window.</div>
     {% endif %}
   {% endfor %}
-{% endblock %}
 
-{% block extra-script %}
-<script type='text/javascript'>
-    // <![CDATA[
-    function onWindowChange(ctrl) {
-      ctrl.form.submit();
-    }
-    function onValueTypeChange(ctrl) {
-      valueType = $("#value-type-select :selected").text().toLowerCase();
+<script>
+    $('#window-select').on('change', function() {
+      $('.form-inline').submit();
+    });
+    $('#value-type-select').on('change', function() {
+      var valueType = $(this).val().toLowerCase();
       if (valueType == "sum") {
-          {% for question in questions %}
-            var chart = $('#chart_{{ question.pk }}').highcharts();
-            chart.series[0].setData({{ question.answer_sum_dict_list|safe }});
-            $("#question-{{ question.pk }}-heading-value-type").html("Sum");
-          {% endfor %}
+        {% for question in questions %}
+          var chart = $('#chart_{{ question.pk }}').highcharts();
+          chart.series[0].setData({{ question.answer_sum_dict_list|safe }});
+          $("#question-{{ question.pk }}-heading-value-type").html("Sum");
+        {% endfor %}
       }
       else if (valueType == "average") {
-          {% for question in questions %}
-            var chart = $('#chart_{{ question.pk }}').highcharts();
-            chart.series[0].setData({{ question.answer_average_dict_list|safe }});
-            $("#question-{{ question.pk }}-heading-value-type").html("Average");
-          {% endfor %}
+        {% for question in questions %}
+          var chart = $('#chart_{{ question.pk }}').highcharts();
+          chart.series[0].setData({{ question.answer_average_dict_list|safe }});
+          $("#question-{{ question.pk }}-heading-value-type").html("Average");
+        {% endfor %}
       }
       else if (valueType == "response rate") {
-          {% for question in questions %}
-            var chart = $('#chart_{{ question.pk }}').highcharts();
-            chart.series[0].setData({{ question.response_rate_dict_list|safe }});
-            $("#question-{{ question.pk }}-heading-value-type").html("Response Rate");
-          {% endfor %}
+        {% for question in questions %}
+          var chart = $('#chart_{{ question.pk }}').highcharts();
+          chart.series[0].setData({{ question.response_rate_dict_list|safe }});
+          $("#question-{{ question.pk }}-heading-value-type").html("Response Rate");
+        {% endfor %}
       }
-    }
-    // ]]>
+    })
+
+    // Run this once on initial page load,
+    // in the case that the user has hit the Back button.
+    $(function () {
+      $('#value-type-select').change();
+    });
+
 </script>
 {% endblock %}

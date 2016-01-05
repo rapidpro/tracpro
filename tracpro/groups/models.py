@@ -8,7 +8,7 @@ from django.db.models import Count
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 
-from tracpro.contacts.tasks import sync_org_contacts
+from tracpro.contacts.tasks import SyncOrgContacts
 
 
 @python_2_unicode_compatible
@@ -65,7 +65,7 @@ class AbstractGroup(models.Model):
                 if obj:
                     obj.deactivate()
 
-        sync_org_contacts.delay(org.pk)
+        SyncOrgContacts.delay(org.pk)
 
     @classmethod
     def get_all(cls, org):

@@ -6,11 +6,10 @@ from django.utils import timezone
 from celery.utils.log import get_task_logger
 from djcelery_transactions import task
 
-from dash.orgs.models import Org
 from dash.utils import datetime_to_ms
 from dash.utils.sync import sync_pull_contacts, sync_push_contact
 
-from tracpro.orgs_ext.utils import run_org_task
+from tracpro.orgs_ext.tasks import OrgTask
 
 
 logger = get_task_logger(__name__)
@@ -36,70 +35,46 @@ def push_contact_change(contact_id, change_type):
 
 
 @task
-def sync_org_contacts(org_id):
-    """
-    Syncs all contacts for the given org
-    """
-    from tracpro.groups.models import Region, Group
-    from tracpro.orgs_ext.constants import TaskType
-    from .models import Contact
+class SyncOrgContacts(OrgTask):
 
-    org = Org.objects.get(pk=org_id)
+    def org_task(self, org):
+        from tracpro.groups.models import Region, Group
+        from tracpro.orgs_ext.constants import TaskType
+        from .models import Contact
 
-    logger.info('Starting contact sync task for org #%d' % org.id)
+        logger.info('Starting contact sync task for org #%d' % org.id)
 
-    sync_groups = [r.uuid for r in Region.get_all(org)] + [g.uuid for g in Group.get_all(org)]
+        sync_groups = [r.uuid for r in Region.get_all(org)] + [g.uuid for g in Group.get_all(org)]
 
-    most_recent_contact = Contact.objects.by_org(org).active().exclude(temba_modified_on=None)
-    most_recent_contact = most_recent_contact.order_by('-temba_modified_on').first()
-    if most_recent_contact:
-        last_time = most_recent_contact.temba_modified_on
-    else:
-        last_time = None
+        most_recent_contact = Contact.objects.by_org(org).active().exclude(temba_modified_on=None)
+        most_recent_contact = most_recent_contact.order_by('-temba_modified_on').first()
+        if most_recent_contact:
+            last_time = most_recent_contact.temba_modified_on
+        else:
+            last_time = None
 
-    created, updated, deleted, failed = sync_pull_contacts(
-        org, Contact, fields=(), groups=sync_groups, last_time=last_time,
-        delete_blocked=True)
+        created, updated, deleted, failed = sync_pull_contacts(
+            org, Contact, fields=(), groups=sync_groups, last_time=last_time,
+            delete_blocked=True)
 
-    task_result = dict(time=datetime_to_ms(timezone.now()),
-                       counts=dict(created=len(created),
-                                   updated=len(updated),
-                                   deleted=len(deleted),
-                                   failed=len(failed)))
-    org.set_task_result(TaskType.sync_contacts, task_result)
+        task_result = dict(time=datetime_to_ms(timezone.now()),
+                           counts=dict(created=len(created),
+                                       updated=len(updated),
+                                       deleted=len(deleted),
+                                       failed=len(failed)))
+        org.set_task_result(TaskType.sync_contacts, task_result)
 
-    logger.info("Finished contact sync for org #%d (%d created, "
-                "%d updated, %d deleted, %d failed)" %
-                (org.id, len(created), len(updated), len(deleted), len(failed)))
+        logger.info("Finished contact sync for org #%d (%d created, "
+                    "%d updated, %d deleted, %d failed)" %
+                    (org.id, len(created), len(updated), len(deleted), len(failed)))
 
 
 @task
-def sync_all_contacts():
-    """
-    Syncs all contacts for all orgs
-    """
-    logger.info("Starting contact sync for all orgs...")
-    for org in Org.objects.filter(is_active=True):
-        run_org_task(org, sync_org_contacts)
+class SyncOrgDataFields(OrgTask):
 
-
-@task
-def sync_all_data_fields():
-    """Remove any contact fields that have been removed remotely."""
-    logger.info("Syncing DataFields for active orgs.")
-    for org in Org.objects.filter(is_active=True):
-        run_org_task(org, sync_org_data_fields)
-    logger.info("Finished syncing DataFields for active orgs.")
-
-
-@task
-def sync_org_data_fields(org_pk):
-    """Sync an org's DataFields.
-
-    Syncs DataField info and removes any DataFields (and associated contact
-    values) that are no longer on the remote.
-    """
-    org = Org.objects.get(pk=org_pk)
-    logger.info("Syncing fields for {}.".format(org.name))
-    apps.get_model('contacts', 'DataField').objects.sync(org)
-    logger.info("Finished syncing fields for {}.".format(org.name))
+    def org_task(self, org):
+        """
+        Syncs DataField info and removes any DataFields (and associated
+        contact values) that are no longer on the remote.
+        """
+        apps.get_model('contacts', 'DataField').objects.sync(org)
