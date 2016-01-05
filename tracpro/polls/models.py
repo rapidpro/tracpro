@@ -31,6 +31,8 @@ class Window(Enum):
     last_30_days = (30, _("Last 30 days"))
     last_60_days = (60, _("Last 60 days"))
     last_90_days = (90, _("Last 90 days"))
+    last_120_days = (120, _("Last 120 days"))
+    last_150_days = (150, _("Last 150 days"))
 
     def __init__(self, ordinal, label):
         self.ordinal = ordinal

@@ -54,8 +54,11 @@ def single_pollrun(pollrun, question, regions):
     return chart_type, render_data(chart_data)
 
 
-def multiple_pollruns_old(pollruns, question, regions):
+def multiple_pollruns_non_numeric(pollruns, question, regions):
     """Chart data for multiple pollruns of a poll."""
+
+    pollrun_dict = OrderedDict()
+    date_list = []
 
     if question.question_type == Question.TYPE_OPEN:
         overall_counts = defaultdict(int)
@@ -67,44 +70,29 @@ def multiple_pollruns_old(pollruns, question, regions):
 
         sorted_counts = sorted(
             overall_counts.items(), key=itemgetter(1), reverse=True)
-        chart_type = 'word'
-        chart_data = word_cloud_data(sorted_counts[:50])
+        pollrun_dict = word_cloud_data(sorted_counts[:50])
+        pollrun_dict = json.dumps(pollrun_dict)
+
     elif question.question_type == Question.TYPE_MULTIPLE_CHOICE:
-        categories = set()
-        counts_by_pollrun = OrderedDict()
+        answers = Answer.objects.filter(response__pollrun=pollruns, response__is_active=True)
+        answers = answers.exclude(response__status=Response.STATUS_EMPTY)
+        if regions:
+            answers = answers.filter(response__contact__region__in=regions)
+        categories = answers.distinct('category')
+        categories = categories.order_by('category').values_list('category', flat=True)
 
-        # fetch category counts for all pollruns, keeping track of all found
-        # categories
-        for pollrun in pollruns:
-            category_counts = pollrun.get_answer_category_counts(question, regions)
-            as_dict = dict(category_counts)
-            counts_by_pollrun[pollrun] = as_dict
+        for category in categories:
+            answers_category = answers.filter(category=category)
+            answers_category_list = []
+            for pollrun in pollruns.order_by('conducted_on'):
+                answers_category_count = answers_category.filter(response__pollrun=pollrun).count()
+                answers_category_list.append(answers_category_count)
+            pollrun_dict[category] = answers_category_list
 
-            for category in as_dict.keys():
-                categories.add(category)
+        for pollrun in pollruns.order_by('conducted_on'):
+            date_list.append(pollrun.conducted_on.date())
 
-        categories = list(categories)
-        category_series = defaultdict(list)
-
-        for pollrun, category_counts in counts_by_pollrun.iteritems():
-            for category in categories:
-                count = category_counts.get(category, 0)
-                category_series[category].append((pollrun.conducted_on, count))
-
-        chart_type = 'time-area'
-        chart_data = [{'name': cgi.escape(category), 'data': data}
-                      for category, data in category_series.iteritems()]
-    elif question.question_type == Question.TYPE_NUMERIC:
-        chart_type = 'time-line'
-        chart_data = []
-        for pollrun in pollruns:
-            average = pollrun.get_answer_numeric_average(question, regions)
-            chart_data.append((pollrun.conducted_on, average))
-    else:
-        chart_type = None
-        chart_data = []
-
-    return chart_type, render_data(chart_data)
+    return date_list, pollrun_dict
 
 
 def response_rate_calculation(responses, pollrun_list):
@@ -149,7 +137,7 @@ def response_rate_calculation(responses, pollrun_list):
     return response_rates
 
 
-def multiple_pollruns(pollruns, question, regions):
+def multiple_pollruns_numeric(pollruns, question, regions):
     """Chart data for multiple pollruns of a poll."""
     responses = Response.objects.filter(pollrun__in=pollruns)
     responses = responses.filter(is_active=True)
