@@ -39,7 +39,7 @@
       {% if question.date_list %}
         <div class="chart"
              data-name="{{ question.name }}"
-             data-categories='[{% for d in question.date_list %}"{{ d|date:"Y-m-d" }}"{% if not forloop.last %},{% endif %}{% endfor %}]'
+             data-categories='[{% for d in question.date_list %}"{{ d }}"{% if not forloop.last %},{% endif %}{% endfor %}]'
              data-window-min="{{ filter_form.start_date.value|date:"Y-m-d" }}"
              data-window-max="{{ filter_form.end_date.value|date:"Y-m-d" }}"
              data-type="{{ filter_form.data_type.value|lower }}"
