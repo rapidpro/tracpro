@@ -309,8 +309,7 @@ class PollRunCRUDL(smartmin.SmartCRUDL):
                     overall_counts['E'] = overall_counts['E'] + per_group_counts[group_or_region]['E']
                     overall_counts['P'] = overall_counts['P'] + per_group_counts[group_or_region]['P']
                     overall_counts['C'] = overall_counts['C'] + per_group_counts[group_or_region]['C']
-                else:
-                    per_group_counts[group_or_region] = {'E': 0, 'P': 0, 'C': 0}
+
             # Calculate all no-group or no-region activity
             if group_by_reporter_group:
                 responses_no_group = responses.filter(contact__group__isnull=True)
