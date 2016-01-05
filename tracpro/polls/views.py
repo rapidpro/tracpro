@@ -63,19 +63,8 @@ class PollCRUDL(smartmin.SmartCRUDL):
             else:
                 pollruns = pollruns.universal()
 
-            questions = self.object.questions.active()
-            for question in questions:
-                (question.answer_sum_dict_list,
-                 question.answer_average_dict_list,
-                 question.response_rate_dict_list,
-                 question.date_list,
-                 question.answer_mean,
-                 question.answer_stdev,
-                 question.response_rate_average,
-                 question.pollrun_list) = charts.multiple_pollruns(
-                    pollruns, question, self.request.data_regions)
-
-            return questions
+            return [(q, charts.multiple_pollruns(pollruns, q, self.request.data_regions))
+                    for q in self.object.questions.active()]
 
     class Update(PollMixin, OrgObjPermsMixin, smartmin.SmartUpdateView):
         form_class = forms.PollForm

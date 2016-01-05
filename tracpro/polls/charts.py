@@ -193,8 +193,16 @@ def multiple_pollruns(pollruns, question, regions):
     answer_average_dict_list = json.dumps(answer_average_dict_list)
     response_rate_dict_list = json.dumps(response_rate_dict_list)
 
-    return (answer_sum_dict_list, answer_average_dict_list, response_rate_dict_list, date_list,
-            answer_mean, answer_stdev, response_rate_average, pollrun_list)
+    return {
+        'chart_type': 'numeric',
+        'categories': [d.strftime('%Y-%m-%d') for d in date_list],
+        'answer_sums': answer_sum_dict_list,
+        'answer_averages': answer_average_dict_list,
+        'response_rates': response_rate_dict_list,
+        'answer_mean': answer_mean,
+        'answer_stdev': answer_stdev,
+        'response_rate_average': response_rate_average,
+    }
 
 
 def word_cloud_data(word_counts):

@@ -29,37 +29,39 @@
     </p>
   {% endif %}
 
-  {% for question in questions %}
+  {% for question, data in questions %}
     <div class="poll-question">
       <h3>
         {{ forloop.counter }}. {{ question.name }}:
         <span class="data-type"></span>
       </h3>
 
-      {% if question.date_list %}
-        <div class="chart"
-             data-name="{{ question.name }}"
-             data-categories='[{% for d in question.date_list %}"{{ d }}"{% if not forloop.last %},{% endif %}{% endfor %}]'
-             data-window-min="{{ filter_form.start_date.value|date:"Y-m-d" }}"
-             data-window-max="{{ filter_form.end_date.value|date:"Y-m-d" }}"
-             data-type="{{ filter_form.data_type.value|lower }}"
-             data-sum='{{ question.answer_sum_dict_list|safe }}'
-             data-average='{{ question.answer_average_dict_list|safe }}'
-             data-response-rate='{{ question.response_rate_dict_list|safe }}'>
+      {% if data %}
+        <div class="chart chart-{{ data.chart_type }}"
+             {% if question.question_type = question.TYPE_NUMERIC %}
+               data-categories='{{ data.categories|safe }}'
+               data-sum='{{ data.answer_sums|safe }}'
+               data-average='{{ data.answer_averages|safe }}'
+               data-response-rate='{{ data.response_rates|safe }}'
+               data-window-min="{{ filter_form.start_date.value|date:"Y-m-d" }}"
+               data-window-max="{{ filter_form.end_date.value|date:"Y-m-d" }}"
+               data-type="{{ filter_form.data_type.value|lower }}"
+             {% endif %}
+             data-name="{{ question.name }}">
         </div>
         <table class="table table-striped">
           <tbody>
             <tr class="read">
               <td class="read-half read-label">Mean</td>
-              <td class="read-half read-value">{{ question.answer_mean }}</td>
+              <td class="read-half read-value">{{ data.answer_mean }}</td>
             </tr>
             <tr class="read">
               <td class="read-half read-label">Standard Deviation</td>
-              <td class="read-half read-value">{{ question.answer_stdev }}</td>
+              <td class="read-half read-value">{{ data.answer_stdev }}</td>
             </tr>
             <tr class="read">
               <td class="read-half read-label">Response Rate Average</td>
-              <td class="read-half read-value">{{ question.response_rate_average }}%</td>
+              <td class="read-half read-value">{{ data.response_rate_average }}%</td>
             </tr>
           </tbody>
         </table>
