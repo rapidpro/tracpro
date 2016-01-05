@@ -49,6 +49,8 @@
         <span id="question-{{ question.pk }}-heading-value-type">{{ value_type_selected|title }}</span>
       {% elif question.question_type == question.TYPE_MULTIPLE_CHOICE %}
         <span>Categorical</span>
+      {% elif question.TYPE_OPEN %}
+        <span>Open-Ended</span>
       {% endif %}
     </h3>
 
