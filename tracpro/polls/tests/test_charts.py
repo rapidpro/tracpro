@@ -1,5 +1,3 @@
-from collections import OrderedDict
-
 from django.core.urlresolvers import reverse
 from django.utils import timezone
 
@@ -70,9 +68,11 @@ class PollChartTest(TracProDataTest):
         self.assertEqual(
             data['dates'],
             [self.pollrun.conducted_on.strftime('%Y-%m-%d')])
-        self.assertEqual(
-            data['series'],
-            OrderedDict([(u'1 - 5', [2]), (u'6 - 10', [1]), (None, [3])]))
+        self.assertEqual(data['series'], [
+            {'name': u'1 - 5', 'data': [2]},
+            {'name': u'6 - 10', 'data': [1]},
+            {'name': None, 'data': [3]},
+        ])
 
     def test_multiple_pollruns_open(self):
         question = self.poll1_question2
