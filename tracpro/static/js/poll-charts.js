@@ -11,7 +11,9 @@ jQuery.fn.extend({
                     title: {
                         text: ""
                     },
-                    categories: data.dates,
+                    xAxis: {
+                        categories: data.dates
+                    },
                     plotOptions: {
                         series: {
                             cursor: "pointer",
