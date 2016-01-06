@@ -1,7 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
 import cgi
-from collections import defaultdict, OrderedDict
+from collections import defaultdict
 import datetime
 from decimal import Decimal
 from itertools import groupby
@@ -13,7 +13,6 @@ from dash.utils import datetime_to_ms
 
 from django.db.models import Count, F
 from django.core.urlresolvers import reverse
-from django.utils.safestring import mark_safe
 
 from .models import Answer, Question, Response
 
@@ -54,45 +53,67 @@ def single_pollrun(pollrun, question, regions):
     return chart_type, render_data(chart_data)
 
 
-def multiple_pollruns_non_numeric(pollruns, question, regions):
-    """Chart data for multiple pollruns of a poll."""
+def multiple_pollruns(pollruns, question, regions):
+    if question.question_type == Question.TYPE_NUMERIC:
+        chart_type = 'numeric'
+        data = multiple_pollruns_numeric(pollruns, question, regions)
 
-    pollrun_dict = OrderedDict()
-    date_list = []
-
-    if question.question_type == Question.TYPE_OPEN:
-        overall_counts = defaultdict(int)
-
-        for pollrun in pollruns:
-            word_counts = pollrun.get_answer_word_counts(question, regions)
-            for word, count in word_counts:
-                overall_counts[word] += count
-
-        sorted_counts = sorted(
-            overall_counts.items(), key=itemgetter(1), reverse=True)
-        pollrun_dict = word_cloud_data(sorted_counts[:50])
-        pollrun_dict = json.dumps(pollrun_dict)
+    elif question.question_type == Question.TYPE_OPEN:
+        chart_type = 'open-ended'
+        data = multiple_pollruns_open(pollruns, question, regions)
 
     elif question.question_type == Question.TYPE_MULTIPLE_CHOICE:
-        answers = Answer.objects.filter(response__pollrun=pollruns, response__is_active=True)
-        answers = answers.exclude(response__status=Response.STATUS_EMPTY)
-        if regions:
-            answers = answers.filter(response__contact__region__in=regions)
+        chart_type = 'multiple-choice'
+        data = multiple_pollruns_multiple_choice(pollruns, question, regions)
+
+    else:
+        chart_type = None
+        data = None
+
+    return chart_type, render_data(data) if data else None
+
+
+def multiple_pollruns_open(pollruns, question, regions):
+    """Chart data for multiple pollruns of a poll."""
+    # {'word1': 50, 'word2': 9, ...}
+    counts = defaultdict(int)
+    for pollrun in pollruns:
+        for word, count in pollrun.get_answer_word_counts(question, regions):
+            counts[word] += count
+
+    if counts:
+        sorted_counts = sorted(counts.items(), key=itemgetter(1), reverse=True)
+        return word_cloud_data(sorted_counts[:50])
+    return None
+
+
+def multiple_pollruns_multiple_choice(pollruns, question, regions):
+    answers = Answer.objects.filter(response__pollrun=pollruns, response__is_active=True)
+    answers = answers.exclude(response__status=Response.STATUS_EMPTY)
+    if regions:
+        answers = answers.filter(response__contact__region__in=regions)
+
+    if answers:
+        # Find the distinct categories for all answers to the question.
         categories = answers.distinct('category')
         categories = categories.order_by('category').values_list('category', flat=True)
 
+        # category: [day_1_value, day_2_value, ...]
+        series = []
         for category in categories:
-            answers_category = answers.filter(category=category)
-            answers_category_list = []
-            for pollrun in pollruns.order_by('conducted_on'):
-                answers_category_count = answers_category.filter(response__pollrun=pollrun).count()
-                answers_category_list.append(answers_category_count)
-            pollrun_dict[category] = answers_category_list
+            category_counts = [answers.filter(category=category, response__pollrun=pollrun).count()
+                               for pollrun in pollruns.order_by('conducted_on')]
+            series.append({'name': category, 'data': category_counts})
 
-        for pollrun in pollruns.order_by('conducted_on'):
-            date_list.append(pollrun.conducted_on.date())
+        # [day_1, day_2, ...]
+        dates = [pollrun.conducted_on.strftime('%Y-%m-%d')
+                 for pollrun in pollruns.order_by('conducted_on')]
 
-    return date_list, pollrun_dict
+        return {
+            'dates': dates,
+            'series': series,
+        }
+    return None
 
 
 def response_rate_calculation(responses, pollrun_list):
@@ -141,7 +162,6 @@ def multiple_pollruns_numeric(pollruns, question, regions):
     """Chart data for multiple pollruns of a poll."""
     responses = Response.objects.filter(pollrun__in=pollruns)
     responses = responses.filter(is_active=True)
-
     if regions:
         responses = responses.filter(contact__region__in=regions)
 
@@ -149,40 +169,40 @@ def multiple_pollruns_numeric(pollruns, question, regions):
     answers = answers.select_related('response')
     answers = answers.order_by('response__created_on')
 
-    # Calculate/retrieve the list of sums, list of averages,
-    # list of pollrun dates, and list of pollrun id's
-    # per pollrun date
-    (answer_sum_list, answer_average_list,
-        date_list, pollrun_list) = answers.numeric_group_by_date()
+    if answers:
+        # Calculate/retrieve the list of sums, list of averages,
+        # list of pollrun dates, and list of pollrun id's
+        # per pollrun date
+        (answer_sum_list, answer_average_list,
+            date_list, pollrun_list) = answers.numeric_group_by_date()
 
-    # Calculate the response rate per day
-    response_rate_list = list(response_rate_calculation(responses, pollrun_list))
+        # Calculate the response rate on each day
+        response_rate_list = response_rate_calculation(responses, pollrun_list)
 
-    # Calculate the mean, standard deviation and average response rate to display
-    answer_mean = round(numpy.mean(answer_average_list), 2)
-    answer_stdev = round(numpy.std(answer_average_list), 2)
-    response_rate_average = round(numpy.mean(response_rate_list), 2)
+        # Create dict lists for the three datasets for data point/url
+        answer_sum_dict_list = []
+        answer_average_dict_list = []
+        response_rate_dict_list = []
+        for z in zip(answer_sum_list, answer_average_list, response_rate_list, pollrun_list):
+            pollrun_link_read = reverse('polls.pollrun_read', args=[str(z[3])])
+            pollrun_link_participation = reverse('polls.pollrun_participation', args=[str(z[3])])
+            answer_sum_dict_list.append(
+                {str('y'): z[0], str('url'): pollrun_link_read})
+            answer_average_dict_list.append(
+                {str('y'): z[1], str('url'): pollrun_link_read})
+            response_rate_dict_list.append(
+                {str('y'): z[2], str('url'): pollrun_link_participation})
 
-    # Create dict lists for the three datasets for data point/url
-    answer_sum_dict_list = []
-    answer_average_dict_list = []
-    response_rate_dict_list = []
-    for z in zip(answer_sum_list, answer_average_list, response_rate_list, pollrun_list):
-        pollrun_link_read = reverse('polls.pollrun_read', args=[str(z[3])])
-        pollrun_link_participation = reverse('polls.pollrun_participation', args=[str(z[3])])
-        answer_sum_dict_list.append(
-            {str('y'): z[0], str('url'): pollrun_link_read})
-        answer_average_dict_list.append(
-            {str('y'): z[1], str('url'): pollrun_link_read})
-        response_rate_dict_list.append(
-            {str('y'): z[2], str('url'): pollrun_link_participation})
-
-    answer_sum_dict_list = json.dumps(answer_sum_dict_list)
-    answer_average_dict_list = json.dumps(answer_average_dict_list)
-    response_rate_dict_list = json.dumps(response_rate_dict_list)
-
-    return (answer_sum_dict_list, answer_average_dict_list, response_rate_dict_list, date_list,
-            answer_mean, answer_stdev, response_rate_average, pollrun_list)
+        question.answer_mean = round(numpy.mean(answer_average_list), 2)
+        question.answer_stdev = round(numpy.std(answer_average_list), 2)
+        question.response_rate_average = round(numpy.mean(response_rate_list), 2)
+        return {
+            'dates': [d.strftime('%Y-%m-%d') for d in date_list],
+            'sum': answer_sum_dict_list,
+            'average': answer_average_dict_list,
+            'response-rate': response_rate_dict_list,
+        }
+    return None
 
 
 def word_cloud_data(word_counts):
@@ -203,4 +223,4 @@ def column_chart_data(range_counts):
 
 
 def render_data(chart_data):
-    return mark_safe(json.dumps(chart_data, cls=ChartJsonEncoder))
+    return json.dumps(chart_data, cls=ChartJsonEncoder)

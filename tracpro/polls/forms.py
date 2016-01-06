@@ -1,5 +1,10 @@
+import datetime
+
 from django import forms
+from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
+
+from dash.utils import get_month_range
 
 from . import models
 
@@ -46,3 +51,86 @@ class ActivePollsForm(forms.Form):
     def save(self):
         uuids = self.cleaned_data['polls'].values_list('flow_uuid', flat=True)
         models.Poll.objects.set_active_for_org(self.org, uuids)
+
+
+class ChartFilterForm(forms.Form):
+    NUMERIC_DATA_CHOICES = (
+        ('', ''),
+        ('sum', _("Sum of responses")),
+        ('average', _("Average of responses")),
+        ('response-rate', _("Response rate")),
+    )
+
+    DATE_WINDOW_CHOICES = (
+        ('', ''),
+        ('month', _("Current month")),
+        ('30', _("Last 30 days")),
+        ('60', _("Last 60 days")),
+        ('90', _("Last 90 days")),
+        ('other', _("Custom range...")),
+    )
+
+    data_type = forms.ChoiceField(
+        label=_("Numeric display"),
+        help_text=_("How responses to numeric questions will be charted."),
+        choices=NUMERIC_DATA_CHOICES)
+    date_range = forms.ChoiceField(
+        choices=DATE_WINDOW_CHOICES)
+    start_date = forms.DateTimeField(
+        required=False,
+        widget=forms.widgets.DateInput(attrs={'class': 'datepicker'}))
+    end_date = forms.DateTimeField(
+        required=False,
+        widget=forms.widgets.DateInput(attrs={'class': 'datepicker'}))
+
+    def __init__(self, *args, **kwargs):
+        start_date, end_date = get_month_range()
+        kwargs.setdefault('initial', {
+            'data_type': 'sum',
+            'date_range': 'month',
+            'start_date': start_date,
+            'end_date': end_date,
+        })
+        super(ChartFilterForm, self).__init__(*args, **kwargs)
+
+    def clean(self):
+        window = self.cleaned_data.get('date_range')
+        if window == 'other':
+            # User must provide specific start or end dates.
+            start_date = self.cleaned_data.get('start_date')
+            end_date = self.cleaned_data.get('end_date')
+            if not (start_date and end_date):
+                self.add_error('start_date', _("Please select a start date."))
+                self.add_error('end_date', _("Please select an end date."))
+            elif start_date > end_date:
+                self.add_error('end_date', _("End date must be after start date."))
+        else:
+            # Throw out user-submitted dates.
+            self.cleaned_data.pop('start_date', None)
+            self.cleaned_data.pop('end_date', None)
+            self.data.pop('start_date', None)
+            self.data.pop('end_date', None)
+            self._errors.pop('start_date', None)
+            self._errors.pop('end_date', None)
+
+            # Calculate correct date window.
+            if window:
+                if window == 'month':
+                    start_date, end_date = get_month_range()
+                else:
+                    end_date = timezone.now()
+                    start_date = end_date - datetime.timedelta(days=int(window))
+                self.cleaned_data['start_date'] = start_date
+                self.cleaned_data['end_date'] = end_date
+                self.data['start_date'] = start_date
+                self.data['end_date'] = end_date
+
+    def get_value(self, field):
+        """Retrieve the validated field value, or its initial value."""
+        if not self.is_bound:
+            value = self.initial[field]
+            return value() if callable(value) else value
+        elif self.is_valid():
+            return self.cleaned_data[field]
+        else:
+            raise ValueError("Cannot get value from an invalid form.")

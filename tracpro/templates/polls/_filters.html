@@ -1,0 +1,35 @@
+{% load poll_tags %}
+
+<div class="pull-right buttons">
+  <button type="button" class="btn btn-primary" id="toggle-filters"
+          data-toggle="collapse" data-target="#filters">
+    {% if form.errors %}Hide{% else %}Show{% endif %} filters...
+  </button>
+</div>
+<div class="clearfix"></div>
+
+<div class="collapse{% if form.errors %} in{% endif %}" id="filters">
+  <form class="filter-form form-horizontal" method="GET">
+    {% if form.non_field_errors %}
+      {% for error in form.non_field_errors %}
+        <div class="alert alert-danger">{{ error }}</div>
+      {% endfor %}
+    {% elif form.errors %}
+      <div class="alert alert-danger">Please fix the errors below.</div>
+    {% endif %}
+
+    {% fieldset filter_form "data_type" %}
+
+    {% fieldset filter_form "date_range" %}
+
+    {% if form.start_date.errors or form.end_date.errors %}
+      {% fieldset filter_form "start_date" "end_date" fieldset_id="filter-dates" label_width=3 %}
+    {% else %}
+      {% fieldset filter_form "start_date" "end_date" fieldset_class="hidden" fieldset_id="filter-dates" label_width=3 %}
+    {% endif %}
+
+    <div class="well">
+      <button type="submit" class="btn btn-primary">Update</button>
+    </div>
+  </form>
+</div>

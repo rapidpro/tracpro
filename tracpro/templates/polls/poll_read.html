@@ -1,229 +1,80 @@
 {% extends "smartmin/base.html" %}
-{% load smartmin i18n %}
+
+{% load i18n %}
+{% load static %}
 
 {% block pre-content %}
-
   {% include 'polls/poll_header.html' with poll=object %}
+{% endblock pre-content %}
 
-{% endblock %}
+{% block extra-style %}
+  {{ block.super }}
+  <link rel="stylesheet" type="text/css"
+        href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/themes/smoothness/jquery-ui.css">
+{% endblock extra-style %}
+
+{% block extra-script %}
+  {{ block.super }}
+  <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
+  <script src="{% static "js/poll-charts.js" %}"></script>
+{% endblock extra-script %}
 
 {% block content %}
-  <div>
-    {% if not request.region %}
-      {% trans "Charts only include data from non-regional poll runs" %}
+  {% include "polls/_filters.html" with form=filter_form %}
 
-    {% endif %}
-    <div class='pull-away'>
-      <form class='form-inline' method='get'>
-        <label class='control-label' for='window-select'></label>
-        {% trans "Show" %}
-        <select id='value-type-select' class='form-control' name='value_type'>
-          {% for value_type in value_type_options %}
-            {% if value_type == value_type_selected %}
-              <option selected='selected' value='{{ value_type }}'>{{ value_type }}</option>
-            {% else %}
-              <option value='{{ value_type }}'>{{ value_type }}</option>
-            {% endif %}
-          {% endfor %}
-        </select>
-        <select id='window-select' class='form-control' name='window'>
-          {% for win in window_options %}
-            {% if win == window %}
-              <option selected='selected' value='{{ win.name }}'>
-                {{ win.label }}
-              </option>
-            {% else %}
-              <option value='{{ win.name }}'>
-                {{ win.label }}
-              </option>
-            {% endif %}
-          {% endfor %}
-        </select>
-      </form>
-    </div>
-  </div>
-  {% for question in questions %}
-    <h3>
-      {{ forloop.counter }}. {{ question.name }}:
-      {% if question.question_type == question.TYPE_NUMERIC %}
-        <span id="question-{{ question.pk }}-heading-value-type">{{ value_type_selected|title }}</span>
-      {% elif question.question_type == question.TYPE_MULTIPLE_CHOICE %}
-        <span>Categorical</span>
-      {% elif question.TYPE_OPEN %}
-        <span>Open-Ended</span>
+  {% if question_data and not request.region %}
+    <p>
+      {% blocktrans %}
+        Charts only include data from non-regional poll runs.
+        To see regional poll runs, choose a region from the dropdown in the navbar.
+      {% endblocktrans %}
+    </p>
+  {% endif %}
+
+  {% for question, chart_type, data in question_data %}
+    <div class="poll-question">
+      <h3>
+        {{ forloop.counter }}. {{ question.name }}:
+        {% if question.question_type == question.TYPE_NUMERIC %}
+          <span class="data-type"></span>
+        {% elif question.question_type == question.TYPE_OPEN %}
+          Open-ended
+        {% elif question.question_type == question.TYPE_MULTIPLE_CHOICE %}
+          Categorical
+        {% endif %}
+      </h3>
+
+      {% if data %}
+        <div class="chart-{{ chart_type }}"
+             data-chart='{{ data }}'
+             data-name="{{ question.name }}">
+        </div>
+
+        {% if question.question_type == question.TYPE_NUMERIC %}
+          <table class="table table-striped">
+            <tbody>
+              <tr class="read">
+                <td class="read-half read-label">Mean</td>
+                <td class="read-half read-value">{{ question.answer_mean }}</td>
+              </tr>
+              <tr class="read">
+                <td class="read-half read-label">Standard Deviation</td>
+                <td class="read-half read-value">{{ question.answer_stdev }}</td>
+              </tr>
+              <tr class="read">
+                <td class="read-half read-label">Response Rate Average</td>
+                <td class="read-half read-value">{{ question.response_rate_average }}%</td>
+              </tr>
+            </tbody>
+          </table>
+        {% endif %}
+      {% else %}
+        <div class="chart-no-data">
+          No data to display for this time period.
+        </div>
       {% endif %}
-    </h3>
-
-    {% if question.question_type == question.TYPE_NUMERIC and question.date_list %}
-      <div id='chart_{{ question.pk }}' class='chart' data-window-max='{{ window_max }}' data-window-min='{{ window_min }}' ></div>
-
-      <script>
-        $(function () {
-          $('#chart_{{ question.pk }}').highcharts({
-              title: {
-                  text: ''
-              },
-              xAxis: {
-                categories: [
-                            {% for date in question.date_list %}
-                              '{{ date }}'{% if not forloop.last %},{% endif %}
-                            {% endfor %}
-                            ]
-              },
-              plotOptions: {
-                series: {
-                    cursor: 'pointer',
-                    point: {
-                        events: {
-                            click: function () {
-                                location.href = this.options.url;
-                            }
-                        }
-                    }
-                }
-            },
-              series: [
-                  {
-                  type: 'area',
-                  name: '{{ question.name }}',
-                  {% if value_type_selected|lower ==  "sum" %}
-                    data: {{ question.answer_sum_dict_list|safe }}
-                  {% elif value_type_selected|lower ==  "average" %}
-                    data: {{ question.answer_average_dict_list|safe }}
-                  {% elif value_type_selected|lower ==  "response rate" %}
-                    data: {{ question.response_rate_dict_list|safe }}
-                  {% endif %}
-                }
-              ]
-          });
-      });
-      </script>
-
-      <table class="table table-striped">
-        <tbody>
-          <tr class="read">
-            <td class="read-half read-label">Mean</td>
-            <td class="read-half read-value">{{ question.answer_mean }}</td>
-          </tr>
-          <tr class="read">
-            <td class="read-half read-label">Standard Deviation</td>
-            <td class="read-half read-value">{{ question.answer_stdev }}</td>
-          </tr>
-          <tr class="read">
-            <td class="read-half read-label">Response Rate Average</td>
-            <td class="read-half read-value">{{ question.response_rate_average }}%</td>
-          </tr>
-        </tbody>
-      </table>
-
-    {% elif question.question_type == question.TYPE_MULTIPLE_CHOICE and question.pollrun_dict %}
-      <div id='chart_{{ question.pk }}' class='chart' data-window-max='{{ window_max }}' data-window-min='{{ window_min }}' ></div>
-      <script type='text/javascript'>
-        $(function () {
-          $('#chart_{{ question.pk }}').highcharts({
-              chart: {
-                  type: 'area'
-              },
-              title: {
-                  text: ''
-              },
-              xAxis: {
-                  categories: [
-                            {% for date in question.date_list %}
-                              '{{ date }}'{% if not forloop.last %},{% endif %}
-                            {% endfor %}
-                            ],
-                  tickmarkPlacement: 'on',
-                  title: {
-                      enabled: false
-                  }
-              },
-              yAxis: {
-                  title: {
-                      text: 'Percent'
-                  }
-              },
-              tooltip: {
-                  pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.percentage:.1f}%</b> ({point.y:,.0f})<br/>',
-                  shared: true
-              },
-              plotOptions: {
-                  area: {
-                      stacking: 'percent',
-                      lineColor: '#ffffff',
-                      lineWidth: 1,
-                      marker: {
-                          lineWidth: 1,
-                          lineColor: '#ffffff'
-                      }
-                  }
-              },
-              series:
-              [
-              {% for category, count_list in question.pollrun_dict.items %}
-              {
-                name: '{{ category }}',
-                data: {{ count_list }}
-              },
-              {% endfor %}
-              ]
-          });
-        });
-      </script>
-
-    {% elif question.question_type == question.TYPE_OPEN and question.pollrun_dict|length > 2 %}
-      <!-- word cloud chart -->
-      <div id='chart_{{ question.pk }}' class='chart' ></div>
-      <script type="text/javascript">
-        var words = {{ question.pollrun_dict|safe }};
-        $('#chart_{{ question.pk }}').jQCloud(words);
-      </script>
-
-    {% else %}
-      <div class="chart-no-data">No data for this date window.</div>
-    {% endif %}
+    </div>
+  {% empty %}
+    <div>There are no questions to display.</div>
   {% endfor %}
-
-<script>
-    $('#window-select').on('change', function() {
-      $('.form-inline').submit();
-    });
-    $('#value-type-select').on('change', function() {
-      var valueType = $(this).val().toLowerCase();
-      if (valueType == "sum") {
-        {% for question in questions %}
-          {% if question.question_type = question.TYPE_NUMERIC and question.date_list %}
-            var chart = $('#chart_{{ question.pk }}').highcharts();
-            chart.series[0].setData({{ question.answer_sum_dict_list|safe }});
-          {% endif %}
-          $("#question-{{ question.pk }}-heading-value-type").html("Sum");
-        {% endfor %}
-      }
-      else if (valueType == "average") {
-        {% for question in questions %}
-          {% if question.question_type = question.TYPE_NUMERIC and question.date_list %}
-            var chart = $('#chart_{{ question.pk }}').highcharts();
-            chart.series[0].setData({{ question.answer_average_dict_list|safe }});
-          {% endif %}
-          $("#question-{{ question.pk }}-heading-value-type").html("Average");
-        {% endfor %}
-      }
-      else if (valueType == "response rate") {
-        {% for question in questions %}
-          {% if question.question_type = question.TYPE_NUMERIC and question.date_list %}
-            var chart = $('#chart_{{ question.pk }}').highcharts();
-            chart.series[0].setData({{ question.response_rate_dict_list|safe }});
-          {% endif %}
-          $("#question-{{ question.pk }}-heading-value-type").html("Response Rate");
-        {% endfor %}
-      }
-    })
-
-    // Run this once on initial page load,
-    // in the case that the user has hit the Back button.
-    $(function () {
-      $('#value-type-select').change();
-    });
-
-</script>
-{% endblock %}
+{% endblock content %}

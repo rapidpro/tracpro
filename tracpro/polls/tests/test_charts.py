@@ -1,5 +1,4 @@
-from collections import OrderedDict
-
+from django.core.urlresolvers import reverse
 from django.utils import timezone
 
 from temba_client.types import Run
@@ -8,7 +7,7 @@ from tracpro.test import factories
 from tracpro.test.cases import TracProDataTest
 
 from ..models import PollRun, Question, Response
-from ..charts import multiple_pollruns_non_numeric, multiple_pollruns_numeric
+from .. import charts
 
 
 class PollChartTest(TracProDataTest):
@@ -61,39 +60,28 @@ class PollChartTest(TracProDataTest):
 
         self.regions = []
 
-    def test_multiple_pollruns_non_numeric(self):
-
-        # Test TYPE_MULTIPLE_CHOICE data from question 1
+    def test_multiple_pollruns_multiple_choice(self):
         question = self.poll1_question1
-
-        # TYPE_MULTIPLE_CHOICE should return
-        # A list with single date (today) for the single pollrun
-        # An ordered dictionary
-        date_list, pollrun_dict = multiple_pollruns_non_numeric(
+        data = charts.multiple_pollruns_multiple_choice(
             self.pollruns, question, self.regions)
 
         self.assertEqual(
-            date_list,
-            [timezone.now().date()])
-        self.assertEqual(
-            pollrun_dict,
-            OrderedDict([(u'1 - 5', [2]), (u'6 - 10', [1]), (None, [3])]))
+            data['dates'],
+            [self.pollrun.conducted_on.strftime('%Y-%m-%d')])
+        self.assertEqual(data['series'], [
+            {'name': u'1 - 5', 'data': [2]},
+            {'name': u'6 - 10', 'data': [1]},
+            {'name': None, 'data': [3]},
+        ])
 
-        # Test TYPE_OPEN data from question 2
+    def test_multiple_pollruns_open(self):
         question = self.poll1_question2
-
-        # TYPE_OPEN should return
-        # An empty date_list (no dates associated with wordcloud data)
-        # A json string with words and weights
-        date_list, pollrun_dict = multiple_pollruns_non_numeric(
+        data = charts.multiple_pollruns_open(
             self.pollruns, question, self.regions)
-
-        self.assertEqual(
-            len(date_list),
-            0)
-        self.assertEqual(
-            pollrun_dict,
-            '[{"text": "rainy", "weight": 3}, {"text": "sunny", "weight": 2}]')
+        self.assertEqual(data, [
+            {"text": "rainy", "weight": 3},
+            {"text": "sunny", "weight": 2},
+        ])
 
     def test_multiple_pollruns_numeric(self):
         # Reset question 1 type to NUMERIC
@@ -101,71 +89,55 @@ class PollChartTest(TracProDataTest):
 
         self.poll1_question1.question_type = Question.TYPE_NUMERIC
         self.poll1_question1.save()
-        (answer_sum_dict_list,
-         answer_average_dict_list,
-         response_rate_dict_list,
-         date_list,
-         answer_mean,
-         answer_stdev,
-         response_rate_average,
-         pollrun_list) = multiple_pollruns_numeric(
+        data = charts.multiple_pollruns_numeric(
             self.pollruns, self.poll1_question1, self.regions)
 
         # Single item for single date: sum = 4 + 3 + 8 = 15
         # URL points to pollrun detail page for this date
         self.assertEqual(
-            answer_sum_dict_list,
-            '[{"y": 15.0, "url": "/pollrun/read/' + str(self.pollrun.pk) + '/"}]')
+            data['sum'],
+            [{"y": 15.0, "url": reverse('polls.pollrun_read', args=[self.pollrun.pk])}])
 
         # Single item for single date: average = (4 + 3 + 8)/3 = 5
         # URL points to pollrun detail page for this date
         self.assertEqual(
-            answer_average_dict_list,
-            '[{"y": 5.0, "url": "/pollrun/read/' + str(self.pollrun.pk) + '/"}]')
+            data['average'],
+            [{"y": 5.0, "url": reverse('polls.pollrun_read', args=[self.pollrun.pk])}])
 
         # Set all responses to complete in setUp()
         # Response rate = 100%
         # URL points to participation tab
         self.assertEqual(
-            response_rate_dict_list,
-            '[{"y": 100.0, "url": "/pollrun/participation/' + str(self.pollrun.pk) + '/"}]')
+            data['response-rate'],
+            [{"y": 100.0, "url": reverse('polls.pollrun_participation', args=[self.pollrun.pk])}])
 
         # Today's date
         self.assertEqual(
-            date_list,
-            [timezone.now().date()])
+            data['dates'],
+            [self.pollrun.conducted_on.strftime('%Y-%m-%d')])
 
         # Mean, Standard Dev, response rate avg, pollrun list
         self.assertEqual(
-            answer_mean,
+            self.poll1_question1.answer_mean,
             5.0)
         self.assertEqual(
-            answer_stdev,
+            self.poll1_question1.answer_stdev,
             0.0)
         self.assertEqual(
-            response_rate_average,
+            self.poll1_question1.response_rate_average,
             100.0)
-        self.assertEqual(
-            pollrun_list,
-            [self.pollrun.pk])
 
         # Set one of the responses to partial, changing the response rate
         Response.objects.filter(contact=self.contact1).update(status=Response.STATUS_PARTIAL)
-        (answer_sum_dict_list,
-         answer_average_dict_list,
-         response_rate_dict_list,
-         date_list,
-         answer_mean,
-         answer_stdev,
-         response_rate_average,
-         pollrun_list) = multiple_pollruns_numeric(
+
+        data = charts.multiple_pollruns_numeric(
             self.pollruns, self.poll1_question1, self.regions)
 
         # 2 complete responses, 1 partial response
         # Response rate = 66.67%
         self.assertEqual(
-            response_rate_dict_list,
-            '[{"y": 66.67, "url": "/pollrun/participation/' + str(self.pollrun.pk) + '/"}]')
+            data['response-rate'],
+            [{"y": 66.67, "url": reverse('polls.pollrun_participation', args=[self.pollrun.pk])}])
         self.assertEqual(
-            response_rate_average,
+            self.poll1_question1.response_rate_average,
             66.67)

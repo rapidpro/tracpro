@@ -5,7 +5,7 @@ from collections import OrderedDict
 import unicodecsv
 
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
-from dash.utils import datetime_to_ms, get_obj_cacheable
+from dash.utils import get_obj_cacheable
 
 from django.conf import settings
 from django.contrib import messages
@@ -22,7 +22,7 @@ from tracpro.contacts.models import Contact
 from tracpro.groups.models import Group, Region
 
 from . import charts, forms, tasks
-from .models import Poll, Question, PollRun, Response, Window
+from .models import Poll, Question, PollRun, Response
 
 
 class PollCRUDL(smartmin.SmartCRUDL):
@@ -37,50 +37,42 @@ class PollCRUDL(smartmin.SmartCRUDL):
 
     class Read(PollMixin, OrgObjPermsMixin, smartmin.SmartReadView):
 
-        def get_context_data(self, **kwargs):
-            context = super(PollCRUDL.Read, self).get_context_data(**kwargs)
-            questions = self.object.questions.active()
-            pollruns = self.object.pollruns.active().by_region(
-                self.request.region,
-                self.request.include_subregions)
+        def get(self, request, *args, **kwargs):
+            self.object = self.get_object()
+            self.filter_form = self.get_form()
+            return self.render_to_response(self.get_context_data(
+                object=self.object,
+                filter_form=self.filter_form,
+                question_data=self.get_question_data(),
+            ))
 
-            # if we're viewing "All Regions" don't include regional only pollruns
-            if not self.request.region:
+        def get_form(self):
+            data = {k: v for k, v in self.request.GET.items()
+                    if k in forms.ChartFilterForm.base_fields}
+            return forms.ChartFilterForm(data=data or None)
+
+        def get_question_data(self):
+            # Do not display any data if invalid data was submitted.
+            if self.filter_form.is_bound and not self.filter_form.is_valid():
+                return None
+
+            pollruns = self.object.pollruns.active().order_by('conducted_on')
+            pollruns = pollruns.filter(
+                conducted_on__gte=self.filter_form.get_value('start_date'),
+                conducted_on__lt=self.filter_form.get_value('end_date'))
+            if self.request.region:
+                pollruns = pollruns.by_region(
+                    self.request.region,
+                    self.request.include_subregions)
+            else:
                 pollruns = pollruns.universal()
 
-            window = self.request.POST.get('window', self.request.GET.get('window', None))
-            window = Window[window] if window else Window.last_30_days
-            window_min, window_max = window.to_range()
-
-            value_type = self.request.POST.get('value_type', self.request.GET.get('value_type', 'sum'))
-
-            pollruns = pollruns.filter(conducted_on__gte=window_min, conducted_on__lt=window_max)
-            pollruns = pollruns.order_by('conducted_on')
-
-            for question in questions:
-                if question.question_type == Question.TYPE_NUMERIC:
-                    (question.answer_sum_dict_list,
-                     question.answer_average_dict_list,
-                     question.response_rate_dict_list,
-                     question.date_list,
-                     question.answer_mean,
-                     question.answer_stdev,
-                     question.response_rate_average,
-                     question.pollrun_list) = charts.multiple_pollruns_numeric(
-                        pollruns, question, self.request.data_regions)
-                else:
-                    question.date_list, question.pollrun_dict = charts.multiple_pollruns_non_numeric(
-                        pollruns, question, self.request.data_regions)
-
-            context['window'] = window
-            context['window_min'] = datetime_to_ms(window_min)
-            context['window_max'] = datetime_to_ms(window_max)
-            context['window_options'] = Window.__members__.values()
-            context['value_type_selected'] = value_type
-            context['value_type_options'] = ['Sum', 'Average', 'Response Rate']
-            context['questions'] = questions
-
-            return context
+            question_data = []
+            for question in self.object.questions.active():
+                chart_type, data = charts.multiple_pollruns(
+                    pollruns, question, self.request.data_regions)
+                question_data.append((question, chart_type, data))
+            return question_data
 
     class Update(PollMixin, OrgObjPermsMixin, smartmin.SmartUpdateView):
         form_class = forms.PollForm

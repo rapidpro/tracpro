@@ -106,7 +106,10 @@ footer {
 /**
  * Charts
  */
-.chart {
+.chart,
+.chart-numeric,
+.chart-multiple-choice,
+.chart-open-ended {
   min-width: 320px;
   max-width: 700px;
   height: 320px;
@@ -194,6 +197,33 @@ footer {
                 display: inline-block;
                 width: 0;  /* exact width set by Javascript */
             }
+        }
+    }
+}
+
+#filters {
+    margin-top: 10px;
+    margin-bottom: 50px;
+
+    .filter-form {
+        width: 50%;
+
+        input, textarea, select {
+            &.form-control {
+                width: 100%;
+            }
+        }
+        .help-block {
+            margin-bottom: 0;
+        }
+        .row {
+            margin: 0;
+        }
+        .error {
+            &:extend(.help-block);
+
+            color: #a94442;
+            font-weight: bold;
         }
     }
 }
