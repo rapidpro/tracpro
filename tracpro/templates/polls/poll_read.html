@@ -20,7 +20,7 @@
 {% block content %}
   {% include "polls/_filters.html" with form=filter_form %}
 
-  {% if questions and not request.region %}
+  {% if question_data and not request.region %}
     <p>
       {% blocktrans %}
         Charts only include data from non-regional poll runs.
@@ -29,7 +29,7 @@
     </p>
   {% endif %}
 
-  {% for question, chart_type, data in questions %}
+  {% for question, chart_type, data in question_data %}
     <div class="poll-question">
       <h3>
         {{ forloop.counter }}. {{ question.name }}:
@@ -72,5 +72,7 @@
         </div>
       {% endif %}
     </div>
+  {% empty %}
+    <div>There are no questions to display.</div>
   {% endfor %}
 {% endblock content %}

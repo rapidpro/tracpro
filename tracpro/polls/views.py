@@ -43,7 +43,7 @@ class PollCRUDL(smartmin.SmartCRUDL):
             return self.render_to_response(self.get_context_data(
                 object=self.object,
                 filter_form=self.filter_form,
-                questions=self.get_question_data(),
+                question_data=self.get_question_data(),
             ))
 
         def get_form(self):
@@ -67,8 +67,12 @@ class PollCRUDL(smartmin.SmartCRUDL):
             else:
                 pollruns = pollruns.universal()
 
-            return [(q,) + charts.multiple_pollruns(pollruns, q, self.request.data_regions)
-                    for q in self.object.questions.active()]
+            question_data = []
+            for question in self.object.questions.active():
+                chart_type, data = charts.multiple_pollruns(
+                    pollruns, question, self.request.data_regions)
+                question_data.append((question, chart_type, data))
+            return question_data
 
     class Update(PollMixin, OrgObjPermsMixin, smartmin.SmartUpdateView):
         form_class = forms.PollForm
