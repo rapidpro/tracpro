@@ -39,16 +39,20 @@ class PollCRUDL(smartmin.SmartCRUDL):
 
         def get(self, request, *args, **kwargs):
             self.object = self.get_object()
-            self.filter_form = forms.ChartFilterForm(data=request.GET or None)
-            return self.render_to_response(self.get_context_data())
+            self.filter_form = self.get_form()
+            return self.render_to_response(self.get_context_data(
+                object=self.object,
+                filter_form=self.filter_form,
+                questions=self.get_question_data(),
+            ))
 
-        def get_context_data(self, **kwargs):
-            kwargs.setdefault('object', self.object)
-            kwargs.setdefault('filter_form', self.filter_form)
-            kwargs.setdefault('questions', self.get_questions())
-            return super(PollCRUDL.Read, self).get_context_data(**kwargs)
+        def get_form(self):
+            data = {k: v for k, v in self.request.GET.items()
+                    if k in forms.ChartFilterForm.base_fields}
+            return forms.ChartFilterForm(data=data or None)
 
-        def get_questions(self):
+        def get_question_data(self):
+            # Do not display any data if invalid data was submitted.
             if self.filter_form.is_bound and not self.filter_form.is_valid():
                 return None
 

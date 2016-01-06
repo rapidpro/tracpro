@@ -92,7 +92,6 @@ class ChartFilterForm(forms.Form):
             'end_date': end_date,
         })
         super(ChartFilterForm, self).__init__(*args, **kwargs)
-        self.data = {k: self.data[k] for k in self.fields if k in self.data}
 
     def clean(self):
         window = self.cleaned_data.get('date_range')

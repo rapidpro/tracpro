@@ -14,7 +14,7 @@
 
 {% block extra-script %}
   <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
-  <script src="{% static "js/filters.js" %}"></script>
+  <script src="{% static "js/poll-charts.js" %}"></script>
 {% endblock extra-script %}
 
 {% block content %}
@@ -42,28 +42,34 @@
         {% endif %}
       </h3>
 
-      <div class="chart-{{ chart_type }}"
-           data-chart='{{ data }}'
-           data-name="{{ question.name }}">
-      </div>
+      {% if data %}
+        <div class="chart-{{ chart_type }}"
+             data-chart='{{ data }}'
+             data-name="{{ question.name }}">
+        </div>
 
-      {% if question.question_type == question.TYPE_NUMERIC %}
-        <table class="table table-striped">
-          <tbody>
-            <tr class="read">
-              <td class="read-half read-label">Mean</td>
-              <td class="read-half read-value">{{ question.answer_mean }}</td>
-            </tr>
-            <tr class="read">
-              <td class="read-half read-label">Standard Deviation</td>
-              <td class="read-half read-value">{{ question.answer_stdev }}</td>
-            </tr>
-            <tr class="read">
-              <td class="read-half read-label">Response Rate Average</td>
-              <td class="read-half read-value">{{ question.response_rate_average }}%</td>
-            </tr>
-          </tbody>
-        </table>
+        {% if question.question_type == question.TYPE_NUMERIC %}
+          <table class="table table-striped">
+            <tbody>
+              <tr class="read">
+                <td class="read-half read-label">Mean</td>
+                <td class="read-half read-value">{{ question.answer_mean }}</td>
+              </tr>
+              <tr class="read">
+                <td class="read-half read-label">Standard Deviation</td>
+                <td class="read-half read-value">{{ question.answer_stdev }}</td>
+              </tr>
+              <tr class="read">
+                <td class="read-half read-label">Response Rate Average</td>
+                <td class="read-half read-value">{{ question.response_rate_average }}%</td>
+              </tr>
+            </tbody>
+          </table>
+        {% endif %}
+      {% else %}
+        <div class="chart-no-data">
+          No data to display for this time period.
+        </div>
       {% endif %}
     </div>
   {% endfor %}

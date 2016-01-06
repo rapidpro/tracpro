@@ -11,7 +11,7 @@ jQuery.fn.extend({
                     title: {
                         text: ""
                     },
-                    categories: data.categories,
+                    categories: data.dates,
                     plotOptions: {
                         series: {
                             cursor: "pointer",
@@ -40,8 +40,7 @@ jQuery.fn.extend({
     chart_open_ended: function() {
         $(this).each(function(i, item) {
             var chart = $(item);
-            data = chart.data('chart');
-            chart.jQCloud(data.words)
+            chart.jQCloud(chart.data('chart'));
         });
     },
     chart_multiple_choice: function() {
@@ -56,7 +55,7 @@ jQuery.fn.extend({
                     text: ''
                 },
                 xAxis: {
-                    categories: data.categories,
+                    categories: data.dates,
                     tickmarkPlacement: 'on',
                     title: {
                         enabled: false
