@@ -1,7 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
 import cgi
-from collections import defaultdict, OrderedDict
+from collections import defaultdict
 import datetime
 from decimal import Decimal
 from itertools import groupby
@@ -100,10 +100,11 @@ def multiple_pollruns_multiple_choice(pollruns, question, regions):
         categories = categories.order_by('category').values_list('category', flat=True)
 
         # category: [day_1_value, day_2_value, ...]
-        series = OrderedDict()
+        series = []
         for category in categories:
-            series[category] = [answers.filter(category=category, response__pollrun=pollrun).count()
-                                for pollrun in pollruns.order_by('conducted_on')]
+            category_counts = [answers.filter(category=category, response__pollrun=pollrun).count()
+                               for pollrun in pollruns.order_by('conducted_on')]
+            series.append({'name': category, 'data': category_counts})
 
         # [day_1, day_2, ...]
         dates = [pollrun.conducted_on.strftime('%Y-%m-%d')
