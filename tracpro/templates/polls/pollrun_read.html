@@ -17,7 +17,7 @@
          data-question-id="{{ question.pk }}"
          dir="ltr"></div>
     <script type='text/javascript'>
-      var chart_{{ question.pk }}_data = {{ question.chart_data }};
+      var chart_{{ question.pk }}_data = {{ question.chart_data|safe }};
     </script>
   {% endfor %}
 {% endblock content %}

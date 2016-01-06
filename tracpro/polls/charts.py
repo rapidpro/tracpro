@@ -13,7 +13,6 @@ from dash.utils import datetime_to_ms
 
 from django.db.models import Count, F
 from django.core.urlresolvers import reverse
-from django.utils.safestring import mark_safe
 
 from .models import Answer, Question, Response
 
@@ -224,4 +223,4 @@ def column_chart_data(range_counts):
 
 
 def render_data(chart_data):
-    return mark_safe(json.dumps(chart_data, cls=ChartJsonEncoder))
+    return json.dumps(chart_data, cls=ChartJsonEncoder)
