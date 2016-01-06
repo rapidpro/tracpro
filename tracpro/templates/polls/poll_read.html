@@ -8,11 +8,13 @@
 {% endblock pre-content %}
 
 {% block extra-style %}
+  {{ block.super }}
   <link rel="stylesheet" type="text/css"
         href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/themes/smoothness/jquery-ui.css">
 {% endblock extra-style %}
 
 {% block extra-script %}
+  {{ block.super }}
   <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
   <script src="{% static "js/poll-charts.js" %}"></script>
 {% endblock extra-script %}
