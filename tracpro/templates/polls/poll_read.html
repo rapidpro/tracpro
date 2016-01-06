@@ -29,44 +29,41 @@
     </p>
   {% endif %}
 
-  {% for question, data in questions %}
+  {% for question, chart_type, data in questions %}
     <div class="poll-question">
       <h3>
         {{ forloop.counter }}. {{ question.name }}:
-        <span class="data-type"></span>
+        {% if question.question_type == question.TYPE_NUMERIC %}
+          <span class="data-type"></span>
+        {% elif question.question_type == question.TYPE_OPEN %}
+          Open-ended
+        {% elif question.question_type == question.TYPE_MULTIPLE_CHOICE %}
+          Categorical
+        {% endif %}
       </h3>
 
-      {% if data %}
-        <div class="chart chart-{{ data.chart_type }}"
-             {% if question.question_type = question.TYPE_NUMERIC %}
-               data-categories='{{ data.categories|safe }}'
-               data-sum='{{ data.answer_sums|safe }}'
-               data-average='{{ data.answer_averages|safe }}'
-               data-response-rate='{{ data.response_rates|safe }}'
-               data-window-min="{{ filter_form.start_date.value|date:"Y-m-d" }}"
-               data-window-max="{{ filter_form.end_date.value|date:"Y-m-d" }}"
-               data-type="{{ filter_form.data_type.value|lower }}"
-             {% endif %}
-             data-name="{{ question.name }}">
-        </div>
+      <div class="chart-{{ chart_type }}"
+           data-chart='{{ data }}'
+           data-name="{{ question.name }}">
+      </div>
+
+      {% if question.question_type == question.TYPE_NUMERIC %}
         <table class="table table-striped">
           <tbody>
             <tr class="read">
               <td class="read-half read-label">Mean</td>
-              <td class="read-half read-value">{{ data.answer_mean }}</td>
+              <td class="read-half read-value">{{ question.answer_mean }}</td>
             </tr>
             <tr class="read">
               <td class="read-half read-label">Standard Deviation</td>
-              <td class="read-half read-value">{{ data.answer_stdev }}</td>
+              <td class="read-half read-value">{{ question.answer_stdev }}</td>
             </tr>
             <tr class="read">
               <td class="read-half read-label">Response Rate Average</td>
-              <td class="read-half read-value">{{ data.response_rate_average }}%</td>
+              <td class="read-half read-value">{{ question.response_rate_average }}%</td>
             </tr>
           </tbody>
         </table>
-      {% else %}
-        <div class="chart-no-data">No data for this date window.</div>
       {% endif %}
     </div>
   {% endfor %}

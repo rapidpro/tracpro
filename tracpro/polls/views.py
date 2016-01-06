@@ -63,7 +63,7 @@ class PollCRUDL(smartmin.SmartCRUDL):
             else:
                 pollruns = pollruns.universal()
 
-            return [(q, charts.multiple_pollruns(pollruns, q, self.request.data_regions))
+            return [(q,) + charts.multiple_pollruns(pollruns, q, self.request.data_regions)
                     for q in self.object.questions.active()]
 
     class Update(PollMixin, OrgObjPermsMixin, smartmin.SmartUpdateView):
