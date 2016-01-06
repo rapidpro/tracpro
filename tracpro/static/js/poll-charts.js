@@ -1,7 +1,7 @@
 jQuery.fn.extend({
     chart_numeric: function() {
         var dataType = $('#id_data_type').val();
-        if (dataType) {
+        if (["sum", "average", "response-rate"].indexOf(dataType) != -1) {
             var label = $('#id_data_type :selected').text();
             $(this).each(function(i, item) {
                 var chart = $(item);
