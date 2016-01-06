@@ -192,7 +192,7 @@
       var valueType = $(this).val().toLowerCase();
       if (valueType == "sum") {
         {% for question in questions %}
-          {% if question.question_type = question.TYPE_NUMERIC %}
+          {% if question.question_type = question.TYPE_NUMERIC and question.date_list %}
             var chart = $('#chart_{{ question.pk }}').highcharts();
             chart.series[0].setData({{ question.answer_sum_dict_list|safe }});
           {% endif %}
@@ -201,7 +201,7 @@
       }
       else if (valueType == "average") {
         {% for question in questions %}
-          {% if question.question_type = question.TYPE_NUMERIC %}
+          {% if question.question_type = question.TYPE_NUMERIC and question.date_list %}
             var chart = $('#chart_{{ question.pk }}').highcharts();
             chart.series[0].setData({{ question.answer_average_dict_list|safe }});
           {% endif %}
@@ -210,7 +210,7 @@
       }
       else if (valueType == "response rate") {
         {% for question in questions %}
-          {% if question.question_type = question.TYPE_NUMERIC %}
+          {% if question.question_type = question.TYPE_NUMERIC and question.date_list %}
             var chart = $('#chart_{{ question.pk }}').highcharts();
             chart.series[0].setData({{ question.response_rate_dict_list|safe }});
           {% endif %}
