@@ -56,10 +56,13 @@ class PollCRUDL(smartmin.SmartCRUDL):
             if self.filter_form.is_bound and not self.filter_form.is_valid():
                 return None
 
+            start_date = self.filter_form.get_value('start_date')
+            end_date = self.filter_form.get_value('end_date')
             pollruns = self.object.pollruns.active().order_by('conducted_on')
-            pollruns = pollruns.filter(
-                conducted_on__gte=self.filter_form.get_value('start_date'),
-                conducted_on__lt=self.filter_form.get_value('end_date'))
+            if start_date:
+                pollruns = pollruns.filter(conducted_on__gte=start_date)
+            if end_date:
+                pollruns = pollruns.filter(conducted_on__lt=end_date)
             if self.request.region:
                 pollruns = pollruns.by_region(
                     self.request.region,
