@@ -35,6 +35,15 @@ class TracProTest(TestCase):
         super(TracProTest, self).tearDown()
         self.patcher.stop()
 
+    def assertLoginRedirect(self, response, subdomain, next_url):
+        url = '{}?next={}'.format(reverse('users.user_login'), next_url)
+        return self.assertRedirects(response, url, subdomain)
+
+    def assertRedirects(self, response, url, subdomain=None, **kwargs):
+        if subdomain:
+            kwargs.setdefault('host', '{}.testserver'.format(subdomain))
+        return super(TracProTest, self).assertRedirects(response, url, **kwargs)
+
     def clear_cache(self):
         # we are extra paranoid here and actually hardcode redis to 'localhost'
         # and '10' Redis 10 is our testing redis db
@@ -72,15 +81,6 @@ class TracProTest(TestCase):
         if subdomain:
             kwargs.setdefault('HTTP_HOST', "{}.testserver".format(subdomain))
         return self.client.post(*args, **kwargs)
-
-    def assertRedirects(self, response, url, subdomain=None, **kwargs):
-        if subdomain:
-            kwargs.setdefault('host', '{}.testserver'.format(subdomain))
-        return super(TracProTest, self).assertRedirects(response, url, **kwargs)
-
-    def assertLoginRedirect(self, response, subdomain, next_url):
-        url = '{}?next={}'.format(reverse('users.user_login'), next_url)
-        return self.assertRedirects(response, url, subdomain)
 
 
 class TracProDataTest(TracProTest):
