@@ -39,25 +39,20 @@ class PollCRUDL(smartmin.SmartCRUDL):
 
         def get(self, request, *args, **kwargs):
             self.object = self.get_object()
-            self.filter_form = self.get_form()
+            self.filter_form = forms.ChartFilterForm(data=request.GET)
             return self.render_to_response(self.get_context_data(
                 object=self.object,
                 filter_form=self.filter_form,
                 question_data=self.get_question_data(),
             ))
 
-        def get_form(self):
-            data = {k: v for k, v in self.request.GET.items()
-                    if k in forms.ChartFilterForm.base_fields}
-            return forms.ChartFilterForm(data=data or None)
-
         def get_question_data(self):
             # Do not display any data if invalid data was submitted.
-            if self.filter_form.is_bound and not self.filter_form.is_valid():
+            if not self.filter_form.is_valid():
                 return None
 
-            start_date = self.filter_form.get_value('start_date')
-            end_date = self.filter_form.get_value('end_date')
+            start_date = self.filter_form.cleaned_data.get('start_date')
+            end_date = self.filter_form.cleaned_data.get('end_date')
             pollruns = self.object.pollruns.active().order_by('conducted_on')
             if start_date:
                 pollruns = pollruns.filter(conducted_on__gte=start_date)
