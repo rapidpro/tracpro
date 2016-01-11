@@ -1,5 +1,7 @@
 import datetime
 
+from dateutil.relativedelta import relativedelta
+
 import mock
 
 import pytz
@@ -147,13 +149,21 @@ class TestChartFilterForm(TracProTest):
 
     def test_clean__predefined_range(self):
         """Set start and end dates appropriately for predefined date range."""
-        for days in (30, 60, 90):
-            self.data['date_range'] = days
+        tests = (
+            (30, 'days'),
+            (60, 'days'),
+            (90, 'days'),
+            (6, 'months'),
+            (12, 'months'),
+        )
+        for number, unit in tests:
+            choice = '{}-{}'.format(number, unit)
+            self.data['date_range'] = choice
             form = forms.ChartFilterForm(data=self.data)
             end_date = datetime.datetime(2016, 2, 15, tzinfo=pytz.UTC)
             self._check_data(
-                form, str(days), end_date=end_date,
-                start_date=end_date - datetime.timedelta(days=days))
+                form, choice, end_date=end_date,
+                start_date=end_date - relativedelta(**{unit: number}))
 
     def test_clean__custom_date_range(self):
         """Do not reset start and end dates if custom date range is specified."""
