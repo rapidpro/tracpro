@@ -72,7 +72,7 @@ class ChartFilterForm(forms.Form):
         ('custom', _("Custom range...")),
     )
 
-    data_type = forms.ChoiceField(
+    num_display = forms.ChoiceField(
         label=_("Numeric display"),
         help_text=_("How responses to numeric questions will be charted."),
         choices=NUMERIC_DATA_CHOICES)
@@ -93,7 +93,7 @@ class ChartFilterForm(forms.Form):
     def __init__(self, *args, **kwargs):
         start_date, end_date = get_month_range()
         kwargs.setdefault('initial', {
-            'data_type': 'sum',
+            'num_display': 'sum',
             'date_range': 'month',
             'start_date': start_date,
             'end_date': end_date,
