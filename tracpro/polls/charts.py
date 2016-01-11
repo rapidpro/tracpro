@@ -1,7 +1,6 @@
 from __future__ import absolute_import, unicode_literals
 
 import cgi
-from collections import defaultdict
 import datetime
 from decimal import Decimal
 from itertools import groupby
@@ -75,16 +74,13 @@ def multiple_pollruns(pollruns, question, regions):
 
 def multiple_pollruns_open(pollruns, question, regions):
     """Chart data for multiple pollruns of a poll."""
-    # {'word1': 50, 'word2': 9, ...}
-    counts = defaultdict(int)
-    for pollrun in pollruns:
-        for word, count in pollrun.get_answer_word_counts(question, regions):
-            counts[word] += count
-
-    if counts:
-        sorted_counts = sorted(counts.items(), key=itemgetter(1), reverse=True)
-        return word_cloud_data(sorted_counts[:50])
-    return None
+    answers = Answer.objects.filter(
+        response__pollrun__in=pollruns,
+        response__is_active=True,
+        question=question)
+    if regions:
+        answers = answers.filter(response__contact__region__in=regions)
+    return word_cloud_data(answers.word_counts()) if answers else None
 
 
 def multiple_pollruns_multiple_choice(pollruns, question, regions):

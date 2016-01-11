@@ -1,8 +1,8 @@
 from __future__ import absolute_import, unicode_literals
 
-from collections import Counter, defaultdict, OrderedDict
+from collections import Counter, OrderedDict
 from decimal import Decimal, InvalidOperation
-import operator
+from itertools import chain
 
 from dateutil.relativedelta import relativedelta
 from enum import Enum
@@ -707,20 +707,15 @@ class Response(models.Model):
 class AnswerQuerySet(models.QuerySet):
 
     def word_counts(self):
-        word_counts = defaultdict(int)
-        for answer in self:
-            contact = answer.response.contact
-            for w in extract_words(answer.value, contact.language):
-                word_counts[w] += 1
-
-        sorted_counts = sorted(
-            word_counts.items(), key=operator.itemgetter(1), reverse=True)
-        return sorted_counts[:50]  # only return top 50
+        answers = self.values_list('value', 'response__contact__language')
+        words = [extract_words(*a) for a in answers]
+        counts = Counter(chain(*words))
+        return counts.most_common(50)
 
     def category_counts(self):
-        category_counts = Counter([answer.category for answer in self
-                                   if answer.category])
-        return sorted(category_counts.items(), key=operator.itemgetter(1), reverse=True)
+        categories = [a.category for a in self if a.category]
+        counts = Counter(categories)
+        return counts.most_common()
 
     def numeric_average(self):
         """
