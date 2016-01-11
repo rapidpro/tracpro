@@ -1,4 +1,4 @@
-import datetime
+from dateutil.relativedelta import relativedelta
 
 from django import forms
 from django.utils import timezone
@@ -64,9 +64,11 @@ class ChartFilterForm(forms.Form):
     DATE_WINDOW_CHOICES = (
         ('', ''),
         ('month', _("Current month")),
-        ('30', _("Last 30 days")),
-        ('60', _("Last 60 days")),
-        ('90', _("Last 90 days")),
+        ('30-days', _("Last 30 days")),
+        ('60-days', _("Last 60 days")),
+        ('90-days', _("Last 90 days")),
+        ('6-months', _("Last 6 months")),
+        ('12-months', _("Last 12 months")),
         ('other', _("Custom range...")),
     )
 
@@ -118,8 +120,9 @@ class ChartFilterForm(forms.Form):
                 if window == 'month':
                     start_date, end_date = get_month_range()
                 else:
+                    number, unit = window.split('-')  # e.g., 6-months
                     end_date = timezone.now()
-                    start_date = end_date - datetime.timedelta(days=int(window))
+                    start_date = end_date - relativedelta(**{unit: int(number)})
                 self.cleaned_data['start_date'] = start_date
                 self.cleaned_data['end_date'] = end_date
                 self.data['start_date'] = start_date
