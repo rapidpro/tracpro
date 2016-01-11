@@ -1,4 +1,6 @@
+import datetime
 import json
+import pytz
 
 from temba_client.types import Contact as TembaContact, Run
 
@@ -155,7 +157,7 @@ class ContactCRUDLTest(TracProDataTest):
 
     def test_list(self):
         pollrun1 = factories.UniversalPollRun(
-            poll=self.poll1, conducted_on=self.datetime(2014, 12, 1))
+            poll=self.poll1, conducted_on=datetime.datetime(2014, 12, 1, tzinfo=pytz.UTC))
         Response.create_empty(
             self.unicef, pollrun1,
             Run.create(id=123, contact='C-001', created_on=timezone.now()))

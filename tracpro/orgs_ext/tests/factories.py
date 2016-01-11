@@ -11,6 +11,7 @@ class Org(SmartModelFactory):
     name = factory.fuzzy.FuzzyText()
     language = "en"
     subdomain = factory.fuzzy.FuzzyText()
+    api_token = factory.fuzzy.FuzzyText()
 
     class Meta:
         model = "orgs.Org"
