@@ -69,7 +69,7 @@ class ChartFilterForm(forms.Form):
         ('90-days', _("Last 90 days")),
         ('6-months', _("Last 6 months")),
         ('12-months', _("Last 12 months")),
-        ('other', _("Custom range...")),
+        ('custom', _("Custom range...")),
     )
 
     data_type = forms.ChoiceField(
@@ -97,7 +97,7 @@ class ChartFilterForm(forms.Form):
 
     def clean(self):
         window = self.cleaned_data.get('date_range')
-        if window == 'other':
+        if window == 'custom':
             # User must provide specific start or end dates.
             start_date = self.cleaned_data.get('start_date')
             end_date = self.cleaned_data.get('end_date')
