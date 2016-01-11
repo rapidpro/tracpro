@@ -77,12 +77,15 @@ class ChartFilterForm(forms.Form):
         help_text=_("How responses to numeric questions will be charted."),
         choices=NUMERIC_DATA_CHOICES)
     date_range = forms.ChoiceField(
+        label=_("Date range"),
         choices=DATE_WINDOW_CHOICES)
     start_date = forms.DateTimeField(
+        label=_("Start date"),
         required=False,
         widget=forms.widgets.DateInput(attrs={'class': 'datepicker'}),
         error_messages={'invalid': "Please enter a valid date."})
     end_date = forms.DateTimeField(
+        label=_("End date"),
         required=False,
         widget=forms.widgets.DateInput(attrs={'class': 'datepicker'}),
         error_messages={'invalid': "Please enter a valid date."})
