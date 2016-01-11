@@ -15,6 +15,7 @@ class Contact(factory_utils.SmartModelFactory):
     uuid = factory_utils.FuzzyUUID()
     org = factory.SubFactory("tracpro.test.factories.Org")
     urn = factory.Sequence(lambda n: random.choice(("twitter:contact", "tel:123")) + str(n))
+    language = 'eng'
 
     class Meta:
         model = 'contacts.Contact'

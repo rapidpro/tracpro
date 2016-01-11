@@ -384,7 +384,7 @@ class PollRunTest(TracProDataTest):
             self.assertEqual(pollrun3, pollrun4)
 
     def test_completion(self):
-        date1 = self.datetime(2014, 1, 1, 7, 0)
+        date1 = datetime.datetime(2014, 1, 1, 7, tzinfo=pytz.UTC)
 
         # pollrun with no responses (complete or incomplete) has null completion
         pollrun = factories.UniversalPollRun(
