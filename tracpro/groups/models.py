@@ -31,10 +31,6 @@ class AbstractGroup(models.Model):
     def __str__(self):
         return self.name
 
-    @classmethod
-    def create(cls, org, name, uuid):
-        return cls.objects.create(org=org, name=name, uuid=uuid)
-
     def deactivate(self):
         self.is_active = False
         self.save()

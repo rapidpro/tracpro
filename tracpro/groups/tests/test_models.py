@@ -50,7 +50,7 @@ class TestRegion(TracProTest):
 
     def test_create(self):
         """The create() method is a shortcut for creating a new Region."""
-        region = models.Region.create(self.org, "Zabul", 'G-101')
+        region = models.Region.objects.create(org=self.org, name="Zabul", uuid="G-101")
         contact = factories.Contact(org=self.org, region=region)
         user = User.create(
             self.org, "User", "user@unicef.org", "pass", False, [region])
@@ -200,7 +200,8 @@ class TestRegion(TracProTest):
 class TestGroup(TracProDataTest):
 
     def test_create(self):
-        group = models.Group.create(self.unicef, "Male Teachers", 'G-101')
+        group = models.Group.objects.create(
+            org=self.unicef, name="Male Teachers", uuid='G-101')
         self.assertEqual(group.org, self.unicef)
         self.assertEqual(group.name, "Male Teachers")
         self.assertEqual(group.uuid, 'G-101')
