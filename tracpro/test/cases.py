@@ -63,15 +63,15 @@ class TracProTest(TestCase):
         session[key] = region.pk
         session.save()
 
-    def url_get(self, subdomain, url, params=None, **extra):
+    def url_get(self, subdomain, *args, **kwargs):
         if subdomain:
-            extra.setdefault('HTTP_HOST', "{}.testserver".format(subdomain))
-        return self.client.get(url, params, **extra)
+            kwargs.setdefault('HTTP_HOST', "{}.testserver".format(subdomain))
+        return self.client.get(*args, **kwargs)
 
-    def url_post(self, subdomain, url, data=None, **extra):
+    def url_post(self, subdomain, *args, **kwargs):
         if subdomain:
-            extra.setdefault('HTTP_HOST', "{}.testserver".format(subdomain))
-        return self.client.post(url, data, **extra)
+            kwargs.setdefault('HTTP_HOST', "{}.testserver".format(subdomain))
+        return self.client.post(*args, **kwargs)
 
     def assertRedirects(self, response, url, subdomain=None, **kwargs):
         if subdomain:
@@ -80,7 +80,7 @@ class TracProTest(TestCase):
 
     def assertLoginRedirect(self, response, subdomain, next_url):
         url = '{}?next={}'.format(reverse('users.user_login'), next_url)
-        self.assertRedirects(response, url, subdomain)
+        return self.assertRedirects(response, url, subdomain)
 
 
 class TracProDataTest(TracProTest):
