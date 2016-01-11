@@ -12,7 +12,7 @@ from tracpro.groups.models import Region
 # === Monkey patching for the User class === #
 
 def _user_create(cls, org, full_name, email, password, change_password=False,
-                 regions=()):
+                 regions=None):
     """
     Creates a regular user with specific region access
     """
