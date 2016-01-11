@@ -247,7 +247,7 @@ CELERYD_PREFETCH_MULTIPLIER = 1
 
 CELERY_TIMEZONE = 'UTC'
 
-ORG_TASK_TIMEOUT = datetime.timedelta(minutes=5)
+ORG_TASK_TIMEOUT = datetime.timedelta(minutes=10)
 
 
 def _org_scheduler_task(task_name):
