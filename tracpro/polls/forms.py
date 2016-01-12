@@ -116,6 +116,13 @@ class ChartFilterForm(forms.Form):
                     self.add_error(
                         'end_date',
                         _("End date must be after start date."))
+
+                # Set default values for start date and end date.
+                else:
+                    self.cleaned_data.setdefault('start_date', None)
+                    self.cleaned_data.setdefault('end_date', None)
+                    self.data.setdefault('start_date', None)
+                    self.data.setdefault('end_date', None)
         else:
             # Throw out user-submitted dates.
             self.cleaned_data.pop('start_date', None)

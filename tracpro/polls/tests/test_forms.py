@@ -6,6 +6,8 @@ import mock
 
 import pytz
 
+from django.forms import ALL_FIELDS
+
 from tracpro.test.cases import TracProTest
 
 from .. import forms
@@ -141,11 +143,12 @@ class TestChartFilterForm(TracProTest):
     def test_clean__month(self):
         """Set start and end dates appropriately if month is specified."""
         self.data['date_range'] = 'month'
-        form = forms.ChartFilterForm(data=self.data)
         self._check_data(
-            form, 'month',
+            form=forms.ChartFilterForm(data=self.data),
+            date_range='month',
             start_date=datetime.datetime(2016, 2, 1, tzinfo=pytz.UTC),
-            end_date=datetime.datetime(2016, 2, 29, tzinfo=pytz.UTC))
+            end_date=datetime.datetime(2016, 2, 29, tzinfo=pytz.UTC),
+        )
 
     def test_clean__predefined_range(self):
         """Set start and end dates appropriately for predefined date range."""
@@ -159,29 +162,72 @@ class TestChartFilterForm(TracProTest):
         for number, unit in tests:
             choice = '{}-{}'.format(number, unit)
             self.data['date_range'] = choice
-            form = forms.ChartFilterForm(data=self.data)
             end_date = datetime.datetime(2016, 2, 15, tzinfo=pytz.UTC)
             self._check_data(
-                form, choice, end_date=end_date,
-                start_date=end_date - relativedelta(**{unit: number}))
+                form=forms.ChartFilterForm(data=self.data),
+                date_range=choice,
+                end_date=end_date,
+                start_date=end_date - relativedelta(**{unit: number}),
+            )
+
+    def test_clean__predefined_range__date_error(self):
+        """Discard date errors if predefined date range is selected."""
+        self.data['start_date'] = 'invalid'
+        self.data['end_date'] = 'invalid'
+        self.data['date_range'] = 'month'
+        self._check_data(
+            form=forms.ChartFilterForm(data=self.data),
+            date_range='month',
+            start_date=datetime.datetime(2016, 2, 1, tzinfo=pytz.UTC),
+            end_date=datetime.datetime(2016, 2, 29, tzinfo=pytz.UTC),
+        )
 
     def test_clean__custom_date_range(self):
         """Do not reset start and end dates if custom date range is specified."""
-        form = forms.ChartFilterForm(data=self.data)
         self._check_data(
-            form, 'custom',
-            end_date=datetime.datetime(2014, 10, 22, tzinfo=pytz.UTC),
-            start_date=datetime.datetime(2014, 1, 15, tzinfo=pytz.UTC))
+            form=forms.ChartFilterForm(data=self.data),
+            date_range='custom',
+            start_date=self.data['start_date'],
+            end_date=self.data['end_date'],
+        )
+
+    def test_clean__custom_date_range__no_end_date(self):
+        self.data.pop('end_date')
+        self._check_data(
+            form=forms.ChartFilterForm(data=self.data),
+            date_range='custom',
+            start_date=self.data['start_date'],
+            end_date=None,
+        )
+
+    def test_clean__custom_date_range__no_start_date(self):
+        self.data.pop('start_date')
+        self._check_data(
+            form=forms.ChartFilterForm(data=self.data),
+            date_range='custom',
+            start_date=None,
+            end_date=self.data['end_date'],
+        )
+
+    def test_clean__custom_date_range__invalid_start_end_dates(self):
+        """Don't apply additional checks if start or end dates are invalid."""
+        self.data['start_date'] = 'invalid'
+        self.data['end_date'] = 'invalid'
+        form = forms.ChartFilterForm(data=self.data)
+        self.assertFalse(form.is_valid())
+        self.assertDictEqual(form.errors, {
+            'start_date': ["Please enter a valid date."],
+            'end_date': ["Please enter a valid date."],
+        })
 
     def test_clean__custom_date_range_requires_dates(self):
-        """Both start and end date must be specified for a custom date range."""
+        """Either start and end date must be specified for a custom date range."""
         self.data.pop('end_date')
         self.data.pop('start_date')
         form = forms.ChartFilterForm(data=self.data)
         self.assertFalse(form.is_valid())
         self.assertDictEqual(form.errors, {
-            'start_date': ["Please select a start date."],
-            'end_date': ["Please select an end date."],
+            ALL_FIELDS: ["Please choose a start date or an end date."],
         })
 
     def test_clean__custom_date_range_date_order(self):
