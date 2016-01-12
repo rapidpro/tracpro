@@ -101,10 +101,11 @@ class ChartFilterForm(forms.Form):
             # User must provide specific start or end dates.
             start_date = self.cleaned_data.get('start_date')
             end_date = self.cleaned_data.get('end_date')
-            if not (start_date and end_date):
-                self.add_error('start_date', _("Please select a start date."))
-                self.add_error('end_date', _("Please select an end date."))
-            elif start_date > end_date:
+            if not (start_date or end_date):
+                self.add_error(
+                    forms.ALL_FIELDS,
+                    _("Please choose a start date or an end date."))
+            elif start_date and end_date and start_date > end_date:
                 self.add_error('end_date', _("End date must be after start date."))
         else:
             # Throw out user-submitted dates.
