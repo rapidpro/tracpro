@@ -135,21 +135,24 @@ def response_rate_calculation(responses, pollrun_list):
     responses = responses.values('pollrun', 'is_complete')
     responses = responses.annotate(count=Count('pk'))
 
-    # pollrun id -> response data
-    data_by_pollrun = groupby(responses, itemgetter('pollrun'))
-    data_by_pollrun = dict((k, list(v)) for k, v in data_by_pollrun)
+    # Regroup to make completion status easier to access. Result looks like:
+    #   {
+    #       123: {True: 5, False: 10},
+    #       456: {True: 7, False: 12},
+    #       ...
+    #   }
+    completion = {}
+    for pollrun, data in groupby(responses, itemgetter('pollrun')):
+        completion[pollrun] = {d['is_complete']: d['count'] for d in data}
 
     response_rates = []
     for pollrun in pollrun_list:
-        response_data = data_by_pollrun.get(pollrun)
-        if response_data:
-            # completion status (True/False) -> count of responses
-            count_by_status = dict((c['is_complete'], c['count']) for c in response_data)
-
-            complete_responses = count_by_status.get(True, 0)
-            total_responses = sum(count_by_status.values())
-            response_rates.append(round(100.0 * complete_responses / total_responses, 2))
+        if pollrun in completion:
+            complete = completion[pollrun].get(True, 0)
+            incomplete = completion[pollrun].get(False, 0)
+            response_rates.append(round(100.0 * complete / (complete + incomplete), 2))
         else:
+            # There were no responses at all in this pollrun.
             response_rates.append(0)
     return response_rates
 
