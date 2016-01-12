@@ -98,15 +98,22 @@ class ChartFilterForm(forms.Form):
     def clean(self):
         window = self.cleaned_data.get('date_range')
         if window == 'custom':
-            # User must provide specific start or end dates.
-            start_date = self.cleaned_data.get('start_date')
-            end_date = self.cleaned_data.get('end_date')
-            if not (start_date or end_date):
-                self.add_error(
-                    forms.ALL_FIELDS,
-                    _("Please choose a start date or an end date."))
-            elif start_date and end_date and start_date > end_date:
-                self.add_error('end_date', _("End date must be after start date."))
+            # Only apply additional checks if data did not have errors.
+            if 'start_date' not in self.errors and 'end_date' not in self.errors:
+                start_date = self.cleaned_data.get('start_date')
+                end_date = self.cleaned_data.get('end_date')
+
+                # Require at least one date filter.
+                if not start_date and not end_date:
+                    self.add_error(
+                        forms.ALL_FIELDS,
+                        _("Please choose a start date or an end date."))
+
+                # Ensure date filter order makes sense.
+                elif (start_date and end_date) and start_date > end_date:
+                    self.add_error(
+                        'end_date',
+                        _("End date must be after start date."))
         else:
             # Throw out user-submitted dates.
             self.cleaned_data.pop('start_date', None)
@@ -116,7 +123,7 @@ class ChartFilterForm(forms.Form):
             self._errors.pop('start_date', None)
             self._errors.pop('end_date', None)
 
-            # Calculate correct date window.
+            # Calculate the correct date window.
             if window:
                 if window == 'month':
                     start_date, end_date = get_month_range()
