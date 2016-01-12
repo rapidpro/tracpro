@@ -40,7 +40,7 @@ class PollCRUDL(smartmin.SmartCRUDL):
 
         def get(self, request, *args, **kwargs):
             self.object = self.get_object()
-            self.filter_form = forms.ChartFilterForm(data=request.GET)
+            self.filter_form = forms.ChartFilterForm(org=self.object.org, data=request.GET)
             return self.render_to_response(self.get_context_data(
                 object=self.object,
                 filter_form=self.filter_form,
@@ -71,8 +71,17 @@ class PollCRUDL(smartmin.SmartCRUDL):
 
         def get_answer_filters(self):
             filters = Q(response__is_active=True)
+
             if self.request.region:
                 filters &= Q(response__contact__region__in=self.request.data_regions)
+
+            for name, data_field in self.filter_form.contact_fields:
+                value = self.filter_form.cleaned_data.get(name)
+                if value:
+                    filters &= Q(
+                        response__contact__contactfield__field=data_field,
+                        response__contact__contactfield__value__icontains=value)
+
             return filters
 
         def get_question_data(self):

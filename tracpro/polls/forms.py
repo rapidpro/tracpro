@@ -90,7 +90,18 @@ class ChartFilterForm(forms.Form):
         widget=forms.widgets.DateInput(attrs={'class': 'datepicker'}),
         error_messages={'invalid': "Please enter a valid date."})
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, org, *args, **kwargs):
+        self.org = org
+
+        # Allow filtering by contact data fields.
+        self.contact_fields = []
+        for data_field in self.org.datafield_set.visible():
+            field_name = 'contact_{}'.format(data_field.key)
+            self.contact_fields.append((field_name, data_field))
+            self.base_fields[field_name] = forms.CharField(
+                label='Contact: {}'.format(data_field.display_name),
+                required=False)
+
         data = kwargs.get('data')
         if not data:
             # Set valid data if none was provided.
