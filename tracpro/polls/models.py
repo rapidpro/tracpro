@@ -773,7 +773,7 @@ class AnswerQuerySet(models.QuerySet):
                     dates.append(response_date)
                     pollrun_list.append(pollrun_pk)
                 response_date = answer.response.created_on.date()
-                pollrun_pk = answer.response.pollrun.pk
+                pollrun_pk = answer.response.pollrun_id
                 total = float(0)
                 total_answers = 0
             try:
