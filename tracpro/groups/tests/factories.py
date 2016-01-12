@@ -6,7 +6,7 @@ from tracpro.test.factory_utils import FuzzyUUID
 from .. import models
 
 
-__all__ = ['Region']
+__all__ = ['Region', 'Group']
 
 
 class AbstractGroup(factory.django.DjangoModelFactory):
@@ -23,3 +23,9 @@ class Region(AbstractGroup):
 
     class Meta:
         model = models.Region
+
+
+class Group(AbstractGroup):
+
+    class Meta:
+        model = models.Group

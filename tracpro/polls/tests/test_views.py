@@ -1,6 +1,10 @@
 # coding=utf-8
 from __future__ import absolute_import, unicode_literals
 
+import datetime
+
+import pytz
+
 from django.core.urlresolvers import reverse
 
 from tracpro.test.cases import TracProDataTest
@@ -26,9 +30,9 @@ class ResponseCRUDLTest(TracProDataTest):
 
     def setUp(self):
         super(ResponseCRUDLTest, self).setUp()
-        date1 = self.datetime(2014, 1, 1, 7, 0)
-        date2 = self.datetime(2014, 1, 1, 8, 0)
-        date3 = self.datetime(2014, 1, 2, 7, 0)
+        date1 = datetime.datetime(2014, 1, 1, 7, tzinfo=pytz.UTC)
+        date2 = datetime.datetime(2014, 1, 1, 8, tzinfo=pytz.UTC)
+        date3 = datetime.datetime(2014, 1, 2, 7, tzinfo=pytz.UTC)
 
         # create non-regional pollrun with 3 responses (1 complete, 1 partial, 1 empty)
         self.pollrun1 = factories.UniversalPollRun(

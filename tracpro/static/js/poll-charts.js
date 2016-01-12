@@ -91,7 +91,13 @@ jQuery.fn.extend({
 
 $(function() {
     /* Initialize date fields. */
-    $("input[class^='datepicker']").datepicker();
+    $("input[class^='datepicker']").datepicker({
+        changeMonth: true,
+        changeYear: true,
+        selectOtherMonths: true,
+        showOtherMonths: true,
+        yearRange: "2013:" + new Date().getFullYear()
+    });
 
     /* Update button text when filter form display is toggled. */
     $('#filters').on('show.bs.collapse', function() {
