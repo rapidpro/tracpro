@@ -80,10 +80,12 @@ class ChartFilterForm(forms.Form):
         choices=DATE_WINDOW_CHOICES)
     start_date = forms.DateTimeField(
         required=False,
-        widget=forms.widgets.DateInput(attrs={'class': 'datepicker'}))
+        widget=forms.widgets.DateInput(attrs={'class': 'datepicker'}),
+        error_messages={'invalid': "Please enter a valid date."})
     end_date = forms.DateTimeField(
         required=False,
-        widget=forms.widgets.DateInput(attrs={'class': 'datepicker'}))
+        widget=forms.widgets.DateInput(attrs={'class': 'datepicker'}),
+        error_messages={'invalid': "Please enter a valid date."})
 
     def __init__(self, *args, **kwargs):
         start_date, end_date = get_month_range()
