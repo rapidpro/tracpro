@@ -84,26 +84,25 @@ def multiple_pollruns_open(pollruns, question, regions):
 
 
 def multiple_pollruns_multiple_choice(pollruns, question, regions):
-    answers = Answer.objects.filter(response__pollrun=pollruns, response__is_active=True)
-    answers = answers.exclude(response__status=Response.STATUS_EMPTY)
+    answers = Answer.objects.filter(
+        response__pollrun=pollruns,
+        response__is_active=True,
+        question=question)
     if regions:
         answers = answers.filter(response__contact__region__in=regions)
 
+    pollruns = pollruns.order_by('conducted_on')
+
     if answers:
-        # Find the distinct categories for all answers to the question.
-        categories = answers.distinct('category')
-        categories = categories.order_by('category').values_list('category', flat=True)
-
-        # category: [day_1_value, day_2_value, ...]
         series = []
-        for category in categories:
-            category_counts = [answers.filter(category=category, response__pollrun=pollrun).count()
-                               for pollrun in pollruns.order_by('conducted_on')]
-            series.append({'name': category, 'data': category_counts})
+        for category, pollrun_counts in answers.category_counts_by_pollrun():
+            padded_counts = [pollrun_counts.get(pollrun.pk, 0) for pollrun in pollruns]
+            series.append({
+                'name': category,
+                'data': padded_counts,
+            })
 
-        # [day_1, day_2, ...]
-        dates = [pollrun.conducted_on.strftime('%Y-%m-%d')
-                 for pollrun in pollruns.order_by('conducted_on')]
+        dates = [pollrun.conducted_on.strftime('%Y-%m-%d') for pollrun in pollruns]
 
         return {
             'dates': dates,

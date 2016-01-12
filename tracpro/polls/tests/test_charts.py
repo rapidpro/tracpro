@@ -71,7 +71,6 @@ class PollChartTest(TracProDataTest):
         self.assertEqual(data['series'], [
             {'name': u'1 - 5', 'data': [2]},
             {'name': u'6 - 10', 'data': [1]},
-            {'name': None, 'data': [3]},
         ])
 
     def test_multiple_pollruns_open(self):

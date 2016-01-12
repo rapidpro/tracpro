@@ -2,7 +2,8 @@ from __future__ import absolute_import, unicode_literals
 
 from collections import Counter, OrderedDict
 from decimal import Decimal, InvalidOperation
-from itertools import chain
+from itertools import chain, groupby
+from operator import itemgetter
 
 from dateutil.relativedelta import relativedelta
 from enum import Enum
@@ -713,9 +714,17 @@ class AnswerQuerySet(models.QuerySet):
         return counts.most_common(50)
 
     def category_counts(self):
-        categories = [a.category for a in self if a.category]
+        categories = self.values_list('category', flat=True)
         counts = Counter(categories)
         return counts.most_common()
+
+    def category_counts_by_pollrun(self):
+        counts = []
+        answers = self.order_by('category').values('category', 'response__pollrun')
+        for category, _answers in groupby(answers, itemgetter('category')):
+            pollrun_counts = Counter(a['response__pollrun'] for a in _answers)
+            counts.append((category, pollrun_counts))
+        return counts
 
     def numeric_average(self):
         """
