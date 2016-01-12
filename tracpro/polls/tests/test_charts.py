@@ -70,11 +70,11 @@ class PollChartTest(TracProDataTest):
             [self.pollrun.conducted_on.strftime('%Y-%m-%d')])
         self.assertEqual(data['series'], [
             {'name': u'1 - 5',
-             'data': [{u'y': 2, u'url': u'/pollrun/read/' + str(self.pollrun.pk) + '/'}]},
+             'data': [{u'y': 2, u'url': reverse('polls.pollrun_read', args=[self.pollrun.pk])}]},
             {'name': u'6 - 10',
-             'data': [{u'y': 1, u'url': u'/pollrun/read/' + str(self.pollrun.pk) + '/'}]},
+             'data': [{u'y': 1, u'url': reverse('polls.pollrun_read', args=[self.pollrun.pk])}]},
             {'name': None,
-             'data': [{u'y': 3, u'url': u'/pollrun/read/' + str(self.pollrun.pk) + '/'}]},
+             'data': [{u'y': 3, u'url': reverse('polls.pollrun_read', args=[self.pollrun.pk])}]},
         ])
 
     def test_multiple_pollruns_open(self):
