@@ -72,29 +72,39 @@ class ChartFilterForm(forms.Form):
         ('custom', _("Custom range...")),
     )
 
-    data_type = forms.ChoiceField(
+    num_display = forms.ChoiceField(
         label=_("Numeric display"),
         help_text=_("How responses to numeric questions will be charted."),
         choices=NUMERIC_DATA_CHOICES)
     date_range = forms.ChoiceField(
+        label=_("Date range"),
         choices=DATE_WINDOW_CHOICES)
     start_date = forms.DateTimeField(
+        label=_("Start date"),
         required=False,
         widget=forms.widgets.DateInput(attrs={'class': 'datepicker'}),
         error_messages={'invalid': "Please enter a valid date."})
     end_date = forms.DateTimeField(
+        label=_("End date"),
         required=False,
         widget=forms.widgets.DateInput(attrs={'class': 'datepicker'}),
         error_messages={'invalid': "Please enter a valid date."})
 
     def __init__(self, *args, **kwargs):
-        start_date, end_date = get_month_range()
-        kwargs.setdefault('initial', {
-            'data_type': 'sum',
-            'date_range': 'month',
-            'start_date': start_date,
-            'end_date': end_date,
-        })
+        data = kwargs.get('data')
+        if not data:
+            # Set valid data if none was provided.
+            start_date, end_date = get_month_range()
+            kwargs['data'] = {
+                'num_display': 'sum',
+                'date_range': 'month',
+                'start_date': start_date,
+                'end_date': end_date,
+            }
+        else:
+            # Create a copy of the data, and remove unrelated fields.
+            kwargs['data'] = {k: v for k, v in data.items() if k in self.base_fields}
+
         super(ChartFilterForm, self).__init__(*args, **kwargs)
 
     def clean(self):
@@ -144,13 +154,3 @@ class ChartFilterForm(forms.Form):
                 self.cleaned_data['end_date'] = end_date
                 self.data['start_date'] = start_date
                 self.data['end_date'] = end_date
-
-    def get_value(self, field):
-        """Retrieve the validated field value, or its initial value."""
-        if not self.is_bound:
-            value = self.initial[field]
-            return value() if callable(value) else value
-        elif self.is_valid():
-            return self.cleaned_data[field]
-        else:
-            raise ValueError("Cannot get value from an invalid form.")

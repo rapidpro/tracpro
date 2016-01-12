@@ -32,18 +32,10 @@ class TestChartFilterForm(TracProTest):
 
         # Data to pass to form for testing.
         self.data = {
-            'data_type': 'response-rate',
+            'num_display': 'response-rate',
             'date_range': 'custom',
             'start_date': datetime.datetime(2014, 1, 15, tzinfo=pytz.UTC),
             'end_date': datetime.datetime(2014, 10, 22, tzinfo=pytz.UTC),
-        }
-
-        # Expected initial values.
-        self.expected_initial = {
-            'data_type': 'sum',
-            'date_range': 'month',
-            'start_date': datetime.datetime(2016, 2, 1, tzinfo=pytz.UTC),
-            'end_date': datetime.datetime(2016, 2, 29, tzinfo=pytz.UTC),
         }
 
     def tearDown(self):
@@ -61,58 +53,34 @@ class TestChartFilterForm(TracProTest):
         self.assertEqual(form.cleaned_data['end_date'], end_date)
 
     def test_initial(self):
-        """Initial values should be set for form fields."""
+        """Default data should be set if data is not passed to the form."""
         form = forms.ChartFilterForm()
-        for field, value in self.expected_initial.items():
-            self.assertIsNone(form.fields[field].initial)
-            self.assertEqual(form.initial[field], value)
-
-    def test_get_value__form_unbound(self):
-        """get_value() should return field's initial valid if form is unbound."""
-        form = forms.ChartFilterForm()
-        self.assertFalse(form.is_bound)
-        for field, value in self.expected_initial.items():
-            self.assertEqual(form.get_value(field), value)
-
-    def test_get_value__form_invalid(self):
-        """get_value() cannot be called on an invalid form."""
-        form = forms.ChartFilterForm(data={})
         self.assertTrue(form.is_bound)
-        self.assertFalse(form.is_valid())
-        for field in self.data.keys():
-            with self.assertRaises(ValueError):
-                form.get_value('data_type')
-
-    def test_get_value__field_nonexistant(self):
-        """get_value() should raise a KeyError if requested field is not in form."""
-        form = forms.ChartFilterForm(data=self.data)
         self.assertTrue(form.is_valid())
-        with self.assertRaises(KeyError):
-            form.get_value('invalid')
-
-    def test_get_value__form_valid(self):
-        """get_value() should return the passed-in value for a valid form."""
-        form = forms.ChartFilterForm(data=self.data)
-        for field, value in self.data.items():
-            self.assertEqual(form.get_value(field), value)
-
-    def test_data_type_required(self):
-        """Data type choice is required."""
-        self.data.pop('data_type')
-        form = forms.ChartFilterForm(data=self.data)
-        self.assertFalse(form.is_valid())
-        self.assertDictEqual(form.errors, {
-            'data_type': ['This field is required.'],
+        self.assertDictEqual(form.data, {
+            'num_display': 'sum',
+            'date_range': 'month',
+            'start_date': datetime.datetime(2016, 2, 1, tzinfo=pytz.UTC),
+            'end_date': datetime.datetime(2016, 2, 29, tzinfo=pytz.UTC),
         })
 
-    def test_data_type_invalid(self):
-        """Data type must come from list of valid choices."""
-        self.data['data_type'] = 'invalid'
+    def test_num_display_required(self):
+        """Data type choice is required."""
+        self.data.pop('num_display')
         form = forms.ChartFilterForm(data=self.data)
         self.assertFalse(form.is_valid())
         self.assertDictEqual(form.errors, {
-            'data_type': ['Select a valid choice. '
-                          'invalid is not one of the available choices.'],
+            'num_display': ['This field is required.'],
+        })
+
+    def test_num_display_invalid(self):
+        """Data type must come from list of valid choices."""
+        self.data['num_display'] = 'invalid'
+        form = forms.ChartFilterForm(data=self.data)
+        self.assertFalse(form.is_valid())
+        self.assertDictEqual(form.errors, {
+            'num_display': ['Select a valid choice. '
+                            'invalid is not one of the available choices.'],
         })
 
     def test_date_range_required(self):

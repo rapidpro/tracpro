@@ -1,8 +1,9 @@
 from __future__ import absolute_import, unicode_literals
 
-from collections import Counter, defaultdict, OrderedDict
+from collections import Counter, OrderedDict
 from decimal import Decimal, InvalidOperation
-import operator
+from itertools import chain, groupby
+from operator import itemgetter
 
 from dateutil.relativedelta import relativedelta
 from enum import Enum
@@ -707,20 +708,23 @@ class Response(models.Model):
 class AnswerQuerySet(models.QuerySet):
 
     def word_counts(self):
-        word_counts = defaultdict(int)
-        for answer in self:
-            contact = answer.response.contact
-            for w in extract_words(answer.value, contact.language):
-                word_counts[w] += 1
-
-        sorted_counts = sorted(
-            word_counts.items(), key=operator.itemgetter(1), reverse=True)
-        return sorted_counts[:50]  # only return top 50
+        answers = self.values_list('value', 'response__contact__language')
+        words = [extract_words(*a) for a in answers]
+        counts = Counter(chain(*words))
+        return counts.most_common(50)
 
     def category_counts(self):
-        category_counts = Counter([answer.category for answer in self
-                                   if answer.category])
-        return sorted(category_counts.items(), key=operator.itemgetter(1), reverse=True)
+        categories = self.values_list('category', flat=True)
+        counts = Counter(categories)
+        return counts.most_common()
+
+    def category_counts_by_pollrun(self):
+        counts = []
+        answers = self.order_by('category').values('category', 'response__pollrun')
+        for category, _answers in groupby(answers, itemgetter('category')):
+            pollrun_counts = Counter(a['response__pollrun'] for a in _answers)
+            counts.append((category, pollrun_counts))
+        return counts
 
     def numeric_average(self):
         """
@@ -769,7 +773,7 @@ class AnswerQuerySet(models.QuerySet):
                     dates.append(response_date)
                     pollrun_list.append(pollrun_pk)
                 response_date = answer.response.created_on.date()
-                pollrun_pk = answer.response.pollrun.pk
+                pollrun_pk = answer.response.pollrun_id
                 total = float(0)
                 total_answers = 0
             try:
