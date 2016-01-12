@@ -81,6 +81,18 @@ jQuery.fn.extend({
                             lineWidth: 1,
                             lineColor: '#ffffff'
                         }
+                    },
+                    series: {
+                          cursor: "pointer",
+                          point: {
+                            events: {
+                              click: function() {
+                                // Take user to pollrun detail page
+                                // when they click on a specific date.
+                                location.href = this.options.url;
+                              }
+                            }
+                          }
                     }
                 },
                 series: data.series

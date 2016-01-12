@@ -101,8 +101,12 @@ def multiple_pollruns_multiple_choice(pollruns, question, regions):
         # category: [day_1_value, day_2_value, ...]
         series = []
         for category in categories:
-            category_counts = [answers.filter(category=category, response__pollrun=pollrun).count()
-                               for pollrun in pollruns.order_by('conducted_on')]
+            category_counts = []
+            for pollrun in pollruns.order_by('conducted_on'):
+                category_counts.append({
+                    'y': answers.filter(category=category, response__pollrun=pollrun).count(),
+                    'url': reverse('polls.pollrun_read', args=[pollrun.pk])
+                    })
             series.append({'name': category, 'data': category_counts})
 
         # [day_1, day_2, ...]
