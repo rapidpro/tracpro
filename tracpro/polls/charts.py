@@ -72,25 +72,29 @@ def multiple_pollruns(pollruns, question, regions):
     return chart_type, render_data(data) if data else None
 
 
-def multiple_pollruns_open(pollruns, question, regions):
-    """Chart data for multiple pollruns of a poll."""
+def get_answers(pollruns, question, regions):
+    """Return all Answers to the question within the pollruns.
+
+    If regions are specified, answers are limited to contacts within those
+    regions.
+    """
     answers = Answer.objects.filter(
         response__pollrun__in=pollruns,
         response__is_active=True,
         question=question)
     if regions:
         answers = answers.filter(response__contact__region__in=regions)
+    return answers
+
+
+def multiple_pollruns_open(pollruns, question, regions):
+    """Chart data for multiple pollruns of a poll."""
+    answers = get_answers(pollruns, question, regions)
     return word_cloud_data(answers.word_counts()) if answers else None
 
 
 def multiple_pollruns_multiple_choice(pollruns, question, regions):
-    answers = Answer.objects.filter(
-        response__pollrun=pollruns,
-        response__is_active=True,
-        question=question)
-    if regions:
-        answers = answers.filter(response__contact__region__in=regions)
-
+    answers = get_answers(pollruns, question, regions)
     pollruns = pollruns.order_by('conducted_on')
 
     if answers:
@@ -158,12 +162,7 @@ def response_rate_calculation(responses, pollrun_list):
 
 def multiple_pollruns_numeric(pollruns, question, regions):
     """Chart data for multiple pollruns of a poll."""
-    responses = Response.objects.filter(pollrun__in=pollruns)
-    responses = responses.filter(is_active=True)
-    if regions:
-        responses = responses.filter(contact__region__in=regions)
-
-    answers = Answer.objects.filter(response__in=responses, question=question)
+    answers = get_answers(pollruns, question, regions)
     answers = answers.select_related('response')
     answers = answers.order_by('response__created_on')
 
@@ -175,6 +174,7 @@ def multiple_pollruns_numeric(pollruns, question, regions):
             date_list, pollrun_list) = answers.numeric_group_by_date()
 
         # Calculate the response rate on each day
+        responses = Response.objects.filter(answers=answers).distinct()
         response_rate_list = response_rate_calculation(responses, pollrun_list)
 
         # Create dict lists for the three datasets for data point/url
