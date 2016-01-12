@@ -100,10 +100,14 @@ def multiple_pollruns_multiple_choice(pollruns, question, regions):
     if answers:
         series = []
         for category, pollrun_counts in answers.category_counts_by_pollrun():
-            padded_counts = [pollrun_counts.get(pollrun.pk, 0) for pollrun in pollruns]
+            data = []
+            for pollrun in pollruns:
+                count = pollrun_counts.get(pollrun.pk, 0)
+                url = reverse('polls.pollrun_read', args=[pollrun.pk])
+                data.append({'y': count, 'url': url})
             series.append({
                 'name': category,
-                'data': padded_counts,
+                'data': data,
             })
 
         dates = [pollrun.conducted_on.strftime('%Y-%m-%d') for pollrun in pollruns]
