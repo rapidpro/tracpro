@@ -182,14 +182,15 @@ def multiple_pollruns_numeric(pollruns, question, regions):
         answer_average_dict_list = []
         response_rate_dict_list = []
         for z in zip(answer_sum_list, answer_average_list, response_rate_list, pollrun_list):
-            pollrun_link_read = reverse('polls.pollrun_read', args=[str(z[3])])
-            pollrun_link_participation = reverse('polls.pollrun_participation', args=[str(z[3])])
+            answer_sum, answer_average, response_rate, pollrun_id = z
+            pollrun_detail = reverse('polls.pollrun_read', args=[pollrun_id])
+            pollrun_participation = reverse('polls.pollrun_participation', args=[pollrun_id])
             answer_sum_dict_list.append(
-                {str('y'): z[0], str('url'): pollrun_link_read})
+                {'y': answer_sum, 'url': pollrun_detail})
             answer_average_dict_list.append(
-                {str('y'): z[1], str('url'): pollrun_link_read})
+                {'y': answer_average, 'url': pollrun_detail})
             response_rate_dict_list.append(
-                {str('y'): z[2], str('url'): pollrun_link_participation})
+                {'y': response_rate, 'url': pollrun_participation})
 
         question.answer_mean = round(numpy.mean(answer_average_list), 2)
         question.answer_stdev = round(numpy.std(answer_average_list), 2)
