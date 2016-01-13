@@ -95,5 +95,4 @@ class DataFieldFilterForm(forms.Form):
             self.base_fields[field_name] = forms.CharField(
                 label='Contact: {}'.format(data_field.display_name),
                 required=False)
-
         super(DataFieldFilterForm, self).__init__(*args, **kwargs)
