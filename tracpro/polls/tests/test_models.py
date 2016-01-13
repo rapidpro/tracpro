@@ -601,22 +601,6 @@ class PollRunTest(TracProDataTest):
                 [self.region3]),
             [])
 
-        # numeric averages for question #1
-        self.assertEqual(
-            pollrun.get_answer_numeric_average(self.poll1_question1), 5.0)
-        self.assertEqual(
-            pollrun.get_answer_numeric_average(
-                self.poll1_question1,
-                [self.region1]), 3.5)
-        self.assertEqual(
-            pollrun.get_answer_numeric_average(
-                self.poll1_question1,
-                [self.region2]), 8.0)
-        self.assertEqual(
-            pollrun.get_answer_numeric_average(
-                self.poll1_question1,
-                [self.region3]), 0.0)
-
         # word counts for question #2
         self.assertEqual(
             pollrun.get_answer_word_counts(self.poll1_question2),
@@ -868,23 +852,3 @@ class TestAnswer(TracProDataTest):
         self.assertEqual(
             qs.auto_range_counts(),
             {'0 - 9': 4, '10 - 19': 1, '20 - 29': 0, '30 - 39': 0, '40 - 49': 0})
-
-    def test_numeric_average(self):
-        qs = Answer.objects.none()
-        self.assertEqual(qs.numeric_average(), 0)
-
-    def test_numeric_average_2(self):
-        a = factories.Answer(value=1, category=None)
-        qs = Answer.objects.filter(pk=a.pk)
-        self.assertEqual(qs.numeric_average(), 0)
-
-    def test_numeric_average_3(self):
-        a = factories.Answer(value=1, category="1 - 100")
-        qs = Answer.objects.filter(pk=a.pk)
-        self.assertEqual(qs.numeric_average(), 1)
-
-    def test_numeric_average_4(self):
-        a1 = factories.Answer(value=1, category="1 - 100")
-        a2 = factories.Answer(value=2, category="1 - 100")
-        qs = Answer.objects.filter(pk__in=[a1.pk, a2.pk])
-        self.assertEqual(qs.numeric_average(), 1.5)

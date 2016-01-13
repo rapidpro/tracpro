@@ -52,74 +52,67 @@ def single_pollrun(pollrun, question, regions):
     return chart_type, render_data(chart_data)
 
 
-def multiple_pollruns(pollruns, question, regions):
-    if question.question_type == Question.TYPE_NUMERIC:
-        chart_type = 'numeric'
-        data = multiple_pollruns_numeric(pollruns, question, regions)
+def multiple_pollruns(pollruns, question, answer_filters):
+    chart_type = None
+    data = None
 
-    elif question.question_type == Question.TYPE_OPEN:
-        chart_type = 'open-ended'
-        data = multiple_pollruns_open(pollruns, question, regions)
+    pollruns = pollruns.order_by('conducted_on')
+    answers = get_answers(pollruns, question, answer_filters)
+    if answers:
+        if question.question_type == Question.TYPE_NUMERIC:
+            chart_type = 'numeric'
+            data = multiple_pollruns_numeric(answers, pollruns, question)
 
-    elif question.question_type == Question.TYPE_MULTIPLE_CHOICE:
-        chart_type = 'multiple-choice'
-        data = multiple_pollruns_multiple_choice(pollruns, question, regions)
+        elif question.question_type == Question.TYPE_OPEN:
+            chart_type = 'open-ended'
+            data = multiple_pollruns_open(answers, pollruns, question)
 
-    else:
-        chart_type = None
-        data = None
+        elif question.question_type == Question.TYPE_MULTIPLE_CHOICE:
+            chart_type = 'multiple-choice'
+            data = multiple_pollruns_multiple_choice(answers, pollruns, question)
 
     return chart_type, render_data(data) if data else None
 
 
-def get_answers(pollruns, question, regions):
+def get_answers(pollruns, question, filters):
     """Return all Answers to the question within the pollruns.
 
     If regions are specified, answers are limited to contacts within those
     regions.
     """
-    answers = Answer.objects.filter(
+    return Answer.objects.filter(
+        filters,
         response__pollrun__in=pollruns,
-        response__is_active=True,
         question=question)
-    if regions:
-        answers = answers.filter(response__contact__region__in=regions)
-    return answers
 
 
-def multiple_pollruns_open(pollruns, question, regions):
+def multiple_pollruns_open(answers, pollruns, question):
     """Chart data for multiple pollruns of a poll."""
-    answers = get_answers(pollruns, question, regions)
-    return word_cloud_data(answers.word_counts()) if answers else None
+    return word_cloud_data(answers.word_counts())
 
 
-def multiple_pollruns_multiple_choice(pollruns, question, regions):
-    answers = get_answers(pollruns, question, regions)
-    pollruns = pollruns.order_by('conducted_on')
+def multiple_pollruns_multiple_choice(answers, pollruns, question):
+    series = []
+    for category, pollrun_counts in answers.category_counts_by_pollrun():
+        data = []
+        for pollrun in pollruns:
+            count = pollrun_counts.get(pollrun.pk, 0)
+            url = reverse('polls.pollrun_read', args=[pollrun.pk])
+            data.append({'y': count, 'url': url})
+        series.append({
+            'name': category,
+            'data': data,
+        })
 
-    if answers:
-        series = []
-        for category, pollrun_counts in answers.category_counts_by_pollrun():
-            data = []
-            for pollrun in pollruns:
-                count = pollrun_counts.get(pollrun.pk, 0)
-                url = reverse('polls.pollrun_read', args=[pollrun.pk])
-                data.append({'y': count, 'url': url})
-            series.append({
-                'name': category,
-                'data': data,
-            })
+    dates = [pollrun.conducted_on.strftime('%Y-%m-%d') for pollrun in pollruns]
 
-        dates = [pollrun.conducted_on.strftime('%Y-%m-%d') for pollrun in pollruns]
-
-        return {
-            'dates': dates,
-            'series': series,
-        }
-    return None
+    return {
+        'dates': dates,
+        'series': series,
+    }
 
 
-def response_rate_calculation(responses, pollrun_list):
+def response_rate_calculation(responses):
     """Return a list of response rates for the pollruns."""
     # A response is complete if its status attribute equals STATUS_COMPLETE.
     # This uses an internal, _combine, because F expressions have not
@@ -142,70 +135,51 @@ def response_rate_calculation(responses, pollrun_list):
     responses = responses.values('pollrun', 'is_complete')
     responses = responses.annotate(count=Count('pk'))
 
-    # Regroup to make completion status easier to access. Result looks like:
-    #   {
-    #       123: {True: 5, False: 10},
-    #       456: {True: 7, False: 12},
-    #       ...
-    #   }
-    completion = {}
-    for pollrun, data in groupby(responses, itemgetter('pollrun')):
-        completion[pollrun] = {d['is_complete']: d['count'] for d in data}
-
-    response_rates = []
-    for pollrun in pollrun_list:
-        if pollrun in completion:
-            complete = completion[pollrun].get(True, 0)
-            incomplete = completion[pollrun].get(False, 0)
-            response_rates.append(round(100.0 * complete / (complete + incomplete), 2))
-        else:
-            # There were no responses at all in this pollrun.
-            response_rates.append(0)
+    response_rates = {}
+    for pollrun_id, data in groupby(responses, itemgetter('pollrun')):
+        # completion status (True/False) -> response count
+        completion = {d['is_complete']: d['count'] for d in data}
+        complete = completion.get(True, 0)
+        incomplete = completion.get(False, 0)
+        response_rates[pollrun_id] = round(100.0 * complete / (complete + incomplete), 2)
     return response_rates
 
 
-def multiple_pollruns_numeric(pollruns, question, regions):
+def multiple_pollruns_numeric(answers, pollruns, question):
     """Chart data for multiple pollruns of a poll."""
-    answers = get_answers(pollruns, question, regions)
     answers = answers.select_related('response')
-    answers = answers.order_by('response__created_on')
 
-    if answers:
-        # Calculate/retrieve the list of sums, list of averages,
-        # list of pollrun dates, and list of pollrun id's
-        # per pollrun date
-        (answer_sum_list, answer_average_list,
-            date_list, pollrun_list) = answers.numeric_group_by_date()
+    # Calculate/retrieve the list of sums, list of averages,
+    # list of pollrun dates, and list of pollrun id's
+    # per pollrun date
+    summaries = answers.get_answer_summaries()
 
-        # Calculate the response rate on each day
-        responses = Response.objects.filter(answers=answers).distinct()
-        response_rate_list = response_rate_calculation(responses, pollrun_list)
+    # Calculate the response rate on each day
+    responses = Response.objects.filter(answers=answers).distinct()
+    response_rate_data = response_rate_calculation(responses)
 
-        # Create dict lists for the three datasets for data point/url
-        answer_sum_dict_list = []
-        answer_average_dict_list = []
-        response_rate_dict_list = []
-        for z in zip(answer_sum_list, answer_average_list, response_rate_list, pollrun_list):
-            answer_sum, answer_average, response_rate, pollrun_id = z
-            pollrun_detail = reverse('polls.pollrun_read', args=[pollrun_id])
-            pollrun_participation = reverse('polls.pollrun_participation', args=[pollrun_id])
-            answer_sum_dict_list.append(
-                {'y': answer_sum, 'url': pollrun_detail})
-            answer_average_dict_list.append(
-                {'y': answer_average, 'url': pollrun_detail})
-            response_rate_dict_list.append(
-                {'y': response_rate, 'url': pollrun_participation})
+    answer_sums = []
+    answer_avgs = []
+    response_rates = []
+    for pollrun in pollruns:
+        answer_sum, answer_avg = summaries.get(pollrun.pk, (0, 0))
+        response_rate = response_rate_data.get(pollrun.pk, 0)
+        pollrun_detail = reverse('polls.pollrun_read', args=[pollrun.pk])
+        pollrun_participation = reverse('polls.pollrun_participation', args=[pollrun.pk])
+        answer_sums.append({'y': answer_sum, 'url': pollrun_detail})
+        answer_avgs.append({'y': answer_avg, 'url': pollrun_detail})
+        response_rates.append({'y': response_rate, 'url': pollrun_participation})
 
-        question.answer_mean = round(numpy.mean(answer_average_list), 2)
-        question.answer_stdev = round(numpy.std(answer_average_list), 2)
-        question.response_rate_average = round(numpy.mean(response_rate_list), 2)
-        return {
-            'dates': [d.strftime('%Y-%m-%d') for d in date_list],
-            'sum': answer_sum_dict_list,
-            'average': answer_average_dict_list,
-            'response-rate': response_rate_dict_list,
-        }
-    return None
+    question.answer_mean = round(numpy.mean([a['y'] for a in answer_avgs]), 2)
+    question.answer_stdev = round(numpy.std([a['y'] for a in answer_avgs]), 2)
+    question.response_rate_average = round(numpy.mean([a['y'] for a in response_rates]), 2)
+
+    return {
+        'dates': [pollrun.conducted_on.strftime('%Y-%m-%d') for pollrun in pollruns],
+        'sum': answer_sums,
+        'average': answer_avgs,
+        'response-rate': response_rates,
+    }
 
 
 def word_cloud_data(word_counts):

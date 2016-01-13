@@ -10,6 +10,7 @@ from dash.utils import get_obj_cacheable
 from django.conf import settings
 from django.contrib import messages
 from django.core.urlresolvers import reverse
+from django.db.models import Q
 from django.http import (
     HttpResponse, HttpResponseBadRequest, JsonResponse)
 from django.shortcuts import get_object_or_404, redirect
@@ -39,38 +40,64 @@ class PollCRUDL(smartmin.SmartCRUDL):
 
         def get(self, request, *args, **kwargs):
             self.object = self.get_object()
-            self.filter_form = forms.ChartFilterForm(data=request.GET)
+            self.filter_form = forms.ChartFilterForm(org=self.object.org, data=request.GET)
             return self.render_to_response(self.get_context_data(
                 object=self.object,
                 filter_form=self.filter_form,
                 question_data=self.get_question_data(),
             ))
 
+        def get_pollruns(self):
+            pollruns = self.object.pollruns.active()
+
+            # Limit pollrun dates.
+            start_date = self.filter_form.cleaned_data.get('start_date')
+            end_date = self.filter_form.cleaned_data.get('end_date')
+            if start_date:
+                pollruns = pollruns.filter(conducted_on__gte=start_date)
+            if end_date:
+                pollruns = pollruns.filter(conducted_on__lt=end_date)
+
+            if self.request.region:
+                # Show only pollruns conducted in the region.
+                pollruns = pollruns.by_region(
+                    self.request.region,
+                    self.request.include_subregions)
+            else:
+                # Show only non-regional pollruns.
+                pollruns = pollruns.universal()
+
+            return pollruns
+
+        def get_answer_filters(self):
+            contacts = Contact.objects.filter(org=self.request.org)
+
+            if self.request.region:
+                contacts = contacts.filter(region__in=self.request.data_regions)
+
+            for name, data_field in self.filter_form.contact_fields:
+                value = self.filter_form.cleaned_data.get(name)
+                if value:
+                    contacts = contacts.filter(
+                        contactfield__field=data_field,
+                        contactfield__value__icontains=value)
+
+            return Q(response__is_active=True) & Q(response__contact__in=contacts)
+
         def get_question_data(self):
             # Do not display any data if invalid data was submitted.
             if not self.filter_form.is_valid():
                 return None
 
-            start_date = self.filter_form.cleaned_data.get('start_date')
-            end_date = self.filter_form.cleaned_data.get('end_date')
-            pollruns = self.object.pollruns.active().order_by('conducted_on')
-            if start_date:
-                pollruns = pollruns.filter(conducted_on__gte=start_date)
-            if end_date:
-                pollruns = pollruns.filter(conducted_on__lt=end_date)
-            if self.request.region:
-                pollruns = pollruns.by_region(
-                    self.request.region,
-                    self.request.include_subregions)
-            else:
-                pollruns = pollruns.universal()
+            pollruns = self.get_pollruns()
+            answer_filters = self.get_answer_filters()
 
-            question_data = []
+            data = []
             for question in self.object.questions.active():
-                chart_type, data = charts.multiple_pollruns(
-                    pollruns, question, self.request.data_regions)
-                question_data.append((question, chart_type, data))
-            return question_data
+                chart_type, chart_data = charts.multiple_pollruns(
+                    pollruns, question, answer_filters)
+                data.append((question, chart_type, chart_data))
+            return data
 
     class Update(PollMixin, OrgObjPermsMixin, smartmin.SmartUpdateView):
         form_class = forms.PollForm
