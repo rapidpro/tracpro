@@ -32,7 +32,7 @@ class TestChartFilterForm(TracProTest):
 
         # Data to pass to form for testing.
         self.data = {
-            'num_display': 'response-rate',
+            'numeric': 'response-rate',
             'date_range': 'custom',
             'start_date': datetime.datetime(2014, 1, 15, tzinfo=pytz.UTC),
             'end_date': datetime.datetime(2014, 10, 22, tzinfo=pytz.UTC),
@@ -58,29 +58,29 @@ class TestChartFilterForm(TracProTest):
         self.assertTrue(form.is_bound)
         self.assertTrue(form.is_valid())
         self.assertDictEqual(form.data, {
-            'num_display': 'sum',
+            'numeric': 'sum',
             'date_range': 'month',
             'start_date': datetime.datetime(2016, 2, 1, tzinfo=pytz.UTC),
             'end_date': datetime.datetime(2016, 2, 29, tzinfo=pytz.UTC),
         })
 
-    def test_num_display_required(self):
+    def test_numeric_required(self):
         """Data type choice is required."""
-        self.data.pop('num_display')
+        self.data.pop('numeric')
         form = forms.ChartFilterForm(data=self.data)
         self.assertFalse(form.is_valid())
         self.assertDictEqual(form.errors, {
-            'num_display': ['This field is required.'],
+            'numeric': ['This field is required.'],
         })
 
-    def test_num_display_invalid(self):
+    def test_numeric_invalid(self):
         """Data type must come from list of valid choices."""
-        self.data['num_display'] = 'invalid'
+        self.data['numeric'] = 'invalid'
         form = forms.ChartFilterForm(data=self.data)
         self.assertFalse(form.is_valid())
         self.assertDictEqual(form.errors, {
-            'num_display': ['Select a valid choice. '
-                            'invalid is not one of the available choices.'],
+            'numeric': ['Select a valid choice. '
+                        'invalid is not one of the available choices.'],
         })
 
     def test_date_range_required(self):

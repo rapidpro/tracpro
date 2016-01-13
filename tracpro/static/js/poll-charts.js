@@ -1,8 +1,8 @@
 jQuery.fn.extend({
     chart_numeric: function() {
-        var dataType = $('#id_num_display').val();
+        var dataType = $('#id_numeric').val();
         if (["sum", "average", "response-rate"].indexOf(dataType) != -1) {
-            var label = $('#id_num_display :selected').text();
+            var label = $('#id_numeric :selected').text();
             $(this).each(function(i, item) {
                 var chart = $(item);
                 chart.closest('.poll-question').find('.data-type').text(label);
@@ -127,7 +127,7 @@ $(function() {
     }).change();
 
     /* Update numeric data display on the client side. */
-    $('#id_num_display').on('change', function() {
+    $('#id_numeric').on('change', function() {
         $('.chart-numeric').chart_numeric();
     });
 
