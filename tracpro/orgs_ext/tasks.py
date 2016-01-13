@@ -75,7 +75,6 @@ class OrgTask(PostTransactionTask):
         return cache.add(key, 'true', LOCK_EXPIRE)
 
     def apply_async(self, *args, **kwargs):
-        kwargs.setdefault('queue', 'org_task')
         kwargs.setdefault('expires', settings.ORG_TASK_TIMEOUT)
         return super(OrgTask, self).apply_async(*args, **kwargs)
 
