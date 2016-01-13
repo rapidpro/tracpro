@@ -18,18 +18,23 @@
       <div class="alert alert-danger">Please fix the errors below.</div>
     {% endif %}
 
-    {% fieldset filter_form "numeric" %}
+    <div class="row">
+      {% field filter_form "numeric" %}
+    </div>
 
-    {% fieldset filter_form "date_range" %}
+    <div class="row">
+      {% field filter_form "date_range" %}
+    </div>
 
-    {% if form.start_date.errors or form.end_date.errors %}
-      {% fieldset filter_form "start_date" "end_date" fieldset_id="filter-dates" label_width=3 %}
-    {% else %}
-      {% fieldset filter_form "start_date" "end_date" fieldset_class="hidden" fieldset_id="filter-dates" label_width=3 %}
-    {% endif %}
+    <div class="row hidden" id="filter-dates">
+      {% field filter_form "start_date" col_width=6 label_width=4 field_width=8 %}
+      {% field filter_form "end_date" col_width=6 label_width=4 field_width=8 %}
+    </div>
 
     {% for field_name, _ in form.contact_fields %}
-      {% fieldset filter_form field_name %}
+      <div class="row">
+        {% field filter_form field_name %}
+      </div>
     {% endfor %}
 
     <div class="well">
