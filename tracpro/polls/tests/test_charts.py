@@ -1,97 +1,96 @@
-from django.core.urlresolvers import reverse
-from django.utils import timezone
+from __future__ import unicode_literals
 
-from temba_client.types import Run
+from django.core.urlresolvers import reverse
 
 from tracpro.test import factories
-from tracpro.test.cases import TracProDataTest
+from tracpro.test.cases import TracProTest
 
-from ..models import PollRun, Question, Response
 from .. import charts
+from .. import models
 
 
-class PollChartTest(TracProDataTest):
+class PollChartTest(TracProTest):
 
     def setUp(self):
         super(PollChartTest, self).setUp()
 
-        self.poll1_question1.question_type = Question.TYPE_MULTIPLE_CHOICE
-        self.poll1_question1.save()
+        self.org = factories.Org()
 
-        self.poll1_question2.question_type = Question.TYPE_OPEN
-        self.poll1_question2.save()
+        self.poll = factories.Poll(org=self.org)
 
-        self.pollrun = factories.UniversalPollRun(
-            poll=self.poll1, conducted_on=timezone.now())
-        self.pollruns = PollRun.objects.filter(pk=self.pollrun.pk)
+        self.question1 = factories.Question(
+            poll=self.poll, question_type=models.Question.TYPE_MULTIPLE_CHOICE)
+        self.question2 = factories.Question(
+            poll=self.poll, question_type=models.Question.TYPE_OPEN)
+        self.question3 = factories.Question(
+            poll=self.poll, question_type=models.Question.TYPE_NUMERIC)
 
-        response1 = Response.create_empty(
-            self.unicef, self.pollrun,
-            Run.create(id=123, contact=self.contact1.uuid, created_on=timezone.now()))
+        self.pollrun = factories.UniversalPollRun(poll=self.poll)
+        self.pollruns = models.PollRun.objects.filter(pk=self.pollrun.pk)
+
+        self.response1 = factories.Response(
+            pollrun=self.pollrun, status=models.Response.STATUS_COMPLETE)
         factories.Answer(
-            response=response1, question=self.poll1_question1,
+            response=self.response1, question=self.question1,
             value="4.00000", category="1 - 5")
         factories.Answer(
-            response=response1, question=self.poll1_question2,
+            response=self.response1, question=self.question2,
             value="It's very rainy", category="All Responses")
-
-        response2 = Response.create_empty(
-            self.unicef, self.pollrun,
-            Run.create(id=234, contact=self.contact2.uuid, created_on=timezone.now()))
         factories.Answer(
-            response=response2, question=self.poll1_question1,
+            response=self.response1, question=self.question3,
+            value="4.00000", category="1 - 5")
+
+        self.response2 = factories.Response(
+            pollrun=self.pollrun, status=models.Response.STATUS_COMPLETE)
+        factories.Answer(
+            response=self.response2, question=self.question1,
             value="3.00000", category="1 - 5")
         factories.Answer(
-            response=response2, question=self.poll1_question2,
+            response=self.response2, question=self.question2,
             value="rainy and rainy", category="All Responses")
-
-        response3 = Response.create_empty(
-            self.unicef, self.pollrun,
-            Run.create(id=345, contact=self.contact4.uuid, created_on=timezone.now()))
         factories.Answer(
-            response=response3, question=self.poll1_question1,
+            response=self.response2, question=self.question3,
+            value="3.00000", category="1 - 5")
+
+        self.response3 = factories.Response(
+            pollrun=self.pollrun, status=models.Response.STATUS_COMPLETE)
+        factories.Answer(
+            response=self.response3, question=self.question1,
             value="8.00000", category="6 - 10")
         factories.Answer(
-            response=response3, question=self.poll1_question2,
+            response=self.response3, question=self.question2,
             value="Sunny sunny", category="All Responses")
-
-        # Set all responses to COMPLETE so that they can be found in charting functions
-        Response.objects.all().update(status=Response.STATUS_COMPLETE)
-
-        self.regions = []
+        factories.Answer(
+            response=self.response3, question=self.question3,
+            value="8.00000", category="6 - 10")
 
     def test_multiple_pollruns_multiple_choice(self):
-        question = self.poll1_question1
-        data = charts.multiple_pollruns_multiple_choice(
-            self.pollruns, question, self.regions)
+        answers = models.Answer.objects.filter(question=self.question1)
+        data = charts.multiple_pollruns_multiple_choice(answers, self.pollruns, self.question1)
 
         self.assertEqual(
             data['dates'],
             [self.pollrun.conducted_on.strftime('%Y-%m-%d')])
         self.assertEqual(data['series'], [
-            {'name': u'1 - 5',
-             'data': [{u'y': 2, u'url': reverse('polls.pollrun_read', args=[self.pollrun.pk])}]},
-            {'name': u'6 - 10',
-             'data': [{u'y': 1, u'url': reverse('polls.pollrun_read', args=[self.pollrun.pk])}]},
+            {'name': '1 - 5',
+             'data': [{'y': 2, 'url': reverse('polls.pollrun_read', args=[self.pollrun.pk])}]},
+            {'name': '6 - 10',
+             'data': [{'y': 1, 'url': reverse('polls.pollrun_read', args=[self.pollrun.pk])}]},
         ])
 
     def test_multiple_pollruns_open(self):
-        question = self.poll1_question2
-        data = charts.multiple_pollruns_open(
-            self.pollruns, question, self.regions)
+        answers = models.Answer.objects.filter(question=self.question2)
+        data = charts.multiple_pollruns_open(answers, self.pollruns, self.question2)
         self.assertEqual(data, [
             {"text": "rainy", "weight": 3},
             {"text": "sunny", "weight": 2},
         ])
 
     def test_multiple_pollruns_numeric(self):
-        # Reset question 1 type to NUMERIC
-        # Answers are 4, 3 and 8 for a single date (today)
+        answers = models.Answer.objects.filter(question=self.question3)
+        data = charts.multiple_pollruns_numeric(answers, self.pollruns, self.question3)
 
-        self.poll1_question1.question_type = Question.TYPE_NUMERIC
-        self.poll1_question1.save()
-        data = charts.multiple_pollruns_numeric(
-            self.pollruns, self.poll1_question1, self.regions)
+        # Answers are 4, 3 and 8 for a single date
 
         # Single item for single date: sum = 4 + 3 + 8 = 15
         # URL points to pollrun detail page for this date
@@ -119,20 +118,20 @@ class PollChartTest(TracProDataTest):
 
         # Mean, Standard Dev, response rate avg, pollrun list
         self.assertEqual(
-            self.poll1_question1.answer_mean,
+            self.question3.answer_mean,
             5.0)
         self.assertEqual(
-            self.poll1_question1.answer_stdev,
+            self.question3.answer_stdev,
             0.0)
         self.assertEqual(
-            self.poll1_question1.response_rate_average,
+            self.question3.response_rate_average,
             100.0)
 
         # Set one of the responses to partial, changing the response rate
-        Response.objects.filter(contact=self.contact1).update(status=Response.STATUS_PARTIAL)
+        self.response1.status = models.Response.STATUS_PARTIAL
+        self.response1.save()
 
-        data = charts.multiple_pollruns_numeric(
-            self.pollruns, self.poll1_question1, self.regions)
+        data = charts.multiple_pollruns_numeric(answers, self.pollruns, self.question3)
 
         # 2 complete responses, 1 partial response
         # Response rate = 66.67%
@@ -140,5 +139,5 @@ class PollChartTest(TracProDataTest):
             data['response-rate'],
             [{"y": 66.67, "url": reverse('polls.pollrun_participation', args=[self.pollrun.pk])}])
         self.assertEqual(
-            self.poll1_question1.response_rate_average,
+            self.question3.response_rate_average,
             66.67)
