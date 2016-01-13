@@ -31,7 +31,7 @@ class ScheduleTaskForActiveOrgs(PostTransactionTask):
     def apply_async(self, *args, **kwargs):
         kwargs.setdefault('queue', 'org_scheduler')
         kwargs.setdefault('expires', settings.ORG_TASK_TIMEOUT)
-        return super(OrgTask, self).apply_async(*args, **kwargs)
+        return PostTransactionTask.apply_async(self, *args, **kwargs)
 
     def run(self, task_name):
         """Schedule the OrgTask to be run for each active org."""
@@ -76,10 +76,10 @@ class OrgTask(PostTransactionTask):
 
     def apply_async(self, *args, **kwargs):
         kwargs.setdefault('expires', settings.ORG_TASK_TIMEOUT)
-        return super(OrgTask, self).apply_async(*args, **kwargs)
+        return PostTransactionTask.apply_async(self, *args, **kwargs)
 
     def check_rate_limit(self, org):
-        """Return True if the task has been run for this org in the last 5 minutes."""
+        """Return True if the task has been run too recently for this org."""
         now = get_now()
         last_run_key = LAST_RUN_KEY.format(task=self.__name__, org=org.pk)
         last_run_time = cache.get(last_run_key)
