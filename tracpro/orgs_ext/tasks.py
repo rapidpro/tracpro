@@ -31,7 +31,7 @@ class ScheduleTaskForActiveOrgs(PostTransactionTask):
     def apply_async(self, *args, **kwargs):
         kwargs.setdefault('queue', 'org_scheduler')
         kwargs.setdefault('expires', settings.ORG_TASK_TIMEOUT)
-        return super(OrgTask, self).apply_async(*args, **kwargs)
+        return super(ScheduleTaskForActiveOrgs, self).apply_async(*args, **kwargs)
 
     def run(self, task_name):
         """Schedule the OrgTask to be run for each active org."""
