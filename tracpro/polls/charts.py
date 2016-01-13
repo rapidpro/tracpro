@@ -27,15 +27,24 @@ class ChartJsonEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 
-def single_pollrun(pollrun, question, regions):
+def single_pollrun(pollrun, question, answer_filters):
     """Chart data for a single pollrun.
 
     Will be a word cloud for open-ended questions, and pie chart of categories
     for everything else.
     """
-    import ipdb; ipdb.set_trace()
+    chart_type = None
+    chart_data = []
 
-    # data = multiple_pollruns_multiple_choice(pollruns, question, regions)
+    if question.question_type == Question.TYPE_OPEN:
+        chart_type = 'word'
+        chart_data = []
+    else:
+        pollruns = PollRun.objects.filter(pk=pollrun.pk)
+        answers = get_answers(pollruns, question, answer_filters)
+        chart_type = 'bar'
+        chart_data = single_pollrun_multiple_choice(answers, pollrun)
+    """
     if question.question_type == Question.TYPE_OPEN:
         word_counts = pollrun.get_answer_word_counts(question, regions)
         chart_type = 'word'
@@ -49,33 +58,21 @@ def single_pollrun(pollrun, question, regions):
         chart_type = 'column'
         chart_data = column_chart_data(range_counts)
     else:
-        chart_type = None
-        chart_data = []
-
+    """
     return chart_type, render_data(chart_data)
 
 
-def single_pollrun_multiple_choice(pollrun, question, regions):
-    import ipdb; ipdb.set_trace()
-    pollruns = PollRun.objects.filter(pk=pollrun.pk)
-
-    series = []
+def single_pollrun_multiple_choice(answers, pollrun):
+    data = []
+    categories = []
     for category, pollrun_counts in answers.category_counts_by_pollrun():
-        data = []
-        for pollrun in pollruns:
-            count = pollrun_counts.get(pollrun.pk, 0)
-            url = reverse('polls.pollrun_read', args=[pollrun.pk])
-            data.append({'y': count, 'url': url})
-        series.append({
-            'name': category,
-            'data': data,
-        })
-
-    dates = [pollrun.conducted_on.strftime('%Y-%m-%d') for pollrun in pollruns]
+        categories.append(category)
+        count = pollrun_counts.get(pollrun.pk, 0)
+        data.append(count)
 
     return {
-        'dates': dates,
-        'series': series,
+        'categories': categories,
+        'data': data,
     }
 
 

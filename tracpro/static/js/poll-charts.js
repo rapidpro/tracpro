@@ -98,7 +98,34 @@ jQuery.fn.extend({
                 series: data.series
             });
         });
-    }
+    },
+    chart_bar: function() {
+        $(this).each(function(i, item) {
+            console.log('here');
+            var chart = $(item);
+            var data = chart.data('chart')
+            chart.highcharts({
+                chart: {
+                    type: 'bar'
+                },
+                title: {
+                    text: ''
+                },
+                xAxis: {
+                    categories: data.categories,
+                    tickmarkPlacement: 'on'
+                },
+                tooltip: {
+                    pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.percentage:.1f}%</b> ({point.y:,.0f})<br/>',
+                    shared: true
+                },
+                series: [{
+                    name: 'Responses',
+                    data: data.chart_data
+                }]
+            });
+        });
+    },
 });
 
 $(function() {
@@ -146,4 +173,6 @@ $(function() {
     $('.chart-open-ended').chart_open_ended();
     $('.chart-numeric').chart_numeric();
     $('.chart-multiple-choice').chart_multiple_choice();
+
+    $('.chart-bar').chart_bar();
 });
