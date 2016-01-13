@@ -70,6 +70,7 @@ INSTALLED_APPS = [
 
     'tracpro.baseline',
     'tracpro.contacts',
+    'tracpro.filters',
     'tracpro.groups',
     'tracpro.home',
     'tracpro.msgs',
