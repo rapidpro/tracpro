@@ -10,16 +10,12 @@
 
 {% block extra-script %}
   {{ block.super }}
-  <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
   <script src="{% static "js/poll-charts.js" %}"></script>
 {% endblock extra-script %}
 
 {% block content %}
   {% for question in questions %}
     <h3>{{ forloop.counter }}. {{ question.name }}</h3>
-
-    {{ question.chart_type }}<br />
-    {{ question.chart_data }}<br />
 
     {% if question.chart_data %}
         <div class="chart-{{ question.chart_type }}"

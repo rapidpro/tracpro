@@ -48,7 +48,7 @@ jQuery.fn.extend({
     chart_multiple_choice: function() {
         $(this).each(function(i, item) {
             var chart = $(item);
-            var data = chart.data('chart')
+            var data = chart.data('chart');
             chart.highcharts({
                 chart: {
                     type: 'area'
@@ -101,9 +101,8 @@ jQuery.fn.extend({
     },
     chart_bar: function() {
         $(this).each(function(i, item) {
-            console.log('here');
             var chart = $(item);
-            var data = chart.data('chart')
+            var data = chart.data('chart');
             chart.highcharts({
                 chart: {
                     type: 'bar'
@@ -115,13 +114,16 @@ jQuery.fn.extend({
                     categories: data.categories,
                     tickmarkPlacement: 'on'
                 },
+                yAxis: {
+                    tickInterval: 1
+                },
                 tooltip: {
-                    pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.percentage:.1f}%</b> ({point.y:,.0f})<br/>',
+                    pointFormat: '<span style="color:{series.color}">{series.name}</span>: {point.y:,.0f}',
                     shared: true
                 },
                 series: [{
                     name: 'Responses',
-                    data: data.chart_data
+                    data: data.data
                 }]
             });
         });
@@ -130,13 +132,15 @@ jQuery.fn.extend({
 
 $(function() {
     /* Initialize date fields. */
-    $("input[class^='datepicker']").datepicker({
-        changeMonth: true,
-        changeYear: true,
-        selectOtherMonths: true,
-        showOtherMonths: true,
-        yearRange: "2013:" + new Date().getFullYear()
-    });
+    if ($("input[class^='datepicker']").length) {
+        $("input[class^='datepicker']").datepicker({
+            changeMonth: true,
+            changeYear: true,
+            selectOtherMonths: true,
+            showOtherMonths: true,
+            yearRange: "2013:" + new Date().getFullYear()
+        });
+    }
 
     /* Update button text when filter form display is toggled. */
     $('#filters').on('show.bs.collapse', function() {
