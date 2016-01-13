@@ -3,12 +3,12 @@
 <div class="pull-right buttons">
   <button type="button" class="btn btn-primary" id="toggle-filters"
           data-toggle="collapse" data-target="#filters">
-    {% if form.errors %}Hide{% else %}Show{% endif %} filters...
+    Hide filters...
   </button>
 </div>
 <div class="clearfix"></div>
 
-<div class="collapse{% if form.errors %} in{% endif %}" id="filters">
+<div class="collapse in" id="filters">
   <form class="filter-form form-horizontal" method="GET">
     {% if form.non_field_errors %}
       {% for error in form.non_field_errors %}
