@@ -505,13 +505,6 @@ class PollRun(models.Model):
         cache_key = self._answer_cache_key(question, AnswerCache.range_counts, regions)
         return get_cacheable(cache_key, ANSWER_CACHE_TTL, calculate)
 
-    def get_answer_numeric_average(self, question, regions=None):
-        """Return the numeric average of answers to the question."""
-        def calculate():
-            return self.get_answers_to(question, regions).numeric_average()
-        cache_key = self._answer_cache_key(question, AnswerCache.average, regions)
-        return get_cacheable(cache_key, ANSWER_CACHE_TTL, calculate)
-
     def get_answer_category_counts(self, question, regions=None):
         """Return category counts for answers to the question, most frequent first.
 
@@ -725,26 +718,6 @@ class AnswerQuerySet(models.QuerySet):
             pollrun_counts = Counter(a['response__pollrun'] for a in _answers)
             counts.append((category, pollrun_counts))
         return counts
-
-    def numeric_average(self):
-        """
-        Parses decimals out of a set of answers and returns the average.
-        Returns zero if no valid numbers are found.
-        """
-        total = Decimal(0)
-        count = 0
-        for answer in self:
-            if answer.category is not None:
-                # ignore answers with no category as they weren't in the
-                # required range
-                try:
-                    value = Decimal(answer.value)
-                    total += value
-                    count += 1
-                except (TypeError, ValueError, InvalidOperation):
-                    continue
-
-        return float(total / count) if count else 0
 
     def numeric_group_by_date(self):
         """
