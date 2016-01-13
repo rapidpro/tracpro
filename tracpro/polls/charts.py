@@ -119,7 +119,7 @@ def multiple_pollruns_multiple_choice(pollruns, question, regions):
     return None
 
 
-def response_rate_calculation(responses, pollrun_list):
+def response_rate_calculation(responses):
     """Return a list of response rates for the pollruns."""
     # A response is complete if its status attribute equals STATUS_COMPLETE.
     # This uses an internal, _combine, because F expressions have not
@@ -142,25 +142,13 @@ def response_rate_calculation(responses, pollrun_list):
     responses = responses.values('pollrun', 'is_complete')
     responses = responses.annotate(count=Count('pk'))
 
-    # Regroup to make completion status easier to access. Result looks like:
-    #   {
-    #       123: {True: 5, False: 10},
-    #       456: {True: 7, False: 12},
-    #       ...
-    #   }
-    completion = {}
-    for pollrun, data in groupby(responses, itemgetter('pollrun')):
-        completion[pollrun] = {d['is_complete']: d['count'] for d in data}
-
-    response_rates = []
-    for pollrun in pollrun_list:
-        if pollrun in completion:
-            complete = completion[pollrun].get(True, 0)
-            incomplete = completion[pollrun].get(False, 0)
-            response_rates.append(round(100.0 * complete / (complete + incomplete), 2))
-        else:
-            # There were no responses at all in this pollrun.
-            response_rates.append(0)
+    response_rates = {}
+    for pollrun_id, data in groupby(responses, itemgetter('pollrun')):
+        # completion status (True/False) -> response count
+        completion = {d['is_complete']: d['count'] for d in data}
+        complete = completion.get(True, 0)
+        incomplete = completion.get(False, 0)
+        response_rates[pollrun_id] = round(100.0 * complete / (complete + incomplete), 2)
     return response_rates
 
 
@@ -179,7 +167,8 @@ def multiple_pollruns_numeric(pollruns, question, regions):
 
         # Calculate the response rate on each day
         responses = Response.objects.filter(answers=answers).distinct()
-        response_rate_list = response_rate_calculation(responses, pollrun_list)
+        response_rates = response_rate_calculation(responses)
+        response_rate_list = [response_rates.get(pollrun.pk, 0) for pollrun in pollruns]
 
         # Create dict lists for the three datasets for data point/url
         answer_sum_dict_list = []
