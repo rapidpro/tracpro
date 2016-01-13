@@ -18,7 +18,7 @@
       <div class="alert alert-danger">Please fix the errors below.</div>
     {% endif %}
 
-    {% fieldset filter_form "num_display" %}
+    {% fieldset filter_form "numeric" %}
 
     {% fieldset filter_form "date_range" %}
 
@@ -27,6 +27,10 @@
     {% else %}
       {% fieldset filter_form "start_date" "end_date" fieldset_class="hidden" fieldset_id="filter-dates" label_width=3 %}
     {% endif %}
+
+    {% for field_name, _ in form.contact_fields %}
+      {% fieldset filter_form field_name %}
+    {% endfor %}
 
     <div class="well">
       <button type="submit" class="btn btn-primary">Update</button>

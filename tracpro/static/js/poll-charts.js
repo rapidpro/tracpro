@@ -1,8 +1,8 @@
 jQuery.fn.extend({
     chart_numeric: function() {
-        var dataType = $('#id_num_display').val();
+        var dataType = $('#id_numeric').val();
         if (["sum", "average", "response-rate"].indexOf(dataType) != -1) {
-            var label = $('#id_num_display :selected').text();
+            var label = $('#id_numeric :selected').text();
             $(this).each(function(i, item) {
                 var chart = $(item);
                 chart.closest('.poll-question').find('.data-type').text(label);
@@ -119,15 +119,26 @@ $(function() {
         $('#toggle-filters').text('Show filters...');
     });
 
-    /* Don't submit unused fields. */
+    /* Don't submit custom date fields if they are not used. */
     $('.filter-form #id_date_range').on('change', function() {
         var showDates = $(this).val() === 'custom';
         $('#filter-dates').toggleClass('hidden', !showDates);
         $('#filter-dates').find('input').prop('disabled', !showDates)
     }).change();
 
+    /* Don't submit empty form fields. */
+    $('.filter-form').on('submit', function() {
+        $(this).find('input,select').each(function(i, item) {
+          var self = $(this);
+          if (!self.val()) {
+            self.prop('disabled', true);
+          }
+        });
+        return true;
+    });
+
     /* Update numeric data display on the client side. */
-    $('#id_num_display').on('change', function() {
+    $('#id_numeric').on('change', function() {
         $('.chart-numeric').chart_numeric();
     });
 
