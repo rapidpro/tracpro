@@ -70,19 +70,19 @@ class PollCRUDL(smartmin.SmartCRUDL):
             return pollruns
 
         def get_answer_filters(self):
-            filters = Q(response__is_active=True)
+            contacts = Contact.objects.filter(org=self.request.org)
 
             if self.request.region:
-                filters &= Q(response__contact__region__in=self.request.data_regions)
+                contacts = contacts.filter(region__in=self.request.data_regions)
 
             for name, data_field in self.filter_form.contact_fields:
                 value = self.filter_form.cleaned_data.get(name)
                 if value:
-                    filters &= Q(
-                        response__contact__contactfield__field=data_field,
-                        response__contact__contactfield__value__icontains=value)
+                    contacts = contacts.filter(
+                        contactfield__field=data_field,
+                        contactfield__value__icontains=value)
 
-            return filters
+            return Q(response__is_active=True) & Q(response__contact__in=contacts)
 
         def get_question_data(self):
             # Do not display any data if invalid data was submitted.
