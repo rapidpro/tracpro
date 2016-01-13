@@ -148,43 +148,37 @@ def response_rate_calculation(responses):
 def multiple_pollruns_numeric(answers, pollruns, question):
     """Chart data for multiple pollruns of a poll."""
     answers = answers.select_related('response')
-    answers = answers.order_by('response__created_on')
 
     # Calculate/retrieve the list of sums, list of averages,
     # list of pollrun dates, and list of pollrun id's
     # per pollrun date
-    (answer_sum_list, answer_average_list,
-        date_list, pollrun_list) = answers.numeric_group_by_date()
+    summaries = answers.get_answer_summaries()
 
     # Calculate the response rate on each day
     responses = Response.objects.filter(answers=answers).distinct()
-    response_rates = response_rate_calculation(responses)
-    response_rate_list = [response_rates.get(pollrun.pk, 0) for pollrun in pollruns]
+    response_rate_data = response_rate_calculation(responses)
 
-    # Create dict lists for the three datasets for data point/url
-    answer_sum_dict_list = []
-    answer_average_dict_list = []
-    response_rate_dict_list = []
-    for z in zip(answer_sum_list, answer_average_list, response_rate_list, pollrun_list):
-        answer_sum, answer_average, response_rate, pollrun_id = z
-        pollrun_detail = reverse('polls.pollrun_read', args=[pollrun_id])
-        pollrun_participation = reverse('polls.pollrun_participation', args=[pollrun_id])
-        answer_sum_dict_list.append(
-            {'y': answer_sum, 'url': pollrun_detail})
-        answer_average_dict_list.append(
-            {'y': answer_average, 'url': pollrun_detail})
-        response_rate_dict_list.append(
-            {'y': response_rate, 'url': pollrun_participation})
+    answer_sums = []
+    answer_avgs = []
+    response_rates = []
+    for pollrun in pollruns:
+        answer_sum, answer_avg = summaries.get(pollrun.pk, (0, 0))
+        response_rate = response_rate_data.get(pollrun.pk, 0)
+        pollrun_detail = reverse('polls.pollrun_read', args=[pollrun.pk])
+        pollrun_participation = reverse('polls.pollrun_participation', args=[pollrun.pk])
+        answer_sums.append({'y': answer_sum, 'url': pollrun_detail})
+        answer_avgs.append({'y': answer_avg, 'url': pollrun_detail})
+        response_rates.append({'y': response_rate, 'url': pollrun_participation})
 
-    question.answer_mean = round(numpy.mean(answer_average_list), 2)
-    question.answer_stdev = round(numpy.std(answer_average_list), 2)
-    question.response_rate_average = round(numpy.mean(response_rate_list), 2)
+    question.answer_mean = round(numpy.mean([a['y'] for a in answer_avgs]), 2)
+    question.answer_stdev = round(numpy.std([a['y'] for a in answer_avgs]), 2)
+    question.response_rate_average = round(numpy.mean([a['y'] for a in response_rates]), 2)
 
     return {
-        'dates': [d.strftime('%Y-%m-%d') for d in date_list],
-        'sum': answer_sum_dict_list,
-        'average': answer_average_dict_list,
-        'response-rate': response_rate_dict_list,
+        'dates': [pollrun.conducted_on.strftime('%Y-%m-%d') for pollrun in pollruns],
+        'sum': answer_sums,
+        'average': answer_avgs,
+        'response-rate': response_rates,
     }
 
 

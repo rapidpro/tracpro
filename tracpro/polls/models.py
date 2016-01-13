@@ -719,6 +719,25 @@ class AnswerQuerySet(models.QuerySet):
             counts.append((category, pollrun_counts))
         return counts
 
+    def get_answer_summaries(self):
+        """Return the sum and average of numeric answers to each pollrun."""
+        answers = self.order_by('response__pollrun')
+        answers = answers.values('value', 'response__pollrun')
+
+        summaries = {}
+        for pollrun_id, _answers in groupby(answers, itemgetter('response__pollrun')):
+            answer_sum = 0
+            answer_count = 0
+            for answer in _answers:
+                try:
+                    answer_sum += float(answer['value'])
+                    answer_count += 1
+                except (TypeError, ValueError, InvalidOperation):
+                    pass
+            answer_avg = round(answer_sum / answer_count, 2) if answer_count else 0
+            summaries[pollrun_id] = (answer_sum, answer_avg)
+        return summaries
+
     def numeric_group_by_date(self):
         """
         Parses decimals out of a set of answers and returns the sum for each
