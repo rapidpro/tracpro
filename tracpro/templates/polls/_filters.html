@@ -34,6 +34,7 @@
 
     <div class="well">
       <button type="submit" class="btn btn-primary">Update</button>
+      <a href="{% url "polls.poll_read" object.pk %}" class="btn btn-default">Clear filters</a>
     </div>
   </form>
 </div>
