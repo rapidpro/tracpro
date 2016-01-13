@@ -13,7 +13,7 @@ from dash.utils import datetime_to_ms
 from django.db.models import Count, F
 from django.core.urlresolvers import reverse
 
-from .models import Answer, Question, Response
+from .models import Answer, Question, Response, PollRun
 
 
 class ChartJsonEncoder(json.JSONEncoder):
@@ -33,6 +33,9 @@ def single_pollrun(pollrun, question, regions):
     Will be a word cloud for open-ended questions, and pie chart of categories
     for everything else.
     """
+    import ipdb; ipdb.set_trace()
+
+    # data = multiple_pollruns_multiple_choice(pollruns, question, regions)
     if question.question_type == Question.TYPE_OPEN:
         word_counts = pollrun.get_answer_word_counts(question, regions)
         chart_type = 'word'
@@ -50,6 +53,34 @@ def single_pollrun(pollrun, question, regions):
         chart_data = []
 
     return chart_type, render_data(chart_data)
+
+
+def single_pollrun_multiple_choice(pollrun, question, regions):
+    import ipdb; ipdb.set_trace()
+    pollruns = PollRun.objects.filter(pk=pollrun.pk)
+    answers = get_answers(pollruns, question, regions)
+    pollruns = pollruns.order_by('conducted_on')
+
+    if answers:
+        series = []
+        for category, pollrun_counts in answers.category_counts_by_pollrun():
+            data = []
+            for pollrun in pollruns:
+                count = pollrun_counts.get(pollrun.pk, 0)
+                url = reverse('polls.pollrun_read', args=[pollrun.pk])
+                data.append({'y': count, 'url': url})
+            series.append({
+                'name': category,
+                'data': data,
+            })
+
+        dates = [pollrun.conducted_on.strftime('%Y-%m-%d') for pollrun in pollruns]
+
+        return {
+            'dates': dates,
+            'series': series,
+        }
+    return None
 
 
 def multiple_pollruns(pollruns, question, regions):
