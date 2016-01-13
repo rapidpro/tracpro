@@ -2,28 +2,26 @@
 <div class="row {{ fieldset_class }}"{% if fieldset_id %} id="{{ fieldset_id }}"{% endif %}>
   {% for field in fields %}
     <div class="col-sm-{{ field.col_width }}">
-      <div class="form-group{% if field.errors %} has-error{% endif %}">
-        <div class="row">
-          <label class="col-sm-{{ field.label_width }}" for="{{ field.id_for_label }}">
+      <div class="row form-group{% if field.errors %} has-error{% endif %}">
+        <label class="col-sm-{{ field.label_width }}" for="{{ field.id_for_label }}">
 
-            {{ field.label }}
-          </label>
+          {{ field.label }}
+        </label>
 
-          <div class="col-sm-{{ field.field_width }}">
-            {{ field|add_css:"form-control" }}
+        <div class="col-sm-{{ field.field_width }}">
+          {{ field|add_css:"form-control" }}
 
-            {% if field.help_text %}
-              <div class="help-block">
-                {{ field.help_text }}
-              </div>
-            {% endif %}
+          {% if field.help_text %}
+            <div class="help-block">
+              {{ field.help_text }}
+            </div>
+          {% endif %}
 
-            {% for error in field.errors %}
-              <div class="error">
-                {{ error }}
-              </div>
-            {% endfor %}
-          </div>
+          {% for error in field.errors %}
+            <div class="error">
+              {{ error }}
+            </div>
+          {% endfor %}
         </div>
       </div>
     </div>
