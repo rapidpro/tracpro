@@ -123,7 +123,8 @@ jQuery.fn.extend({
                 },
                 series: [{
                     name: 'Response Counts',
-                    data: data.data
+                    data: data.data,
+                    colorByPoint: true
                 }]
             });
         });
@@ -131,6 +132,11 @@ jQuery.fn.extend({
 });
 
 $(function() {
+    /* Initialize Highcharts Colors, remove the dark grey */
+    Highcharts.setOptions({
+        colors: ['#7cb5ec', '#90ed7d', '#f7a35c', '#8085e9', '#f15c80', '#e4d354', '#2b908f', '#f45b5b', '#91e8e1']
+    });
+
     /* Initialize date fields. */
     if ($("input[class^='datepicker']").length) {
         $("input[class^='datepicker']").datepicker({
