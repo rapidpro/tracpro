@@ -122,7 +122,7 @@ jQuery.fn.extend({
                     shared: true
                 },
                 series: [{
-                    name: 'Responses',
+                    name: 'Response Counts',
                     data: data.data
                 }]
             });

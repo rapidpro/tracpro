@@ -36,30 +36,21 @@ def single_pollrun(pollrun, question, answer_filters):
     chart_type = None
     chart_data = []
 
+    pollruns = PollRun.objects.filter(pk=pollrun.pk)
+    answers = get_answers(pollruns, question, answer_filters)
+    chart_data_exists = False
     if question.question_type == Question.TYPE_OPEN:
-        chart_type = 'word'
-        chart_data = []
+        chart_type = 'open-ended'
+        chart_data = multiple_pollruns_open(answers, pollruns, question)
+        if chart_data:
+            chart_data_exists = True
     else:
-        pollruns = PollRun.objects.filter(pk=pollrun.pk)
-        answers = get_answers(pollruns, question, answer_filters)
         chart_type = 'bar'
         chart_data = single_pollrun_multiple_choice(answers, pollrun)
-    """
-    if question.question_type == Question.TYPE_OPEN:
-        word_counts = pollrun.get_answer_word_counts(question, regions)
-        chart_type = 'word'
-        chart_data = word_cloud_data(word_counts)
-    elif question.question_type in (Question.TYPE_MULTIPLE_CHOICE, Question.TYPE_KEYPAD, Question.TYPE_MENU):
-        category_counts = pollrun.get_answer_category_counts(question, regions)
-        chart_type = 'pie'
-        chart_data = pie_chart_data(category_counts)
-    elif question.question_type == Question.TYPE_NUMERIC:
-        range_counts = pollrun.get_answer_auto_range_counts(question, regions)
-        chart_type = 'column'
-        chart_data = column_chart_data(range_counts)
-    else:
-    """
-    return chart_type, render_data(chart_data)
+        if chart_data['data']:
+            chart_data_exists = True
+
+    return chart_type, render_data(chart_data), chart_data_exists
 
 
 def single_pollrun_multiple_choice(answers, pollrun):

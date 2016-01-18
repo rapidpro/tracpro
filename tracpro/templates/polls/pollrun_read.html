@@ -17,12 +17,16 @@
   {% for question in questions %}
     <h3>{{ forloop.counter }}. {{ question.name }}</h3>
 
-    {% if question.chart_data %}
+    {% if question.chart_data_exists %}
         <div class="chart-{{ question.chart_type }}"
              data-chart='{{ question.chart_data }}'
              data-name="{{ question.name }}"
              style="height: 350px;" >
         </div>
+    {% else %}
+      <div class="chart-no-data">
+        No data to display for this time period.
+      </div>
     {% endif %}
 
   {% endfor %}
