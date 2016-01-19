@@ -1,6 +1,5 @@
 from __future__ import absolute_import, unicode_literals
 
-import cgi
 import datetime
 from decimal import Decimal
 from itertools import groupby
