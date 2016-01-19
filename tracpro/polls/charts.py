@@ -49,6 +49,23 @@ def single_pollrun(pollrun, question, answer_filters):
         if chart_data['data']:
             chart_data_exists = True
 
+    # Calculate/retrieve the list of sums, list of averages,
+    # and response rate for this pollrun
+    if question.question_type == Question.TYPE_NUMERIC:
+        summaries = answers.get_answer_summaries()
+        _, answer_avg = summaries.get(pollrun.pk, (0, 0))
+        responses = Response.objects.filter(answers=answers).distinct()
+        response_rate_data = response_rate_calculation(responses)
+        response_rate = response_rate_data.get(pollrun.pk, 0)
+        try:
+            answer_list = [float(a.value) for a in answers]
+            if answer_list:
+                stdev = round(numpy.std(answer_list), 2)
+            else:
+                stdev = 0
+        except (TypeError, ValueError, InvalidOperation):
+            stdev = 0
+
     return chart_type, render_data(chart_data), chart_data_exists
 
 
