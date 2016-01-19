@@ -275,13 +275,24 @@ class PollRunCRUDL(smartmin.SmartCRUDL):
                 self.request.region,
                 self.request.include_subregions)
 
+        def get_answer_filters(self):
+            contacts = Contact.objects.filter(org=self.request.org)
+
+            if self.request.region:
+                contacts = contacts.filter(region__in=self.request.data_regions)
+
+            return Q(response__is_active=True) & Q(response__contact__in=contacts)
+
         def get_context_data(self, **kwargs):
             context = super(PollRunCRUDL.Read, self).get_context_data(**kwargs)
             questions = self.object.poll.questions.active()
 
+            answer_filters = self.get_answer_filters()
             for question in questions:
-                question.chart_type, question.chart_data = charts.single_pollrun(
-                    self.object, question, self.request.data_regions)
+                (question.chart_type,
+                 question.chart_data,
+                 question.chart_data_exists) = charts.single_pollrun(
+                    self.object, question, answer_filters)
 
             context['questions'] = questions
             return context

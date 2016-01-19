@@ -1,6 +1,5 @@
 from __future__ import absolute_import, unicode_literals
 
-import cgi
 import datetime
 from decimal import Decimal
 from itertools import groupby
@@ -13,7 +12,7 @@ from dash.utils import datetime_to_ms
 from django.db.models import Count, F
 from django.core.urlresolvers import reverse
 
-from .models import Answer, Question, Response
+from .models import Answer, Question, Response, PollRun
 
 
 class ChartJsonEncoder(json.JSONEncoder):
@@ -27,29 +26,44 @@ class ChartJsonEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 
-def single_pollrun(pollrun, question, regions):
+def single_pollrun(pollrun, question, answer_filters):
     """Chart data for a single pollrun.
 
     Will be a word cloud for open-ended questions, and pie chart of categories
     for everything else.
     """
-    if question.question_type == Question.TYPE_OPEN:
-        word_counts = pollrun.get_answer_word_counts(question, regions)
-        chart_type = 'word'
-        chart_data = word_cloud_data(word_counts)
-    elif question.question_type in (Question.TYPE_MULTIPLE_CHOICE, Question.TYPE_KEYPAD, Question.TYPE_MENU):
-        category_counts = pollrun.get_answer_category_counts(question, regions)
-        chart_type = 'pie'
-        chart_data = pie_chart_data(category_counts)
-    elif question.question_type == Question.TYPE_NUMERIC:
-        range_counts = pollrun.get_answer_auto_range_counts(question, regions)
-        chart_type = 'column'
-        chart_data = column_chart_data(range_counts)
-    else:
-        chart_type = None
-        chart_data = []
+    chart_type = None
+    chart_data = []
 
-    return chart_type, render_data(chart_data)
+    pollruns = PollRun.objects.filter(pk=pollrun.pk)
+    answers = get_answers(pollruns, question, answer_filters)
+    chart_data_exists = False
+    if question.question_type == Question.TYPE_OPEN:
+        chart_type = 'open-ended'
+        chart_data = multiple_pollruns_open(answers, pollruns, question)
+        if chart_data:
+            chart_data_exists = True
+    else:
+        chart_type = 'bar'
+        chart_data = single_pollrun_multiple_choice(answers, pollrun)
+        if chart_data['data']:
+            chart_data_exists = True
+
+    return chart_type, render_data(chart_data), chart_data_exists
+
+
+def single_pollrun_multiple_choice(answers, pollrun):
+    data = []
+    categories = []
+    for category, pollrun_counts in answers.category_counts_by_pollrun():
+        categories.append(category)
+        count = pollrun_counts.get(pollrun.pk, 0)
+        data.append(count)
+
+    return {
+        'categories': categories,
+        'data': data,
+    }
 
 
 def multiple_pollruns(pollruns, question, answer_filters):
@@ -184,19 +198,6 @@ def multiple_pollruns_numeric(answers, pollruns, question):
 
 def word_cloud_data(word_counts):
     return [{'text': word, 'weight': count} for word, count in word_counts]
-
-
-def pie_chart_data(category_counts):
-    return [[cgi.escape(category), count] for category, count in category_counts]
-
-
-def column_chart_data(range_counts):
-    # highcharts needs the category labels and values separate for column charts
-    if range_counts:
-        labels, counts = zip(*range_counts)
-        return [cgi.escape(l) for l in labels], counts
-    else:
-        return []
 
 
 def render_data(chart_data):

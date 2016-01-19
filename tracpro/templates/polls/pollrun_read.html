@@ -2,22 +2,32 @@
 
 {% load smartmin %}
 {% load i18n %}
+{% load static %}
 
 {% block pre-content %}
   {% include 'polls/pollrun_header.html' with pollrun=object %}
 {% endblock pre-content %}
 
+{% block extra-script %}
+  {{ block.super }}
+  <script src="{% static "js/poll-charts.js" %}"></script>
+{% endblock extra-script %}
+
 {% block content %}
   {% for question in questions %}
     <h3>{{ forloop.counter }}. {{ question.name }}</h3>
 
-    <div class="chart"
-         data-chart-type="{{ question.chart_type }}"
-         data-unit-text="{{ question.name }}"
-         data-question-id="{{ question.pk }}"
-         dir="ltr"></div>
-    <script type='text/javascript'>
-      var chart_{{ question.pk }}_data = {{ question.chart_data|safe }};
-    </script>
+    {% if question.chart_data_exists %}
+        <div class="chart-{{ question.chart_type }}"
+             data-chart='{{ question.chart_data }}'
+             data-name="{{ question.name }}"
+             style="height: 350px;" >
+        </div>
+    {% else %}
+      <div class="chart-no-data">
+        No data to display for this time period.
+      </div>
+    {% endif %}
+
   {% endfor %}
 {% endblock content %}

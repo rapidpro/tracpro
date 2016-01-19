@@ -48,7 +48,7 @@ jQuery.fn.extend({
     chart_multiple_choice: function() {
         $(this).each(function(i, item) {
             var chart = $(item);
-            var data = chart.data('chart')
+            var data = chart.data('chart');
             chart.highcharts({
                 chart: {
                     type: 'area'
@@ -98,18 +98,55 @@ jQuery.fn.extend({
                 series: data.series
             });
         });
-    }
+    },
+    chart_bar: function() {
+        $(this).each(function(i, item) {
+            var chart = $(item);
+            var data = chart.data('chart');
+            chart.highcharts({
+                chart: {
+                    type: 'bar'
+                },
+                title: {
+                    text: ''
+                },
+                xAxis: {
+                    categories: data.categories,
+                    tickmarkPlacement: 'on'
+                },
+                yAxis: {
+                    tickInterval: 1
+                },
+                tooltip: {
+                    pointFormat: '<span style="color:{series.color}">{series.name}</span>: {point.y:,.0f}',
+                    shared: true
+                },
+                series: [{
+                    name: 'Response Counts',
+                    data: data.data,
+                    colorByPoint: true
+                }]
+            });
+        });
+    },
 });
 
 $(function() {
-    /* Initialize date fields. */
-    $("input[class^='datepicker']").datepicker({
-        changeMonth: true,
-        changeYear: true,
-        selectOtherMonths: true,
-        showOtherMonths: true,
-        yearRange: "2013:" + new Date().getFullYear()
+    /* Initialize Highcharts Colors, remove the dark grey */
+    Highcharts.setOptions({
+        colors: ['#7cb5ec', '#90ed7d', '#f7a35c', '#8085e9', '#f15c80', '#e4d354', '#2b908f', '#f45b5b', '#91e8e1']
     });
+
+    /* Initialize date fields. */
+    if ($("input[class^='datepicker']").length) {
+        $("input[class^='datepicker']").datepicker({
+            changeMonth: true,
+            changeYear: true,
+            selectOtherMonths: true,
+            showOtherMonths: true,
+            yearRange: "2013:" + new Date().getFullYear()
+        });
+    }
 
     /* Update button text when filter form display is toggled. */
     $('#filters').on('show.bs.collapse', function() {
@@ -146,4 +183,6 @@ $(function() {
     $('.chart-open-ended').chart_open_ended();
     $('.chart-numeric').chart_numeric();
     $('.chart-multiple-choice').chart_multiple_choice();
+
+    $('.chart-bar').chart_bar();
 });
