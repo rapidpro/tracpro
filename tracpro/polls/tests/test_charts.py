@@ -1,6 +1,9 @@
 from __future__ import unicode_literals
 
+import json
+
 from django.core.urlresolvers import reverse
+from django.db.models import Q
 
 from tracpro.test import factories
 from tracpro.test.cases import TracProTest
@@ -141,3 +144,35 @@ class PollChartTest(TracProTest):
         self.assertEqual(
             self.question3.response_rate_average,
             66.67)
+
+    def test_single_pollrun_multiple_choice(self):
+        answers = models.Answer.objects.filter(question=self.question1)
+        data = charts.single_pollrun_multiple_choice(answers, self.pollrun)
+
+        self.assertEqual(
+            data['data'],
+            [2, 1])
+        self.assertEqual(
+            data['categories'],
+            [u'1 - 5', u'6 - 10'])
+
+    def test_single_pollrun_open(self):
+        answer_filters = Q(response__is_active=True)
+        (chart_type,
+         chart_data,
+         chart_data_exists) = charts.single_pollrun(self.pollrun, self.question2, answer_filters)
+
+        chart_data = json.loads(chart_data)
+
+        self.assertEqual(
+            chart_type,
+            'open-ended')
+        self.assertEqual(
+            chart_data_exists,
+            True)
+        self.assertEqual(
+            chart_data[0],
+            {'text': 'rainy', 'weight': 3})
+        self.assertEqual(
+            len(chart_data),
+            2)
