@@ -1,7 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
 import datetime
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from itertools import groupby
 import json
 import numpy
@@ -34,6 +34,7 @@ def single_pollrun(pollrun, question, answer_filters):
     """
     chart_type = None
     chart_data = []
+    answer_avg, response_rate, stdev = [0, 0, 0]
 
     pollruns = PollRun.objects.filter(pk=pollrun.pk)
     answers = get_answers(pollruns, question, answer_filters)
@@ -49,7 +50,7 @@ def single_pollrun(pollrun, question, answer_filters):
         if chart_data['data']:
             chart_data_exists = True
 
-    # Calculate/retrieve the list of sums, list of averages,
+    # Calculate the average, standard deviation,
     # and response rate for this pollrun
     if question.question_type == Question.TYPE_NUMERIC:
         summaries = answers.get_answer_summaries()
@@ -63,10 +64,11 @@ def single_pollrun(pollrun, question, answer_filters):
                 stdev = round(numpy.std(answer_list), 2)
             else:
                 stdev = 0
+        # If any of the values is non-numeric, we cannot calculate the standard deviation
         except (TypeError, ValueError, InvalidOperation):
             stdev = 0
 
-    return chart_type, render_data(chart_data), chart_data_exists
+    return chart_type, render_data(chart_data), chart_data_exists, answer_avg, response_rate, stdev
 
 
 def single_pollrun_multiple_choice(answers, pollrun):
