@@ -201,18 +201,5 @@ def word_cloud_data(word_counts):
     return [{'text': word, 'weight': count} for word, count in word_counts]
 
 
-def pie_chart_data(category_counts):
-    return [[cgi.escape(category), count] for category, count in category_counts]
-
-
-def column_chart_data(range_counts):
-    # highcharts needs the category labels and values separate for column charts
-    if range_counts:
-        labels, counts = zip(*range_counts)
-        return [cgi.escape(l) for l in labels], counts
-    else:
-        return []
-
-
 def render_data(chart_data):
     return json.dumps(chart_data, cls=ChartJsonEncoder)
