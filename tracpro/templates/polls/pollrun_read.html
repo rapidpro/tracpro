@@ -15,7 +15,12 @@
 
 {% block content %}
   {% for question in questions %}
-    <h3>{{ forloop.counter }}. {{ question.name }}</h3>
+    <h3>
+      {{ forloop.counter }}. {{ question.name }}
+      {% if request.region %}
+         / Region: {{ request.region }}
+      {% endif %}
+    </h3>
 
     {% if question.chart_data_exists %}
         <div class="chart-{{ question.chart_type }}"
