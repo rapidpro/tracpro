@@ -291,7 +291,10 @@ class PollRunCRUDL(smartmin.SmartCRUDL):
             for question in questions:
                 (question.chart_type,
                  question.chart_data,
-                 question.chart_data_exists) = charts.single_pollrun(
+                 question.chart_data_exists,
+                 question.answer_mean,
+                 question.response_rate_average,
+                 question.answer_stdev) = charts.single_pollrun(
                     self.object, question, answer_filters)
 
             context['questions'] = questions

@@ -23,6 +23,8 @@
              data-name="{{ question.name }}"
              style="height: 350px;" >
         </div>
+
+        {% include 'polls/answer_calculations.html' %}
     {% else %}
       <div class="chart-no-data">
         No data to display for this time period.

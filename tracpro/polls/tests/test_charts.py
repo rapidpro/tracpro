@@ -160,8 +160,10 @@ class PollChartTest(TracProTest):
         answer_filters = Q(response__is_active=True)
         (chart_type,
          chart_data,
-         chart_data_exists) = charts.single_pollrun(self.pollrun, self.question2, answer_filters)
-
+         chart_data_exists,
+         answer_avg,
+         response_rate,
+         stdev) = charts.single_pollrun(self.pollrun, self.question2, answer_filters)
         chart_data = json.loads(chart_data)
 
         self.assertEqual(
@@ -176,3 +178,31 @@ class PollChartTest(TracProTest):
         self.assertEqual(
             len(chart_data),
             2)
+
+    def test_single_pollrun_numeric(self):
+        # Answers for question 3 = 8, 3 and 4
+        # Average = 5, Response Rate = 100%, STDEV = 2.16
+        answer_filters = Q(response__is_active=True)
+        (chart_type,
+         chart_data,
+         chart_data_exists,
+         answer_avg,
+         response_rate,
+         stdev) = charts.single_pollrun(self.pollrun, self.question3, answer_filters)
+        chart_data = json.loads(chart_data)
+
+        self.assertEqual(
+            chart_type,
+            'bar')
+        self.assertEqual(
+            chart_data_exists,
+            True)
+        self.assertEqual(
+            answer_avg,
+            5)
+        self.assertEqual(
+            response_rate,
+            100)
+        self.assertEqual(
+            stdev,
+            2.16)
