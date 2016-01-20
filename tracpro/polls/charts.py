@@ -168,6 +168,7 @@ def multiple_pollruns_multiple_choice(answers, pollruns, question):
         })
 
     dates = [pollrun.conducted_on.strftime('%Y-%m-%d') for pollrun in pollruns]
+
     return {
         'dates': dates,
         'series': series,
