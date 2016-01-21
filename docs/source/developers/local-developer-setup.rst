@@ -77,7 +77,7 @@ may be needed for Mac setup. To begin you should have the following applications
 
 #. Create Super User
 
-    If creating a super user, be sure to select a valid password. TracPro enforces an 8 character minimum password
+    If creating a super user, be sure to select a valid password. TracPro enforces an 8 character minimum password.
 
 #. Run the development server and navigate to
    `localhost:8000 <http://localhost:8000>`_::
