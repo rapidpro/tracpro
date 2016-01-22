@@ -22,16 +22,12 @@ class DateRangeFilterForm(forms.Form):
     date_range = forms.ChoiceField(
         label=_("Date range"),
         choices=DATE_WINDOW_CHOICES)
-    start_date = forms.DateTimeField(
+    start_date = filter_fields.FilterDateField(
         label=_("Start date"),
-        required=False,
-        widget=forms.widgets.DateInput(attrs={'class': 'datepicker'}),
-        error_messages={'invalid': "Please enter a valid date."})
-    end_date = forms.DateTimeField(
+        required=False)
+    end_date = filter_fields.FilterDateField(
         label=_("End date"),
-        required=False,
-        widget=forms.widgets.DateInput(attrs={'class': 'datepicker'}),
-        error_messages={'invalid': "Please enter a valid date."})
+        required=False)
 
     def clean(self):
         self.cleaned_data = super(DateRangeFilterForm, self).clean()
