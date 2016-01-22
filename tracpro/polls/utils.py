@@ -51,7 +51,7 @@ def extract_words(text, language):
     return [w for w in words if w not in ignore_words and len(w) > 1]
 
 
-def category_natural_key(category):
-    """Categories should use natural sort, e.g., 11 comes before 100."""
-    return [int(c) if c.isdigit() else c.lower()
-            for c in re.split('([0-9]+)', category)]
+def natural_sort_key(text):
+    """Sort text in a humanized way, e.g., 11 comes before 100."""
+    return [int(t) if t.isdigit() else t.lower()
+            for t in re.split('([0-9]+)', text)]
