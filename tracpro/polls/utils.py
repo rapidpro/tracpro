@@ -49,3 +49,12 @@ def extract_words(text, language):
     words = re.split(r"[^\w'-]", text.lower(), flags=re.UNICODE)
     ignore_words = ignore_words
     return [w for w in words if w not in ignore_words and len(w) > 1]
+
+
+def category_natural_key(category):
+    """Categories should use natural sort, e.g., 11 comes before 100."""
+    num = re.search(r"\d+", category)
+    if num:
+        return float(category[num.start():num.end()])
+    else:
+        return category
