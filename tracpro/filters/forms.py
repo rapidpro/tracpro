@@ -3,11 +3,29 @@ from dateutil.relativedelta import relativedelta
 from dash.utils import get_month_range
 
 from django import forms
+from django.forms.forms import DeclarativeFieldsMetaclass
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 
+import six
 
-class DateRangeFilterForm(forms.Form):
+from . import fields as filter_fields
+
+
+class FilterForm(forms.Form):
+
+    def __init__(self, *args, **kwargs):
+        self.org = kwargs.pop('org')
+        super(FilterForm, self).__init__(*args, **kwargs)
+
+
+class Filter(six.with_metaclass(DeclarativeFieldsMetaclass, object)):
+    # The metaclass is what does the work to set up fields
+    # that are declared as attributes of the class.
+    pass
+
+
+class DateRangeFilter(Filter):
     DATE_WINDOW_CHOICES = (
         ('', ''),
         ('month', _("Current month")),
@@ -30,7 +48,7 @@ class DateRangeFilterForm(forms.Form):
         required=False)
 
     def clean(self):
-        self.cleaned_data = super(DateRangeFilterForm, self).clean()
+        self.cleaned_data = super(DateRangeFilter, self).clean()
         window = self.cleaned_data.get('date_range')
         if window == 'custom':
             # Only apply additional checks if data did not have errors.
@@ -80,15 +98,14 @@ class DateRangeFilterForm(forms.Form):
         return self.cleaned_data
 
 
-class DataFieldFilterForm(forms.Form):
+class DataFieldFilter(Filter):
 
     def __init__(self, *args, **kwargs):
-        self.org = kwargs.pop('org')
+        super(DataFieldFilter, self).__init__(*args, **kwargs)
         self.contact_fields = []
         for data_field in self.org.datafield_set.visible():
             field_name = 'contact_{}'.format(data_field.key)
             self.contact_fields.append((field_name, data_field))
-            self.base_fields[field_name] = forms.CharField(
+            self.fields[field_name] = forms.CharField(
                 label='Contact: {}'.format(data_field.display_name),
                 required=False)
-        super(DataFieldFilterForm, self).__init__(*args, **kwargs)

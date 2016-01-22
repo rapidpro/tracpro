@@ -52,7 +52,8 @@ class ActivePollsForm(forms.Form):
         models.Poll.objects.set_active_for_org(self.org, uuids)
 
 
-class PollChartFilterForm(filters.DateRangeFilterForm, filters.DataFieldFilterForm):
+class PollChartFilterForm(filters.DateRangeFilter, filters.DataFieldFilter,
+                          filters.FilterForm):
     NUMERIC_DATA_CHOICES = (
         ('', ''),
         ('sum', _("Sum of responses")),
