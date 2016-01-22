@@ -13,11 +13,27 @@ may be needed for Mac setup. To begin you should have the following applications
 - Postgres >= 9.3
 - git >= 1.7
 
+#. Install the LESS CSS precompiler and the CoffeeScript JavaScript compiler using ``npm``.
+   First, install ``nodejs`` which comes with ``npm``::
 
-#. Clone the repo and switch to the new directory::
+    sudo apt-get install python-software-properties
+    sudo add-apt-repository ppa:chris-lea/node.js
+    sudo apt-get update
+    sudo apt-get install nodejs
+
+   Then, use ``npm`` to install ``less`` and ``coffee``::
+
+    sudo npm install less coffee-script -g
+
+   **NOTE:** You may already have ``less``, ``coffee`` or ``npm`` installed.
+   Before running installation commands, use ``which [program_name]`` to see
+   if the path to the program's executable is known.
+
+#. Clone the repo and check out the ``develop`` branch::
 
     $ git clone git@github.com:rapidpro/tracpro.git
     $ cd tracpro
+    $ git checkout develop    
 
 #. Create a virtual environment using Python 2.7 and install the project
    requirements::
@@ -27,11 +43,12 @@ may be needed for Mac setup. To begin you should have the following applications
     $ mkvirtualenv tracpro -p `which python2.7`
     (tracpro)$ $VIRTUAL_ENV/bin/pip install -r $PWD/requirements/dev.txt
 
-#. Create a local settings file and set your DJANGO_SETTINGS_MODULE to use it::
+#. Create a local settings file and set your DJANGO_SETTINGS_MODULE to use it and restart the environment so that the change will take effect::
 
     (tracpro)$ cp tracpro/settings/local.example.py tracpro/settings/local.py
     (tracpro)$ echo "export DJANGO_SETTINGS_MODULE=tracpro.settings.local" >> $VIRTUAL_ENV/bin/postactivate
     (tracpro)$ echo "unset DJANGO_SETTINGS_MODULE" >> $VIRTUAL_ENV/bin/postdeactivate
+    (tracpro)$ deactivate && workon tracpro
 
    You may edit this file to make environment changes that are local to your machine. This file is listed in the `.gitignore <https://github.com/rapidpro/tracpro/blob/develop/.gitignore>`_ file and should never be checked into GitHub.
 
@@ -58,6 +75,9 @@ may be needed for Mac setup. To begin you should have the following applications
 
    The default development settings file connects to `app.rapidpro.io <http://app.rapidpro.io>`_.To integrate with a different RapidPro instance, either edit this file or create a new settings file.
 
+#. Create Super User
+
+   If creating a super user, be sure to select a valid password. TracPro enforces an 8 character minimum password.
 
 #. Run the development server and navigate to
    `localhost:8000 <http://localhost:8000>`_::
