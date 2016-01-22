@@ -34,13 +34,16 @@
   {% for question, chart_type, data in question_data %}
     <div class="poll-question">
       <h3>
-        {{ forloop.counter }}. {{ question.name }}:
+        {{ forloop.counter }}. {{ question.name }}
         {% if question.question_type == question.TYPE_NUMERIC %}
           <span class="data-type"></span>
         {% elif question.question_type == question.TYPE_OPEN %}
-          Open-ended
+          (Open-ended)
         {% elif question.question_type == question.TYPE_MULTIPLE_CHOICE %}
-          Categorical
+          (Categorical)
+        {% endif %}
+        {% if request.region %}
+           / Region: {{ request.region }}
         {% endif %}
       </h3>
 
