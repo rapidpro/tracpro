@@ -53,8 +53,5 @@ def extract_words(text, language):
 
 def category_natural_key(category):
     """Categories should use natural sort, e.g., 11 comes before 100."""
-    num = re.search(r"\d+", category)
-    if num:
-        return float(category[num.start():num.end()])
-    else:
-        return category
+    return [int(c) if c.isdigit() else c.lower()
+            for c in re.split('([0-9]+)', category)]
