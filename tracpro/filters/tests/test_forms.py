@@ -8,15 +8,20 @@ import pytz
 
 from django.forms import ALL_FIELDS
 
+from tracpro.test import factories
 from tracpro.test.cases import TracProTest
 
 from .. import forms
 
 
-class TestDateRangeFilterForm(TracProTest):
+class TestDateRangeFilterForm(forms.DateRangeFilter, forms.FilterForm):
+    pass
+
+
+class TestDateRangeFilter(TracProTest):
 
     def setUp(self):
-        super(TestDateRangeFilterForm, self).setUp()
+        super(TestDateRangeFilter, self).setUp()
 
         # Mock time-dependent utilities so that there is a testable result.
         self.month_range_patcher = mock.patch('tracpro.filters.forms.get_month_range')
@@ -37,10 +42,15 @@ class TestDateRangeFilterForm(TracProTest):
             'end_date': datetime.datetime(2014, 10, 22, tzinfo=pytz.UTC),
         }
 
+        self.org = factories.Org()
+
     def tearDown(self):
-        super(TestDateRangeFilterForm, self).tearDown()
+        super(TestDateRangeFilter, self).tearDown()
         self.month_range_patcher.stop()
         self.now_patcher.stop()
+
+    def get_form(self):
+        return TestDateRangeFilterForm(data=self.data, org=self.org)
 
     def _check_data(self, form, date_range, start_date, end_date):
         """Check that the form is valid and has the expected data."""
@@ -54,7 +64,7 @@ class TestDateRangeFilterForm(TracProTest):
     def test_date_range_required(self):
         """Date range choice is required."""
         self.data.pop('date_range')
-        form = forms.DateRangeFilterForm(data=self.data)
+        form = self.get_form()
         self.assertFalse(form.is_valid())
         self.assertDictEqual(form.errors, {
             'date_range': ['This field is required.'],
@@ -63,7 +73,7 @@ class TestDateRangeFilterForm(TracProTest):
     def test_date_range_invalid(self):
         """Date range must come from a list of valid choices."""
         self.data['date_range'] = 'invalid'
-        form = forms.DateRangeFilterForm(data=self.data)
+        form = self.get_form()
         self.assertFalse(form.is_valid())
         self.assertDictEqual(form.errors, {
             'date_range': ['Select a valid choice. '
@@ -80,7 +90,7 @@ class TestDateRangeFilterForm(TracProTest):
         """Set start and end dates appropriately if month is specified."""
         self.data['date_range'] = 'month'
         self._check_data(
-            form=forms.DateRangeFilterForm(data=self.data),
+            form=self.get_form(),
             date_range='month',
             start_date=datetime.datetime(2016, 2, 1, tzinfo=pytz.UTC),
             end_date=datetime.datetime(2016, 2, 29, tzinfo=pytz.UTC),
@@ -100,7 +110,7 @@ class TestDateRangeFilterForm(TracProTest):
             self.data['date_range'] = choice
             end_date = datetime.datetime(2016, 2, 15, tzinfo=pytz.UTC)
             self._check_data(
-                form=forms.DateRangeFilterForm(data=self.data),
+                form=self.get_form(),
                 date_range=choice,
                 end_date=end_date,
                 start_date=end_date - relativedelta(**{unit: number}),
@@ -112,7 +122,7 @@ class TestDateRangeFilterForm(TracProTest):
         self.data['end_date'] = 'invalid'
         self.data['date_range'] = 'month'
         self._check_data(
-            form=forms.DateRangeFilterForm(data=self.data),
+            form=self.get_form(),
             date_range='month',
             start_date=datetime.datetime(2016, 2, 1, tzinfo=pytz.UTC),
             end_date=datetime.datetime(2016, 2, 29, tzinfo=pytz.UTC),
@@ -121,7 +131,7 @@ class TestDateRangeFilterForm(TracProTest):
     def test_clean__custom_date_range(self):
         """Do not reset start and end dates if custom date range is specified."""
         self._check_data(
-            form=forms.DateRangeFilterForm(data=self.data),
+            form=self.get_form(),
             date_range='custom',
             start_date=self.data['start_date'],
             end_date=self.data['end_date'],
@@ -130,7 +140,7 @@ class TestDateRangeFilterForm(TracProTest):
     def test_clean__custom_date_range__no_end_date(self):
         self.data.pop('end_date')
         self._check_data(
-            form=forms.DateRangeFilterForm(data=self.data),
+            form=self.get_form(),
             date_range='custom',
             start_date=self.data['start_date'],
             end_date=None,
@@ -139,7 +149,7 @@ class TestDateRangeFilterForm(TracProTest):
     def test_clean__custom_date_range__no_start_date(self):
         self.data.pop('start_date')
         self._check_data(
-            form=forms.DateRangeFilterForm(data=self.data),
+            form=self.get_form(),
             date_range='custom',
             start_date=None,
             end_date=self.data['end_date'],
@@ -149,7 +159,7 @@ class TestDateRangeFilterForm(TracProTest):
         """Don't apply additional checks if start or end dates are invalid."""
         self.data['start_date'] = 'invalid'
         self.data['end_date'] = 'invalid'
-        form = forms.DateRangeFilterForm(data=self.data)
+        form = self.get_form()
         self.assertFalse(form.is_valid())
         self.assertDictEqual(form.errors, {
             'start_date': ["Please enter a valid date."],
@@ -160,7 +170,7 @@ class TestDateRangeFilterForm(TracProTest):
         """Either start and end date must be specified for a custom date range."""
         self.data.pop('end_date')
         self.data.pop('start_date')
-        form = forms.DateRangeFilterForm(data=self.data)
+        form = self.get_form()
         self.assertFalse(form.is_valid())
         self.assertDictEqual(form.errors, {
             ALL_FIELDS: ["Please choose a start date or an end date."],
@@ -170,7 +180,7 @@ class TestDateRangeFilterForm(TracProTest):
         """Start date must come before end date."""
         start_date, end_date = self.data['start_date'], self.data['end_date']
         self.data['end_date'], self.data['start_date'] = start_date, end_date
-        form = forms.DateRangeFilterForm(data=self.data)
+        form = self.get_form()
         self.assertFalse(form.is_valid())
         self.assertDictEqual(form.errors, {
             'end_date': ["End date must be after start date."],
