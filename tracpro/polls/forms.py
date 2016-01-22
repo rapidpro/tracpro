@@ -67,9 +67,9 @@ class PollChartFilterForm(filters.DateRangeFilter, filters.DataFieldFilter,
         choices=NUMERIC_DATA_CHOICES)
 
     def __init__(self, *args, **kwargs):
-        data = kwargs.get('data')
-        if not data:
+        if not kwargs.get('data'):
             # Set valid data if none was provided.
+            # Form will always be considered bound.
             start_date, end_date = get_month_range()
             kwargs['data'] = {
                 'numeric': 'sum',
@@ -77,8 +77,4 @@ class PollChartFilterForm(filters.DateRangeFilter, filters.DataFieldFilter,
                 'start_date': start_date,
                 'end_date': end_date,
             }
-        else:
-            # Create a copy of the data, and remove unrelated fields.
-            kwargs['data'] = {k: v for k, v in data.items() if k in self.base_fields}
-
         super(PollChartFilterForm, self).__init__(*args, **kwargs)
