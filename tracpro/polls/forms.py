@@ -68,7 +68,7 @@ class PollChartFilterForm(filters.DateRangeFilter, filters.DataFieldFilter,
 
     def __init__(self, *args, **kwargs):
         if not kwargs.get('data'):
-            # Set valid data if none was provided.
+            # Set valid data if None (or {}) was provided.
             # Form will always be considered bound.
             start_date, end_date = get_month_range()
             kwargs['data'] = {

@@ -1,3 +1,5 @@
+import copy
+
 from dateutil.relativedelta import relativedelta
 
 from dash.utils import get_month_range
@@ -16,7 +18,14 @@ class FilterForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         self.org = kwargs.pop('org')
+
         super(FilterForm, self).__init__(*args, **kwargs)
+
+        # Create a shallow copy of the data to ensure that it is
+        # mutable. Some filters need the ability to overwrite the
+        # data that was passed in.
+        if self.data is not None:
+            self.data = copy.copy(self.data)
 
 
 class Filter(six.with_metaclass(DeclarativeFieldsMetaclass, object)):
