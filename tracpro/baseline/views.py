@@ -20,7 +20,7 @@ from smartmin.users.views import SmartFormView
 from tracpro.polls.models import Answer, PollRun, Response
 
 from .models import BaselineTerm
-from .forms import BaselineTermForm, SpoofDataForm
+from .forms import BaselineTermForm, SpoofDataForm, BaselineTermFilterForm
 from .utils import chart_baseline
 
 
@@ -77,28 +77,17 @@ class BaselineTermCRUDL(SmartCRUDL):
         def get_context_data(self, **kwargs):
             context = super(BaselineTermCRUDL.Read, self).get_context_data(**kwargs)
 
-            # Get the region from the region filter drop-down, if it was selected
-            try:
-                region = int(self.request.GET.get('region', 0))
-            except ValueError:
-                region = None
-                context['error_message'] = _(
-                    "%s is not a valid region. Please select a valid region from the drop-down."
-                    % (self.request.GET.get('region', '')))
+            filter_form = BaselineTermFilterForm(
+                baseline_term=self.object, data=self.request.GET)
+            filter_form.full_clean()
 
-            # If the user selected a region, only retrieve/display data for that region
-            if region:
-                region_selected = region
-                context['region_selected'] = region_selected
-            else:
-                region_selected = None
-
+            region = filter_form.cleaned_data.get('region')
             (follow_up_list, baseline_list, all_regions, date_list,
              baseline_mean, baseline_std, follow_up_mean, follow_up_std,
              baseline_response_rate, follow_up_response_rate) = chart_baseline(
-                self.object, self.request.data_regions, region_selected)
+                self.object, self.request.data_regions, region)
 
-            context['all_regions'] = all_regions
+            context['form'] = filter_form
             context['date_list'] = date_list
             context['baseline_list'] = baseline_list
             context['follow_up_list'] = follow_up_list
@@ -111,11 +100,11 @@ class BaselineTermCRUDL(SmartCRUDL):
 
             # This value is for when the user would rather display a goal they enter manually,
             # instead of the baseline poll results
-            context['goal_selected'] = int(self.request.GET.get('goal', 0))
-            if context['goal_selected']:
-                context['baseline_mean'] = context['goal_selected']
+            goal = filter_form.cleaned_data.get('goal')
+            if goal:
+                context['baseline_mean'] = goal
                 context['baseline_std'] = 0
-                context['goal_selected'] = [context['goal_selected']] * len(date_list)
+                context['goal_selected'] = [goal] * len(date_list)
 
             if len(context['follow_up_list']) == 0 and len(context['baseline_list']) == 0:
                 context['no_data'] = 1

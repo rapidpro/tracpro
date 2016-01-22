@@ -1,5 +1,21 @@
 {% extends "smartmin/read.html" %}
-{% load smartmin i18n %}
+
+{% load i18n %}
+{% load staticfiles %}
+{% load smartmin %}
+
+{% block extra-style %}
+  {{ block.super }}
+  <link rel="stylesheet" type="text/css"
+        href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/themes/smoothness/jquery-ui.css">
+{% endblock extra-style %}
+
+{% block extra-script %}
+  <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
+
+  <script src="{% static "js/filters.js" %}">
+  {% include 'baseline/baselineterm_chart.html' %}
+{% endblock extra-script %}
 
 {% block pre-content %}
 
@@ -66,8 +82,3 @@
 </tbody>
 </table>
 {% endblock fields %}
-
-
-{% block extra-script %}
-    {% include 'baseline/baselineterm_chart.html' %}
-{% endblock extra-script %}

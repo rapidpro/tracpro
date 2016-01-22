@@ -3,6 +3,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from tracpro.polls.models import Poll, Question
 from tracpro.contacts.models import Contact
+
 from .models import BaselineTerm
 
 
@@ -129,3 +130,19 @@ class SpoofDataForm(forms.Form):
                 _("Follow up maximum should exceed or equal minimum."))
 
         return cleaned_data
+
+
+class BaselineTermFilterForm(forms.Form):
+    goal = forms.FloatField(
+        required=False,
+        label=_("Goal"),
+        help_text=_("If specified, this value will be used instead of baseline data."))
+    region = forms.ModelChoiceField(
+        required=False,
+        label=_("Filter by region"),
+        queryset=None,
+        empty_label=_("All regions"))
+
+    def __init__(self, baseline_term, *args, **kwargs):
+        super(BaselineTermFilterForm, self).__init__(*args, **kwargs)
+        self.fields['region'].queryset = baseline_term.get_regions()
