@@ -29,6 +29,11 @@ class BaselineTermCRUDL(SmartCRUDL):
     actions = ('create', 'read', 'update', 'delete', 'list', 'data_spoof', 'clear_spoof')
     path = "indicators"
 
+    class BaselineTermMixin(object):
+
+        def get_queryset(self):
+            return BaselineTerm.get_all(self.request.org)
+
     class Create(OrgPermsMixin, SmartCreateView):
         form_class = BaselineTermForm
         success_url = 'id@baseline.baselineterm_read'
@@ -38,39 +43,29 @@ class BaselineTermCRUDL(SmartCRUDL):
             kwargs['user'] = self.request.user
             return kwargs
 
-    class List(OrgPermsMixin, SmartListView):
+    class List(BaselineTermMixin, OrgPermsMixin, SmartListView):
+        default_order = ('-start_date', '-end_date')
         fields = ('name', 'start_date', 'end_date',
                   'baseline_question', 'follow_up_question')
         link_fields = ('name')
 
-        def derive_queryset(self, **kwargs):
-            qs = BaselineTerm.get_all(self.request.org)
-            qs = qs.order_by('-start_date', '-end_date')
-            return qs
-
-    class Delete(OrgObjPermsMixin, SmartDeleteView):
+    class Delete(BaselineTermMixin, OrgObjPermsMixin, SmartDeleteView):
         cancel_url = '@baseline.baselineterm_list'
         redirect_url = reverse_lazy('baseline.baselineterm_list')
 
-    class Update(OrgObjPermsMixin,  SmartUpdateView):
+    class Update(BaselineTermMixin, OrgObjPermsMixin,  SmartUpdateView):
         form_class = BaselineTermForm
-        delete_url = ''     # Turn off the smartmin delete button for this view
+        delete_url = ''  # Turn off the smartmin delete button for this view
         success_url = 'id@baseline.baselineterm_read'
-
-        def derive_queryset(self, **kwargs):
-            return BaselineTerm.get_all(self.request.org)
 
         def get_form_kwargs(self):
             kwargs = super(BaselineTermCRUDL.Update, self).get_form_kwargs()
             kwargs['user'] = self.request.user
             return kwargs
 
-    class Read(OrgObjPermsMixin, SmartReadView):
+    class Read(BaselineTermMixin, OrgObjPermsMixin, SmartReadView):
         fields = ("start_date", "end_date", "baseline_poll", "baseline_question",
                   "follow_up_poll", "follow_up_question")
-
-        def derive_queryset(self, **kwargs):
-            return BaselineTerm.get_all(self.request.org)
 
         def get_context_data(self, **kwargs):
             context = super(BaselineTermCRUDL.Read, self).get_context_data(**kwargs)
