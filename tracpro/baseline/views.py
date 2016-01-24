@@ -3,9 +3,9 @@ from dateutil import rrule
 import pytz
 import random
 
-from django.core.urlresolvers import reverse
+from django.core.urlresolvers import reverse_lazy
+from django.shortcuts import redirect
 from django.utils.translation import ugettext_lazy as _
-from django.http import HttpResponseRedirect
 from django.views.generic import View
 
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
@@ -50,9 +50,7 @@ class BaselineTermCRUDL(SmartCRUDL):
 
     class Delete(OrgObjPermsMixin, SmartDeleteView):
         cancel_url = '@baseline.baselineterm_list'
-
-        def get_redirect_url(self):
-            return reverse('baseline.baselineterm_list')
+        redirect_url = reverse_lazy('baseline.baselineterm_list')
 
     class Update(OrgObjPermsMixin,  SmartUpdateView):
         form_class = BaselineTermForm
@@ -123,7 +121,7 @@ class BaselineTermCRUDL(SmartCRUDL):
         def dispatch(self, request, *args, **kwargs):
             # Prevent Data Spoof for orgs with show_spoof_data turned off
             if not self.request.org.show_spoof_data:
-                return HttpResponseRedirect(reverse('baseline.baselineterm_list'))
+                return redirect('baseline.baselineterm_list')
             return super(BaselineTermCRUDL.DataSpoof, self).dispatch(request, *args, **kwargs)
 
         def get_form_kwargs(self):
@@ -196,14 +194,14 @@ class BaselineTermCRUDL(SmartCRUDL):
                         category=u'')
                 loop_count += 1
 
-            return HttpResponseRedirect(self.get_success_url())
+            return redirect(self.get_success_url())
 
     class ClearSpoof(OrgPermsMixin, SmartView, View):
 
         def dispatch(self, request, *args, **kwargs):
             # Prevent Data Spoof for orgs with show_spoof_data turned off
             if not self.request.org.show_spoof_data:
-                return HttpResponseRedirect(reverse('baseline.baselineterm_list'))
+                return redirect('baseline.baselineterm_list')
             return super(BaselineTermCRUDL.ClearSpoof, self).dispatch(request, *args, **kwargs)
 
         def post(self, request, *args, **kwargs):
@@ -215,4 +213,4 @@ class BaselineTermCRUDL(SmartCRUDL):
             # from PollRun, Answer and Response
             pollruns.delete()
 
-            return HttpResponseRedirect(reverse('baseline.baselineterm_list'))
+            return redirect('baseline.baselineterm_list')
