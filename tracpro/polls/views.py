@@ -40,10 +40,11 @@ class PollCRUDL(smartmin.SmartCRUDL):
 
         def get(self, request, *args, **kwargs):
             self.object = self.get_object()
-            self.filter_form = forms.ChartFilterForm(org=self.object.org, data=request.GET)
+            self.filter_form = forms.PollChartFilterForm(
+                org=self.object.org, data=request.GET)
             return self.render_to_response(self.get_context_data(
                 object=self.object,
-                filter_form=self.filter_form,
+                form=self.filter_form,
                 question_data=self.get_question_data(),
             ))
 
