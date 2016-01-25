@@ -93,7 +93,7 @@ def multiple_pollruns(pollruns, question, answer_filters):
             multiple_pollruns_numeric(answers, pollruns, question)
             data = multiple_pollruns_multiple_choice(answers, pollruns, question)
 
-    return chart_type, render_data(data) if data else None
+    return chart_type, data
 
 
 def get_answers(pollruns, question, filters):
