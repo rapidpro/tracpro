@@ -718,6 +718,7 @@ class AnswerQuerySet(models.QuerySet):
             pollrun_counts = Counter(a['response__pollrun'] for a in _answers)
             counts.append((category, pollrun_counts))
 
+        # Order the data by the category name.
         counts.sort(key=lambda (category, pollrun_counts): natural_sort_key(category))
         return counts
 
