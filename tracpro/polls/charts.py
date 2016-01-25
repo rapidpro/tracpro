@@ -1,16 +1,12 @@
 from __future__ import absolute_import, unicode_literals
 
 from decimal import InvalidOperation
-from itertools import groupby
 import numpy
-from operator import itemgetter
-
-from django.db.models import Count, F
 
 from tracpro.charts.formatters import format_series, format_x_axis
 from tracpro.charts.utils import render_data
 
-from .models import Answer, Question, Response, PollRun
+from .models import Answer, PollRun, Question, Response
 
 
 def single_pollrun(pollrun, question, answer_filters):
@@ -41,10 +37,11 @@ def single_pollrun(pollrun, question, answer_filters):
     # and response rate for this pollrun
     if question.question_type != Question.TYPE_OPEN:
         _, answer_avgs = answers.get_answer_summaries()
-        answer_avg = answer_avgs.get(pollrun.pk, 0)
         responses = Response.objects.filter(answers=answers).distinct()
-        response_rate_data = response_rate_calculation(responses)
-        response_rate = response_rate_data.get(pollrun.pk, 0)
+        response_rates = responses.get_response_rates()
+
+        answer_avg = answer_avgs.get(pollrun.pk, 0)
+        response_rate = response_rates.get(pollrun.pk, 0)
         try:
             answer_list = [float(a.value) for a in answers]
             if answer_list:
@@ -126,48 +123,12 @@ def multiple_pollruns_multiple_choice(answers, pollruns, question):
     }
 
 
-def response_rate_calculation(responses):
-    """Return a list of response rates for the pollruns."""
-    # A response is complete if its status attribute equals STATUS_COMPLETE.
-    # This uses an internal, _combine, because F expressions have not
-    # exposed the SQL '=' operator.
-    is_complete = F('status')._combine(Response.STATUS_COMPLETE, '=', False)
-    responses = responses.annotate(is_complete=is_complete)
-
-    # Count responses by completion status per pollrun.
-    # When an annotation is applied to a values() result, the annotation
-    # results are grouped by the unique combinations of the fields specified
-    # in the values() clause. Result looks like:
-    #   [
-    #       {'pollrun': 123, 'is_complete': True, 'count': 5},
-    #       {'pollrun': 123, 'is_complete': False, 'count': 10},
-    #       {'pollrun': 456, 'is_complete': True, 'count': 7},
-    #       {'pollrun': 456, 'is_complete': False, 'count': 12},
-    #       ...
-    #   ]
-    responses = responses.order_by('pollrun')
-    responses = responses.values('pollrun', 'is_complete')
-    responses = responses.annotate(count=Count('pk'))
-
-    response_rates = {}
-    for pollrun_id, data in groupby(responses, itemgetter('pollrun')):
-        # completion status (True/False) -> response count
-        completion = {d['is_complete']: d['count'] for d in data}
-        complete = completion.get(True, 0)
-        incomplete = completion.get(False, 0)
-        response_rates[pollrun_id] = round(100.0 * complete / (complete + incomplete), 2)
-    return response_rates
-
-
 def multiple_pollruns_numeric(answers, pollruns, question):
     """Chart data for multiple pollruns of a poll."""
-    # Calculate answer sum and answer average per pollrun.
-    answers = answers.select_related('response')
     answer_sums, answer_avgs = answers.get_answer_summaries()
 
-    # Calculate response rate per pollrun.
     responses = Response.objects.filter(answers=answers).distinct()
-    response_rates = response_rate_calculation(responses)
+    response_rates = responses.get_response_rates()
 
     sum_data = format_series(pollruns, answer_sums, url='id@polls.pollrun_read')
     avg_data = format_series(pollruns, answer_avgs, url='id@polls.pollrun_read')
