@@ -7,6 +7,7 @@ from operator import itemgetter
 
 from dateutil.relativedelta import relativedelta
 from enum import Enum
+import numpy
 import pytz
 
 from django.conf import settings
@@ -22,7 +23,8 @@ from dash.utils import get_cacheable, get_month_range
 from tracpro.contacts.models import Contact
 
 from .tasks import pollrun_start
-from .utils import auto_range_categories, extract_words, natural_sort_key
+from .utils import (
+    auto_range_categories, extract_words, get_numeric_values, natural_sort_key)
 
 
 class Window(Enum):
@@ -770,22 +772,14 @@ class AnswerQuerySet(models.QuerySet):
     def get_answer_summaries(self):
         """Return the sum and average of numeric answers to each pollrun."""
         answers = self.order_by('response__pollrun')
+        answers = answers.values('value', 'response__pollrun')
 
         answer_sums = {}
         answer_avgs = {}
-        answers = answers.values('value', 'response__pollrun')
         for pollrun_id, _answers in groupby(answers, itemgetter('response__pollrun')):
-            answer_sum = 0
-            answer_count = 0
-            for answer in _answers:
-                try:
-                    answer_sum += float(answer['value'])
-                    answer_count += 1
-                except (TypeError, ValueError, InvalidOperation):
-                    pass
-            answer_avg = round(answer_sum / answer_count, 2) if answer_count else 0
-            answer_sums[pollrun_id] = answer_sum
-            answer_avgs[pollrun_id] = answer_avg
+            numeric_values = get_numeric_values(a['value'] for a in _answers)
+            answer_sums[pollrun_id] = numpy.sum(numeric_values)
+            answer_avgs[pollrun_id] = numpy.mean(numeric_values) if numeric_values else 0
 
         return answer_sums, answer_avgs
 

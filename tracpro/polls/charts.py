@@ -1,12 +1,12 @@
 from __future__ import absolute_import, unicode_literals
 
-from decimal import InvalidOperation
 import numpy
 
 from tracpro.charts.formatters import format_series, format_x_axis
 from tracpro.charts.utils import render_data
 
 from .models import Answer, PollRun, Question, Response
+from .utils import get_numeric_values
 
 
 def single_pollrun(pollrun, question, answer_filters):
@@ -42,15 +42,8 @@ def single_pollrun(pollrun, question, answer_filters):
 
         answer_avg = answer_avgs.get(pollrun.pk, 0)
         response_rate = response_rates.get(pollrun.pk, 0)
-        try:
-            answer_list = [float(a.value) for a in answers]
-            if answer_list:
-                stdev = round(numpy.std(answer_list), 2)
-            else:
-                stdev = 0
-        # If any of the values is non-numeric, we cannot calculate the standard deviation
-        except (TypeError, ValueError, InvalidOperation):
-            stdev = 0
+        numeric_values = get_numeric_values(answers.values_list('value', flat=True))
+        stdev = round(numpy.std(numeric_values), 2)
 
     return chart_type, render_data(chart_data), chart_data_exists, answer_avg, response_rate, stdev
 
