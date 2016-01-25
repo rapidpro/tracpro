@@ -6,8 +6,8 @@ import numpy
 from operator import itemgetter
 
 from django.db.models import Count, F
-from django.core.urlresolvers import reverse
 
+from tracpro.charts.formatters import format_series, format_x_axis
 from tracpro.charts.utils import render_data
 
 from .models import Answer, Question, Response, PollRun
@@ -40,8 +40,8 @@ def single_pollrun(pollrun, question, answer_filters):
     # Calculate the average, standard deviation,
     # and response rate for this pollrun
     if question.question_type != Question.TYPE_OPEN:
-        summaries = answers.get_answer_summaries()
-        _, answer_avg = summaries.get(pollrun.pk, (0, 0))
+        _, answer_avgs = answers.get_answer_summaries()
+        answer_avg = answer_avgs.get(pollrun.pk, 0)
         responses = Response.objects.filter(answers=answers).distinct()
         response_rate_data = response_rate_calculation(responses)
         response_rate = response_rate_data.get(pollrun.pk, 0)
@@ -65,7 +65,6 @@ def single_pollrun_multiple_choice(answers, pollrun):
         categories.append(category)
         count = pollrun_counts.get(pollrun.pk, 0)
         data.append(count)
-
     return {
         'categories': categories,
         'data': data,
@@ -116,20 +115,13 @@ def multiple_pollruns_open(answers, pollruns, question):
 def multiple_pollruns_multiple_choice(answers, pollruns, question):
     series = []
     for category, pollrun_counts in answers.category_counts_by_pollrun():
-        data = []
-        for pollrun in pollruns:
-            count = pollrun_counts.get(pollrun.pk, 0)
-            url = reverse('polls.pollrun_read', args=[pollrun.pk])
-            data.append({'y': count, 'url': url})
         series.append({
             'name': category,
-            'data': data,
+            'data': format_series(pollruns, pollrun_counts, url='id@polls.pollrun_read'),
         })
 
-    dates = [pollrun.conducted_on.strftime('%Y-%m-%d') for pollrun in pollruns]
-
     return {
-        'dates': dates,
+        'dates': format_x_axis(pollruns),
         'series': series,
     }
 
@@ -169,38 +161,27 @@ def response_rate_calculation(responses):
 
 def multiple_pollruns_numeric(answers, pollruns, question):
     """Chart data for multiple pollruns of a poll."""
+    # Calculate answer sum and answer average per pollrun.
     answers = answers.select_related('response')
+    answer_sums, answer_avgs = answers.get_answer_summaries()
 
-    # Calculate/retrieve the list of sums, list of averages,
-    # list of pollrun dates, and list of pollrun id's
-    # per pollrun date
-    summaries = answers.get_answer_summaries()
-
-    # Calculate the response rate on each day
+    # Calculate response rate per pollrun.
     responses = Response.objects.filter(answers=answers).distinct()
-    response_rate_data = response_rate_calculation(responses)
+    response_rates = response_rate_calculation(responses)
 
-    answer_sums = []
-    answer_avgs = []
-    response_rates = []
-    for pollrun in pollruns:
-        answer_sum, answer_avg = summaries.get(pollrun.pk, (0, 0))
-        response_rate = response_rate_data.get(pollrun.pk, 0)
-        pollrun_detail = reverse('polls.pollrun_read', args=[pollrun.pk])
-        pollrun_participation = reverse('polls.pollrun_participation', args=[pollrun.pk])
-        answer_sums.append({'y': answer_sum, 'url': pollrun_detail})
-        answer_avgs.append({'y': answer_avg, 'url': pollrun_detail})
-        response_rates.append({'y': response_rate, 'url': pollrun_participation})
+    sum_data = format_series(pollruns, answer_sums, url='id@polls.pollrun_read')
+    avg_data = format_series(pollruns, answer_avgs, url='id@polls.pollrun_read')
+    rate_data = format_series(pollruns, response_rates, url='id@polls.pollrun_participation')
 
-    question.answer_mean = round(numpy.mean([a['y'] for a in answer_avgs]), 2)
-    question.answer_stdev = round(numpy.std([a['y'] for a in answer_avgs]), 2)
-    question.response_rate_average = round(numpy.mean([a['y'] for a in response_rates]), 2)
+    question.answer_mean = round(numpy.mean([a['y'] for a in avg_data]), 2)
+    question.answer_stdev = round(numpy.std([a['y'] for a in avg_data]), 2)
+    question.response_rate_average = round(numpy.mean([a['y'] for a in rate_data]), 2)
 
     return {
-        'dates': [pollrun.conducted_on.strftime('%Y-%m-%d') for pollrun in pollruns],
-        'sum': answer_sums,
-        'average': answer_avgs,
-        'response-rate': response_rates,
+        'dates': format_x_axis(pollruns),
+        'sum': sum_data,
+        'average': avg_data,
+        'response-rate': rate_data,
     }
 
 

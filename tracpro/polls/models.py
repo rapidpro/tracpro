@@ -735,7 +735,8 @@ class AnswerQuerySet(models.QuerySet):
         answers = self.order_by('response__pollrun')
         answers = answers.values('value', 'response__pollrun')
 
-        summaries = {}
+        answer_sums = {}
+        answer_avgs = {}
         for pollrun_id, _answers in groupby(answers, itemgetter('response__pollrun')):
             answer_sum = 0
             answer_count = 0
@@ -746,8 +747,9 @@ class AnswerQuerySet(models.QuerySet):
                 except (TypeError, ValueError, InvalidOperation):
                     pass
             answer_avg = round(answer_sum / answer_count, 2) if answer_count else 0
-            summaries[pollrun_id] = (answer_sum, answer_avg)
-        return summaries
+            answer_sums[pollrun_id] = answer_sum
+            answer_avgs[pollrun_id] = answer_avg
+        return answer_sums, answer_avgs
 
     def numeric_group_by_date(self):
         """
