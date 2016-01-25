@@ -51,7 +51,12 @@ def extract_words(text, language):
     return [w for w in words if w not in ignore_words and len(w) > 1]
 
 
+def _convert(text):
+    """If text is numeric, convert to an integer. Otherwise, force lowercase."""
+    return int(text) if text.isdigit() else text.lower()
+
+
 def natural_sort_key(text):
     """Key to sort text in a humanized way, e.g., 11 should come before 100."""
-    return [int(t) if t.isdigit() else t.lower()
-            for t in re.split('([0-9]+)', text) if t]
+    alphanumeric_parts = re.split("([0-9]+)")  # ab12cd34 -> ["ab", "12", "cd", "34", ""]
+    return [_convert(t) for t in alphanumeric_parts if t]
