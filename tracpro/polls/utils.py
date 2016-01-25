@@ -58,5 +58,5 @@ def _convert(text):
 
 def natural_sort_key(text):
     """Key to sort text in a humanized way, e.g., 11 should come before 100."""
-    alphanumeric_parts = re.split("([0-9]+)")  # ab12cd34 -> ["ab", "12", "cd", "34", ""]
+    alphanumeric_parts = re.split("([0-9]+)", text)  # ab12cd34 -> ["ab", "12", "cd", "34", ""]
     return [_convert(t) for t in alphanumeric_parts if t]
