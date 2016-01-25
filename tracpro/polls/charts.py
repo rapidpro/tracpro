@@ -6,7 +6,6 @@ from itertools import groupby
 import json
 import numpy
 from operator import itemgetter
-import re
 
 from dash.utils import datetime_to_ms
 
@@ -80,31 +79,10 @@ def single_pollrun_multiple_choice(answers, pollrun):
         count = pollrun_counts.get(pollrun.pk, 0)
         data.append(count)
 
-    categories, data = sort_by_category(categories, data)
     return {
         'categories': categories,
         'data': data,
     }
-
-
-def sort_by_category(categories, data):
-    # Order the categories and data by category
-    # order by the first number in the string (numeric)
-    # or the string itself (string)
-    # ie, '11-20', '1-10','<100', 'Other', '21-99'
-    # becomes '1-10', '11-20', '21-99', '11-20'
-
-    categories_order = []
-    for category in categories:
-        num = re.search(r"\d+", category)
-        if num:
-            categories_order.append(float(category[num.start():num.end()]))
-        else:
-            categories_order.append(category)
-
-    categories_sorted = [cat for (cat_order, cat) in sorted(zip(categories_order, categories))]
-    data_sorted = [data_point for (cat_order, data_point) in sorted(zip(categories_order, data))]
-    return categories_sorted, data_sorted
 
 
 def multiple_pollruns(pollruns, question, answer_filters):
@@ -148,20 +126,12 @@ def multiple_pollruns_open(answers, pollruns, question):
 
 def multiple_pollruns_multiple_choice(answers, pollruns, question):
     series = []
-    categories = []
-    all_data = []
     for category, pollrun_counts in answers.category_counts_by_pollrun():
         data = []
         for pollrun in pollruns:
             count = pollrun_counts.get(pollrun.pk, 0)
             url = reverse('polls.pollrun_read', args=[pollrun.pk])
             data.append({'y': count, 'url': url})
-        categories.append(category)
-        all_data.append(data)
-
-    # Order the results by category name
-    categories, all_data = sort_by_category(categories, all_data)
-    for category, data in zip(categories, all_data):
         series.append({
             'name': category,
             'data': data,

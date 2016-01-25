@@ -22,7 +22,7 @@ from dash.utils import get_cacheable, get_month_range
 from tracpro.contacts.models import Contact
 
 from .tasks import pollrun_start
-from .utils import auto_range_categories, extract_words
+from .utils import auto_range_categories, extract_words, natural_sort_key
 
 
 class Window(Enum):
@@ -717,6 +717,9 @@ class AnswerQuerySet(models.QuerySet):
         for category, _answers in groupby(answers, itemgetter('category')):
             pollrun_counts = Counter(a['response__pollrun'] for a in _answers)
             counts.append((category, pollrun_counts))
+
+        # Order the data by the category name.
+        counts.sort(key=lambda (category, pollrun_counts): natural_sort_key(category))
         return counts
 
     def get_answer_summaries(self):

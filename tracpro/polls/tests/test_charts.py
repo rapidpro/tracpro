@@ -206,22 +206,3 @@ class PollChartTest(TracProTest):
         self.assertEqual(
             stdev,
             2.16)
-
-    def test_sort_by_category(self):
-        # Order the categories and data by category
-        # order by the first number in the string (numeric)
-        # or the string itself (string)
-        # ie, '11-20', '1-10','<100', 'Other', '21-99'
-        # becomes '1-10', '11-20', '21-99', '11-20'
-
-        categories = ['11-20', '1-10', '<100', 'Other', '21-99']
-        data = [1, 2, 3, 4, 5]  # This should be resorted as [2, 1, 5, 3, 4]
-        categories, data = charts.sort_by_category(categories, data)
-
-        self.assertEqual(
-            categories,
-            ['1-10', '11-20', '21-99', '<100', 'Other'])
-
-        self.assertEqual(
-            data,
-            [2, 1, 5, 3, 4])
