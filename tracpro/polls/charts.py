@@ -53,7 +53,7 @@ def single_pollrun(pollrun, question, answer_filters):
 
     # Calculate the average, standard deviation,
     # and response rate for this pollrun
-    if question.question_type == Question.TYPE_NUMERIC:
+    if question.question_type != Question.TYPE_OPEN:
         summaries = answers.get_answer_summaries()
         _, answer_avg = summaries.get(pollrun.pk, (0, 0))
         responses = Response.objects.filter(answers=answers).distinct()
@@ -124,6 +124,7 @@ def multiple_pollruns(pollruns, question, answer_filters):
 
         elif question.question_type == Question.TYPE_MULTIPLE_CHOICE:
             chart_type = 'multiple-choice'
+            _ = multiple_pollruns_numeric(answers, pollruns, question)
             data = multiple_pollruns_multiple_choice(answers, pollruns, question)
 
     return chart_type, render_data(data) if data else None
