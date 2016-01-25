@@ -69,8 +69,8 @@ INSTALLED_APPS = [
     'dash.utils',
 
     'tracpro.baseline',
+    'tracpro.charts',
     'tracpro.contacts',
-    'tracpro.filters',
     'tracpro.groups',
     'tracpro.home',
     'tracpro.msgs',
