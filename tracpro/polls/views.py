@@ -54,10 +54,7 @@ class PollCRUDL(smartmin.SmartCRUDL):
             # Limit pollrun dates.
             start_date = self.filter_form.cleaned_data.get('start_date')
             end_date = self.filter_form.cleaned_data.get('end_date')
-            if start_date:
-                pollruns = pollruns.filter(conducted_on__gte=start_date)
-            if end_date:
-                pollruns = pollruns.filter(conducted_on__lt=end_date)
+            pollruns = pollruns.by_dates(start_date, end_date)
 
             if self.request.region:
                 # Show only pollruns conducted in the region.

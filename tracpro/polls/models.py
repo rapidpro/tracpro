@@ -287,6 +287,14 @@ class PollRunQuerySet(models.QuerySet):
         """Return all active PollRuns."""
         return self.filter(poll__is_active=True)
 
+    def by_dates(self, start_date=None, end_date=None):
+        pollruns = self.all()
+        if start_date:
+            pollruns = pollruns.filter(conducted_on__gte=start_date)
+        if end_date:
+            pollruns = pollruns.filter(conducted_on__lt=end_date)
+        return pollruns
+
     def by_region(self, region, include_subregions=True):
         """Return all PollRuns for the region."""
         if not region:
