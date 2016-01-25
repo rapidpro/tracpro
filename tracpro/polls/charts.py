@@ -124,7 +124,8 @@ def multiple_pollruns(pollruns, question, answer_filters):
 
         elif question.question_type == Question.TYPE_MULTIPLE_CHOICE:
             chart_type = 'multiple-choice'
-            _ = multiple_pollruns_numeric(answers, pollruns, question)
+            # Call multiple_pollruns_numeric() in order to calculate mean, stdev and resp rate
+            multiple_pollruns_numeric(answers, pollruns, question)
             data = multiple_pollruns_multiple_choice(answers, pollruns, question)
 
     return chart_type, render_data(data) if data else None
