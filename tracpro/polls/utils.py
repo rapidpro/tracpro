@@ -52,6 +52,6 @@ def extract_words(text, language):
 
 
 def natural_sort_key(text):
-    """Sort text in a humanized way, e.g., 11 comes before 100."""
+    """Key to sort text in a humanized way, e.g., 11 should come before 100."""
     return [int(t) if t.isdigit() else t.lower()
             for t in re.split('([0-9]+)', text)]
