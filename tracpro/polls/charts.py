@@ -1,29 +1,16 @@
 from __future__ import absolute_import, unicode_literals
 
-import datetime
-from decimal import Decimal, InvalidOperation
+from decimal import InvalidOperation
 from itertools import groupby
-import json
 import numpy
 from operator import itemgetter
-
-from dash.utils import datetime_to_ms
 
 from django.db.models import Count, F
 from django.core.urlresolvers import reverse
 
+from tracpro.charts.utils import render_data
+
 from .models import Answer, Question, Response, PollRun
-
-
-class ChartJsonEncoder(json.JSONEncoder):
-    """Encode millisecond timestamps & Decimal objects as floats."""
-
-    def default(self, obj):
-        if isinstance(obj, datetime.datetime):
-            return datetime_to_ms(obj)
-        elif isinstance(obj, Decimal):
-            return float(obj)
-        return json.JSONEncoder.default(self, obj)
 
 
 def single_pollrun(pollrun, question, answer_filters):
@@ -219,7 +206,3 @@ def multiple_pollruns_numeric(answers, pollruns, question):
 
 def word_cloud_data(word_counts):
     return [{'text': word, 'weight': count} for word, count in word_counts]
-
-
-def render_data(chart_data):
-    return json.dumps(chart_data, cls=ChartJsonEncoder)
