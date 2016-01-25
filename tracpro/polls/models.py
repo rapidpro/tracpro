@@ -717,7 +717,8 @@ class AnswerQuerySet(models.QuerySet):
         for category, _answers in groupby(answers, itemgetter('category')):
             pollrun_counts = Counter(a['response__pollrun'] for a in _answers)
             counts.append((category, pollrun_counts))
-        counts.sort(key=lambda (c, a): natural_sort_key(c))
+
+        counts.sort(key=lambda (category, pollrun_counts): natural_sort_key(category))
         return counts
 
     def get_answer_summaries(self):
