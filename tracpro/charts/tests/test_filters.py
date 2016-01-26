@@ -11,10 +11,10 @@ from django.forms import ALL_FIELDS
 from tracpro.test import factories
 from tracpro.test.cases import TracProTest
 
-from .. import forms
+from .. import filters
 
 
-class TestDateRangeFilterForm(forms.DateRangeFilter, forms.FilterForm):
+class TestDateRangeFilterForm(filters.DateRangeFilter, filters.FilterForm):
     pass
 
 
@@ -24,14 +24,14 @@ class TestDateRangeFilter(TracProTest):
         super(TestDateRangeFilter, self).setUp()
 
         # Mock time-dependent utilities so that there is a testable result.
-        self.month_range_patcher = mock.patch('tracpro.filters.forms.get_month_range')
+        self.month_range_patcher = mock.patch('tracpro.charts.filters.get_month_range')
         self.mock_get_month_range = self.month_range_patcher.start()
         self.mock_get_month_range.return_value = (
             datetime.datetime(2016, 2, 1, tzinfo=pytz.UTC),
             datetime.datetime(2016, 2, 29, tzinfo=pytz.UTC),
         )
 
-        self.now_patcher = mock.patch('tracpro.filters.forms.timezone.now')
+        self.now_patcher = mock.patch('tracpro.charts.filters.timezone.now')
         self.mock_now = self.now_patcher.start()
         self.mock_now.return_value = datetime.datetime(2016, 2, 15, tzinfo=pytz.UTC)
 

@@ -7,12 +7,13 @@ from operator import itemgetter
 
 from dateutil.relativedelta import relativedelta
 from enum import Enum
+import numpy
 import pytz
 
 from django.conf import settings
 from django.core.cache import cache
 from django.db import models, transaction
-from django.db.models import Q, Count
+from django.db.models import Count, F, Q
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
@@ -23,7 +24,8 @@ from tracpro.contacts.models import Contact
 from tracpro.groups.models import Region
 
 from .tasks import pollrun_start
-from .utils import auto_range_categories, extract_words, natural_sort_key
+from .utils import (
+    auto_range_categories, extract_words, get_numeric_values, natural_sort_key)
 
 
 class Window(Enum):
@@ -287,6 +289,14 @@ class PollRunQuerySet(models.QuerySet):
     def active(self):
         """Return all active PollRuns."""
         return self.filter(poll__is_active=True)
+
+    def by_dates(self, start_date=None, end_date=None):
+        pollruns = self.all()
+        if start_date:
+            pollruns = pollruns.filter(conducted_on__gte=start_date)
+        if end_date:
+            pollruns = pollruns.filter(conducted_on__lt=end_date)
+        return pollruns
 
     def by_region(self, region, include_subregions=True):
         """Return all PollRuns for the region."""
@@ -566,6 +576,44 @@ class PollRun(models.Model):
         return not newer_pollruns.exists()
 
 
+class ResponseQuerySet(models.QuerySet):
+
+    def active(self):
+        return self.filter(is_active=True)
+
+    def get_response_rates(self):
+        """Return a list of response rates for the pollruns."""
+        # A response is complete if its status attribute equals STATUS_COMPLETE.
+        # This uses an internal, _combine, because F expressions have not
+        # exposed the SQL '=' operator.
+        is_complete = F('status')._combine(Response.STATUS_COMPLETE, '=', False)
+        responses = self.annotate(is_complete=is_complete)
+
+        # Count responses by completion status per pollrun.
+        # When an annotation is applied to a values() result, the annotation
+        # results are grouped by the unique combinations of the fields
+        # specified in the values() clause. Result looks like:
+        #   [
+        #       {'pollrun': 123, 'is_complete': True, 'count': 5},
+        #       {'pollrun': 123, 'is_complete': False, 'count': 10},
+        #       {'pollrun': 456, 'is_complete': True, 'count': 7},
+        #       {'pollrun': 456, 'is_complete': False, 'count': 12},
+        #       ...
+        #   ]
+        responses = responses.order_by('pollrun')
+        responses = responses.values('pollrun', 'is_complete')
+        responses = responses.annotate(count=Count('pk'))
+
+        response_rates = {}
+        for pollrun_id, data in groupby(responses, itemgetter('pollrun')):
+            # completion status (True/False) -> response count
+            completion = {d['is_complete']: d['count'] for d in data}
+            complete = completion.get(True, 0)
+            incomplete = completion.get(False, 0)
+            response_rates[pollrun_id] = round(100.0 * complete / (complete + incomplete), 2)
+        return response_rates
+
+
 class Response(models.Model):
     """Corresponds to RapidPro FlowRun."""
     STATUS_EMPTY = 'E'
@@ -596,6 +644,8 @@ class Response(models.Model):
     is_active = models.BooleanField(
         default=True,
         help_text=_("Whether this response is active"))
+
+    objects = ResponseQuerySet.as_manager()
 
     @classmethod
     def create_empty(cls, org, pollrun, run):
@@ -728,28 +778,21 @@ class AnswerQuerySet(models.QuerySet):
         answers = self.order_by('response__pollrun')
         answers = answers.values('value', 'response__pollrun')
 
-        summaries = {}
-        regions = self.get_regions()
+        # regions = self.get_regions()
+        answer_sums = {}
+        answer_avgs = {}
         for pollrun_id, _answers in groupby(answers, itemgetter('response__pollrun')):
-            answer_sum = 0
-            answer_count = 0
-            for answer in _answers:
-                try:
-                    answer_sum += float(answer['value'])
-                    answer_count += 1
-                except (TypeError, ValueError, InvalidOperation):
-                    pass
-            answer_avg = round(answer_sum / answer_count, 2) if answer_count else 0
-            summaries[pollrun_id] = (answer_sum, answer_avg)
-        return summaries
+            numeric_values = get_numeric_values(a['value'] for a in _answers)
+            answer_sums[pollrun_id] = numpy.sum(numeric_values)
+            answer_avgs[pollrun_id] = numpy.mean(numeric_values) if numeric_values else 0
 
+        return answer_sums, answer_avgs
 
     def get_regions(self):
         """Return regions for the contacts who responded to related polls."""
         regions = Region.objects.filter(contacts__responses__answers__in=self).distinct()
         # import ipdb; ipdb.set_trace()
         return regions
-
 
     def numeric_group_by_date(self):
         """

@@ -24,7 +24,7 @@ class TestPollChartFilterForm(TracProTest):
             datetime.datetime(2016, 2, 1, tzinfo=pytz.UTC),
             datetime.datetime(2016, 2, 29, tzinfo=pytz.UTC),
         )
-        self.month_range_patcher2 = mock.patch('tracpro.filters.forms.get_month_range')
+        self.month_range_patcher2 = mock.patch('tracpro.charts.filters.get_month_range')
         self.mock_get_month_range2 = self.month_range_patcher2.start()
         self.mock_get_month_range2.return_value = (
             datetime.datetime(2016, 2, 1, tzinfo=pytz.UTC),
