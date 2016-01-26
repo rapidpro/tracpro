@@ -79,9 +79,9 @@
               <span class='icon-bar'></span>
             </button>
           </div>
-          {% if org and org.logo %}
-            <img class="navbar-logo" src="{{ org.logo.url }}" />
-          {% else %}
+          {% thumbnail org.logo "x50" as logo %}
+            <img class="navbar-logo" src="{{ logo.url }}" />
+          {% empty %}
             <div class="navbar-brand">
               {% if org %}
                 {{ org.name }}
@@ -89,7 +89,7 @@
                 {% trans "TracPro" %}
               {% endif %}
             </div>
-          {% endif %}
+          {% endthumbnail %}
           <nav id='admin-top-navbar-collapse' class='admin-top-navbar collapse navbar-collapse' role='navigation'>
             <ul class='nav navbar-nav'>
               {% if org and request.user.is_authenticated %}
