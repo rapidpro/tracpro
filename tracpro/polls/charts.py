@@ -5,7 +5,7 @@ import numpy
 from tracpro.charts.formatters import format_series, format_x_axis
 from tracpro.charts.utils import render_data
 
-from .models import Answer, Question, Response
+from .models import Answer, Question
 from .utils import get_numeric_values
 
 
