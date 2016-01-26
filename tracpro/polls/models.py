@@ -577,6 +577,9 @@ class PollRun(models.Model):
 
 class ResponseQuerySet(models.QuerySet):
 
+    def active(self):
+        return self.filter(is_active=True)
+
     def get_response_rates(self):
         """Return a list of response rates for the pollruns."""
         # A response is complete if its status attribute equals STATUS_COMPLETE.

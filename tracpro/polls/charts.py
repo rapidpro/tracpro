@@ -5,11 +5,11 @@ import numpy
 from tracpro.charts.formatters import format_series, format_x_axis
 from tracpro.charts.utils import render_data
 
-from .models import Answer, PollRun, Question, Response
+from .models import Answer, Question, Response
 from .utils import get_numeric_values
 
 
-def single_pollrun(pollrun, question, answer_filters):
+def single_pollrun(pollrun, responses, question):
     """Chart data for a single pollrun.
 
     Will be a word cloud for open-ended questions, and pie chart of categories
@@ -19,8 +19,7 @@ def single_pollrun(pollrun, question, answer_filters):
     chart_data = []
     answer_avg, response_rate, stdev = [0, 0, 0]
 
-    pollruns = PollRun.objects.filter(pk=pollrun.pk)
-    answers = get_answers(pollruns, question, answer_filters)
+    answers = Answer.objects.filter(response__in=responses, question=question)
     chart_data_exists = False
     if question.question_type == Question.TYPE_OPEN:
         chart_type = 'open-ended'
@@ -37,7 +36,6 @@ def single_pollrun(pollrun, question, answer_filters):
     # and response rate for this pollrun
     if question.question_type != Question.TYPE_OPEN:
         _, answer_avgs = answers.get_answer_summaries()
-        responses = Response.objects.filter(answers=answers).distinct()
         response_rates = responses.get_response_rates()
 
         answer_avg = answer_avgs.get(pollrun.pk, 0)
@@ -61,16 +59,17 @@ def single_pollrun_multiple_choice(answers, pollrun):
     }
 
 
-def multiple_pollruns(pollruns, question, answer_filters):
+def multiple_pollruns(pollruns, responses, question):
     chart_type = None
     data = None
 
     pollruns = pollruns.order_by('conducted_on')
-    answers = get_answers(pollruns, question, answer_filters)
+
+    answers = Answer.objects.filter(response__in=responses, question=question)
     if answers:
         if question.question_type == Question.TYPE_NUMERIC:
             chart_type = 'numeric'
-            data = multiple_pollruns_numeric(answers, pollruns, question)
+            data = multiple_pollruns_numeric(pollruns, responses, answers, question)
 
         elif question.question_type == Question.TYPE_OPEN:
             chart_type = 'open-ended'
@@ -79,22 +78,10 @@ def multiple_pollruns(pollruns, question, answer_filters):
         elif question.question_type == Question.TYPE_MULTIPLE_CHOICE:
             chart_type = 'multiple-choice'
             # Call multiple_pollruns_numeric() in order to calculate mean, stdev and resp rate
-            multiple_pollruns_numeric(answers, pollruns, question)
-            data = multiple_pollruns_multiple_choice(answers, pollruns, question)
+            multiple_pollruns_numeric(pollruns, responses, answers, question)
+            data = multiple_pollruns_multiple_choice(pollruns, answers)
 
     return chart_type, data
-
-
-def get_answers(pollruns, question, filters):
-    """Return all Answers to the question within the pollruns.
-
-    If regions are specified, answers are limited to contacts within those
-    regions.
-    """
-    return Answer.objects.filter(
-        filters,
-        response__pollrun__in=pollruns,
-        question=question)
 
 
 def word_cloud_data(answers):
@@ -102,7 +89,7 @@ def word_cloud_data(answers):
     return [{'text': word, 'weight': count} for word, count in answers.word_counts()]
 
 
-def multiple_pollruns_multiple_choice(answers, pollruns, question):
+def multiple_pollruns_multiple_choice(pollruns, answers):
     series = []
     for category, pollrun_counts in answers.category_counts_by_pollrun():
         series.append({
@@ -116,11 +103,9 @@ def multiple_pollruns_multiple_choice(answers, pollruns, question):
     }
 
 
-def multiple_pollruns_numeric(answers, pollruns, question):
+def multiple_pollruns_numeric(pollruns, responses, answers, question):
     """Chart data for multiple pollruns of a poll."""
     answer_sums, answer_avgs = answers.get_answer_summaries()
-
-    responses = Response.objects.filter(answers=answers).distinct()
     response_rates = responses.get_response_rates()
 
     sum_data = format_series(pollruns, answer_sums, url='id@polls.pollrun_read')
