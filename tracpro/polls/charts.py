@@ -24,7 +24,7 @@ def single_pollrun(pollrun, question, answer_filters):
     chart_data_exists = False
     if question.question_type == Question.TYPE_OPEN:
         chart_type = 'open-ended'
-        chart_data = multiple_pollruns_open(answers, pollruns, question)
+        chart_data = word_cloud_data(answers)
         if chart_data:
             chart_data_exists = True
     else:
@@ -74,7 +74,7 @@ def multiple_pollruns(pollruns, question, answer_filters):
 
         elif question.question_type == Question.TYPE_OPEN:
             chart_type = 'open-ended'
-            data = multiple_pollruns_open(answers, pollruns, question)
+            data = word_cloud_data(answers)
 
         elif question.question_type == Question.TYPE_MULTIPLE_CHOICE:
             chart_type = 'multiple-choice'
@@ -97,9 +97,9 @@ def get_answers(pollruns, question, filters):
         question=question)
 
 
-def multiple_pollruns_open(answers, pollruns, question):
+def word_cloud_data(answers):
     """Chart data for multiple pollruns of a poll."""
-    return word_cloud_data(answers.word_counts())
+    return [{'text': word, 'weight': count} for word, count in answers.word_counts()]
 
 
 def multiple_pollruns_multiple_choice(answers, pollruns, question):
@@ -137,7 +137,3 @@ def multiple_pollruns_numeric(answers, pollruns, question):
         'average': avg_data,
         'response-rate': rate_data,
     }
-
-
-def word_cloud_data(word_counts):
-    return [{'text': word, 'weight': count} for word, count in word_counts]
