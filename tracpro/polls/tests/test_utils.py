@@ -25,6 +25,6 @@ class TestExtractWords(TracProTest):
 class TestNaturalSortKey(TestCase):
 
     def test_category_sort(self):
-        categories = ['11-20', '1-10', '<100', 'Other', '21-999', '21-99']
+        categories = ['11-20', '1-10', '<100', None, 'Other', '21-999', '21-99']
         categories.sort(key=utils.natural_sort_key)
-        self.assertEqual(categories, ['1-10', '11-20', '21-99', '21-999', '<100', 'Other'])
+        self.assertEqual(categories, [None, '1-10', '11-20', '21-99', '21-999', '<100', 'Other'])
