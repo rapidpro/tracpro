@@ -1,6 +1,7 @@
 import math
 import re
 
+from decimal import InvalidOperation
 import pycountry
 import stop_words
 
@@ -61,3 +62,14 @@ def natural_sort_key(text):
     text = text or ""  # can't split None
     alphanumeric_parts = re.split("([0-9]+)", text)  # ab12cd34 -> ["ab", "12", "cd", "34", ""]
     return [_convert(t) for t in alphanumeric_parts if t]
+
+
+def get_numeric_values(values):
+    """Return all values that can be parsed as a float."""
+    numeric = []
+    for val in values:
+        try:
+            numeric.append(float(val))
+        except (TypeError, ValueError, InvalidOperation):
+            pass
+    return numeric

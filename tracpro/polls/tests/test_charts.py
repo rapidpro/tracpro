@@ -3,7 +3,6 @@ from __future__ import unicode_literals
 import json
 
 from django.core.urlresolvers import reverse
-from django.db.models import Q
 
 from tracpro.test import factories
 from tracpro.test.cases import TracProTest
@@ -29,7 +28,6 @@ class PollChartTest(TracProTest):
             poll=self.poll, question_type=models.Question.TYPE_NUMERIC)
 
         self.pollrun = factories.UniversalPollRun(poll=self.poll)
-        self.pollruns = models.PollRun.objects.filter(pk=self.pollrun.pk)
 
         self.response1 = factories.Response(
             pollrun=self.pollrun, status=models.Response.STATUS_COMPLETE)
@@ -67,9 +65,12 @@ class PollChartTest(TracProTest):
             response=self.response3, question=self.question3,
             value="8.00000", category="6 - 10")
 
+        self.pollruns = models.PollRun.objects.filter(pk=self.pollrun.pk)
+        self.responses = models.Response.objects.filter(pollrun=self.pollrun)
+
     def test_multiple_pollruns_multiple_choice(self):
         answers = models.Answer.objects.filter(question=self.question1)
-        data = charts.multiple_pollruns_multiple_choice(answers, self.pollruns, self.question1)
+        data = charts.multiple_pollruns_multiple_choice(self.pollruns, answers)
 
         self.assertEqual(
             data['dates'],
@@ -81,9 +82,9 @@ class PollChartTest(TracProTest):
              'data': [{'y': 1, 'url': reverse('polls.pollrun_read', args=[self.pollrun.pk])}]},
         ])
 
-    def test_multiple_pollruns_open(self):
+    def test_word_cloud_data(self):
         answers = models.Answer.objects.filter(question=self.question2)
-        data = charts.multiple_pollruns_open(answers, self.pollruns, self.question2)
+        data = charts.word_cloud_data(answers)
         self.assertEqual(data, [
             {"text": "rainy", "weight": 3},
             {"text": "sunny", "weight": 2},
@@ -91,7 +92,8 @@ class PollChartTest(TracProTest):
 
     def test_multiple_pollruns_numeric(self):
         answers = models.Answer.objects.filter(question=self.question3)
-        data = charts.multiple_pollruns_numeric(answers, self.pollruns, self.question3)
+        data = charts.multiple_pollruns_numeric(
+            self.pollruns, self.responses, answers, self.question3)
 
         # Answers are 4, 3 and 8 for a single date
 
@@ -134,7 +136,8 @@ class PollChartTest(TracProTest):
         self.response1.status = models.Response.STATUS_PARTIAL
         self.response1.save()
 
-        data = charts.multiple_pollruns_numeric(answers, self.pollruns, self.question3)
+        data = charts.multiple_pollruns_numeric(
+            self.pollruns, self.responses, answers, self.question3)
 
         # 2 complete responses, 1 partial response
         # Response rate = 66.67%
@@ -157,13 +160,12 @@ class PollChartTest(TracProTest):
             [u'1 - 5', u'6 - 10'])
 
     def test_single_pollrun_open(self):
-        answer_filters = Q(response__is_active=True)
         (chart_type,
          chart_data,
          chart_data_exists,
          answer_avg,
          response_rate,
-         stdev) = charts.single_pollrun(self.pollrun, self.question2, answer_filters)
+         stdev) = charts.single_pollrun(self.pollrun, self.responses, self.question2)
         chart_data = json.loads(chart_data)
 
         self.assertEqual(
@@ -182,13 +184,12 @@ class PollChartTest(TracProTest):
     def test_single_pollrun_numeric(self):
         # Answers for question 3 = 8, 3 and 4
         # Average = 5, Response Rate = 100%, STDEV = 2.16
-        answer_filters = Q(response__is_active=True)
         (chart_type,
          chart_data,
          chart_data_exists,
          answer_avg,
          response_rate,
-         stdev) = charts.single_pollrun(self.pollrun, self.question3, answer_filters)
+         stdev) = charts.single_pollrun(self.pollrun, self.responses, self.question3)
         chart_data = json.loads(chart_data)
 
         self.assertEqual(

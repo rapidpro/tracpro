@@ -100,7 +100,7 @@
 
       {% if data %}
         <div class="chart-{{ chart_type }}"
-             data-chart='{{ data }}'
+             data-chart='{{ data|chart_json }}'
              data-name="{{ question.name }}">
         </div>
 

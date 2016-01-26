@@ -10,7 +10,6 @@ from dash.utils import get_obj_cacheable
 from django.conf import settings
 from django.contrib import messages
 from django.core.urlresolvers import reverse
-from django.db.models import Q
 from django.http import (
     HttpResponse, HttpResponseBadRequest, JsonResponse)
 from django.shortcuts import get_object_or_404, redirect
@@ -49,15 +48,13 @@ class PollCRUDL(smartmin.SmartCRUDL):
             ))
 
         def get_pollruns(self):
+            """The x-axis of each chart shows the PollRun date."""
             pollruns = self.object.pollruns.active()
 
             # Limit pollrun dates.
             start_date = self.filter_form.cleaned_data.get('start_date')
             end_date = self.filter_form.cleaned_data.get('end_date')
-            if start_date:
-                pollruns = pollruns.filter(conducted_on__gte=start_date)
-            if end_date:
-                pollruns = pollruns.filter(conducted_on__lt=end_date)
+            pollruns = pollruns.by_dates(start_date, end_date)
 
             if self.request.region:
                 # Show only pollruns conducted in the region.
@@ -70,7 +67,8 @@ class PollCRUDL(smartmin.SmartCRUDL):
 
             return pollruns
 
-        def get_answer_filters(self):
+        def get_responses(self, pollruns):
+            """Limit the responses from which data is shown."""
             contacts = Contact.objects.filter(org=self.request.org)
 
             if self.request.region:
@@ -83,7 +81,10 @@ class PollCRUDL(smartmin.SmartCRUDL):
                         contactfield__field=data_field,
                         contactfield__value__icontains=value)
 
-            return Q(response__is_active=True) & Q(response__contact__in=contacts)
+            responses = Response.objects.active()
+            responses = responses.filter(contact__in=contacts)
+            responses = responses.filter(pollrun__in=pollruns)
+            return responses
 
         def get_question_data(self):
             # Do not display any data if invalid data was submitted.
@@ -91,12 +92,12 @@ class PollCRUDL(smartmin.SmartCRUDL):
                 return None
 
             pollruns = self.get_pollruns()
-            answer_filters = self.get_answer_filters()
+            responses = self.get_responses(pollruns)
 
             data = []
             for question in self.object.questions.active():
                 chart_type, chart_data = charts.multiple_pollruns(
-                    pollruns, question, answer_filters)
+                    pollruns, responses, question)
                 data.append((question, chart_type, chart_data))
             return data
 
@@ -276,19 +277,22 @@ class PollRunCRUDL(smartmin.SmartCRUDL):
                 self.request.region,
                 self.request.include_subregions)
 
-        def get_answer_filters(self):
+        def get_responses(self, pollrun):
             contacts = Contact.objects.filter(org=self.request.org)
 
             if self.request.region:
                 contacts = contacts.filter(region__in=self.request.data_regions)
 
-            return Q(response__is_active=True) & Q(response__contact__in=contacts)
+            responses = Response.objects.active()
+            responses = responses.filter(pollrun=pollrun)
+            responses = responses.filter(contact__in=contacts)
+            return responses
 
         def get_context_data(self, **kwargs):
             context = super(PollRunCRUDL.Read, self).get_context_data(**kwargs)
             questions = self.object.poll.questions.active()
 
-            answer_filters = self.get_answer_filters()
+            responses = self.get_responses(self.object)
             for question in questions:
                 (question.chart_type,
                  question.chart_data,
@@ -296,7 +300,7 @@ class PollRunCRUDL(smartmin.SmartCRUDL):
                  question.answer_mean,
                  question.response_rate_average,
                  question.answer_stdev) = charts.single_pollrun(
-                    self.object, question, answer_filters)
+                    self.object, responses, question)
 
             context['questions'] = questions
             return context

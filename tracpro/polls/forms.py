@@ -3,7 +3,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from dash.utils import get_month_range
 
-from tracpro.filters import forms as filters
+from tracpro.charts import filters
 
 from . import models
 

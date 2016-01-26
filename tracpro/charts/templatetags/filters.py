@@ -1,5 +1,7 @@
 from django import template
 
+from .. import utils
+
 
 register = template.Library()
 
@@ -11,3 +13,8 @@ def field(form, field_name, **kwargs):
         'field': form[field_name],
     })
     return kwargs
+
+
+@register.filter
+def chart_json(data):
+    return utils.render_data(data)
