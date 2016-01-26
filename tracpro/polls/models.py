@@ -20,6 +20,7 @@ from django.utils.translation import ugettext_lazy as _
 from dash.utils import get_cacheable, get_month_range
 
 from tracpro.contacts.models import Contact
+from tracpro.groups.models import Region
 
 from .tasks import pollrun_start
 from .utils import auto_range_categories, extract_words, natural_sort_key
@@ -728,6 +729,7 @@ class AnswerQuerySet(models.QuerySet):
         answers = answers.values('value', 'response__pollrun')
 
         summaries = {}
+        regions = self.get_regions()
         for pollrun_id, _answers in groupby(answers, itemgetter('response__pollrun')):
             answer_sum = 0
             answer_count = 0
@@ -740,6 +742,14 @@ class AnswerQuerySet(models.QuerySet):
             answer_avg = round(answer_sum / answer_count, 2) if answer_count else 0
             summaries[pollrun_id] = (answer_sum, answer_avg)
         return summaries
+
+
+    def get_regions(self):
+        """Return regions for the contacts who responded to related polls."""
+        regions = Region.objects.filter(contacts__responses__answers__in=self).distinct()
+        # import ipdb; ipdb.set_trace()
+        return regions
+
 
     def numeric_group_by_date(self):
         """
