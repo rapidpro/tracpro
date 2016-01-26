@@ -783,8 +783,8 @@ class AnswerQuerySet(models.QuerySet):
         answer_avgs = {}
         for pollrun_id, _answers in groupby(answers, itemgetter('response__pollrun')):
             numeric_values = get_numeric_values(a['value'] for a in _answers)
-            answer_sums[pollrun_id] = numpy.sum(numeric_values)
-            answer_avgs[pollrun_id] = numpy.mean(numeric_values) if numeric_values else 0
+            answer_sums[pollrun_id] = round(numpy.sum(numeric_values), 2)
+            answer_avgs[pollrun_id] = round(numpy.mean(numeric_values), 2) if numeric_values else 0
 
         return answer_sums, answer_avgs
 
