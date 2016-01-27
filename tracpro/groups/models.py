@@ -1,5 +1,8 @@
 from __future__ import absolute_import, unicode_literals
 
+import json
+from operator import attrgetter
+
 from mptt import models as mptt
 
 from django.conf import settings
@@ -141,3 +144,99 @@ class Region(mptt.MPTTModel, AbstractGroup):
 class Group(AbstractGroup):
     """A data reporting group."""
     pass
+
+
+# === Boundaries === #
+
+
+class BoundaryQuerySet(models.QuerySet):
+
+    def by_org(self, org):
+        return self.filter(org=org)
+
+
+class BoundaryManager(models.Manager.from_queryset(BoundaryQuerySet)):
+
+    def from_temba(self, org, temba_boundary):
+        """Get the existing or create a new corresponding Boundary instance."""
+        boundary, _ = self.get_or_create(org=org, rapidpro_uuid=temba_boundary.boundary)
+        boundary.name = temba_boundary.name
+        boundary.level = temba_boundary.level
+        boundary.geometry = json.dumps(temba_boundary.geometry.serialize())
+        boundary.parent = Boundary.objects.filter(rapidpro_uuid=temba_boundary.parent).first()
+        boundary.save()
+        return boundary
+
+    def sync(self, org):
+        """Update org Boundaries from RapidPro and delete ones that were removed."""
+        # Retrieve current Boundaries known to RapidPro.
+        temba_boundaries = org.get_temba_client().get_boundaries()
+
+        # Remove Boundaries that are no longer on RapidPro.
+        uuids = [b.boundary for b in temba_boundaries]
+        Boundary.objects.by_org(org).exclude(rapidpro_uuid__in=uuids).delete()
+
+        # Order boundaries from the highest level to the lowest.
+        # This ensures that each boundary's parent has been created
+        # before it is updated.
+        temba_boundaries.sort(key=attrgetter('level'))
+
+        # Create new or update existing Polls to match RapidPro data.
+        for temba_boundary in temba_boundaries:
+            Boundary.objects.from_temba(org, temba_boundary)
+
+
+class Boundary(models.Model):
+    """Corresponds with a RapidPro AdminBoundary."""
+
+    LEVEL_COUNTRY = 0
+    LEVEL_STATE = 1
+    LEVEL_DISTRICT = 2
+    LEVEL_CHOICES = (
+        (LEVEL_COUNTRY, _("Country")),
+        (LEVEL_STATE, _("State")),
+        (LEVEL_DISTRICT, _("District")),
+    )
+
+    org = models.ForeignKey(
+        'orgs.Org',
+        verbose_name=_("org"))
+
+    rapidpro_uuid = models.CharField(
+        max_length=15,
+        verbose_name=_("RapidPro UUID"))
+    name = models.CharField(
+        max_length=128,
+        verbose_name=_("name"))
+    level = models.IntegerField(
+        choices=LEVEL_CHOICES, null=True,
+        verbose_name=_("level"))
+    parent = models.ForeignKey(
+        "groups.Boundary", null=True, related_name="children",
+        verbose_name=_("parent"))
+    geometry = models.TextField(
+        help_text=_("The GeoJSON geometry of this boundary."),
+        verbose_name=_("geojson"))
+
+    objects = BoundaryManager()
+
+    class Meta:
+        unique_together = (
+            ('org', 'rapidpro_uuid'),
+        )
+
+    def __str__(self):
+        return self.name
+
+    def as_geojson(self):
+        if not hasattr(self, '_geojson'):
+            self._geojson = {
+                'type': "Feature",
+                'geometry': json.loads(self.geojson),
+                'properties': {
+                    'id': self.rapidpro_uuid,
+                    'level': self.level,
+                    'name': self.name,
+                },
+            }
+        return self._geojson
