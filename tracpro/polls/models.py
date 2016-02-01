@@ -773,12 +773,30 @@ class AnswerQuerySet(models.QuerySet):
         counts.sort(key=lambda (category, pollrun_counts): natural_sort_key(category))
         return counts
 
+    def get_answer_summaries_regions(self):
+        """Return the sum and average of numeric answers to each pollrun."""
+        """Split out values by regions if split_regions=True"""
+        answer_sums_list = []
+        answer_avgs_list = []
+
+        for region in self.get_regions():
+            region_answers = self.filter(response__contact__region=region)
+            # Get the dictionaries of sums and averages per pollrun
+            answer_sums, answer_avgs = region_answers.get_answer_summaries()
+            # Append a region key to each dictionary for region
+            answer_sums['region'] = region.name
+            answer_avgs['region'] = region.name
+            # Append these dictionaries to lists of dictionaries for all regions
+            # import ipdb; ipdb.set_trace()
+            answer_sums_list.append(answer_sums)
+            answer_avgs_list.append(answer_avgs)
+        return answer_sums_list, answer_avgs_list
+
     def get_answer_summaries(self):
         """Return the sum and average of numeric answers to each pollrun."""
         answers = self.order_by('response__pollrun')
         answers = answers.values('value', 'response__pollrun')
 
-        # regions = self.get_regions()
         answer_sums = {}
         answer_avgs = {}
         for pollrun_id, _answers in groupby(answers, itemgetter('response__pollrun')):
@@ -791,7 +809,6 @@ class AnswerQuerySet(models.QuerySet):
     def get_regions(self):
         """Return regions for the contacts who responded to related polls."""
         regions = Region.objects.filter(contacts__responses__answers__in=self).distinct()
-        # import ipdb; ipdb.set_trace()
         return regions
 
     def numeric_group_by_date(self):

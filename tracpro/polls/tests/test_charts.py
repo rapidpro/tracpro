@@ -92,8 +92,9 @@ class PollChartTest(TracProTest):
 
     def test_multiple_pollruns_numeric(self):
         answers = models.Answer.objects.filter(question=self.question3)
+        split_regions = False
         data = charts.multiple_pollruns_numeric(
-            self.pollruns, self.responses, answers, self.question3)
+            self.pollruns, self.responses, answers, self.question3, split_regions)
 
         # Answers are 4, 3 and 8 for a single date
 
@@ -136,8 +137,9 @@ class PollChartTest(TracProTest):
         self.response1.status = models.Response.STATUS_PARTIAL
         self.response1.save()
 
+        split_regions = False
         data = charts.multiple_pollruns_numeric(
-            self.pollruns, self.responses, answers, self.question3)
+            self.pollruns, self.responses, answers, self.question3, split_regions)
 
         # 2 complete responses, 1 partial response
         # Response rate = 66.67%

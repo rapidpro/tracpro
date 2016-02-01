@@ -1,6 +1,6 @@
 jQuery.fn.extend({
     chart_numeric: function() {
-        var dataType = $('#id_numeric').val();
+        var dataType = $('#id_numeric').val(); // sum, average or response-rate
         if (["sum", "average", "response-rate"].indexOf(dataType) != -1) {
             var label = $('#id_numeric :selected').text();
             $(this).each(function(i, item) {
@@ -35,6 +35,62 @@ jQuery.fn.extend({
                             data: data[dataType]
                         }
                     ]
+                });
+            });
+        }
+    },
+    chart_numeric_split: function() {
+        var dataType = $('#id_numeric').val(); // sum, average or response-rate
+        if (["sum", "average", "response-rate"].indexOf(dataType) != -1) {
+            var label = $('#id_numeric :selected').text();
+            $(this).each(function(i, item) {
+                var chart = $(item);
+                chart.closest('.poll-question').find('.data-type').text(label);
+                var data = chart.data('chart');
+                var seriesData = [];
+                for (i = 0; i < data['region-list'].length; i++) {
+                    seriesData.push({
+                        name: data['region-list'][i],
+                        data: data[dataType][i]
+                    });
+                }
+                chart.highcharts({
+                    chart: {
+                        type: 'area'
+                    },
+                    title: {
+                        text: 'Stacked area chart'
+                    },
+                    xAxis: {
+                        categories: data.dates
+                    },
+                    credits: {
+                        enabled: false
+                    },
+                    plotOptions: {
+                        area: {
+                            stacking: 'normal',
+                            lineColor: '#666666',
+                            lineWidth: 1,
+                            marker: {
+                                lineWidth: 1,
+                                lineColor: '#666666'
+                            }
+                        },
+                        series: {
+                            cursor: "pointer",
+                            point: {
+                                events: {
+                                    click: function() {
+                                        // Take user to pollrun detail page
+                                        // when they click on a specific date.
+                                        location.href = this.options.url;
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    series: seriesData
                 });
             });
         }
@@ -145,6 +201,7 @@ $(function() {
     /* Initialize the charts. */
     $('.chart-open-ended').chart_open_ended();
     $('.chart-numeric').chart_numeric();
+    $('.chart-numeric-split').chart_numeric_split();
     $('.chart-multiple-choice').chart_multiple_choice();
     $('.chart-bar').chart_bar();
 });

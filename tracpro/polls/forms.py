@@ -66,6 +66,10 @@ class PollChartFilterForm(filters.DateRangeFilter, filters.DataFieldFilter,
         help_text=_("How responses to numeric questions will be charted."),
         choices=NUMERIC_DATA_CHOICES)
 
+    split_regions = forms.BooleanField(
+        required=False,
+        help_text=_("Split out regional data for numeric charts."))
+
     def __init__(self, *args, **kwargs):
         if not kwargs.get('data'):
             # Set valid data if None (or {}) was provided.
@@ -76,5 +80,6 @@ class PollChartFilterForm(filters.DateRangeFilter, filters.DataFieldFilter,
                 'date_range': 'month',
                 'start_date': start_date,
                 'end_date': end_date,
+                'split_regions': False,
             }
         super(PollChartFilterForm, self).__init__(*args, **kwargs)

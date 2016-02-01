@@ -59,17 +59,21 @@ def single_pollrun_multiple_choice(answers, pollrun):
     }
 
 
-def multiple_pollruns(pollruns, responses, question):
+def multiple_pollruns(pollruns, responses, question, split_regions):
     chart_type = None
     data = None
 
     pollruns = pollruns.order_by('conducted_on')
 
     answers = Answer.objects.filter(response__in=responses, question=question)
+
     if answers:
         if question.question_type == Question.TYPE_NUMERIC:
-            chart_type = 'numeric'
-            data = multiple_pollruns_numeric(pollruns, responses, answers, question)
+            if split_regions:
+                chart_type = 'numeric-split'
+            else:
+                chart_type = 'numeric'
+            data = multiple_pollruns_numeric(pollruns, responses, answers, question, split_regions)
 
         elif question.question_type == Question.TYPE_OPEN:
             chart_type = 'open-ended'
@@ -78,7 +82,7 @@ def multiple_pollruns(pollruns, responses, question):
         elif question.question_type == Question.TYPE_MULTIPLE_CHOICE:
             chart_type = 'multiple-choice'
             # Call multiple_pollruns_numeric() in order to calculate mean, stdev and resp rate
-            multiple_pollruns_numeric(pollruns, responses, answers, question)
+            multiple_pollruns_numeric(pollruns, responses, answers, question, split_regions)
             data = multiple_pollruns_multiple_choice(pollruns, answers)
 
     return chart_type, data
@@ -103,22 +107,41 @@ def multiple_pollruns_multiple_choice(pollruns, answers):
     }
 
 
-def multiple_pollruns_numeric(pollruns, responses, answers, question):
+def multiple_pollruns_numeric(pollruns, responses, answers, question, split_regions):
     """Chart data for multiple pollruns of a poll."""
-    answer_sums, answer_avgs = answers.get_answer_summaries()
-    response_rates = responses.get_response_rates()
+    if split_regions:
+        answer_sums_list, answer_avgs_list = answers.get_answer_summaries_regions()
+        sum_data_list = []
+        avg_data_list = []
+        region_list = []
+        for answer_sums, answer_avgs in zip(answer_sums_list, answer_avgs_list):
+            sum_data = format_series(pollruns, answer_sums, url='id@polls.pollrun_read')
+            avg_data = format_series(pollruns, answer_avgs, url='id@polls.pollrun_read')
+            sum_data_list.append(sum_data)
+            avg_data_list.append(avg_data)
+            region_list.append(answer_sums['region'])
+        # TO DO: response rate by region
+        response_rates = responses.get_response_rates()
+        rate_data = format_series(pollruns, response_rates, url='id@polls.pollrun_participation')
+        # TO DO: calculate question.answer_mean etc.
 
-    sum_data = format_series(pollruns, answer_sums, url='id@polls.pollrun_read')
-    avg_data = format_series(pollruns, answer_avgs, url='id@polls.pollrun_read')
-    rate_data = format_series(pollruns, response_rates, url='id@polls.pollrun_participation')
+    else:
+        answer_sums, answer_avgs = answers.get_answer_summaries()
 
-    question.answer_mean = round(numpy.mean([a['y'] for a in avg_data]), 2)
-    question.answer_stdev = round(numpy.std([a['y'] for a in avg_data]), 2)
-    question.response_rate_average = round(numpy.mean([a['y'] for a in rate_data]), 2)
+        response_rates = responses.get_response_rates()
+
+        sum_data = format_series(pollruns, answer_sums, url='id@polls.pollrun_read')
+        avg_data = format_series(pollruns, answer_avgs, url='id@polls.pollrun_read')
+        rate_data = format_series(pollruns, response_rates, url='id@polls.pollrun_participation')
+
+        question.answer_mean = round(numpy.mean([a['y'] for a in avg_data]), 2)
+        question.answer_stdev = round(numpy.std([a['y'] for a in avg_data]), 2)
+        question.response_rate_average = round(numpy.mean([a['y'] for a in rate_data]), 2)
 
     return {
         'dates': format_x_axis(pollruns),
-        'sum': sum_data,
-        'average': avg_data,
+        'sum': sum_data_list if split_regions else sum_data,
+        'average': avg_data_list if split_regions else avg_data,
         'response-rate': rate_data,
+        'region-list': region_list if split_regions else []
     }
