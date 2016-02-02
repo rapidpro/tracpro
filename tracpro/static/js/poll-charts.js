@@ -196,6 +196,7 @@ $(function() {
     /* Update numeric data display on the client side. */
     $('.filter-form #id_numeric').on('change', function() {
         $('.chart-numeric').chart_numeric();
+        $('.chart-numeric-split').chart_numeric_split();
     });
 
     /* Initialize the charts. */
