@@ -581,8 +581,23 @@ class ResponseQuerySet(models.QuerySet):
     def active(self):
         return self.filter(is_active=True)
 
-    def get_response_rates(self):
+    def get_regions(self):
+        """Return regions for the contacts who responded to related polls."""
+        regions = Region.objects.filter(contacts__responses__in=self).distinct()
+        return regions
+
+    def get_response_rates(self, split_regions):
         """Return a list of response rates for the pollruns."""
+        def rates(responses):
+            """ Sub function loops through results to list of response rates % """
+            for pollrun_id, data in groupby(responses, itemgetter('pollrun')):
+                # completion status (True/False) -> response count
+                completion = {d['is_complete']: d['count'] for d in data}
+                complete = completion.get(True, 0)
+                incomplete = completion.get(False, 0)
+                response_rates[pollrun_id] = round(100.0 * complete / (complete + incomplete), 2)
+            return response_rates
+
         # A response is complete if its status attribute equals STATUS_COMPLETE.
         # This uses an internal, _combine, because F expressions have not
         # exposed the SQL '=' operator.
@@ -604,14 +619,18 @@ class ResponseQuerySet(models.QuerySet):
         responses = responses.values('pollrun', 'is_complete')
         responses = responses.annotate(count=Count('pk'))
 
-        response_rates = {}
-        for pollrun_id, data in groupby(responses, itemgetter('pollrun')):
-            # completion status (True/False) -> response count
-            completion = {d['is_complete']: d['count'] for d in data}
-            complete = completion.get(True, 0)
-            incomplete = completion.get(False, 0)
-            response_rates[pollrun_id] = round(100.0 * complete / (complete + incomplete), 2)
-        return response_rates
+        if split_regions:
+            response_rate_list = []
+            for region in self.get_regions():
+                response_rates = {}
+                responses_by_region = responses.filter(contact__region=region)
+                response_rates = rates(responses_by_region)
+                response_rate_list.append(response_rates)
+        else:
+            response_rates = {}
+            response_rates = rates(responses)
+
+        return response_rate_list if split_regions else response_rates
 
 
 class Response(models.Model):
@@ -775,7 +794,7 @@ class AnswerQuerySet(models.QuerySet):
 
     def get_answer_summaries_regions(self):
         """Return the sum and average of numeric answers to each pollrun."""
-        """Split out values by regions if split_regions=True"""
+        """Split out values by regions"""
         answer_sums_list = []
         answer_avgs_list = []
 
@@ -787,7 +806,6 @@ class AnswerQuerySet(models.QuerySet):
             answer_sums['region'] = region.name
             answer_avgs['region'] = region.name
             # Append these dictionaries to lists of dictionaries for all regions
-            # import ipdb; ipdb.set_trace()
             answer_sums_list.append(answer_sums)
             answer_avgs_list.append(answer_avgs)
         return answer_sums_list, answer_avgs_list

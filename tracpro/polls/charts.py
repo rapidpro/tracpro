@@ -36,7 +36,7 @@ def single_pollrun(pollrun, responses, question):
     # and response rate for this pollrun
     if question.question_type != Question.TYPE_OPEN:
         _, answer_avgs = answers.get_answer_summaries()
-        response_rates = responses.get_response_rates()
+        response_rates = responses.get_response_rates(split_regions=False)
 
         answer_avg = answer_avgs.get(pollrun.pk, 0)
         response_rate = response_rates.get(pollrun.pk, 0)
@@ -114,21 +114,32 @@ def multiple_pollruns_numeric(pollruns, responses, answers, question, split_regi
         sum_data_list = []
         avg_data_list = []
         region_list = []
+        avgs_list = []
+        all_rates_list = []
         for answer_sums, answer_avgs in zip(answer_sums_list, answer_avgs_list):
             sum_data = format_series(pollruns, answer_sums, url='id@polls.pollrun_read')
             avg_data = format_series(pollruns, answer_avgs, url='id@polls.pollrun_read')
             sum_data_list.append(sum_data)
             avg_data_list.append(avg_data)
             region_list.append(answer_sums['region'])
-        # TO DO: response rate by region
-        response_rates = responses.get_response_rates()
-        rate_data = format_series(pollruns, response_rates, url='id@polls.pollrun_participation')
-        # TO DO: calculate question.answer_mean etc.
+            # Get the averages list for the mean and stdev calculations
+            region_name = answer_sums.pop('region', 0); # Pop out the region from the list of averages
+            avgs_list = avgs_list + answer_sums.values();
+        response_rate_list = responses.get_response_rates(split_regions)
+        rate_list = []
+        for rates in response_rate_list:
+            rate_data = format_series(pollruns, rates, url='id@polls.pollrun_participation')
+            rate_list.append(rate_data)
+            all_rates_list = all_rates_list + rates.values();
+        # Calculate mean, stdev and response rate average
+        question.answer_mean = round(numpy.mean(avgs_list), 2)
+        question.answer_stdev = round(numpy.std(avgs_list), 2)
+        question.response_rate_average = round(numpy.mean(all_rates_list), 2)
 
     else:
         answer_sums, answer_avgs = answers.get_answer_summaries()
 
-        response_rates = responses.get_response_rates()
+        response_rates = responses.get_response_rates(split_regions)
 
         sum_data = format_series(pollruns, answer_sums, url='id@polls.pollrun_read')
         avg_data = format_series(pollruns, answer_avgs, url='id@polls.pollrun_read')
@@ -142,6 +153,6 @@ def multiple_pollruns_numeric(pollruns, responses, answers, question, split_regi
         'dates': format_x_axis(pollruns),
         'sum': sum_data_list if split_regions else sum_data,
         'average': avg_data_list if split_regions else avg_data,
-        'response-rate': rate_data,
+        'response-rate': rate_list if split_regions else rate_data,
         'region-list': region_list if split_regions else []
     }
