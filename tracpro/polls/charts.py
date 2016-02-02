@@ -123,14 +123,14 @@ def multiple_pollruns_numeric(pollruns, responses, answers, question, split_regi
             avg_data_list.append(avg_data)
             region_list.append(answer_sums['region'])
             # Get the averages list for the mean and stdev calculations
-            region_name = answer_sums.pop('region', 0); # Pop out the region from the list of averages
-            avgs_list = avgs_list + answer_sums.values();
+            answer_sums.pop('region', 0)  # Pop out the region from the list of averages
+            avgs_list = avgs_list + answer_sums.values()
         response_rate_list = responses.get_response_rates(split_regions)
         rate_list = []
         for rates in response_rate_list:
             rate_data = format_series(pollruns, rates, url='id@polls.pollrun_participation')
             rate_list.append(rate_data)
-            all_rates_list = all_rates_list + rates.values();
+            all_rates_list = all_rates_list + rates.values()
         # Calculate mean, stdev and response rate average
         question.answer_mean = round(numpy.mean(avgs_list), 2)
         question.answer_stdev = round(numpy.std(avgs_list), 2)
