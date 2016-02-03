@@ -18,6 +18,13 @@ class PollChartTest(TracProTest):
 
         self.org = factories.Org()
 
+        self.region1 = factories.Region(org=self.org, name="North Carolina", uuid='NC-001')
+        self.region2 = factories.Region(org=self.org, name="Durham", uuid='NC-002')
+
+        self.contact1 = factories.Contact(org=self.org, region=self.region1)
+        self.contact2 = factories.Contact(org=self.org, region=self.region1)
+        self.contact3 = factories.Contact(org=self.org, region=self.region2)
+
         self.poll = factories.Poll(org=self.org)
 
         self.question1 = factories.Question(
@@ -27,10 +34,11 @@ class PollChartTest(TracProTest):
         self.question3 = factories.Question(
             poll=self.poll, question_type=models.Question.TYPE_NUMERIC)
 
-        self.pollrun = factories.UniversalPollRun(poll=self.poll)
+        self.pollrun = factories.RegionalPollRun(
+            poll=self.poll, region=self.region1)
 
         self.response1 = factories.Response(
-            pollrun=self.pollrun, status=models.Response.STATUS_COMPLETE)
+            pollrun=self.pollrun, status=models.Response.STATUS_COMPLETE, contact=self.contact1)
         factories.Answer(
             response=self.response1, question=self.question1,
             value="4.00000", category="1 - 5")
@@ -42,7 +50,7 @@ class PollChartTest(TracProTest):
             value="4.00000", category="1 - 5")
 
         self.response2 = factories.Response(
-            pollrun=self.pollrun, status=models.Response.STATUS_COMPLETE)
+            pollrun=self.pollrun, status=models.Response.STATUS_COMPLETE, contact=self.contact2)
         factories.Answer(
             response=self.response2, question=self.question1,
             value="3.00000", category="1 - 5")
@@ -54,7 +62,7 @@ class PollChartTest(TracProTest):
             value="3.00000", category="1 - 5")
 
         self.response3 = factories.Response(
-            pollrun=self.pollrun, status=models.Response.STATUS_COMPLETE)
+            pollrun=self.pollrun, status=models.Response.STATUS_COMPLETE, contact=self.contact3)
         factories.Answer(
             response=self.response3, question=self.question1,
             value="8.00000", category="6 - 10")
@@ -149,6 +157,51 @@ class PollChartTest(TracProTest):
         self.assertEqual(
             self.question3.response_rate_average,
             66.67)
+
+    def test_multiple_pollruns_numeric_split_regions(self):
+        answers = models.Answer.objects.filter(question=self.question3)
+        split_regions = True
+        data = charts.multiple_pollruns_numeric(
+            self.pollruns, self.responses, answers, self.question3, split_regions)
+
+        # Region list should include both regions
+        self.assertEqual(
+            set(data['region-list']),
+            set([self.region1.name, self.region2.name]))
+
+        # Answers are 4, 3 are for region1 (average = 3.5, sum = 7.0)
+        # Answer is 8 for region2 (average = 8.0, sum = 8.0)
+
+        avgs = set([data['average'][0][0]['y'], data['average'][1][0]['y']])
+        self.assertEqual(
+            avgs,
+            set([3.5, 8.0]))
+
+        sums = set([data['sum'][0][0]['y'], data['sum'][1][0]['y']])
+        self.assertEqual(
+            sums,
+            set([7.0, 8.0]))
+
+        rates = set([data['response-rate'][0][0]['y'], data['response-rate'][1][0]['y']])
+        self.assertEqual(
+            rates,
+            set([100.0, 100.0]))
+
+        # Today's date
+        self.assertEqual(
+            data['dates'],
+            [self.pollrun.conducted_on.strftime('%Y-%m-%d')])
+
+        # Mean, Standard Dev, response rate avg, pollrun list
+        self.assertEqual(
+            self.question3.answer_mean,
+            7.5)
+        self.assertEqual(
+            self.question3.answer_stdev,
+            0.5)
+        self.assertEqual(
+            self.question3.response_rate_average,
+            100.0)
 
     def test_single_pollrun_multiple_choice(self):
         answers = models.Answer.objects.filter(question=self.question1)
