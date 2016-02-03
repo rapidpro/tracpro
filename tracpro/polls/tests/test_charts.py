@@ -203,6 +203,52 @@ class PollChartTest(TracProTest):
             self.question3.response_rate_average,
             100.0)
 
+    def test_multiple_pollruns(self):
+        split_regions = False
+        chart_type, data = charts.multiple_pollruns(self.pollruns, self.responses, self.question3, split_regions)
+
+        # Question 3 is NUMERIC
+        self.assertEqual(
+            chart_type,
+            'numeric')
+
+        # Answers are 4, 3 and 8 for a single date
+
+        # Single item for single date: sum = 4 + 3 + 8 = 15
+        # URL points to pollrun detail page for this date
+        self.assertEqual(
+            data['sum'],
+            [{"y": 15.0, "url": reverse('polls.pollrun_read', args=[self.pollrun.pk])}])
+
+        # Single item for single date: average = (4 + 3 + 8)/3 = 5
+        # URL points to pollrun detail page for this date
+        self.assertEqual(
+            data['average'],
+            [{"y": 5.0, "url": reverse('polls.pollrun_read', args=[self.pollrun.pk])}])
+
+        # Set all responses to complete in setUp()
+        # Response rate = 100%
+        # URL points to participation tab
+        self.assertEqual(
+            data['response-rate'],
+            [{"y": 100.0, "url": reverse('polls.pollrun_participation', args=[self.pollrun.pk])}])
+
+        # Today's date
+        self.assertEqual(
+            data['dates'],
+            [self.pollrun.conducted_on.strftime('%Y-%m-%d')])
+
+        # Mean, Standard Dev, response rate avg, pollrun list
+        self.assertEqual(
+            self.question3.answer_mean,
+            5.0)
+        self.assertEqual(
+            self.question3.answer_stdev,
+            0.0)
+        self.assertEqual(
+            self.question3.response_rate_average,
+            100.0)
+
     def test_single_pollrun_multiple_choice(self):
         answers = models.Answer.objects.filter(question=self.question1)
         data = charts.single_pollrun_multiple_choice(answers, self.pollrun)
