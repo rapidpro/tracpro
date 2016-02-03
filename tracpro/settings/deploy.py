@@ -11,7 +11,8 @@ ADMINS = [
     ('Caktus EduTrac Team', 'edutrac-team@caktusgroup.com'),
 ]
 
-ALLOWED_HOSTS = os.environ['ALLOWED_HOSTS'].split(';')
+ALLOWED_HOSTS = ['.' + os.environ['DOMAIN']]
+
 
 CACHES['default']['LOCATION'] = 'localhost:6379:4'
 
