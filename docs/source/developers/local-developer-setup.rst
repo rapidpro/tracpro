@@ -43,12 +43,19 @@ may be needed for Mac setup. To begin you should have the following applications
     $ mkvirtualenv tracpro -p `which python2.7`
     (tracpro)$ $VIRTUAL_ENV/bin/pip install -r $PWD/requirements/dev.txt
 
-#. Create a local settings file and set your DJANGO_SETTINGS_MODULE to use it and restart the environment so that the change will take effect::
+#. Create a local settings file::
 
     (tracpro)$ cp tracpro/settings/local.example.py tracpro/settings/local.py
-    (tracpro)$ echo "DJANGO_SETTINGS_MODULE=tracpro.settings.local" >> .env
 
-   You may edit this file to make environment changes that are local to your machine. This file is listed in the `.gitignore <https://github.com/rapidpro/tracpro/blob/develop/.gitignore>`_ file and should never be checked into GitHub.
+   You may edit this file to make settings changes that are local to your
+   machine. This file is listed in the `.gitignore
+   <https://github.com/rapidpro/tracpro/blob/develop/.gitignore>`_ file and
+   should never be checked into GitHub.
+
+#. This project uses django-dotenv to manage environment variables. Configure
+   the environment variable Django uses to locate the project settings file::
+
+    (tracpro)$ echo "DJANGO_SETTINGS_MODULE=tracpro.settings.local" >> .env
 
 #. Create a Postgres database and run the initial migrate::
 
