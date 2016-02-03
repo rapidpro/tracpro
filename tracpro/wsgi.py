@@ -2,6 +2,7 @@ import os
 
 from . import load_env
 
+
 load_env.load_env()
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "tracpro.settings")

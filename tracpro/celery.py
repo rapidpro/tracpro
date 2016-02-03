@@ -7,6 +7,7 @@ from django.conf import settings
 
 from . import load_env
 
+
 load_env.load_env()
 
 # set the default Django settings module for the 'celery' program.

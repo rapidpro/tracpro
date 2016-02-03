@@ -4,6 +4,7 @@ import sys
 
 from tracpro import load_env
 
+
 load_env.load_env()
 
 if __name__ == "__main__":
