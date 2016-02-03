@@ -33,7 +33,7 @@ may be needed for Mac setup. To begin you should have the following applications
 
     $ git clone git@github.com:rapidpro/tracpro.git
     $ cd tracpro
-    $ git checkout develop    
+    $ git checkout develop
 
 #. Create a virtual environment using Python 2.7 and install the project
    requirements::
@@ -46,9 +46,7 @@ may be needed for Mac setup. To begin you should have the following applications
 #. Create a local settings file and set your DJANGO_SETTINGS_MODULE to use it and restart the environment so that the change will take effect::
 
     (tracpro)$ cp tracpro/settings/local.example.py tracpro/settings/local.py
-    (tracpro)$ echo "export DJANGO_SETTINGS_MODULE=tracpro.settings.local" >> $VIRTUAL_ENV/bin/postactivate
-    (tracpro)$ echo "unset DJANGO_SETTINGS_MODULE" >> $VIRTUAL_ENV/bin/postdeactivate
-    (tracpro)$ deactivate && workon tracpro
+    (tracpro)$ echo "DJANGO_SETTINGS_MODULE=tracpro.settings.local" >> .env
 
    You may edit this file to make environment changes that are local to your machine. This file is listed in the `.gitignore <https://github.com/rapidpro/tracpro/blob/develop/.gitignore>`_ file and should never be checked into GitHub.
 
