@@ -1,5 +1,6 @@
 from celery import signature
 from celery.utils.log import get_task_logger
+import datetime
 
 from django.apps import apps
 from django.conf import settings
@@ -30,7 +31,7 @@ class ScheduleTaskForActiveOrgs(PostTransactionTask):
 
     def apply_async(self, *args, **kwargs):
         kwargs.setdefault('queue', 'org_scheduler')
-        kwargs.setdefault('expires', settings.ORG_TASK_TIMEOUT)
+        kwargs.setdefault('expires', datetime.datetime.now() + settings.ORG_TASK_TIMEOUT)
         return PostTransactionTask.apply_async(self, *args, **kwargs)
 
     def run(self, task_name):
@@ -75,7 +76,7 @@ class OrgTask(PostTransactionTask):
         return cache.add(key, 'true', LOCK_EXPIRE)
 
     def apply_async(self, *args, **kwargs):
-        kwargs.setdefault('expires', settings.ORG_TASK_TIMEOUT)
+        kwargs.setdefault('expires', datetime.datetime.now() + settings.ORG_TASK_TIMEOUT)
         return PostTransactionTask.apply_async(self, *args, **kwargs)
 
     def check_rate_limit(self, org):
