@@ -798,7 +798,8 @@ class AnswerQuerySet(models.QuerySet):
         answer_sums_list = []
         answer_avgs_list = []
 
-        for region in self.get_regions():
+        regions = self.get_regions()
+        for region in regions:
             region_answers = self.filter(response__contact__region=region)
             # Get the dictionaries of sums and averages per pollrun
             answer_sums, answer_avgs = region_answers.get_answer_summaries()
