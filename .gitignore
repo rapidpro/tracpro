@@ -8,6 +8,7 @@
 
 .coverage
 .DS_Store
+.env
 celerybeat-schedule
 conf/pillar/*/deploy
 tracpro/settings/local.py

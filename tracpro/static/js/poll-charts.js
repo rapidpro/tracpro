@@ -59,7 +59,7 @@ jQuery.fn.extend({
                         type: 'area'
                     },
                     title: {
-                        text: 'Stacked area chart'
+                        text: ''
                     },
                     xAxis: {
                         categories: data.dates
