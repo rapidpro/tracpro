@@ -147,6 +147,7 @@ def multiple_pollruns_numeric_split_regions(pollruns, responses, answers, questi
         'region-list': region_list
     }
 
+
 def multiple_pollruns_numeric_all_regions(pollruns, responses, answers, question):
     """Chart data for multiple pollruns of a poll without splitting the regions."""
     answer_sums, answer_avgs = answers.get_answer_summaries()
