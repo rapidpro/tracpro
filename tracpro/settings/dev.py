@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 from .base import *  # noqa
 
 
-CELERY_ALWAYS_EAGER = False
+CELERY_ALWAYS_EAGER = True
 
 CELERY_ALWAYS_EAGER_PROPAGATES_EXCEPTIONS = True
 
