@@ -797,18 +797,29 @@ class AnswerQuerySet(models.QuerySet):
         """Split out values by regions"""
         answer_sums_list = []
         answer_avgs_list = []
+        REGION_NAME = 'response__contact__region__name'
+        POLLRUN = 'response__pollrun'
 
-        regions = self.get_regions()
-        for region in regions:
-            region_answers = self.filter(response__contact__region=region)
-            # Get the dictionaries of sums and averages per pollrun
-            answer_sums, answer_avgs = region_answers.get_answer_summaries()
+        answers = self.order_by(REGION_NAME, POLLRUN)
+        answers = answers.values('value', POLLRUN, REGION_NAME)
+
+        for region_name, region_answers in groupby(answers, itemgetter(REGION_NAME)):
+            answer_sums = {}
+            answer_avgs = {}
+            region_answers = list(region_answers)
+            for pollrun_id, pollrun_answers in groupby(region_answers, itemgetter(POLLRUN)):
+                pollrun_answers = list(pollrun_answers)
+                numeric_values = get_numeric_values([a['value'] for a in pollrun_answers])
+                answer_sums[pollrun_id] = round(numpy.sum(numeric_values), 2)
+                answer_avgs[pollrun_id] = round(numpy.mean(numeric_values), 2) if numeric_values else 0
+
             # Append a region key to each dictionary for region
-            answer_sums['region'] = region.name
-            answer_avgs['region'] = region.name
+            answer_sums['region'] = region_name
+            answer_avgs['region'] = region_name
             # Append these dictionaries to lists of dictionaries for all regions
             answer_sums_list.append(answer_sums)
             answer_avgs_list.append(answer_avgs)
+
         return answer_sums_list, answer_avgs_list
 
     def get_answer_summaries(self):
@@ -824,11 +835,6 @@ class AnswerQuerySet(models.QuerySet):
             answer_avgs[pollrun_id] = round(numpy.mean(numeric_values), 2) if numeric_values else 0
 
         return answer_sums, answer_avgs
-
-    def get_regions(self):
-        """Return regions for the contacts who responded to related polls."""
-        regions = Region.objects.filter(contacts__responses__answers__in=self).distinct()
-        return regions
 
     def numeric_group_by_date(self):
         """
