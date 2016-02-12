@@ -240,3 +240,39 @@ class Boundary(models.Model):
                 },
             }
         return self._geojson
+
+    @classmethod
+    def fetch_boundaries(cls, org):
+        temba_client = org.get_temba_client()
+        api_boundaries = temba_client.get_boundaries()
+
+        found_ids = []
+
+        for boundary in api_boundaries:
+            cls.update_or_create_from_temba(org, boundary)
+            found_ids.append(boundary.boundary)
+
+        # remove any boundary that's no longer on rapidpro
+        cls.objects.filter(org=org).exclude(rapidpro_uuid__in=found_ids).delete()
+
+        return found_ids
+
+    @classmethod
+    def kwargs_from_temba(cls, org, temba_boundary):
+        geometry = json.dumps(dict(type=temba_boundary.geometry.type, coordinates=temba_boundary.geometry.coordinates))
+
+        parent = cls.objects.filter(rapidpro_uuid__iexact=temba_boundary.parent, org=org).first()
+
+        return dict(org=org, geometry=geometry, level=temba_boundary.level, parent=parent,
+                    name=temba_boundary.name, rapidpro_uuid=temba_boundary.boundary)
+
+    @classmethod
+    def update_or_create_from_temba(cls, org, temba_boundary):
+        kwargs = cls.kwargs_from_temba(org, temba_boundary)
+
+        existing = cls.objects.filter(org=org, rapidpro_uuid=kwargs['rapidpro_uuid'])
+        if existing:
+            existing.update(**kwargs)
+            return existing.first()
+        else:
+            return cls.objects.create(**kwargs)
