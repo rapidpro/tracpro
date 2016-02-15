@@ -95,9 +95,10 @@ class PollCRUDL(smartmin.SmartCRUDL):
             responses = self.get_responses(pollruns)
 
             data = []
+            split_regions = self.filter_form.cleaned_data.get('split_regions')
             for question in self.object.questions.active():
                 chart_type, chart_data = charts.multiple_pollruns(
-                    pollruns, responses, question)
+                    pollruns, responses, question, split_regions)
                 data.append((question, chart_type, chart_data))
             return data
 

@@ -1,3 +1,4 @@
+from django import forms
 from django import template
 
 from .. import utils
@@ -18,3 +19,8 @@ def field(form, field_name, **kwargs):
 @register.filter
 def chart_json(data):
     return utils.render_data(data)
+
+
+@register.filter
+def is_checkbox(field):
+    return isinstance(field.field.widget, forms.CheckboxInput)

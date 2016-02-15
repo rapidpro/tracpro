@@ -21,6 +21,7 @@ from django.utils.translation import ugettext_lazy as _
 from dash.utils import get_cacheable, get_month_range
 
 from tracpro.contacts.models import Contact
+from tracpro.groups.models import Region
 
 from .tasks import pollrun_start
 from .utils import (
@@ -580,8 +581,23 @@ class ResponseQuerySet(models.QuerySet):
     def active(self):
         return self.filter(is_active=True)
 
-    def get_response_rates(self):
+    def get_regions(self):
+        """Return regions for the contacts who responded to related polls."""
+        regions = Region.objects.filter(contacts__responses__in=self).distinct()
+        return regions
+
+    def get_response_rates(self, split_regions):
         """Return a list of response rates for the pollruns."""
+        def rates(responses):
+            """ Sub function loops through results to list of response rates % """
+            for pollrun_id, data in groupby(responses, itemgetter('pollrun')):
+                # completion status (True/False) -> response count
+                completion = {d['is_complete']: d['count'] for d in data}
+                complete = completion.get(True, 0)
+                incomplete = completion.get(False, 0)
+                response_rates[pollrun_id] = round(100.0 * complete / (complete + incomplete), 2)
+            return response_rates
+
         # A response is complete if its status attribute equals STATUS_COMPLETE.
         # This uses an internal, _combine, because F expressions have not
         # exposed the SQL '=' operator.
@@ -603,14 +619,18 @@ class ResponseQuerySet(models.QuerySet):
         responses = responses.values('pollrun', 'is_complete')
         responses = responses.annotate(count=Count('pk'))
 
-        response_rates = {}
-        for pollrun_id, data in groupby(responses, itemgetter('pollrun')):
-            # completion status (True/False) -> response count
-            completion = {d['is_complete']: d['count'] for d in data}
-            complete = completion.get(True, 0)
-            incomplete = completion.get(False, 0)
-            response_rates[pollrun_id] = round(100.0 * complete / (complete + incomplete), 2)
-        return response_rates
+        if split_regions:
+            response_rate_list = []
+            for region in self.get_regions():
+                response_rates = {}
+                responses_by_region = responses.filter(contact__region=region)
+                response_rates = rates(responses_by_region)
+                response_rate_list.append(response_rates)
+        else:
+            response_rates = {}
+            response_rates = rates(responses)
+
+        return response_rate_list if split_regions else response_rates
 
 
 class Response(models.Model):
@@ -772,6 +792,36 @@ class AnswerQuerySet(models.QuerySet):
         counts.sort(key=lambda (category, pollrun_counts): natural_sort_key(category))
         return counts
 
+    def get_answer_summaries_regions(self):
+        """Return the sum and average of numeric answers to each pollrun."""
+        """Split out values by regions"""
+        answer_sums_list = []
+        answer_avgs_list = []
+        REGION_NAME = 'response__contact__region__name'
+        POLLRUN = 'response__pollrun'
+
+        answers = self.order_by(REGION_NAME, POLLRUN)
+        answers = answers.values('value', POLLRUN, REGION_NAME)
+
+        for region_name, region_answers in groupby(answers, itemgetter(REGION_NAME)):
+            answer_sums = {}
+            answer_avgs = {}
+            region_answers = list(region_answers)
+            for pollrun_id, pollrun_answers in groupby(region_answers, itemgetter(POLLRUN)):
+                pollrun_answers = list(pollrun_answers)
+                numeric_values = get_numeric_values([a['value'] for a in pollrun_answers])
+                answer_sums[pollrun_id] = round(numpy.sum(numeric_values), 2)
+                answer_avgs[pollrun_id] = round(numpy.mean(numeric_values), 2) if numeric_values else 0
+
+            # Append a region key to each dictionary for region
+            answer_sums['region'] = region_name
+            answer_avgs['region'] = region_name
+            # Append these dictionaries to lists of dictionaries for all regions
+            answer_sums_list.append(answer_sums)
+            answer_avgs_list.append(answer_avgs)
+
+        return answer_sums_list, answer_avgs_list
+
     def get_answer_summaries(self):
         """Return the sum and average of numeric answers to each pollrun."""
         answers = self.order_by('response__pollrun')
@@ -781,8 +831,8 @@ class AnswerQuerySet(models.QuerySet):
         answer_avgs = {}
         for pollrun_id, _answers in groupby(answers, itemgetter('response__pollrun')):
             numeric_values = get_numeric_values(a['value'] for a in _answers)
-            answer_sums[pollrun_id] = numpy.sum(numeric_values)
-            answer_avgs[pollrun_id] = numpy.mean(numeric_values) if numeric_values else 0
+            answer_sums[pollrun_id] = round(numpy.sum(numeric_values), 2)
+            answer_avgs[pollrun_id] = round(numpy.mean(numeric_values), 2) if numeric_values else 0
 
         return answer_sums, answer_avgs
 
