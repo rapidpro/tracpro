@@ -8,7 +8,7 @@ from temba_client import types
 from .factory_utils import FuzzyUUID
 
 
-__all__ = ['TembaFlow', 'TembaRuleSet']
+__all__ = ['TembaFlow', 'TembaRuleSet', 'TembaBoundary']
 
 
 class TembaObjectFactory(factory.Factory):
@@ -42,3 +42,22 @@ class TembaRuleSet(TembaObjectFactory):
 
     class Meta:
         model = types.RuleSet
+
+
+class TembaGeometry(TembaObjectFactory):
+    type = factory.fuzzy.FuzzyText()
+    coordinates = factory.fuzzy.FuzzyText()
+
+    class Meta:
+        model = types.Geometry
+
+
+class TembaBoundary(TembaObjectFactory):
+    boundary = factory.fuzzy.FuzzyText(length=15)  # not a real UUID.
+    name = factory.fuzzy.FuzzyText()
+    level = 0
+    parent = None
+    geometry = factory.SubFactory(TembaGeometry)
+
+    class Meta:
+        model = types.Boundary
