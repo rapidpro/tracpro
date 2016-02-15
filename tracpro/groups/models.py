@@ -112,6 +112,12 @@ class Region(mptt.MPTTModel, AbstractGroup):
         help_text=_("Users who can access this region"))
     parent = mptt.TreeForeignKey(
         'self', null=True, blank=True, related_name="children", db_index=True)
+    boundary = models.ForeignKey(
+        'groups.Boundary',
+        null=True,
+        verbose_name=_('boundary'),
+        related_name='regions',
+        on_delete=models.SET_NULL)
 
     class MPTTMeta:
         order_insertion_by = ['name']
