@@ -158,12 +158,15 @@ class BoundaryQuerySet(models.QuerySet):
 class BoundaryManager(models.Manager.from_queryset(BoundaryQuerySet)):
 
     def from_temba(self, org, temba_boundary):
-        """Get the existing or create a new corresponding Boundary instance."""
+        """Get the existing or create a new corresponding Boundary instance.
+
+        Assumes that the boundary's parent, if any, has already been created.
+        """
         boundary, _ = self.get_or_create(org=org, rapidpro_uuid=temba_boundary.boundary)
         boundary.name = temba_boundary.name
         boundary.level = temba_boundary.level
         boundary.geometry = json.dumps(temba_boundary.geometry.serialize())
-        boundary.parent = Boundary.objects.filter(rapidpro_uuid=temba_boundary.parent).first()
+        boundary.parent = self.filter(org=org, rapidpro_uuid=temba_boundary.parent).first()
         boundary.save()
         return boundary
 
