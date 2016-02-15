@@ -116,7 +116,7 @@ class RegionCRUDL(SmartCRUDL):
     actions = ('list', 'most_active', 'select', 'update_hierarchy')
 
     class List(OrgPermsMixin, SmartListView):
-        fields = ('name', 'contacts')
+        fields = ('name', 'boundary', 'contacts')
         paginate_by = None
 
         def derive_queryset(self, **kwargs):
@@ -132,6 +132,9 @@ class RegionCRUDL(SmartCRUDL):
 
         def get_contacts(self, obj):
             return len(obj.prefetched_contacts)
+
+        def get_boundary(self, obj):
+            return obj.boundary.name if obj.boundary else "-"
 
     class MostActive(OrgPermsMixin, SmartListView):
 
