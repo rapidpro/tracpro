@@ -212,10 +212,13 @@ class Boundary(models.Model):
         max_length=128,
         verbose_name=_("name"))
     level = models.IntegerField(
-        choices=LEVEL_CHOICES, null=True,
-        verbose_name=_("level"))
+        choices=LEVEL_CHOICES,
+        verbose_name=_("level"),
+        default=LEVEL_COUNTRY)
     parent = models.ForeignKey(
-        "groups.Boundary", null=True, related_name="children",
+        "groups.Boundary",
+        null=True,
+        related_name="children",
         verbose_name=_("parent"))
     geometry = models.TextField(
         help_text=_("The GeoJSON geometry of this boundary."),
