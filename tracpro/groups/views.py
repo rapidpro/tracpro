@@ -11,19 +11,20 @@ from django.core.urlresolvers import reverse
 from django.db import transaction
 from django.db.models import Prefetch
 from django.http import (
-    HttpResponseBadRequest, HttpResponseRedirect, JsonResponse)
+    HttpResponseBadRequest, HttpResponseRedirect, JsonResponse, HttpResponse)
 from django.shortcuts import redirect
 from django.utils.decorators import method_decorator
 from django.utils.http import is_safe_url
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic import View
+from django.views.generic.list import ListView
 
 from smartmin.users.views import (
     SmartCRUDL, SmartListView, SmartFormView, SmartView)
 
 from tracpro.contacts.models import Contact
 
-from .models import Group, Region
+from .models import Boundary, Group, Region
 from .forms import ContactGroupsForm
 
 
@@ -282,3 +283,16 @@ class GroupCRUDL(SmartCRUDL):
             uuids = form.cleaned_data['groups']
             Group.sync_with_temba(self.request.org, uuids)
             return HttpResponseRedirect(self.get_success_url())
+
+
+class BoundaryListView(ListView):
+
+    def get(self, request, *args, **kwargs):
+        try:
+            boundary = Boundary.objects.get(id=self.kwargs['boundary'])
+        except Boundary.DoesNotExist:
+                return HttpResponseBadRequest()
+
+        return HttpResponse(
+            json.dumps(boundary.as_geojson()),
+            content_type='application/json')

@@ -238,7 +238,7 @@ class Boundary(models.Model):
         if not hasattr(self, '_geojson'):
             self._geojson = {
                 'type': "Feature",
-                'geometry': json.loads(self.geojson),
+                'geometry': json.loads(self.geometry),
                 'properties': {
                     'id': self.rapidpro_uuid,
                     'level': self.level,
