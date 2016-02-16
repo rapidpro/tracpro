@@ -15,6 +15,6 @@ urlpatterns += [
         views.SetRegion.as_view(),
         name="set-region"),
     url(r'^boundary-json/(?P<boundary>\d+)/$',
-        views.BoundaryListView.as_view(),
+        views.BoundaryCRUDL.BoundaryListView.as_view(),
         name='boundary-json'),
 ]

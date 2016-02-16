@@ -17,7 +17,6 @@ from django.utils.decorators import method_decorator
 from django.utils.http import is_safe_url
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic import View
-from django.views.generic.list import ListView
 
 from smartmin.users.views import (
     SmartCRUDL, SmartListView, SmartFormView, SmartView)
@@ -285,14 +284,18 @@ class GroupCRUDL(SmartCRUDL):
             return HttpResponseRedirect(self.get_success_url())
 
 
-class BoundaryListView(ListView):
+class BoundaryCRUDL(SmartCRUDL):
+    model = Boundary
+    actions = ('boundary-json')
 
-    def get(self, request, *args, **kwargs):
-        try:
-            boundary = Boundary.objects.get(id=self.kwargs['boundary'])
-        except Boundary.DoesNotExist:
-                return HttpResponseBadRequest()
+    class BoundaryListView(OrgPermsMixin, SmartListView):
 
-        return HttpResponse(
-            json.dumps(boundary.as_geojson()),
-            content_type='application/json')
+        def get(self, request, *args, **kwargs):
+            try:
+                boundary = Boundary.objects.get(id=self.kwargs['boundary'])
+            except Boundary.DoesNotExist:
+                    return HttpResponseBadRequest()
+
+            return HttpResponse(
+                json.dumps(boundary.as_geojson()),
+                content_type='application/json')
