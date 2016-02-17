@@ -382,7 +382,7 @@ class TestRegionUpdateHierarchy(TracProTest):
         structure['12345'] = str(regions.first().pk)
         self.assertErrorResponse(
             data={'data': json.dumps(structure)},
-            message="Data must map region id to parent id for each region "
+            message="Data must map region id to parent id for every region "
                     "in this org.")
 
     def test_post_missing_groups(self):
@@ -392,7 +392,7 @@ class TestRegionUpdateHierarchy(TracProTest):
         structure.pop(regions.first().pk)
         self.assertErrorResponse(
             data={'data': json.dumps(structure)},
-            message="Data must map region id to parent id for each region "
+            message="Data must map region id to parent id for every region "
                     "in this org.")
 
     def test_post_inactive_groups(self):
@@ -402,7 +402,7 @@ class TestRegionUpdateHierarchy(TracProTest):
         structure[self.region_inactive.pk] = None
         self.assertErrorResponse(
             data={'data': json.dumps(structure)},
-            message="Data must map region id to parent id for each region "
+            message="Data must map region id to parent id for every region "
                     "in this org.")
 
     def test_post_invalid_parent(self):

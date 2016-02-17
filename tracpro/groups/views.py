@@ -174,21 +174,18 @@ class RegionCRUDL(SmartCRUDL):
             org = request.org
 
             # Load data and validate that it is in the correct format.
-            raw_data = request.POST.get('data', "").strip() or None
+            self.raw_data = request.POST.get('data', "").strip() or None
             try:
-                data = json.loads(raw_data)
+                data = json.loads(self.raw_data)
             except TypeError:
-                msg = "No data was provided in the `data` parameter."
-                logger.warning("{} Hierarchy: {}".format(org, msg), exc_info=True)
-                return self.error_response(400, msg)
+                return self.error(
+                    "No data was provided in the `data` parameter.")
             except ValueError:
-                msg = "Data must be valid JSON."
-                logger.warning("{} Hierarchy: {} {}".format(org, msg, raw_data), exc_info=True)
-                return self.error_response(400, msg)
+                return self.error(
+                    "Data must be valid JSON.")
             if not isinstance(data, dict):
-                msg = "Data must be a dict that maps region id to parent id."
-                logger.warning("{} Hierarchy: {} {}".format(org, msg, raw_data))
-                return self.error_response(400, msg)
+                return self.error(
+                    "Data must be a dict that maps region id to parent id.")
 
             # Grab all of the org's regions at once.
             regions = {str(r.pk): r for r in Region.get_all(org)}
@@ -199,15 +196,13 @@ class RegionCRUDL(SmartCRUDL):
             sent_regions = set(str(i) for i in data.keys())
             sent_parents = set(str(i) for i in data.values() if i is not None)
             if sent_regions != expected_ids:
-                msg = ("Data must map region id to parent id for each "
-                       "region in this org.")
-                logger.warning("{} Hierarchy: {} {}".format(org, msg, raw_data))
-                return self.error_response(400, msg)
+                return self.error(
+                    "Data must map region id to parent id for every region "
+                    "in this org.")
             elif not sent_parents.issubset(expected_ids):
-                msg = ("Region parent must be a region from the same org, "
-                       "or null.")
-                logger.warning("{} Hierarchy: {} {}".format(org, msg, raw_data))
-                return self.error_response(400, msg)
+                return self.error(
+                    "Region parent must be a region from the same org, "
+                    "or null.")
 
             # Re-set parent values for each region, then rebuild the mptt tree.
             with Region.objects.disable_mptt_updates():
@@ -223,18 +218,20 @@ class RegionCRUDL(SmartCRUDL):
                         region.save()
             Region.objects.rebuild()
 
-            msg = '{} region hierarchy has been updated.'.format(org.name)
-            logger.info("{} Hierarchy: {} {}".format(org, msg, raw_data))
-            return self.success_response(msg)
+            return self.success("{} region hierarchy has been updated.".format(request.org))
 
-        def error_response(self, status, message):
+        def error(self, message):
+            template = "{} Hierarchy: {} {}"
+            logger.warning(template.format(self.request.org, message, self.raw_data))
             return JsonResponse({
-                'status': status,
+                'status': 400,
                 'success': False,
                 'message': message,
             })
 
-        def success_response(self, message):
+        def success(self, message):
+            template = "{} Hierarchy: {} {}"
+            logger.info(template.format(self.request.org, message, self.raw_data))
             return JsonResponse({
                 'status': 200,
                 'success': True,
