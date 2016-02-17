@@ -3,6 +3,7 @@ from __future__ import absolute_import, unicode_literals
 from collections import Counter, OrderedDict
 from decimal import Decimal, InvalidOperation
 from itertools import chain, groupby
+import json
 from operator import itemgetter
 
 from dateutil.relativedelta import relativedelta
@@ -189,10 +190,22 @@ class QuestionManager(models.Manager.from_queryset(QuestionQuerySet)):
             # Custom name will be maintained despite update of RapidPro name.
             question.rapidpro_name = temba_question.label
 
+        # Save the rules used to categorize answers to this question.
+        rules = []
+        for rule_set in question.poll.get_flow_definition().rule_sets:
+            if rule_set['uuid'] == question.ruleset_uuid:
+                for rule in rule_set['rules'][:-1]:  # The last rule is always "Other".
+                    rules.append({
+                        'category': rule['category'],
+                        'test': rule['test'],
+                    })
+                break
+        question.json_rules = json.dumps(rules)
+
         # The user can alter or correct the question's type after it is
         # initially set, so we shouldn't override the existing type.
         if not question.question_type:
-            question.question_type = question._guess_question_type()
+            question.question_type = question.guess_question_type()
 
         question.order = order
         question.save()
@@ -235,6 +248,9 @@ class Question(models.Model):
         default=0, verbose_name=_('order'))
     is_active = models.BooleanField(
         default=True, verbose_name=_("show on TracPro"))
+    json_rules = models.TextField(
+        blank=True,
+        verbose_name=_("RapidPro rules"))
 
     objects = QuestionManager()
 
@@ -252,7 +268,12 @@ class Question(models.Model):
     def __str__(self):
         return self.name
 
-    def _guess_question_type(self):
+    def get_rules(self):
+        if not hasattr(self, "_rules"):
+            self._rules = json.loads(self.json_rules) if self.json_rules else []
+        return self._rules
+
+    def guess_question_type(self):
         """Inspect rules applied to question input to guess data type.
 
         Historically, the "response_type" field on the ruleset was used to
@@ -261,10 +282,7 @@ class Question(models.Model):
         """
         # Collect the type of each test applied to question input, e.g.,
         # "has any of these words", "has a number", "has a number between", etc.
-        defn = self.poll.get_flow_definition()
-        rules = {r['uuid']: r['rules'] for r in defn.rule_sets}.get(self.ruleset_uuid)
-        tests = [r['test']['type'] for r in rules] if rules else []
-        tests = tests[:-1]  # The last test is always "Other".
+        tests = [rule['test']['type'] for rule in self.get_rules()]
 
         if not tests:
             return self.TYPE_OPEN

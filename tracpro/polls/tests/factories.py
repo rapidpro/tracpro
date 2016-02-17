@@ -1,4 +1,5 @@
 import datetime
+import json
 
 import factory
 import factory.fuzzy
@@ -81,6 +82,7 @@ class Question(factory.django.DjangoModelFactory):
     name = factory.fuzzy.FuzzyText()
     question_type = factory.fuzzy.FuzzyChoice(c[0] for c in models.Question.TYPE_CHOICES)
     order = factory.Sequence(lambda n: n)
+    json_rules = factory.LazyAttribute(lambda o: json.dumps([]))
 
     class Meta:
         model = models.Question
