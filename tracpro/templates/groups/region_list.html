@@ -97,6 +97,18 @@
               <span class="value">
                 {% get_value node field %}
               </span>
+              {% if org_perms.groups.region_select and field == "boundary" %}
+                <select class="form-control boundary-select hidden">
+                  <option value=""{% if not node.boundary %} selected{% endif %}>
+                    -
+                  </option>
+                  {% for boundary in org_boundaries %}
+                    <option value="{{ boundary.id }}"{% if node.boundary == boundary %} selected{% endif %}>
+                      {{ boundary.name }}
+                    </option>
+                  {% endfor %}
+                </select>
+              {% endif %}
             </td>
           {% endfor %}
         </tr>
