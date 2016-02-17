@@ -130,6 +130,11 @@ class RegionCRUDL(SmartCRUDL):
             )
             return regions
 
+        def get_context_data(self, **kwargs):
+            org_boundaries = Boundary.objects.by_org(self.request.org)
+            kwargs.setdefault('org_boundaries', org_boundaries)
+            return super(RegionCRUDL.List, self).get_context_data(**kwargs)
+
         def get_contacts(self, obj):
             return len(obj.prefetched_contacts)
 
@@ -185,40 +190,70 @@ class RegionCRUDL(SmartCRUDL):
                     "Data must be valid JSON.")
             if not isinstance(data, dict):
                 return self.error(
-                    "Data must be a dict that maps region id to parent id.")
+                    "Data must be a dict that maps region id to "
+                    "(parent id, boundary id).")
+            if not all(isinstance(v, list) and len(v) == 2 for v in data.values()):
+                return self.error(
+                    "All data values must be of the format "
+                    "(parent id, boundary id).")
 
-            # Grab all of the org's regions at once.
+            # Grab all of the org's regions and boundaries at once.
             regions = {str(r.pk): r for r in Region.get_all(org)}
+            boundaries = {str(b.pk): b for b in Boundary.objects.by_org(org)}
 
             # Check that the user is updating exactly the regions from this
-            # org, and that specified parents are regions from this org.
-            expected_ids = set(regions.keys())
+            # org, and that specified parents and boundaries are valid for
+            # this org.
+            valid_regions = set(regions.keys())
+            valid_boundaries = set(boundaries.keys())
             sent_regions = set(str(i) for i in data.keys())
-            sent_parents = set(str(i) for i in data.values() if i is not None)
-            if sent_regions != expected_ids:
+            sent_parents = set(str(i[0]) for i in data.values() if i[0] is not None)
+            sent_boundaries = set(str(i[1]) for i in data.values() if i[1] is not None)
+            if sent_regions != valid_regions:
                 return self.error(
                     "Data must map region id to parent id for every region "
                     "in this org.")
-            elif not sent_parents.issubset(expected_ids):
+            if not sent_parents.issubset(valid_regions):
                 return self.error(
                     "Region parent must be a region from the same org, "
                     "or null.")
+            if not sent_boundaries.issubset(valid_boundaries):
+                return self.error(
+                    "Region boundary must be a boundary from the same "
+                    "org, or null.")
 
-            # Re-set parent values for each region, then rebuild the mptt tree.
+            # Re-set parent and boundary values for each region,
+            # then rebuild the mptt tree.
             with Region.objects.disable_mptt_updates():
-                for region_id, parent_id in data.items():
+                for region_id, (parent_id, boundary_id) in data.items():
                     region = regions.get(str(region_id))
-                    parent = regions.get(str(parent_id))
+                    parent = regions.get(str(parent_id)) if parent_id else None
+                    boundary = boundaries.get(str(boundary_id)) if boundary_id else None
+
+                    changed = False
+                    if region.boundary != boundary:
+                        changed = True
+                        self.log_change("boundary", region, region.boundary, boundary)
+                        region.boundary = boundary
                     if region.parent != parent:
-                        old = region.parent.name if region.parent else None
-                        new = parent.name if parent else None
-                        msg = "Updating parent of {} from {} -> {}".format(region, old, new)
-                        logger.debug("{} Hierarchy: {}".format(org, msg))
+                        changed = True
+                        self.log_change("parent", region, region.parent, parent)
                         region.parent = parent
+
+                    if changed:
                         region.save()
             Region.objects.rebuild()
 
             return self.success("{} region hierarchy has been updated.".format(request.org))
+
+        def log_change(self, name, region, old, new):
+            message = "Updating {name} of {region} from {old} -> {new}.".format(
+                name=name,
+                region=region,
+                old=old.name if old else None,
+                new=new.name if new else None,
+            )
+            logger.debug("{} Hierarchy: {}".format(self.request.org, message))
 
         def error(self, message):
             template = "{} Hierarchy: {} {}"

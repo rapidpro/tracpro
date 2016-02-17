@@ -290,26 +290,44 @@ class TestRegionUpdateHierarchy(TracProTest):
             content['message'],
             "Test region hierarchy has been updated.")
 
-        regions = models.Region.get_all(self.org)
-        new_structure = dict(regions.values_list('pk', 'parent'))
+        new_structure = self.get_structure(models.Region.get_all(self.org))
         self.assertDictEqual(expected_structure, new_structure)
+
+    def get_structure(self, regions):
+        """Create a dict to represent current region parents and boundaries."""
+        structure = {}
+        for region in regions:
+            structure[region.pk] = [region.parent_id, region.boundary_id]
+        return structure
 
     def make_regions(self):
         """Create a collection of nested regions."""
         self.region_uganda = factories.Region(
-            org=self.org, name="Uganda")
+            org=self.org, name="Uganda", parent=None,
+            boundary=factories.Boundary(org=self.org))
         self.region_kampala = factories.Region(
-            org=self.org, name="Kampala", parent=self.region_uganda)
+            org=self.org, name="Kampala", parent=self.region_uganda,
+            boundary=factories.Boundary(org=self.org))
         self.region_makerere = factories.Region(
-            org=self.org, name="Makerere", parent=self.region_kampala)
+            org=self.org, name="Makerere", parent=self.region_kampala,
+            boundary=factories.Boundary(org=self.org))
         self.region_entebbe = factories.Region(
-            org=self.org, name="Entebbe", parent=self.region_uganda)
+            org=self.org, name="Entebbe", parent=self.region_uganda,
+            boundary=factories.Boundary(org=self.org))
+
         self.region_kenya = factories.Region(
-            org=self.org, name="Kenya")
+            org=self.org, name="Kenya", parent=None,
+            boundary=factories.Boundary(org=self.org))
         self.region_nairobi = factories.Region(
-            org=self.org, name="Nairobi", parent=self.region_kenya)
+            org=self.org, name="Nairobi", parent=self.region_kenya,
+            boundary=factories.Boundary(org=self.org))
         self.region_mombasa = factories.Region(
-            org=self.org, name="Mombasa", parent=self.region_kenya)
+            org=self.org, name="Mombasa", parent=self.region_kenya,
+            boundary=factories.Boundary(org=self.org))
+
+        self.region_no_boundary = factories.Region(
+            org=self.org, name="No Boundary", parent=None,
+            boundary=None)
 
         self.region_inactive = factories.Region(
             org=self.org, name="Inactive", parent=self.region_nairobi,
@@ -373,33 +391,56 @@ class TestRegionUpdateHierarchy(TracProTest):
         """View requires a JSON-encoded dictionary in the `data` parameter."""
         self.assertErrorResponse(
             data={'data': json.dumps("Wrong type")},
-            message="Data must be a dict that maps region id to parent id.")
+            message="Data must be a dict that maps region id to "
+                    "(parent id, boundary id).")
 
-    def test_post_extra_groups(self):
-        """Submitted data should provide data for all groups in the org."""
+    def test_post_wrong_value_type(self):
+        """View requires each dictionary key to be a list with two items."""
         regions = self.make_regions()
-        structure = dict(regions.values_list('pk', 'parent'))
-        structure['12345'] = str(regions.first().pk)
+        structure = self.get_structure(regions)
+        structure[regions.first().pk] = None
+        self.assertErrorResponse(
+            data={'data': json.dumps(structure)},
+            message="All data values must be of the format "
+                    "(parent id, boundary id).")
+
+    def test_post_extra_regions(self):
+        """Submitted data should provide data for all regions in the org."""
+        other_region = factories.Region()  # another org
+        regions = self.make_regions()
+        structure = self.get_structure(regions)
+        structure[other_region.pk] = [None, None]
         self.assertErrorResponse(
             data={'data': json.dumps(structure)},
             message="Data must map region id to parent id for every region "
                     "in this org.")
 
-    def test_post_missing_groups(self):
-        """Submitted data should provide data for all groups in the org."""
+    def test_post_missing_regions(self):
+        """Submitted data should provide data for all regions in the org."""
         regions = self.make_regions()
-        structure = dict(regions.values_list('pk', 'parent'))
+        structure = self.get_structure(regions)
         structure.pop(regions.first().pk)
         self.assertErrorResponse(
             data={'data': json.dumps(structure)},
             message="Data must map region id to parent id for every region "
                     "in this org.")
 
-    def test_post_inactive_groups(self):
-        """Submitted data should not include info about inactive groups."""
+    def test_post_inactive_regions(self):
+        """Submitted data should not include info about inactive regions."""
         regions = self.make_regions()
-        structure = dict(regions.values_list('pk', 'parent'))
-        structure[self.region_inactive.pk] = None
+        structure = self.get_structure(regions)
+        structure[self.region_inactive.pk] = [None, None]
+        self.assertErrorResponse(
+            data={'data': json.dumps(structure)},
+            message="Data must map region id to parent id for every region "
+                    "in this org.")
+
+    def test_post_invalid_region(self):
+        """Submitted data should not include info about invalid regions."""
+        regions = self.make_regions()
+        structure = self.get_structure(regions)
+        structure['asdf'] = [None, None]
+        structure[12345] = [None, None]
         self.assertErrorResponse(
             data={'data': json.dumps(structure)},
             message="Data must map region id to parent id for every region "
@@ -408,8 +449,9 @@ class TestRegionUpdateHierarchy(TracProTest):
     def test_post_invalid_parent(self):
         """Submitted data should only reference parents within the same org."""
         regions = self.make_regions()
-        structure = dict(regions.values_list('pk', 'parent'))
-        structure[regions.first().pk] = "12345"
+        structure = self.get_structure(regions)
+        structure[regions.first().pk] = [12345, None]
+        structure[regions.last().pk] = ["asdf", None]
         self.assertErrorResponse(
             data={'data': json.dumps(structure)},
             message="Region parent must be a region from the same org, or "
@@ -418,26 +460,61 @@ class TestRegionUpdateHierarchy(TracProTest):
     def test_post_inactive_parent(self):
         """Submitted data should not reference inactive parents."""
         regions = self.make_regions()
-        structure = dict(regions.values_list('pk', 'parent'))
-        structure[regions.first().pk] = self.region_inactive.pk
+        structure = self.get_structure(regions)
+        structure[regions.first().pk] = [self.region_inactive.pk, None]
         self.assertErrorResponse(
             data={'data': json.dumps(structure)},
             message="Region parent must be a region from the same org, or "
                     "null.")
 
-    def test_post_same(self):
-        """Test when hierarchy is "updated" to existing hierarchy."""
+    def test_post_other_org_parent(self):
+        """Submitted data should not reference parents from another org."""
+        other_region = factories.Region()  # another org
         regions = self.make_regions()
-        structure = dict(regions.values_list('pk', 'parent'))
+        structure = self.get_structure(regions)
+        structure[regions.first().pk] = [other_region.pk, None]
+        self.assertErrorResponse(
+            data={'data': json.dumps(structure)},
+            message="Region parent must be a region from the same org, or "
+                    "null.")
+
+    def test_post_invalid_boundaries(self):
+        """Submitted data should not make invalid boundary references."""
+        regions = self.make_regions()
+        structure = self.get_structure(regions)
+        structure[regions.first().pk] = [None, 12345]
+        structure[regions.last().pk] = [None, "asdf"]
+        self.assertErrorResponse(
+            data={'data': json.dumps(structure)},
+            message="Region boundary must be a boundary from the same org, "
+                    "or null.")
+
+    def test_post_other_org_boundary(self):
+        """Submitted data should not reference boundaries from another org."""
+        other_boundary = factories.Boundary()  # another org
+        regions = self.make_regions()
+        structure = self.get_structure(regions)
+        structure[regions.first().pk] = [None, other_boundary.pk]
+        self.assertErrorResponse(
+            data={'data': json.dumps(structure)},
+            message="Region boundary must be a boundary from the same org, "
+                    "or null.")
+
+    def test_post_same(self):
+        """Test when hierarchy and boundaries do not change."""
+        regions = self.make_regions()
+        structure = self.get_structure(regions)
         data = {'data': json.dumps(structure)}
         self.assertSuccessResponse(data, structure)
 
     def test_post_change(self):
         """Test hierarchy change."""
         regions = self.make_regions()
-        structure = dict(regions.values_list('pk', 'parent'))
-        structure[self.region_kampala.pk] = self.region_kenya.pk
-        structure[self.region_nairobi.pk] = self.region_uganda.pk
+        structure = self.get_structure(regions)
+        structure[self.region_kampala.pk] = [self.region_kenya.pk, None]
+        structure[self.region_nairobi.pk] = [self.region_uganda.pk,
+                                             self.region_uganda.boundary.pk]
+        structure[self.region_entebbe.pk] = [None, self.region_kenya.boundary.pk]
         data = {'data': json.dumps(structure)}
         self.assertSuccessResponse(data, structure)
 
