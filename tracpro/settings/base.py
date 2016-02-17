@@ -282,6 +282,7 @@ GROUP_PERMISSIONS = {
         'orgs.org_edit',
         'baseline.baselineterm.*',
         'contacts.contact.*',
+        'groups.boundary.*',
         'groups.group.*',
         'groups.region.*',
         'msgs.message.*',
@@ -294,6 +295,7 @@ GROUP_PERMISSIONS = {
     "Editors": (
         'baseline.baselineterm.*',
         'contacts.contact.*',
+        'groups.boundary.*',
         'groups.group_most_active',
         'groups.region_most_active',
         'msgs.inboxmessage.*',

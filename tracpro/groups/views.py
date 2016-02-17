@@ -289,16 +289,14 @@ class GroupCRUDL(SmartCRUDL):
 
 class BoundaryCRUDL(SmartCRUDL):
     model = Boundary
-    actions = ('boundary-json')
+    actions = ('list',)
 
-    class BoundaryListView(OrgPermsMixin, SmartListView):
+    class List(OrgPermsMixin, SmartListView):
 
-        def get(self, request, *args, **kwargs):
-            try:
-                boundary = Boundary.objects.get(id=self.kwargs['boundary'])
-            except Boundary.DoesNotExist:
-                    return HttpResponseBadRequest()
+        def get_queryset(self):
+            return Boundary.objects.by_org(self.request.org)
 
-            return HttpResponse(
-                json.dumps(boundary.as_geojson()),
-                content_type='application/json')
+        def render_to_response(self, context, **response_kwargs):
+            results = [i.as_geojson()
+                       for i in context['object_list']]
+            return JsonResponse({'results': results})
