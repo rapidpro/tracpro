@@ -185,9 +185,9 @@ class BoundaryManager(models.Manager.from_queryset(BoundaryQuerySet)):
         uuids = [b.boundary for b in temba_boundaries]
         Boundary.objects.by_org(org).exclude(rapidpro_uuid__in=uuids).delete()
 
-        # Order boundaries from the highest level to the lowest.
-        # This ensures that each boundary's parent has been created
-        # before it is updated.
+        # Order boundaries from the highest level (country) to the lowest
+        # (district). This ensures that each boundary's parent (if any)
+        # has been  created before it is updated.
         temba_boundaries.sort(key=attrgetter('level'))
 
         # Create new or update existing Polls to match RapidPro data.
@@ -225,7 +225,8 @@ class Boundary(models.Model):
         "groups.Boundary",
         null=True,
         related_name="children",
-        verbose_name=_("parent"))
+        verbose_name=_("parent"),
+        on_delete=models.SET_NULL)
     geometry = models.TextField(
         help_text=_("The GeoJSON geometry of this boundary."),
         verbose_name=_("geojson"))

@@ -21,7 +21,7 @@ class Migration(migrations.Migration):
                 ('level', models.IntegerField(default=0, verbose_name='level', choices=[(0, 'Country'), (1, 'State'), (2, 'District')])),
                 ('geometry', models.TextField(help_text='The GeoJSON geometry of this boundary.', verbose_name='geojson')),
                 ('org', models.ForeignKey(verbose_name='org', to='orgs.Org')),
-                ('parent', models.ForeignKey(related_name='children', verbose_name='parent', to='groups.Boundary', null=True)),
+                ('parent', models.ForeignKey(related_name='children', verbose_name='parent', to='groups.Boundary', null=True, on_delete=models.deletion.SET_NULL)),
             ],
         ),
         migrations.AlterUniqueTogether(
