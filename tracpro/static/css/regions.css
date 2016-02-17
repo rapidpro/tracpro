@@ -8,19 +8,19 @@
 
 /* Boundary selection. */
 .list_groups_region .header-boundary {
-    padding-left: 21px;  /* match start of text in region rows */
+    padding-left: 21px;  /* extra 13px padding to match start of text in body rows */
 }
 .list_groups_region .region td.value-boundary .value {
     display: inline-block;
-    padding-left: 13px;  /* match start of text in <select> element */
-    width: 200px !important;
+    padding-left: 13px;  /* extra 5px padding to match start of text in <select> element */
+    width: 300px;
 }
 .list_groups_region.edit-mode .region td.value-boundary {
-    padding: 4px 8px;
+    padding: 4px 8px;  /* reduce top/bottom padding to give more room to the <select> */
 }
 .list_groups_region.edit-mode .region td.value-boundary select {
-    width: 200px;
-    height: 28px;  /* limit <select> height to prevent visual shift of row height */
+    width: 300px;
+    height: 28px;  /* match line height to prevent visual shift when toggling edit mode */
     padding: 1px 8px;
 }
 
