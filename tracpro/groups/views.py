@@ -11,7 +11,7 @@ from django.core.urlresolvers import reverse
 from django.db import transaction
 from django.db.models import Prefetch
 from django.http import (
-    HttpResponseBadRequest, HttpResponseRedirect, JsonResponse, HttpResponse)
+    HttpResponseBadRequest, HttpResponseRedirect, JsonResponse)
 from django.shortcuts import redirect
 from django.utils.decorators import method_decorator
 from django.utils.http import is_safe_url
