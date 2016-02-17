@@ -1,6 +1,10 @@
 $(function() {
-    // Identifier for messages related to editing the hierarchy.
-    var EDIT_HIERARCHY_MESSAGE = "edit-hierarchy-message";
+    var EDIT_REGIONS_HELP = "Edit region hierarchy by dragging and " +
+                            "dropping table rows. Click 'Save Regions' " +
+                            "when changes are complete.";
+
+    // Identifier for any message related to editing regions.
+    var EDIT_REGIONS_MESSAGE = "edit-regions-message";
 
     // The first row is a dummy that exists so that the user can drag
     // other regions to the top level.
@@ -25,15 +29,17 @@ $(function() {
     }
 
     /* Add user message to the top of the page. */
-    var addUserMessage = function(id, type, message) {
+    var addUserMessage = function(id, type, message, hideClose) {
         clearUserMessage(id);  // Remove previous messages that used this ID.
-        close = $("<a>").attr("href", "#")
-        close.addClass("close").attr("data-dismiss", "alert")
-        close.html("×");
         msgDiv = $("<div>").attr("id", id);
         msgDiv.addClass("alert alert-" + type);
         msgDiv.html(message)
-        msgDiv.prepend(close);
+        if (!hideClose) {
+            close = $("<a>").attr("href", "#")
+            close.addClass("close").attr("data-dismiss", "alert")
+            close.html("×");
+            msgDiv.prepend(close);
+        }
         $("#user-messages").append(msgDiv);
     }
 
@@ -42,16 +48,16 @@ $(function() {
         $("#" + id).remove();
     }
 
-    /* Allow user to edit region hierarchy. */
-    $("#edit-hierarchy").click(function () {
-        clearUserMessage(EDIT_HIERARCHY_MESSAGE);
+    /* Allow user to edit regions. */
+    $("#edit-regions").click(function () {
+        clearUserMessage(EDIT_REGIONS_MESSAGE);
 
-        /* Display only the "Save Hierarchy" button. */
-        $("#region-actions .btn.hierarchy").addClass("hidden");
-        $("#save-hierarchy").removeClass("hidden");
+        /* Display only the "Save Regions" button. */
+        $("#region-actions .btn.action").addClass("hidden");
+        $("#save-regions").removeClass("hidden");
 
         /* Show user help message. */
-        $("#edit-hierarchy-help").removeClass("hidden");
+        addUserMessage(EDIT_REGIONS_MESSAGE, "info", EDIT_REGIONS_HELP, true);
 
         /* Show boundary selectors. */
         REGION_ROWS.find('.value-boundary .value').addClass('hidden');
@@ -63,47 +69,44 @@ $(function() {
         ALL_ROWS.droppable("enable");
     })
 
-    /* Save edited region hierarchy to server. */
-    $("#save-hierarchy").click(function() {
+    /* Save region edits to server. */
+    $("#save-regions").click(function() {
         /* Disable drag-and-drop. */
         REGION_ROWS.draggable("disable");
         ALL_ROWS.droppable("disable");
 
-        /* Display only the "Saving Hierarchy..." button. */
-        $("#region-actions .btn.hierarchy").addClass("hidden");
-        $("#saving-hierarchy").removeClass("hidden");
+        /* Display only the "Saving Regions..." button. */
+        $("#region-actions .btn.action").addClass("hidden");
+        $("#saving-regions").removeClass("hidden");
 
-        updateHierarchyOnServer();
+        updateRegionsOnServer();
     });
 
     /* Display success message & allow user to edit again. */
-    var saveHierarchySuccess = function(message) {
-        addUserMessage(EDIT_HIERARCHY_MESSAGE, "success", message);
-
-        /* Hide user help message. */
-        $("#edit-hierarchy-help").addClass("hidden");
+    var saveRegionsSuccess = function(message) {
+        addUserMessage(EDIT_REGIONS_MESSAGE, "success", message);
 
         /* Hide boundary selectors. */
         REGION_ROWS.find('.value-boundary .boundary-select').addClass('hidden');
         REGION_ROWS.find('.value-boundary .value').removeClass('hidden');
 
-        /* Display only the "Edit Hierarchy" button. */
+        /* Display only the "Edit Regions" button. */
         $(".list_groups_region").removeClass("edit-mode");
-        $("#region-actions .btn.hierarchy").addClass("hidden");
-        $("#edit-hierarchy").removeClass("hidden");
+        $("#region-actions .btn.action").addClass("hidden");
+        $("#edit-regions").removeClass("hidden");
     }
 
     /* Display error message & maintain "editing" state. */
-    var saveHierarchyFailure = function(message) {
-        addUserMessage(EDIT_HIERARCHY_MESSAGE, "error", message);
+    var saveRegionsFailure = function(message) {
+        addUserMessage(EDIT_REGIONS_MESSAGE, "error", message);
 
-        /* Display only the "Save Hierarchy" button. */
-        $("#region-actions .btn.hierarchy").addClass("hidden");
-        $("#save-hierarchy").removeClass("hidden");
+        /* Display only the "Save Regions" button. */
+        $("#region-actions .btn.action").addClass("hidden");
+        $("#save-regions").removeClass("hidden");
     }
 
-    /* Send the updated region hierarchy to the server. */
-    var updateHierarchyOnServer = function() {
+    /* Send the updated regions to the server. */
+    var updateRegionsOnServer = function() {
         var regionParents = {};  // region id -> (parent id, boundary id)
         $(".list_groups_region tbody").find("tr:not(:first-child)").each(function(i) {
             var regionId = $(this).data("ttId");
@@ -119,19 +122,19 @@ $(function() {
             },
             dataType: "json",
             type: "POST",
-            url: $(".list_groups_region").data("updateHierarchyUrl")
+            url: $(".list_groups_region").data("updateRegionsUrl")
         }).done(function(data, status, xhr) {
             if (data['success']) {
-                saveHierarchySuccess(data['message']);
+                saveRegionsSuccess(data['message']);
             } else {
                 message = "<strong>An error occurred while saving the " +
-                          "hierarchy:</strong> " + data["message"];
-                saveHierarchyFailure(message);
+                          "region changes:</strong> " + data["message"];
+                saveRegionsFailure(message);
             }
         }).fail(function() {
             var message = "An error has occurred and your changes were not " +
                           "saved. Please try again later.";
-            saveHierarchyFailure(message);
+            saveRegionsFailure(message);
         });
     };
 
@@ -160,7 +163,7 @@ $(function() {
             $(this).removeClass("selected");
         }
     });
-    REGION_ROWS.draggable("disable");  // Enable by clicking #edit-hierarchy.
+    REGION_ROWS.draggable("disable");  // Enable by clicking #edit-regions.
 
     /* Allow dropping regions onto any table row. */
     ALL_ROWS.droppable({
@@ -183,7 +186,7 @@ $(function() {
             }
         }
     });
-    ALL_ROWS.droppable("disable");  // Enable by clicking #edit-hierarchy.
+    ALL_ROWS.droppable("disable");  // Enable by clicking #edit-regions.
 
     /* Initialize the hierarchical tree table in the expanded state. */
     $(".treetable").treetable({

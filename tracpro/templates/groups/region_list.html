@@ -40,18 +40,18 @@
         <span class="glyphicon glyphicon-download"></span>
         {% trans "Select Groups" %}
       </a>
-      <button id="edit-hierarchy"
-              class="btn btn-default hierarchy">
-        {% trans "Edit Region Hierarchy" %}
+      <button id="edit-regions"
+              class="btn btn-default action">
+        {% trans "Edit Regions" %}
       </button>
-      <button id="save-hierarchy"
-              class="btn btn-primary hierarchy hidden">
-        {% trans "Save Region Hierarchy" %}
+      <button id="save-regions"
+              class="btn btn-primary action hidden">
+        {% trans "Save Regions" %}
       </button>
-      <button id="saving-hierarchy"
-              class="btn btn-primary disabled hierarchy hidden"
+      <button id="saving-regions"
+              class="btn btn-primary disabled action hidden"
               disabled>
-        {% trans "Saving..." %}
+        {% trans "Saving Regions..." %}
       </button>
     </div>
     <div class="clearfix"></div>
@@ -59,18 +59,12 @@
 
   <div>
     <p>{% trans "Each region is a contact group in RapidPro." %}</p>
-
-    {% if org_perms.groups.region_select %}
-      <p id="edit-hierarchy-help" class="hidden">
-        {% trans "Edit region hierarchy by dragging and dropping table rows. Click 'Save Region Hierarchy' when changes are complete." %}
-      </p>
-    {% endif %}
   </div>
 {% endblock table-controls %}
 
 {% block table %}
   <table class="treetable list-table {% get_list_class object_list %} table"
-         data-update-hierarchy-url="{% url "groups.region_update_hierarchy" %}">
+         data-update-regions-url="{% url "groups.region_update_all" %}">
     <thead>
       <tr>
         {% for field in fields %}

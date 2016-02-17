@@ -345,7 +345,7 @@ PERMISSIONS = {
     'baseline.baselineterm': ('create', 'read', 'update', 'delete', 'list', 'data_spoof', 'clear_spoof'),
     'contacts.contact': ('create', 'read', 'update', 'delete', 'list'),
     'groups.group': ('list', 'most_active', 'select'),
-    'groups.region': ('list', 'most_active', 'select', 'update_hierarchy'),
+    'groups.region': ('list', 'most_active', 'select', 'update_all'),
     'msgs.message': ('list', 'send', 'by_contact'),
     'msgs.inboxmessage': ('read', 'list', 'conversation'),
     'polls.poll': ('read', 'update', 'list', 'select'),

@@ -1,15 +1,8 @@
 #region-actions {
     margin-bottom: 10px;
 }
-#region-actions .btn.hierarchy {
-    width: 170px;  /* prevent visual shift when toggling between buttons */
-}
-
-
-/* Help message that appears while editing region hierarchy. */
-#edit-hierarchy-help {
-    color: #2d6ca2;  /* color of btn-primary */
-    font-weight: bold;
+#region-actions .btn {
+    width: 133px;  /* prevent visual shift when toggling between buttons */
 }
 
 

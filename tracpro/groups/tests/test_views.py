@@ -256,11 +256,11 @@ class TestRegionMostActive(TracProDataTest):
         self.assertEqual(results[1]['response_count'], 1)
 
 
-class TestRegionUpdateHierarchy(TracProTest):
-    url_name = "groups.region_update_hierarchy"
+class TestRegionUpdateAll(TracProTest):
+    url_name = "groups.region_update_all"
 
     def setUp(self):
-        super(TestRegionUpdateHierarchy, self).setUp()
+        super(TestRegionUpdateAll, self).setUp()
 
         self.user = factories.User()
         self.login(self.user)
@@ -279,7 +279,7 @@ class TestRegionUpdateHierarchy(TracProTest):
         self.assertEqual(content['message'], message)
 
     def assertSuccessResponse(self, data, expected_structure):
-        """Assert that region hierarchy is successfully updated."""
+        """Assert that regions are successfully updated."""
         response = self.url_post("test", reverse(self.url_name), data=data)
         self.assertEqual(response.status_code, 200)
 
@@ -288,7 +288,7 @@ class TestRegionUpdateHierarchy(TracProTest):
         self.assertEqual(content['status'], 200)
         self.assertEqual(
             content['message'],
-            "Test region hierarchy has been updated.")
+            "Test regions have been updated.")
 
         new_structure = self.get_structure(models.Region.get_all(self.org))
         self.assertDictEqual(expected_structure, new_structure)
@@ -508,7 +508,7 @@ class TestRegionUpdateHierarchy(TracProTest):
         self.assertSuccessResponse(data, structure)
 
     def test_post_change(self):
-        """Test hierarchy change."""
+        """Test hierarchy and boundary changes."""
         regions = self.make_regions()
         structure = self.get_structure(regions)
         structure[self.region_kampala.pk] = [self.region_kenya.pk, None]

@@ -113,7 +113,7 @@ class ToggleSubregions(View):
 
 class RegionCRUDL(SmartCRUDL):
     model = Region
-    actions = ('list', 'most_active', 'select', 'update_hierarchy')
+    actions = ('list', 'most_active', 'select', 'update_all')
 
     class List(OrgPermsMixin, SmartListView):
         fields = ('name', 'boundary', 'contacts')
@@ -170,12 +170,12 @@ class RegionCRUDL(SmartCRUDL):
             Region.sync_with_temba(self.request.org, uuids)
             return HttpResponseRedirect(self.get_success_url())
 
-    class UpdateHierarchy(OrgPermsMixin, SmartView, View):
+    class UpdateAll(OrgPermsMixin, SmartView, View):
         http_method_names = ['post']
 
         @transaction.atomic
         def post(self, request, *args, **kwargs):
-            """AJAX endpoint to update Region hierarchy at once."""
+            """AJAX endpoint to update boundaries and hierarchy for all org regions."""
             org = request.org
 
             # Load data and validate that it is in the correct format.
@@ -244,7 +244,7 @@ class RegionCRUDL(SmartCRUDL):
                         region.save()
             Region.objects.rebuild()
 
-            return self.success("{} region hierarchy has been updated.".format(request.org))
+            return self.success("{} regions have been updated.".format(request.org))
 
         def log_change(self, name, region, old, new):
             message = "Updating {name} of {region} from {old} -> {new}.".format(
@@ -253,10 +253,10 @@ class RegionCRUDL(SmartCRUDL):
                 old=old.name if old else None,
                 new=new.name if new else None,
             )
-            logger.debug("{} Hierarchy: {}".format(self.request.org, message))
+            logger.debug("{} Regions: {}".format(self.request.org, message))
 
         def error(self, message):
-            template = "{} Hierarchy: {} {}"
+            template = "{} Regions: {} {}"
             logger.warning(template.format(self.request.org, message, self.raw_data))
             return JsonResponse({
                 'status': 400,
@@ -265,7 +265,7 @@ class RegionCRUDL(SmartCRUDL):
             })
 
         def success(self, message):
-            template = "{} Hierarchy: {} {}"
+            template = "{} Regions: {} {}"
             logger.info(template.format(self.request.org, message, self.raw_data))
             return JsonResponse({
                 'status': 200,
