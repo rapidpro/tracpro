@@ -305,6 +305,22 @@ class TestQuestion(TracProTest):
         factories.Question(poll=factories.Poll(), ruleset_uuid='abc')
         factories.Question(poll=factories.Poll(), ruleset_uuid='abc')
 
+    def test_categorize(self):
+        rules = [
+            {
+                'category': {'base': 'dogs'},
+                'test': {'type': 'between', 'min': 1, 'max': 3}
+            },
+            {
+                'category': {'base': 'cats'},
+                'test': {'type': 'numeric'},
+            },
+        ]
+        question = factories.Question(json_rules=json.dumps(rules))
+        self.assertEqual(question.categorize(2), 'dogs')
+        self.assertEqual(question.categorize(5), 'cats')
+        self.assertEqual(question.categorize("foo"), 'Other')
+
     def test_guess_question_type_numeric(self):
         """Guess NUMERIC if rule types are all numeric."""
         question = factories.Question(json_rules=json.dumps([

@@ -23,6 +23,7 @@ from dash.utils import get_cacheable, get_month_range
 
 from tracpro.contacts.models import Contact
 
+from . import rules
 from .tasks import pollrun_start
 from .utils import (
     auto_range_categories, extract_words, get_numeric_values, natural_sort_key)
@@ -193,7 +194,7 @@ class QuestionManager(models.Manager.from_queryset(QuestionQuerySet)):
         # Save the rules used to categorize answers to this question.
         rules = []
         for rule_set in question.poll.get_flow_definition().rule_sets:
-            if rule_set['uuid'] == question.ruleset_uuid:
+            if rule_set['uuid'] == question.ruleset_uuid:  # Find the first matching rule set.
                 for rule in rule_set['rules'][:-1]:  # The last rule is always "Other".
                     rules.append({
                         'category': rule['category'],
@@ -216,10 +217,6 @@ class QuestionManager(models.Manager.from_queryset(QuestionQuerySet)):
 @python_2_unicode_compatible
 class Question(models.Model):
     """Corresponds to RapidPro RuleSet."""
-    # Types of rules that RapidPro applies to incoming messages
-    # that suggest the expected data is numeric.
-    _NUMERIC_TESTS = ('number', 'lt', 'eq', 'gt', 'between')
-
     TYPE_OPEN = 'O'
     TYPE_MULTIPLE_CHOICE = 'C'
     TYPE_NUMERIC = 'N'
@@ -268,6 +265,22 @@ class Question(models.Model):
     def __str__(self):
         return self.name
 
+    def categorize(self, value):
+        """Return the first category that the value matches."""
+        for rule in self.get_rules():
+            if rules.passes_test(value, rule['test']):
+                # rule['category'] contains a base and/or translated names.
+                # For example:
+                #   {'category': {'base': 'dogs'}}
+                #   {'category': {'eng': 'dogs', 'base': 'dogs'}}
+                #   {'category': {'eng'; 'dogs'}}
+                for key in ('base', 'eng'):
+                    return rule['category'][key]
+
+                # Default to the first value if that doesn't work.
+                return rule.values()[0]
+        return "Other"
+
     def get_rules(self):
         if not hasattr(self, "_rules"):
             self._rules = json.loads(self.json_rules) if self.json_rules else []
@@ -286,7 +299,7 @@ class Question(models.Model):
 
         if not tests:
             return self.TYPE_OPEN
-        elif all(t in self._NUMERIC_TESTS for t in tests):
+        elif all(t in rules.NUMERIC_TESTS for t in tests):
             return self.TYPE_NUMERIC
         else:
             return self.TYPE_MULTIPLE_CHOICE
