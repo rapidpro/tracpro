@@ -98,9 +98,9 @@ class PollCRUDL(smartmin.SmartCRUDL):
             for question in self.object.questions.active():
                 chart_type, chart_data = charts.multiple_pollruns(
                     pollruns, responses, question)
-                map_data = maps.data_categoric(
+                map_data, category_colors = maps.data_categoric(
                     responses, question)
-                data.append((question, chart_type, chart_data, map_data))
+                data.append((question, chart_type, chart_data, map_data, category_colors))
             return data
 
     class Update(PollMixin, OrgObjPermsMixin, smartmin.SmartUpdateView):
