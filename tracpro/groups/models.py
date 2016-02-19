@@ -247,7 +247,7 @@ class Boundary(models.Model):
                 'type': "Feature",
                 'geometry': json.loads(self.geometry),
                 'properties': {
-                    'id': self.rapidpro_uuid,
+                    'id': self.id,
                     'level': self.level,
                     'name': self.name,
                 },
