@@ -21,7 +21,7 @@ from smartmin.templatetags.smartmin import format_datetime
 from tracpro.contacts.models import Contact
 from tracpro.groups.models import Group, Region
 
-from . import charts, forms, tasks
+from . import charts, forms, maps, tasks
 from .models import Poll, Question, PollRun, Response
 
 
@@ -98,7 +98,9 @@ class PollCRUDL(smartmin.SmartCRUDL):
             for question in self.object.questions.active():
                 chart_type, chart_data = charts.multiple_pollruns(
                     pollruns, responses, question)
-                data.append((question, chart_type, chart_data))
+                map_data = maps.data_categoric(
+                    responses, question)
+                data.append((question, chart_type, chart_data, map_data))
             return data
 
     class Update(PollMixin, OrgObjPermsMixin, smartmin.SmartUpdateView):
