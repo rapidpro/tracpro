@@ -49,9 +49,9 @@ def data_categoric(responses, question):
         if boundary and boundary != answer['boundary']:
             # Append the category with most results for boundary
             map_data.append(
-                { 'category': category,
-                  'boundary': boundary,
-                  'color': category_colors[category] })
+                {'category': category,
+                 'boundary': boundary,
+                 'color': category_colors[category]})
             category_count = 0
             category = ''
         boundary = answer['boundary']
@@ -60,8 +60,8 @@ def data_categoric(responses, question):
             category = answer['category']
     # Append last data point
     map_data.append(
-        { 'category': category,
-          'boundary': boundary,
-          'color': category_colors[category] })
+        {'category': category,
+         'boundary': boundary,
+         'color': category_colors[category]})
 
     return map_data, category_colors
