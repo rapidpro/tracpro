@@ -12,13 +12,17 @@
   {{ block.super }}
   <link rel="stylesheet" type="text/css"
         href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/themes/smoothness/jquery-ui.css">
+  <link rel="stylesheet" type="text/css"
+        href="http://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.css">
 {% endblock extra-style %}
 
 {% block extra-script %}
   {{ block.super }}
   <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
+  <script src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>
   <script src="{% static "js/filters.js" %}"></script>
   <script src="{% static "js/poll-charts.js" %}"></script>
+  <script src="{% static "js/poll-maps.js" %}"></script>
 {% endblock extra-script %}
 
 {% block content %}
@@ -82,7 +86,7 @@
     </p>
   {% endif %}
 
-  {% for question, chart_type, data in question_data %}
+  {% for question, chart_type, data, map_data, category_colors in question_data %}
     <div class="poll-question">
       <h3>
         {{ forloop.counter }}. {{ question.name }}
@@ -99,6 +103,10 @@
       </h3>
 
       {% if data %}
+        <div class="map" id="map_{{ question.id }}"
+             data-maps='{{ map_data|chart_json }}'
+             data-colors='{{ category_colors|chart_json }}'>
+        </div>
         <div class="chart-{{ chart_type }}"
              data-chart='{{ data|chart_json }}'
              data-name="{{ question.name }}">

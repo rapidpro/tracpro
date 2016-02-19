@@ -5,18 +5,18 @@ from .models import Answer
 
 def color_code_categories(categories):
     # dark_green = '#006837'
-    # yellow = '#FFD100'
-    # dark_blue = '#1F49BF'
     # red = '#A7082C'
+    # dark_blue = '#1F49BF'
     # orange = '#FF8200'
+    # yellow = '#FFD100'
     # light_green = '#94D192'
-    # light_blue = '#96AEF2'
     # light_red = '#F2A2B3'
+    # light_blue = '#96AEF2'
     # light_orange = '#FDC690'
     # light_yellow = '#FFFFBF'
 
-    vivid_colors = ['#006837', '#FFD100', '#1F49BF', '#A7082C', '#FF8200']
-    light_colors = ['#94D192', '#96AEF2', '#F2A2B3', '#FDC690', '#FFFFBF']
+    vivid_colors = ['#006837', '#A7082C', '#1F49BF', '#FF8200', '#FFD100']
+    light_colors = ['#94D192', '#F2A2B3', '#96AEF2', '#FDC690', '#FFFFBF']
 
     categories = [''.join(category).encode('ascii') for category in categories]
     if len(categories) > 5:
@@ -49,8 +49,9 @@ def data_categoric(responses, question):
         if boundary and boundary != answer['boundary']:
             # Append the category with most results for boundary
             map_data.append(
-                {'category': category,
-                 'boundary': boundary})
+                { 'category': category,
+                  'boundary': boundary,
+                  'color': category_colors[category] })
             category_count = 0
             category = ''
         boundary = answer['boundary']
@@ -59,7 +60,8 @@ def data_categoric(responses, question):
             category = answer['category']
     # Append last data point
     map_data.append(
-        {'category': category,
-         'boundary': boundary})
+        { 'category': category,
+          'boundary': boundary,
+          'color': category_colors[category] })
 
     return map_data, category_colors
