@@ -472,12 +472,13 @@ class ResponseQuerySet(models.QuerySet):
     def active(self):
         return self.filter(is_active=True)
 
-    def counts_by_pollrun(self):
-        """Map pollrun id to its response count."""
-        responses = self.order_by('pollrun').values('pollrun')
-        grouped_responses = groupby(responses, itemgetter('pollrun'))
-        return {pollrun_id: len(list(_responses))
-                for pollrun_id, _responses in grouped_responses}
+    def group_counts(self, *fields):
+        """Group responses by the given fields then map to the count of matching responses."""
+        responses = self.order_by(*fields).values(*fields)
+        data = {}
+        for field_values, _responses in groupby(responses, itemgetter(*fields)):
+            data[field_values] = len(list(_responses))
+        return data
 
 
 class Response(models.Model):
@@ -619,12 +620,13 @@ class AnswerQuerySet(models.QuerySet):
         counts = Counter(chain(*words))
         return counts.most_common(50)
 
-    def values_by_pollrun(self):
-        """Map pollrun id to a list of its answer values."""
-        answers = self.order_by('response__pollrun').values('value', 'response__pollrun')
-        grouped_answers = groupby(answers, itemgetter('response__pollrun'))
-        return {pollrun_id: [a['value'] for a in _answers]
-                for pollrun_id, _answers in grouped_answers}
+    def group_values(self, *fields):
+        """Group answers by the given fields then map to a list of matching values."""
+        answers = self.order_by(*fields).values('value', *fields)
+        data = {}
+        for field_values, _answers in groupby(answers, itemgetter(*fields)):
+            data[field_values] = [a['value'] for a in _answers]
+        return data
 
     def category_counts(self):
         categories = self.values_list('category', flat=True)

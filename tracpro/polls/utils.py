@@ -47,16 +47,9 @@ def get_numeric_values(values):
     return numeric
 
 
-def summarize(answers, responses):
-    """
-    Map pollrun id to a 4-tuple of summary data:
-        * numeric answer sum
-        * numeric answer value
-        * numeric answer standard deviation
-        * total response rate
-    """
-    answer_values = answers.values_by_pollrun()
-    response_counts = responses.counts_by_pollrun()
+def summarize_by_pollrun(answers, responses):
+    answer_values = answers.group_values('response__pollrun')
+    response_counts = responses.group_counts('pollrun')
 
     answer_sums = {}
     answer_avgs = {}
@@ -67,14 +60,23 @@ def summarize(answers, responses):
     # so iterating over the response pollruns will cover all pollruns.
     for pollrun_id, response_count in response_counts.items():
         values = answer_values.get(pollrun_id, [])
-        numeric_values = get_numeric_values(values)
-
-        answer_sums[pollrun_id] = round(numpy.sum(numeric_values), 1)
-        answer_avgs[pollrun_id] = round(numpy.mean(numeric_values) if numeric_values else 0, 1)
-        answer_stdevs[pollrun_id] = round(numpy.std(numeric_values) if numeric_values else 0, 1)
-        response_rates[pollrun_id] = round(100.0 * len(values) / response_count, 1)
+        (answer_sums[pollrun_id],
+         answer_avgs[pollrun_id],
+         answer_stdevs[pollrun_id],
+         response_rates[pollrun_id]) = _summarize(values, response_count)
 
     return answer_sums, answer_avgs, answer_stdevs, response_rates
+
+
+def _summarize(values, response_count):
+    numeric_values = get_numeric_values(values)
+
+    answer_sum = round(numpy.sum(numeric_values), 1)
+    answer_avg = round(numpy.mean(numeric_values) if numeric_values else 0, 1)
+    answer_stdev = round(numpy.std(numeric_values) if numeric_values else 0, 1)
+    response_rate = round(100.0 * len(values) / response_count, 1)
+
+    return answer_sum, answer_avg, answer_stdev, response_rate
 
 
 def overall_mean(pollruns, data, default=0, round_to=1):

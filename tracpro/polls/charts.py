@@ -3,7 +3,7 @@ from __future__ import absolute_import, unicode_literals
 from tracpro.charts.formatters import format_series, format_x_axis
 
 from .models import Answer, Question
-from .utils import summarize, overall_mean, overall_stdev
+from .utils import summarize_by_pollrun, overall_mean, overall_stdev
 
 
 def single_pollrun(pollrun, responses, question):
@@ -25,7 +25,7 @@ def single_pollrun(pollrun, responses, question):
             chart_type = 'bar'
             chart_data = single_pollrun_multiple_choice(answers, pollrun)
 
-            _, answer_avgs, answer_stdevs, response_rates = summarize(answers, responses)
+            _, answer_avgs, answer_stdevs, response_rates = summarize_by_pollrun(answers, responses)
             summary_table = [
                 ('Mean', answer_avgs.get(pollrun.pk, 0)),
                 ('Standard deviation', answer_stdevs.get(pollrun.pk, 0)),
@@ -61,7 +61,7 @@ def multiple_pollruns(pollruns, responses, question):
             (answer_sums,
              answer_avgs,
              answer_stdevs,
-             response_rates) = summarize(answers, responses)
+             response_rates) = summarize_by_pollrun(answers, responses)
 
             chart_type = 'numeric'
             chart_data = multiple_pollruns_numeric(
@@ -80,7 +80,7 @@ def multiple_pollruns(pollruns, responses, question):
             (answer_sums,
              answer_avgs,
              answer_stdevs,
-             response_rates) = summarize(answers, responses)
+             response_rates) = summarize_by_pollrun(answers, responses)
 
             chart_type = 'multiple-choice'
             chart_data = multiple_pollruns_multiple_choice(pollruns, answers)

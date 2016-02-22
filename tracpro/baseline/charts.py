@@ -4,7 +4,7 @@ import numpy
 
 from tracpro.charts.formatters import format_series, format_x_axis
 from tracpro.polls.utils import (
-    get_numeric_values, summarize, overall_mean, overall_stdev)
+    get_numeric_values, summarize_by_pollrun, overall_mean, overall_stdev)
 
 
 def chart_baseline(baseline_term, filter_form, region, include_subregions):
@@ -42,13 +42,13 @@ def chart_baseline(baseline_term, filter_form, region, include_subregions):
 
     # Create a series using the baseline value to match the length of the
     # follow up series.
-    baseline_series = [baseline] * len(follow_up_pollruns)
+    baseline_series = {
+        'name': "Baseline",
+        'data': [baseline] * len(follow_up_pollruns),
+    }
 
     chart_data = {
-        'series': [
-            {'name': "Baseline", 'data': baseline_series},
-            {'name': "Follow up", 'data': follow_up_series},
-        ],
+        'series': [baseline_series, follow_up_series],
         'categories': format_x_axis(follow_up_pollruns),
     }
 
@@ -97,9 +97,9 @@ def get_follow_up_data(baseline_term, **kwargs):
     (answer_sums,
      answer_avgs,
      answer_stdevs,
-     response_rates) = summarize(answers, responses)
+     response_rates) = summarize_by_pollrun(answers, responses)
 
-    series = format_series(pollruns, answer_sums)
+    series = format_series(pollruns, answer_sums, name="Follow up")
     mean = overall_mean(pollruns, answer_sums)
     stdev = overall_stdev(pollruns, answer_sums)
     response_rate = overall_mean(pollruns, response_rates)
