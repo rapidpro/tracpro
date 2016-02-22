@@ -15,6 +15,11 @@
 
   <link rel="stylesheet" type="text/css"
         href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/themes/smoothness/jquery-ui.css">
+
+  {% compress css %}
+    <link type="text/css" rel="stylesheet"
+          href="{% static "css/jqcloud.css" %}" />
+  {% endcompress %}
 {% endblock extra-style %}
 
 {% block extra-script %}
@@ -25,6 +30,7 @@
   {% compress js %}
     <script src="{% static "libs/highcharts-4.1.8/highcharts.js" %}"></script>
     <script src="{% static "js/charts.js" %}"></script>
+    <script src="{% static "js/jqcloud-1.0.4.min.js" %}"></script>
   {% endcompress %}
 {% endblock extra-script %}
 
