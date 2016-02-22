@@ -213,7 +213,8 @@ class Boundary(models.Model):
 
     rapidpro_uuid = models.CharField(
         max_length=15,
-        verbose_name=_("RapidPro UUID"))
+        verbose_name=_("RapidPro UUID"),
+        help_text=_("Not a standard UUID; rather, it is a variation of the OSM ID."))
     name = models.CharField(
         max_length=128,
         verbose_name=_("name"))
