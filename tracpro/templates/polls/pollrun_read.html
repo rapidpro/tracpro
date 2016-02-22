@@ -1,18 +1,31 @@
 {% extends "smartmin/base.html" %}
 
-{% load smartmin %}
-{% load i18n %}
-{% load staticfiles %}
 {% load charts %}
+{% load compress %}
+{% load i18n %}
+{% load smartmin %}
+{% load staticfiles %}
 
 {% block pre-content %}
   {% include 'polls/pollrun_header.html' with pollrun=object %}
 {% endblock pre-content %}
 
+{% block extra-style %}
+  {{ block.super }}
+
+  <link rel="stylesheet" type="text/css"
+        href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/themes/smoothness/jquery-ui.css">
+{% endblock extra-style %}
+
 {% block extra-script %}
   {{ block.super }}
-  <script src="{% static "libs/highcharts-4.1.8/highcharts.js" %}"></script>
-  <script src="{% static "js/charts.js" %}"></script>
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
+
+  {% compress js %}
+    <script src="{% static "libs/highcharts-4.1.8/highcharts.js" %}"></script>
+    <script src="{% static "js/charts.js" %}"></script>
+  {% endcompress %}
 {% endblock extra-script %}
 
 {% block content %}
