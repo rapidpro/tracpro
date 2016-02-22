@@ -1,7 +1,5 @@
 from __future__ import unicode_literals
 
-import json
-
 from django.core.urlresolvers import reverse
 
 from tracpro.test import factories
@@ -9,6 +7,7 @@ from tracpro.test.cases import TracProTest
 
 from .. import charts
 from .. import models
+from .. import utils
 
 
 class PollChartTest(TracProTest):
@@ -93,7 +92,7 @@ class PollChartTest(TracProTest):
     def test_multiple_pollruns_numeric(self):
         answers = models.Answer.objects.filter(question=self.question3)
         data = charts.multiple_pollruns_numeric(
-            self.pollruns, self.responses, answers, self.question3)
+            self.pollruns, *utils.summarize(answers, self.responses))
 
         # Answers are 4, 3 and 8 for a single date
 
@@ -137,7 +136,7 @@ class PollChartTest(TracProTest):
         self.response1.save()
 
         data = charts.multiple_pollruns_numeric(
-            self.pollruns, self.responses, answers, self.question3)
+            self.pollruns, *utils.summarize(answers, self.responses))
 
         # 2 complete responses, 1 partial response
         # Response rate = 66.67%
@@ -157,53 +156,25 @@ class PollChartTest(TracProTest):
             [2, 1])
         self.assertEqual(
             data['categories'],
-            [u'1 - 5', u'6 - 10'])
+            ['1 - 5', '6 - 10'])
 
     def test_single_pollrun_open(self):
-        (chart_type,
-         chart_data,
-         chart_data_exists,
-         answer_avg,
-         response_rate,
-         stdev) = charts.single_pollrun(self.pollrun, self.responses, self.question2)
-        chart_data = json.loads(chart_data)
+        chart_type, chart_data, summary_table = charts.single_pollrun(
+            self.pollrun, self.responses, self.question2)
 
-        self.assertEqual(
-            chart_type,
-            'open-ended')
-        self.assertEqual(
-            chart_data_exists,
-            True)
-        self.assertEqual(
-            chart_data[0],
-            {'text': 'rainy', 'weight': 3})
-        self.assertEqual(
-            len(chart_data),
-            2)
+        self.assertEqual(chart_type, 'open-ended')
+        self.assertEqual(chart_data[0], {'text': 'rainy', 'weight': 3})
+        self.assertEqual(len(chart_data), 2)
+        self.assertEqual(summary_table, None)
 
     def test_single_pollrun_numeric(self):
         # Answers for question 3 = 8, 3 and 4
         # Average = 5, Response Rate = 100%, STDEV = 2.16
-        (chart_type,
-         chart_data,
-         chart_data_exists,
-         answer_avg,
-         response_rate,
-         stdev) = charts.single_pollrun(self.pollrun, self.responses, self.question3)
-        chart_data = json.loads(chart_data)
+        chart_type, chart_data, summary_table = charts.single_pollrun(
+            self.pollrun, self.responses, self.question3)
+        summary_data = dict(summary_table)
 
-        self.assertEqual(
-            chart_type,
-            'bar')
-        self.assertEqual(
-            chart_data_exists,
-            True)
-        self.assertEqual(
-            answer_avg,
-            5)
-        self.assertEqual(
-            response_rate,
-            100)
-        self.assertEqual(
-            stdev,
-            2.16)
+        self.assertEqual(chart_type, 'bar')
+        self.assertEqual(summary_data['Mean'], 5)
+        self.assertEqual(summary_data['Response rate average'], 100)
+        self.assertEqual(summary_data['Standard deviation'], 2.16)
