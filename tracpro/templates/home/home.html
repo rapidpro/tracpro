@@ -1,8 +1,8 @@
 {% extends "smartmin/base.html" %}
 
-{% load compress %}
 {% load i18n %}
-{% load smartmin %}
+{% load charts %}
+{% load staticfiles %}
 
 {% block content %}
   {% if not request.user_regions %}
@@ -11,16 +11,23 @@
     </div>
   {% else %}
     <div class='row bottom-margin'>
-        <div class='col-md-9'>
-          <h2>
-            {{ baselineterm.name }}
-          </h2>
-          <div id="container" class="chart-home">
-          </div>
-          <div class="chart-dates">
-            {{ baselineterm.start_date|date:"F d, Y" }} -
-            {{ baselineterm.end_date|date:"F d, Y" }}
-          </div>
+      <div class='col-md-9'>
+         {% if chart_data %}
+           <div class="chart-baseline"
+                data-title="{{ featured_indicator.name }}"
+                data-subtitle="Baseline: {{ featured_indicator.baseline_question|escapejs }}, Follow Ups: {{ featured_indicator.follow_up_question }}"
+                data-y-axis-title="{{ featured_indicator.y_axis_title }}"
+                data-chart="{{ chart_data|chart_json }}">
+            </div>
+            <div class="chart-dates">
+              {{ featured_indicator.start_date|date:"F d, Y" }} -
+              {{ featured_indicator.end_date|date:"F d, Y" }}
+            </div>
+          {% else %}
+            <div class="chart-no-data">
+              No data to display for this time period.
+            </div>
+          {% endif %}
         </div>
         <div class='col-md-3'>
           <div class='page-header'>
@@ -35,36 +42,36 @@
             </h2>
           </div>
           <table class='table table-striped' style='width: 100%'>
-          <thead>
-            <tr>
-              <th>
-                {% trans "Name" %}
-              </th>
-              <th>
-                {% trans "End Date" %}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for baselinetermitem in baselineterms %}
+            <thead>
               <tr>
-                <td>
-                  <a href='{% url "baseline.baselineterm_read" baselinetermitem.pk %}'>
-                    {{ baselinetermitem.name }}
-                  </a>
-                  {% if baselinetermitem.pk == baselineterm.pk %}
-                    (displayed)
-                  {% endif %}
-                </td>
-                <td>
-                  {{ baselinetermitem.end_date|date:"F d, Y"  }}
-                </td>
+                <th>
+                  {% trans "Name" %}
+                </th>
+                <th>
+                  {% trans "End Date" %}
+                </th>
               </tr>
-            {% endfor %}
-          </tbody>
+            </thead>
+            <tbody>
+              {% for indicator in recent_indicators %}
+                <tr>
+                  <td>
+                    <a href='{% url "baseline.baselineterm_read" indicator.pk %}'>
+                      {{ indicator.name }}
+                    </a>
+                    {% if indicator.pk == featured_indicator.pk %}
+                      (displayed)
+                    {% endif %}
+                  </td>
+                  <td>
+                    {{ indicator.end_date|date:"F d, Y"  }}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
           </table>
         </div>
-    </div>
+      </div>
 
     <div class='page-header'>
       <div class='btn-group pull-away'>
@@ -234,7 +241,6 @@
                 </td>
                 <td>
                   [[ group.response_count ]]
-
                 </td>
               </tr>
             </tbody>
@@ -250,9 +256,9 @@
 {% endblock content %}
 
 {% block extra-script %}
-  {% include 'baseline/baselineterm_chart.html' %}
   {{ block.super }}
-  <script type='text/javascript'>
+  <script src="{% static "js/charts.js" %}"></script>
+  <script>
 // <![CDATA[
     function onPollCreate() {
       data = $('#start-poll-form').serialize();

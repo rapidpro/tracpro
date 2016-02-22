@@ -1,4 +1,4 @@
-{% extends "smartmin/read.html" %}
+{% extends "smartmin/base.html" %}
 
 {% load i18n %}
 {% load staticfiles %}
@@ -13,71 +13,11 @@
 {% block extra-script %}
   {{ block.super }}
   <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
-  <script src="{% static "js/filters.js" %}">
-  <script src="http://code.highcharts.com/modules/exporting.js"></script>
-  <script>
-    {% if baseline_term %}
-    $(function () {
-      $('#container').highcharts({
-        title: {
-          text: '{{ baselineterm.name|escapejs }}'
-        },
-        subtitle: {
-          text: 'Baseline: {{ baselineterm.baseline_question|escapejs }}, Follow Ups: {{ baselineterm.follow_up_question|escapejs }}'
-        },
-        xAxis: {
-          categories: [
-                      {% for date in date_list %}
-                        '{{ date }}'{% if not forloop.last %},{% endif %}
-                      {% endfor %}
-                      ]
-        },
-        yAxis: {
-          title: {
-            text: '{{ baselineterm.y_axis_title|escapejs }}'
-          }
-        },
-        legend: {
-          layout: 'vertical',
-          align: 'right',
-          verticalAlign: 'top',
-          floating: true,
-          backgroundColor: '#FFFFFF'
-        },
-        series: [
-          // Baseline Data
-          {
-            type: 'area',
-            name: 'Baseline {% if goal_selected %}Goal{% endif %}',
-            {% if goal_selected %}
-                data: {{ goal_selected }}
-            {% else %}
-                data: {{ baseline_list }}
-            {% endif %}
-          },
-          // Follow Up Data
-          {
-            type: 'area',
-            name: 'Follow Up',
-            data: {{ follow_up_list }}
-          }
-        ]
-    });
-    {% else %}
-        $('#container').html('<div class="alert alert-info">No baseline data exists.</div>');
-    {% endif %}
-  </script>
+  <script src="{% static "js/filters.js" %}"></script>
+  <script src="{% static "js/charts.js" %}"></script>
 {% endblock extra-script %}
 
-{% block pre-content %}
-  {% if error_message %}
-    <div class="alert alert-danger form-errors">
-      {{ error_message }}
-    </div>
-  {% endif %}
-
-  <h2 class="page-header">{{ baselineterm.name }}</h2>
-
+{% block content %}
   <div class="pull-right buttons">
     {% if org_perms.baseline.baselineterm_update %}
       <a class="btn btn-default" href="{% url 'baseline.baselineterm_update' baselineterm.pk %}">
@@ -86,7 +26,8 @@
       </a>
     {% endif %}
     {% if org_perms.baseline.baselineterm_delete %}
-      <button class="btn btn-default" type="button" data-toggle="modal" data-target="#confirm-delete-dialog">
+      <button type="button" class="btn btn-default"
+              data-toggle="modal" data-target="#confirm-delete-dialog">
         <span class="glyphicon glyphicon-trash"></span>
         {% trans "Delete..." %}
       </button>
@@ -126,6 +67,12 @@
         {% filter_field form "end_date" col_width=6 label_width=4 field_width=8 %}
       </div>
 
+      {% for field_name, _ in form.contact_fields %}
+        <div class="row">
+          {% filter_field form field_name %}
+        </div>
+      {% endfor %}
+
       <div class="well">
         <button type="submit" class="btn btn-primary">
           {% trans "Update" %}
@@ -139,53 +86,16 @@
 
   {% include "baseline/baselineterm_delete_modal.html" %}
 
-  <div id="container" style="min-width: 310px; height: 400px; max-width: 1000px; margin: 0 auto"></div>
-{% endblock pre-content %}
+  {% if chart_data %}
+    <div class="chart-baseline"
+         data-title="{{ baselineterm.name|escapejs }}"
+         data-subtitle="Baseline: {{ baselineterm.baseline_question|escapejs }}, Follow Ups: {{ baselineterm.follow_up_question|escapejs }}"
+         data-y-axis-title="{{ baselineterm.y_axis_title }}"
+         data-chart="{{ chart_data|chart_json }}">
+    </div>
+  {% else %}
+    <div class="chart-no-data">No data to display for this time period.</div>
+  {% endif %}
 
-{% block read-buttons %}{% endblock read-buttons %}
-
-{% block fields %}
-  <table class="table table-striped">
-    <tbody>
-      <tr class="read">
-        <td class="read-label">Dates</td>
-        <td class="read-value">{{ baselineterm.start_date|date:"F d, Y" }} - {{ baselineterm.end_date|date:"F d, Y" }}</td>
-      </tr>
-      <tr class="read">
-        <td class="read-label">Baseline Poll / Question</td>
-        <td class="read-value">{{ baselineterm.baseline_poll }} / {{ baselineterm.baseline_question }}</td>
-      </tr>
-      <tr class="read">
-        <td class="read-label">Follow Up Poll / Question</td>
-        <td class="read-value">{{ baselineterm.follow_up_poll }} / {{ baselineterm.follow_up_question }}</td>
-      </tr>
-      <!-- Chart Summary Data -->
-      {% if not no_data %}
-        <tr class="read">
-          <td class="read-label">Baseline Mean</td>
-          <td class="read-value">{{ baseline_mean }}</td>
-        </tr>
-        <tr class="read">
-          <td class="read-label">Baseline Standard Deviation</td>
-          <td class="read-value">{{ baseline_std }}</td>
-        </tr>
-        <tr class="read">
-          <td class="read-label">Baseline Response Rate</td>
-          <td class="read-value">{{ baseline_response_rate }}%</td>
-        </tr>
-        <tr class="read">
-          <td class="read-label">Follow Up Poll / Question</td>
-          <td class="read-value">{{ follow_up_mean }}</td>
-        </tr>
-        <tr class="read">
-          <td class="read-label">Follow Up Standard Deviation</td>
-          <td class="read-value">{{ follow_up_std }}</td>
-        </tr>
-        <tr class="read">
-          <td class="read-label">Follow Up Response Rate</td>
-          <td class="read-value">{{ follow_up_response_rate }}%</td>
-        </tr>
-      {% endif %}
-    </tbody>
-  </table>
-{% endblock fields %}
+  {% include "charts/summary_table.html" %}
+{% endblock content %}
