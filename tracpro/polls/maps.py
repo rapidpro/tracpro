@@ -44,6 +44,8 @@ def data_categoric(responses, question):
     answers = answers.order_by('boundary')
     answers = answers.annotate(category_count=Count('category'))
 
+    # Return the map data with information for category name, color code
+    # for each boundary in the map
     map_data = []
     boundary = ''
     category = ''
