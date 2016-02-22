@@ -3,6 +3,38 @@ var lightColors = ['#7cb5ec', '#90ed7d', '#f7a35c', '#8085e9', '#f15c80',
                    '#e4d354', '#2b908f', '#f45b5b', '#91e8e1'];
 
 jQuery.fn.extend({
+    chart_baseline: function() {
+        $(this).each(function(i, item) {
+            var chart = $(item);
+            chart.highcharts({
+                chart: {
+                    type: "area"
+                },
+                title: {
+                    text: chart.data("title") || ""
+                },
+                subtitle: {
+                    text: chart.data("subtitle") || ""
+                },
+                xAxis: {
+                    categories: chart.data("chart").categories || []
+                },
+                yAxis: {
+                    title: {
+                        text: chart.data("y-axis-title") || ""
+                    }
+                },
+                legend: {
+                    layout: 'vertical',
+                    align: 'right',
+                    verticalAlign: 'top',
+                    floating: true,
+                    backgroundColor: '#FFFFFF'
+                },
+                series: chart.data("chart").series || []
+            });
+        });
+    },
     chart_numeric: function() {
         var dataType = $('#id_numeric').val();
         if (["sum", "average", "response-rate"].indexOf(dataType) != -1) {
@@ -151,4 +183,5 @@ $(function() {
     $('.chart-numeric').chart_numeric();
     $('.chart-multiple-choice').chart_multiple_choice();
     $('.chart-bar').chart_bar();
+    $('.chart-baseline').chart_baseline();
 });
