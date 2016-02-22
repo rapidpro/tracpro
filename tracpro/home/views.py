@@ -8,7 +8,7 @@ from smartmin.users.views import SmartTemplateView
 
 from tracpro.polls.models import Poll
 from tracpro.baseline.models import BaselineTerm
-from tracpro.baseline.utils import chart_baseline
+from tracpro.baseline.charts import chart_baseline
 
 
 class HomeView(OrgPermsMixin, SmartTemplateView):

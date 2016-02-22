@@ -21,7 +21,7 @@ from tracpro.polls.models import Answer, PollRun, Response
 
 from .models import BaselineTerm
 from .forms import BaselineTermForm, SpoofDataForm, BaselineTermFilterForm
-from .utils import chart_baseline
+from .charts import chart_baseline
 
 
 class BaselineTermCRUDL(SmartCRUDL):
