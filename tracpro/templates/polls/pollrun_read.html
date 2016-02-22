@@ -2,7 +2,7 @@
 
 {% load smartmin %}
 {% load i18n %}
-{% load static %}
+{% load staticfiles %}
 {% load charts %}
 
 {% block pre-content %}
@@ -11,6 +11,7 @@
 
 {% block extra-script %}
   {{ block.super }}
+  <script src="{% static "libs/highcharts-4.1.8/highcharts.js" %}"></script>
   <script src="{% static "js/charts.js" %}"></script>
 {% endblock extra-script %}
 
