@@ -42,6 +42,15 @@
       {% filter_field form "region" %}
     </div>
 
+    <div class="row">
+      {% filter_field form "date_range" %}
+    </div>
+
+    <div class="row hidden" id="filter-dates">
+      {% filter_field form "start_date" col_width=6 label_width=4 field_width=8 %}
+      {% filter_field form "end_date" col_width=6 label_width=4 field_width=8 %}
+    </div>
+
     <div class="well">
       <button type="submit" class="btn btn-primary">
         {% trans "Update" %}

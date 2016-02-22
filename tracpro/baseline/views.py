@@ -74,6 +74,7 @@ class BaselineTermCRUDL(SmartCRUDL):
             context = super(BaselineTermCRUDL.Read, self).get_context_data(**kwargs)
 
             filter_form = BaselineTermFilterForm(
+                org=self.request.org,
                 baseline_term=self.object, data=self.request.GET)
             filter_form.full_clean()
 
