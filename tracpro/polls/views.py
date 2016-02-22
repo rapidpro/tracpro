@@ -90,9 +90,9 @@ class PollCRUDL(smartmin.SmartCRUDL):
 
             data = []
             for question in self.object.questions.active():
-                chart_type, chart_data = charts.multiple_pollruns(
+                chart_type, chart_data, summary_table = charts.multiple_pollruns(
                     pollruns, responses, question)
-                data.append((question, chart_type, chart_data))
+                data.append((question, chart_type, chart_data, summary_table))
             return data
 
     class Update(PollMixin, OrgObjPermsMixin, smartmin.SmartUpdateView):
@@ -273,31 +273,22 @@ class PollRunCRUDL(smartmin.SmartCRUDL):
 
         def get_responses(self, pollrun):
             contacts = Contact.objects.filter(org=self.request.org)
-
             if self.request.region:
                 contacts = contacts.filter(region__in=self.request.data_regions)
-
             responses = Response.objects.active()
             responses = responses.filter(pollrun=pollrun)
             responses = responses.filter(contact__in=contacts)
             return responses
 
         def get_context_data(self, **kwargs):
-            context = super(PollRunCRUDL.Read, self).get_context_data(**kwargs)
-            questions = self.object.poll.questions.active()
-
             responses = self.get_responses(self.object)
-            for question in questions:
-                (question.chart_type,
-                 question.chart_data,
-                 question.chart_data_exists,
-                 question.answer_mean,
-                 question.response_rate_average,
-                 question.answer_stdev) = charts.single_pollrun(
+            data = []
+            for question in self.object.poll.questions.active():
+                chart_type, chart_data, summary_table = charts.single_pollrun(
                     self.object, responses, question)
-
-            context['questions'] = questions
-            return context
+                data.append((question, chart_type, chart_data, summary_table))
+            kwargs.setdefault('question_data', data)
+            return super(PollRunCRUDL.Read, self).get_context_data(**kwargs)
 
     class Participation(OrgPermsMixin, smartmin.SmartReadView):
 

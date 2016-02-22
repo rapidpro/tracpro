@@ -3,6 +3,7 @@
 {% load smartmin %}
 {% load i18n %}
 {% load static %}
+{% load charts %}
 
 {% block pre-content %}
   {% include 'polls/pollrun_header.html' with pollrun=object %}
@@ -14,27 +15,31 @@
 {% endblock extra-script %}
 
 {% block content %}
-  {% for question in questions %}
-    <h3>
-      {{ forloop.counter }}. {{ question.name }}
-      {% if request.region %}
-         / Region: {{ request.region }}
-      {% endif %}
-    </h3>
+  {% for question, chart_type, chart_data, summary_table in question_data %}
+    <div class="poll-question">
+      <h3>
+        {{ forloop.counter }}. {{ question.name }}
+        {% if request.region %}
+           / Region: {{ request.region }}
+        {% endif %}
+      </h3>
 
-    {% if question.chart_data_exists %}
-        <div class="chart-{{ question.chart_type }}"
-             data-chart='{{ question.chart_data }}'
-             data-name="{{ question.name }}"
-             style="height: 350px;" >
+      {% if chart_data %}
+        <div class="chart-{{ chart_type }}"
+             data-chart='{{ chart_data|chart_json }}'
+             data-name="{{ question.name }}">
         </div>
 
-        {% include 'polls/answer_calculations.html' %}
-    {% else %}
-      <div class="chart-no-data">
-        No data to display for this time period.
-      </div>
-    {% endif %}
-
+        {% include "charts/summary_table.html" %}
+      {% else %}
+        <div class="chart-no-data">
+          {% trans "No data to display for this time period." %}
+        </div>
+      {% endif %}
+    </div>
+  {% empty %}
+    <div>
+      {% trans "There are no questions to display." %}
+    </div>
   {% endfor %}
 {% endblock content %}

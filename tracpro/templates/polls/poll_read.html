@@ -82,7 +82,7 @@
     </p>
   {% endif %}
 
-  {% for question, chart_type, data in question_data %}
+  {% for question, chart_type, chart_data, summary_table in question_data %}
     <div class="poll-question">
       <h3>
         {{ forloop.counter }}. {{ question.name }}
@@ -98,13 +98,13 @@
         {% endif %}
       </h3>
 
-      {% if data %}
+      {% if chart_data %}
         <div class="chart-{{ chart_type }}"
-             data-chart='{{ data|chart_json }}'
+             data-chart='{{ chart_data|chart_json }}'
              data-name="{{ question.name }}">
         </div>
 
-        {% include 'polls/answer_calculations.html' %}
+        {% include "charts/summary_table.html" %}
       {% else %}
         <div class="chart-no-data">
           {% trans "No data to display for this time period." %}

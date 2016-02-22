@@ -17,33 +17,31 @@ def single_pollrun(pollrun, responses, question):
     """
     chart_type = None
     chart_data = []
-    answer_avg, response_rate, stdev = [0, 0, 0]
+    summary_table = None
 
     answers = Answer.objects.filter(response__in=responses, question=question)
-    chart_data_exists = False
-    if question.question_type == Question.TYPE_OPEN:
-        chart_type = 'open-ended'
-        chart_data = word_cloud_data(answers)
-        if chart_data:
-            chart_data_exists = True
-    else:
-        chart_type = 'bar'
-        chart_data = single_pollrun_multiple_choice(answers, pollrun)
-        if chart_data['data']:
-            chart_data_exists = True
 
-    # Calculate the average, standard deviation,
-    # and response rate for this pollrun
-    if question.question_type != Question.TYPE_OPEN:
-        _, answer_avgs = answers.get_answer_summaries()
-        response_rates = responses.get_response_rates()
+    if answers:
+        if question.question_type == Question.TYPE_OPEN:
+            chart_type = 'open-ended'
+            chart_data = word_cloud_data(answers)
+        else:
+            chart_type = 'bar'
+            chart_data = single_pollrun_multiple_choice(answers, pollrun)
 
-        answer_avg = answer_avgs.get(pollrun.pk, 0)
-        response_rate = response_rates.get(pollrun.pk, 0)
-        numeric_values = get_numeric_values(answers.values_list('value', flat=True))
-        stdev = round(numpy.std(numeric_values), 2)
+            _, answer_avgs = answers.get_answer_summaries()
+            response_rates = responses.get_response_rates()
+            answer_avg = answer_avgs.get(pollrun.pk, 0)
+            response_rate = response_rates.get(pollrun.pk, 0)
+            numeric_values = get_numeric_values(answers.values_list('value', flat=True))
+            stdev = round(numpy.std(numeric_values), 2)
+            summary_table = [
+                ('Mean', answer_avg),
+                ('Standard deviation', stdev),
+                ('Response rate average', response_rate),
+            ]
 
-    return chart_type, render_data(chart_data), chart_data_exists, answer_avg, response_rate, stdev
+    return chart_type, chart_data, summary_table
 
 
 def single_pollrun_multiple_choice(answers, pollrun):
@@ -61,27 +59,40 @@ def single_pollrun_multiple_choice(answers, pollrun):
 
 def multiple_pollruns(pollruns, responses, question):
     chart_type = None
-    data = None
+    chart_data = None
+    summary_table = None
 
     pollruns = pollruns.order_by('conducted_on')
-
     answers = Answer.objects.filter(response__in=responses, question=question)
+
     if answers:
         if question.question_type == Question.TYPE_NUMERIC:
             chart_type = 'numeric'
-            data = multiple_pollruns_numeric(pollruns, responses, answers, question)
+            chart_data = multiple_pollruns_numeric(pollruns, responses, answers, question)
+            summary_table = [
+                ('Mean', question.answer_mean),
+                ('Standard deviation', question.answer_stdev),
+                ('Response rate average', question.response_rate_average),
+            ]
 
         elif question.question_type == Question.TYPE_OPEN:
             chart_type = 'open-ended'
-            data = word_cloud_data(answers)
+            chart_data = word_cloud_data(answers)
 
         elif question.question_type == Question.TYPE_MULTIPLE_CHOICE:
             chart_type = 'multiple-choice'
-            # Call multiple_pollruns_numeric() in order to calculate mean, stdev and resp rate
-            multiple_pollruns_numeric(pollruns, responses, answers, question)
-            data = multiple_pollruns_multiple_choice(pollruns, answers)
+            chart_data = multiple_pollruns_multiple_choice(pollruns, answers)
 
-    return chart_type, data
+            # Use the side effect of this method to calculate table data.
+            # FIXME: This needs to be factored out.
+            multiple_pollruns_numeric(pollruns, responses, answers, question)
+            summary_table = [
+                ('Mean', question.answer_mean),
+                ('Standard deviation', question.answer_stdev),
+                ('Response rate average', question.response_rate_average),
+            ]
+
+    return chart_type, chart_data, summary_table
 
 
 def word_cloud_data(answers):
