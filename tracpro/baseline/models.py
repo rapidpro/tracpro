@@ -12,6 +12,12 @@ from tracpro.groups.models import Region
 from tracpro.polls.models import Answer, Question, Poll, Response
 
 
+class BaselineTermQuerySet(models.QuerySet):
+
+    def by_org(self, org):
+        return self.filter(org=org)
+
+
 class BaselineTerm(models.Model):
     # e.g., 2015 Term 3 Attendance for P3 Girls
     # A term of time to gather statistics for a baseline chart
@@ -51,13 +57,10 @@ class BaselineTerm(models.Model):
         max_length=255, blank=True, default="",
         help_text=_("The title for the y axis of the chart."))
 
+    objects = BaselineTermQuerySet.as_manager()
+
     class Meta:
         verbose_name = _("Indicator")
-
-    @classmethod
-    def get_all(cls, org):
-        baseline_terms = cls.objects.filter(org=org)
-        return baseline_terms
 
     def get_regions(self):
         """Return regions for the contacts who responded to related polls."""

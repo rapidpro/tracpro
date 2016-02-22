@@ -32,7 +32,10 @@ class BaselineTermCRUDL(SmartCRUDL):
     class BaselineTermMixin(object):
 
         def get_queryset(self):
-            return BaselineTerm.get_all(self.request.org)
+            indicators = BaselineTerm.objects.by_org(self.request.org)
+            indicators = indicators.select_related(
+                'baseline_question', 'follow_up_question')
+            return indicators
 
     class Create(OrgPermsMixin, SmartCreateView):
         form_class = BaselineTermForm
