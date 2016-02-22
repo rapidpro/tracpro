@@ -81,7 +81,9 @@ jQuery.fn.extend({
     chart_open_ended: function() {
         $(this).each(function(i, item) {
             var chart = $(item);
-            chart.jQCloud(chart.data('chart'));
+            chart.jQCloud(chart.data('chart'), {
+                height: 320
+            });
         });
     },
     chart_multiple_choice: function() {

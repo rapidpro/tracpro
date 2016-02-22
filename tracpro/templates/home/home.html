@@ -19,9 +19,11 @@
                 data-y-axis-title="{{ featured_indicator.y_axis_title }}"
                 data-chart="{{ chart_data|chart_json }}">
             </div>
-            <div class="chart-dates">
-              {{ featured_indicator.start_date|date:"F d, Y" }} -
-              {{ featured_indicator.end_date|date:"F d, Y" }}
+            <div class="text-center bottom-margin">
+              <strong>
+                {{ featured_indicator.start_date|date:"F d, Y" }} -
+                {{ featured_indicator.end_date|date:"F d, Y" }}
+              </strong>
             </div>
           {% else %}
             <div class="chart-no-data">
