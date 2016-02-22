@@ -1,5 +1,5 @@
 {% load i18n %}
-{% load filters %}
+{% load charts %}
 
 <h2 class="page-header">{{ baselineterm.name }}</h2>
 
@@ -35,11 +35,11 @@
     {% endif %}
 
     <div class="row">
-      {% field form "goal" %}
+      {% filter_field form "goal" %}
     </div>
 
     <div class="row">
-      {% field form "region" %}
+      {% filter_field form "region" %}
     </div>
 
     <div class="well">

@@ -1,7 +1,7 @@
 {% extends "smartmin/base.html" %}
 
 {% load i18n %}
-{% load filters %}
+{% load charts %}
 {% load static %}
 
 {% block pre-content %}
@@ -44,21 +44,21 @@
       {% endif %}
 
       <div class="row">
-        {% field form "numeric" %}
+        {% filter_field form "numeric" %}
       </div>
 
       <div class="row">
-        {% field form "date_range" %}
+        {% filter_field form "date_range" %}
       </div>
 
       <div class="row hidden" id="filter-dates">
-        {% field form "start_date" col_width=6 label_width=4 field_width=8 %}
-        {% field form "end_date" col_width=6 label_width=4 field_width=8 %}
+        {% filter_field form "start_date" col_width=6 label_width=4 field_width=8 %}
+        {% filter_field form "end_date" col_width=6 label_width=4 field_width=8 %}
       </div>
 
       {% for field_name, _ in form.contact_fields %}
         <div class="row">
-          {% field form field_name %}
+          {% filter_field form field_name %}
         </div>
       {% endfor %}
 
