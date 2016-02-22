@@ -1,6 +1,7 @@
 from django.db.models import Count, F
 
 from .models import Answer
+from tracpro.polls.utils import natural_sort_key
 
 
 def color_code_categories(categories):
@@ -18,8 +19,8 @@ def color_code_categories(categories):
     vivid_colors = ['#006837', '#A7082C', '#1F49BF', '#FF8200', '#FFD100']
     light_colors = ['#94D192', '#F2A2B3', '#96AEF2', '#FDC690', '#FFFFBF']
 
-    categories = [''.join(category).encode('ascii') for category in categories]
     if len(categories) > 5:
+        # Use full set of colors for > 5 categories
         all_colors = vivid_colors + light_colors
         category_colors = dict(zip(categories, all_colors[:len(categories)]))
     else:
@@ -34,6 +35,8 @@ def data_categoric(responses, question):
 
     answers = Answer.objects.filter(response__in=responses, question=question)
     categories = answers.distinct('category').values_list('category')
+    categories = [category[0].encode('ascii') for category in categories]
+    categories.sort(key=natural_sort_key)
     category_colors = color_code_categories(categories)
 
     answers = answers.annotate(boundary=F(
