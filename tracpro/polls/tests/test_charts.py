@@ -18,6 +18,9 @@ class PollChartTest(TracProTest):
 
         self.poll = factories.Poll(org=self.org)
 
+        self.region1 = factories.Region(org=self.org, name="Beta")
+        self.region2 = factories.Region(org=self.org, name="Acme")
+
         self.question1 = factories.Question(
             poll=self.poll, question_type=models.Question.TYPE_MULTIPLE_CHOICE)
         self.question2 = factories.Question(
@@ -27,8 +30,10 @@ class PollChartTest(TracProTest):
 
         self.pollrun = factories.UniversalPollRun(poll=self.poll)
 
+        self.contact1 = factories.Contact(org=self.org, region=self.region1)
         self.response1 = factories.Response(
-            pollrun=self.pollrun, status=models.Response.STATUS_COMPLETE)
+            contact=self.contact1, pollrun=self.pollrun,
+            status=models.Response.STATUS_COMPLETE)
         factories.Answer(
             response=self.response1, question=self.question1,
             value="4.00000", category="1 - 5")
@@ -39,8 +44,10 @@ class PollChartTest(TracProTest):
             response=self.response1, question=self.question3,
             value="4.00000", category="1 - 5")
 
+        self.contact2 = factories.Contact(org=self.org, region=self.region1)
         self.response2 = factories.Response(
-            pollrun=self.pollrun, status=models.Response.STATUS_COMPLETE)
+            contact=self.contact2, pollrun=self.pollrun,
+            status=models.Response.STATUS_COMPLETE)
         factories.Answer(
             response=self.response2, question=self.question1,
             value="3.00000", category="1 - 5")
@@ -51,8 +58,10 @@ class PollChartTest(TracProTest):
             response=self.response2, question=self.question3,
             value="3.00000", category="1 - 5")
 
+        self.contact3 = factories.Contact(org=self.org, region=self.region2)
         self.response3 = factories.Response(
-            pollrun=self.pollrun, status=models.Response.STATUS_COMPLETE)
+            contact=self.contact3, pollrun=self.pollrun,
+            status=models.Response.STATUS_COMPLETE)
         factories.Answer(
             response=self.response3, question=self.question1,
             value="8.00000", category="6 - 10")
@@ -68,7 +77,8 @@ class PollChartTest(TracProTest):
 
     def test_multiple_pollruns_multiple_choice(self):
         answers = models.Answer.objects.filter(question=self.question1)
-        data = charts.multiple_pollruns_multiple_choice(self.pollruns, answers)
+        data, summary_table = charts.multiple_pollruns_multiple_choice(
+            self.pollruns, answers, self.responses)
 
         self.assertEqual(
             data['dates'],
@@ -90,31 +100,41 @@ class PollChartTest(TracProTest):
 
     def test_multiple_pollruns_numeric(self):
         chart_type, data, summary_table = charts.multiple_pollruns(
-            self.pollruns, self.responses, self.question3)
+            self.pollruns, self.responses, self.question3, split_regions=False)
         summary_data = dict(summary_table)
 
         self.assertEqual(chart_type, "numeric")
+
+        self.assertEqual(data['pollrun-urls'], [
+            reverse('polls.pollrun_read', args=[self.pollrun.pk]),
+        ])
+        self.assertEqual(data['participation-urls'], [
+            reverse('polls.pollrun_participation', args=[self.pollrun.pk]),
+        ])
 
         # Answers are 4, 3 and 8 for a single date
 
         # Single item for single date: sum = 4 + 3 + 8 = 15
         # URL points to pollrun detail page for this date
-        self.assertEqual(
-            data['sum'],
-            [{"y": 15.0, "url": reverse('polls.pollrun_read', args=[self.pollrun.pk])}])
+        self.assertEqual(data['sum'], [{
+            'name': self.question3.name,
+            'data': [15.0],
+        }])
 
         # Single item for single date: average = (4 + 3 + 8)/3 = 5
         # URL points to pollrun detail page for this date
-        self.assertEqual(
-            data['average'],
-            [{"y": 5.0, "url": reverse('polls.pollrun_read', args=[self.pollrun.pk])}])
+        self.assertEqual(data['average'], [{
+            'name': self.question3.name,
+            'data': [5.0],
+        }])
 
         # Set all responses to complete in setUp()
         # Response rate = 100%
         # URL points to participation tab
-        self.assertEqual(
-            data['response-rate'],
-            [{"y": 100.0, "url": reverse('polls.pollrun_participation', args=[self.pollrun.pk])}])
+        self.assertEqual(data['response-rate'], [{
+            'name': self.question3.name,
+            'data': [100.0],
+        }])
 
         # Today's date
         self.assertEqual(
@@ -124,22 +144,84 @@ class PollChartTest(TracProTest):
         # Mean, Standard Dev, response rate avg, pollrun list
         self.assertEqual(summary_data['Mean'], 5.0)
         self.assertEqual(summary_data['Standard deviation'], 0.0)
-        self.assertEqual(summary_data['Response rate average'], 100.0)
+        self.assertEqual(summary_data['Response rate average (%)'], 100.0)
 
         # Remove an answer, thus changing the response rate.
         self.response1.answers.get(question=self.question3).delete()
 
         chart_type, data, summary_table = charts.multiple_pollruns(
-            self.pollruns, self.responses, self.question3)
+            self.pollruns, self.responses, self.question3, split_regions=False)
         summary_data = dict(summary_table)
 
         self.assertEqual(chart_type, "numeric")
 
         # 2 answers of 3 expected - response rate should be 66.7%
+        self.assertEqual(data['response-rate'], [{
+            'name': self.question3.name,
+            'data': [66.7],
+        }])
+        self.assertEqual(summary_data['Response rate average (%)'], 66.7)
+
+    def test_multiple_pollruns_numeric_split(self):
+        chart_type, data, summary_table = charts.multiple_pollruns(
+            self.pollruns, self.responses, self.question3, split_regions=True)
+        summary_data = dict(summary_table)
+
+        self.assertEqual(chart_type, "numeric")
+
+        self.assertEqual(data['pollrun-urls'], [
+            reverse('polls.pollrun_read', args=[self.pollrun.pk]),
+        ])
+        self.assertEqual(data['participation-urls'], [
+            reverse('polls.pollrun_participation', args=[self.pollrun.pk]),
+        ])
+
+        self.assertEqual(data['sum'], [
+            {
+                'name': "Acme",
+                'data': [8.0],
+            },
+            {
+                'name': "Beta",
+                'data': [7.0],
+            },
+        ])
+
+        # Single item for single date: average = (4 + 3 + 8)/3 = 5
+        # URL points to pollrun detail page for this date
+        self.assertEqual(data['average'], [
+            {
+                'name': "Acme",
+                'data': [8.0],
+            },
+            {
+                'name': "Beta",
+                'data': [3.5],
+            },
+        ])
+
+        # Set all responses to complete in setUp()
+        # Response rate = 100%
+        # URL points to participation tab
+        self.assertEqual(data['response-rate'], [
+            {
+                'name': "Acme",
+                'data': [100.0],
+            },
+            {
+                'name': "Beta",
+                'data': [100.0],
+            },
+        ])
+
+        # Today's date
         self.assertEqual(
-            data['response-rate'],
-            [{"y": 66.7, "url": reverse('polls.pollrun_participation', args=[self.pollrun.pk])}])
-        self.assertEqual(summary_data['Response rate average'], 66.7)
+            data['dates'],
+            [self.pollrun.conducted_on.strftime('%Y-%m-%d')])
+
+        self.assertEqual(summary_data['Mean'], 5.0)
+        self.assertEqual(summary_data['Standard deviation'], 0.0)
+        self.assertEqual(summary_data['Response rate average (%)'], 100.0)
 
     def test_single_pollrun_multiple_choice(self):
         answers = models.Answer.objects.filter(question=self.question1)
@@ -170,5 +252,5 @@ class PollChartTest(TracProTest):
 
         self.assertEqual(chart_type, 'bar')
         self.assertEqual(summary_data['Mean'], 5)
-        self.assertEqual(summary_data['Response rate average'], 100)
+        self.assertEqual(summary_data['Response rate average (%)'], 100)
         self.assertEqual(summary_data['Standard deviation'], 2.2)

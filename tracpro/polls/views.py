@@ -70,6 +70,7 @@ class PollCRUDL(smartmin.SmartCRUDL):
         def get_responses(self, pollruns):
             """Limit the responses from which data is shown."""
             contacts = Contact.objects.filter(org=self.request.org)
+            contacts = contacts.filter(region__is_active=True)
             contacts = self.filter_form.filter_contacts(contacts)
 
             if self.request.region:
@@ -87,11 +88,12 @@ class PollCRUDL(smartmin.SmartCRUDL):
 
             pollruns = self.get_pollruns()
             responses = self.get_responses(pollruns)
+            split_regions = self.filter_form.cleaned_data['split_regions']
 
             data = []
             for question in self.object.questions.active():
                 chart_type, chart_data, summary_table = charts.multiple_pollruns(
-                    pollruns, responses, question)
+                    pollruns, responses, question, split_regions)
                 data.append((question, chart_type, chart_data, summary_table))
             return data
 
@@ -273,6 +275,7 @@ class PollRunCRUDL(smartmin.SmartCRUDL):
 
         def get_responses(self, pollrun):
             contacts = Contact.objects.filter(org=self.request.org)
+            contacts = contacts.filter(region__is_active=True)
             if self.request.region:
                 contacts = contacts.filter(region__in=self.request.data_regions)
             responses = Response.objects.active()

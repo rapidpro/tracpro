@@ -68,6 +68,23 @@ def summarize_by_pollrun(answers, responses):
     return answer_sums, answer_avgs, answer_stdevs, response_rates
 
 
+def summarize_by_region_and_pollrun(answers, responses):
+    answer_values = answers.group_values(
+        'response__contact__region', 'response__pollrun')
+    response_counts = responses.group_counts(
+        'contact__region', 'pollrun')
+
+    data = {}
+    for (region_id, pollrun_id), response_count in response_counts.items():
+        data.setdefault(region_id, ({}, {}, {}, {}))
+        values = answer_values.get((region_id, pollrun_id), [])
+        (data[region_id][0][pollrun_id],
+         data[region_id][1][pollrun_id],
+         data[region_id][2][pollrun_id],
+         data[region_id][3][pollrun_id]) = _summarize(values, response_count)
+    return data
+
+
 def _summarize(values, response_count):
     numeric_values = get_numeric_values(values)
 

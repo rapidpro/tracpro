@@ -37,6 +37,7 @@ class TestPollChartFilterForm(TracProTest):
             'date_range': 'custom',
             'start_date': datetime.datetime(2014, 1, 15, tzinfo=pytz.UTC),
             'end_date': datetime.datetime(2014, 10, 22, tzinfo=pytz.UTC),
+            'split_regions': False,
         }
 
     def tearDown(self):
@@ -54,6 +55,7 @@ class TestPollChartFilterForm(TracProTest):
             'date_range': 'month',
             'start_date': datetime.datetime(2016, 2, 1, tzinfo=pytz.UTC),
             'end_date': datetime.datetime(2016, 2, 29, tzinfo=pytz.UTC),
+            'split_regions': False,
         })
 
     def test_numeric_required(self):

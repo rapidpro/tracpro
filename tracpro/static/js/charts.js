@@ -36,48 +36,73 @@ jQuery.fn.extend({
         });
     },
     chart_numeric: function() {
+        var getSeries = function(chartData, dataType) {
+            var urls;
+            if (dataType == "sum" || dataType == "average") {
+                urls = chartData["pollrun-urls"];
+            } else if (dataType == "response-rate") {
+                urls = chartData["participation-urls"];
+            } else {
+                return []
+            }
+            var series = [];
+            $.each(chartData[dataType], function(i, line) {
+                var seriesData = [];
+                $.each(line.data, function(j, point) {
+                    seriesData.push({'y': point, 'url': urls[j]});
+                });
+                series.push({'name': line.name, 'data': seriesData});
+            });
+            return series;
+        };
         var dataType = $('#id_numeric').val();
-        if (["sum", "average", "response-rate"].indexOf(dataType) != -1) {
-            var label = $('#id_numeric :selected').text();
-            $(this).each(function(i, item) {
-                var chart = $(item);
-                chart.closest('.poll-question').find('.data-type').text(label);
-                var data = chart.data('chart');
-                chart.highcharts({
-                    chart: {
-                        type: "area",
-                        zoomType: "xy"
+        var label = $('#id_numeric :selected').text();
+        $(this).each(function(i, item) {
+            var chart = $(item);
+            chart.closest('.poll-question').find('.data-type').text(label);
+            var data = chart.data('chart');
+            chart.highcharts({
+                chart: {
+                    type: "area",
+                    zoomType: "xy"
+                },
+                colors: lightColors,
+                credits: {
+                    enabled: false
+                },
+                title: {
+                    text: ""
+                },
+                xAxis: {
+                    categories: data.dates
+                },
+                plotOptions: {
+                    area: {
+                        stacking: 'normal',
+                        lineColor: '#666666',
+                        lineWidth: 1,
+                        marker: {
+                            lineWidth: 1,
+                            lineColor: '#666666'
+                        }
                     },
-                    colors: lightColors,
-                    title: {
-                        text: ""
-                    },
-                    xAxis: {
-                        categories: data.dates
-                    },
-                    plotOptions: {
-                        series: {
-                            cursor: "pointer",
-                            point: {
-                                events: {
-                                    click: function() {
-                                        // Take user to pollrun detail page
-                                        // when they click on a specific date.
-                                        location.href = this.options.url;
-                                    }
+                    series: {
+                        allowPointSelect: true,
+                        cursor: "pointer",
+                        point: {
+                            events: {
+                                click: function() {
+                                    // Take user to pollrun detail page
+                                    // when they click on a specific date.
+                                    location.href = this.options.url;
                                 }
                             }
                         }
-                    },
-                    series: [
-                        {
-                            name: chart.data('name'),
-                            data: data[dataType]
-                        }
-                    ]
-                });
+                    }
+                },
+                series: getSeries(data, dataType)
             });
-        }
+        });
     },
     chart_open_ended: function() {
         $(this).each(function(i, item) {
@@ -126,16 +151,17 @@ jQuery.fn.extend({
                         }
                     },
                     series: {
-                          cursor: "pointer",
-                          point: {
+                        allowPointSelect: true,
+                        cursor: "pointer",
+                        point: {
                             events: {
-                              click: function() {
-                                // Take user to pollrun detail page
-                                // when they click on a specific date.
-                                location.href = this.options.url;
-                              }
+                                click: function() {
+                                    // Take user to pollrun detail page
+                                    // when they click on a specific date.
+                                    location.href = this.options.url;
+                                }
                             }
-                          }
+                        }
                     }
                 },
                 series: data.series
