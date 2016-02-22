@@ -47,7 +47,7 @@ $.getJSON( "/boundary/", function( data ) {
         var label = ['<strong>index</strong>'];
         for (key in colors) {
           div.innerHTML += label.push(
-            '<i style="background:' + colors[key] + '">' + key + '</i>');
+            '<div class="legend_color" style="background:' + colors[key] + '"></div><span>' + key + '</span>');
         }
 
         div.innerHTML = label.join('<br>');
