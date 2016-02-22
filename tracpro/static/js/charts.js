@@ -45,7 +45,8 @@ jQuery.fn.extend({
                 var data = chart.data('chart');
                 chart.highcharts({
                     chart: {
-                        type: "area"
+                        type: "area",
+                        zoomType: "xy"
                     },
                     colors: lightColors,
                     title: {
