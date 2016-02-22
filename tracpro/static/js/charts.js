@@ -1,3 +1,7 @@
+/* Remove dark grey. */
+var lightColors = ['#7cb5ec', '#90ed7d', '#f7a35c', '#8085e9', '#f15c80',
+                   '#e4d354', '#2b908f', '#f45b5b', '#91e8e1'];
+
 jQuery.fn.extend({
     chart_numeric: function() {
         var dataType = $('#id_numeric').val();
@@ -8,6 +12,10 @@ jQuery.fn.extend({
                 chart.closest('.poll-question').find('.data-type').text(label);
                 var data = chart.data('chart');
                 chart.highcharts({
+                    chart: {
+                        type: "area"
+                    },
+                    colors: lightColors,
                     title: {
                         text: ""
                     },
@@ -30,7 +38,6 @@ jQuery.fn.extend({
                     },
                     series: [
                         {
-                            type: "area",
                             name: chart.data('name'),
                             data: data[dataType]
                         }
@@ -53,6 +60,7 @@ jQuery.fn.extend({
                 chart: {
                     type: 'area'
                 },
+                colors: lightColors,
                 title: {
                     text: ''
                 },
@@ -107,6 +115,7 @@ jQuery.fn.extend({
                 chart: {
                     type: 'bar'
                 },
+                colors: lightColors,
                 title: {
                     text: ''
                 },
@@ -132,11 +141,6 @@ jQuery.fn.extend({
 });
 
 $(function() {
-    /* Initialize Highcharts Colors, remove the dark grey */
-    Highcharts.setOptions({
-        colors: ['#7cb5ec', '#90ed7d', '#f7a35c', '#8085e9', '#f15c80', '#e4d354', '#2b908f', '#f45b5b', '#91e8e1']
-    });
-
     /* Update numeric data display on the client side. */
     $('.filter-form #id_numeric').on('change', function() {
         $('.chart-numeric').chart_numeric();
