@@ -2,14 +2,14 @@ import copy
 
 from dateutil.relativedelta import relativedelta
 
+import six
+
 from dash.utils import get_month_range
 
 from django import forms
 from django.forms.forms import DeclarativeFieldsMetaclass
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
-
-import six
 
 from . import fields as filter_fields
 
@@ -118,3 +118,14 @@ class DataFieldFilter(Filter):
             self.fields[field_name] = forms.CharField(
                 label='Contact: {}'.format(data_field.display_name),
                 required=False)
+
+    def filter_contacts(self, queryset=None):
+        """Filter queryset to match all contact field search input."""
+        contacts = queryset if queryset is not None else self.org.contacts.all()
+        for name, data_field in self.contact_fields:
+            value = self.cleaned_data.get(name)
+            if value:
+                contacts = contacts.filter(
+                    contactfield__field=data_field,
+                    contactfield__value__icontains=value)
+        return contacts
