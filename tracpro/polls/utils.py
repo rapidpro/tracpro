@@ -2,6 +2,7 @@ import math
 import re
 
 from decimal import InvalidOperation
+import numpy
 import pycountry
 import stop_words
 
@@ -73,3 +74,45 @@ def get_numeric_values(values):
         except (TypeError, ValueError, InvalidOperation):
             pass
     return numeric
+
+
+def summarize(answers, responses):
+    """
+    Map pollrun id to a 4-tuple of summary data:
+        * numeric answer sum
+        * numeric answer value
+        * numeric answer standard deviation
+        * total response rate
+    """
+    answer_values = answers.values_by_pollrun()
+    response_counts = responses.counts_by_pollrun()
+
+    answer_sums = {}
+    answer_avgs = {}
+    answer_stdevs = {}
+    response_rates = {}
+
+    # Note: Each pollrun has response(s), even if it has no answer(s) -
+    # so iterating over the response pollruns will cover all pollruns.
+    for pollrun_id, response_count in response_counts.items():
+        values = answer_values.get(pollrun_id, [])
+        numeric_values = get_numeric_values(values)
+
+        answer_sums[pollrun_id] = round(numpy.sum(numeric_values), 1)
+        answer_avgs[pollrun_id] = round(numpy.mean(numeric_values) if numeric_values else 0, 1)
+        answer_stdevs[pollrun_id] = round(numpy.std(numeric_values) if numeric_values else 0, 1)
+        response_rates[pollrun_id] = round(100.0 * len(values) / response_count, 1)
+
+    return answer_sums, answer_avgs, answer_stdevs, response_rates
+
+
+def overall_mean(pollruns, data, default=0, round_to=1):
+    """Return the mean of data values for each pollrun."""
+    padded_data = [data.get(pollrun.pk, default) for pollrun in pollruns]
+    return round(numpy.mean(padded_data), round_to)
+
+
+def overall_stdev(pollruns, data, default=0, round_to=1):
+    """Return the standard deviation of data values for each pollrun."""
+    padded_data = [data.get(pollrun.pk, default) for pollrun in pollruns]
+    return round(numpy.std(padded_data), round_to)

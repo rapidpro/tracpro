@@ -580,6 +580,13 @@ class ResponseQuerySet(models.QuerySet):
     def active(self):
         return self.filter(is_active=True)
 
+    def counts_by_pollrun(self):
+        """Map pollrun id to its response count."""
+        responses = self.order_by('pollrun').values('pollrun')
+        grouped_responses = groupby(responses, itemgetter('pollrun'))
+        return {pollrun_id: len(list(_responses))
+                for pollrun_id, _responses in grouped_responses}
+
     def get_response_rates(self):
         """Return a list of response rates for the pollruns."""
         # A response is complete if its status attribute equals STATUS_COMPLETE.
@@ -755,6 +762,13 @@ class AnswerQuerySet(models.QuerySet):
         words = [extract_words(*a) for a in answers]
         counts = Counter(chain(*words))
         return counts.most_common(50)
+
+    def values_by_pollrun(self):
+        """Map pollrun id to a list of its answer values."""
+        answers = self.order_by('response__pollrun').values('value', 'response__pollrun')
+        grouped_answers = groupby(answers, itemgetter('response__pollrun'))
+        return {pollrun_id: [a['value'] for a in _answers]
+                for pollrun_id, _answers in grouped_answers}
 
     def category_counts(self):
         categories = self.values_list('category', flat=True)

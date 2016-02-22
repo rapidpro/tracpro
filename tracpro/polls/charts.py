@@ -1,12 +1,9 @@
 from __future__ import absolute_import, unicode_literals
 
-import numpy
-
 from tracpro.charts.formatters import format_series, format_x_axis
-from tracpro.charts.utils import render_data
 
 from .models import Answer, Question
-from .utils import get_numeric_values
+from .utils import summarize, overall_mean, overall_stdev
 
 
 def single_pollrun(pollrun, responses, question):
@@ -20,7 +17,6 @@ def single_pollrun(pollrun, responses, question):
     summary_table = None
 
     answers = Answer.objects.filter(response__in=responses, question=question)
-
     if answers:
         if question.question_type == Question.TYPE_OPEN:
             chart_type = 'open-ended'
@@ -29,16 +25,11 @@ def single_pollrun(pollrun, responses, question):
             chart_type = 'bar'
             chart_data = single_pollrun_multiple_choice(answers, pollrun)
 
-            _, answer_avgs = answers.get_answer_summaries()
-            response_rates = responses.get_response_rates()
-            answer_avg = answer_avgs.get(pollrun.pk, 0)
-            response_rate = response_rates.get(pollrun.pk, 0)
-            numeric_values = get_numeric_values(answers.values_list('value', flat=True))
-            stdev = round(numpy.std(numeric_values), 2)
+            _, answer_avgs, answer_stdevs, response_rates = summarize(answers, responses)
             summary_table = [
-                ('Mean', answer_avg),
-                ('Standard deviation', stdev),
-                ('Response rate average', response_rate),
+                ('Mean', answer_avgs.get(pollrun.pk, 0)),
+                ('Standard deviation', answer_stdevs.get(pollrun.pk, 0)),
+                ('Response rate average', response_rates.get(pollrun.pk, 0)),
             ]
 
     return chart_type, chart_data, summary_table
@@ -67,12 +58,18 @@ def multiple_pollruns(pollruns, responses, question):
 
     if answers:
         if question.question_type == Question.TYPE_NUMERIC:
+            (answer_sums,
+             answer_avgs,
+             answer_stdevs,
+             response_rates) = summarize(answers, responses)
+
             chart_type = 'numeric'
-            chart_data = multiple_pollruns_numeric(pollruns, responses, answers, question)
+            chart_data = multiple_pollruns_numeric(
+                pollruns, answer_sums, answer_avgs, response_rates)
             summary_table = [
-                ('Mean', question.answer_mean),
-                ('Standard deviation', question.answer_stdev),
-                ('Response rate average', question.response_rate_average),
+                ('Mean', overall_mean(pollruns, answer_avgs)),
+                ('Standard deviation', overall_stdev(pollruns, answer_avgs)),
+                ('Response rate average', overall_mean(pollruns, response_rates)),
             ]
 
         elif question.question_type == Question.TYPE_OPEN:
@@ -80,16 +77,17 @@ def multiple_pollruns(pollruns, responses, question):
             chart_data = word_cloud_data(answers)
 
         elif question.question_type == Question.TYPE_MULTIPLE_CHOICE:
+            (answer_sums,
+             answer_avgs,
+             answer_stdevs,
+             response_rates) = summarize(answers, responses)
+
             chart_type = 'multiple-choice'
             chart_data = multiple_pollruns_multiple_choice(pollruns, answers)
-
-            # Use the side effect of this method to calculate table data.
-            # FIXME: This needs to be factored out.
-            multiple_pollruns_numeric(pollruns, responses, answers, question)
             summary_table = [
-                ('Mean', question.answer_mean),
-                ('Standard deviation', question.answer_stdev),
-                ('Response rate average', question.response_rate_average),
+                ('Mean', overall_mean(pollruns, answer_avgs)),
+                ('Standard deviation', overall_stdev(pollruns, answer_avgs)),
+                ('Response rate average', overall_mean(pollruns, response_rates)),
             ]
 
     return chart_type, chart_data, summary_table
@@ -114,22 +112,14 @@ def multiple_pollruns_multiple_choice(pollruns, answers):
     }
 
 
-def multiple_pollruns_numeric(pollruns, responses, answers, question):
+def multiple_pollruns_numeric(pollruns, answer_sums, answer_avgs, response_rates):
     """Chart data for multiple pollruns of a poll."""
-    answer_sums, answer_avgs = answers.get_answer_summaries()
-    response_rates = responses.get_response_rates()
-
-    sum_data = format_series(pollruns, answer_sums, url='id@polls.pollrun_read')
-    avg_data = format_series(pollruns, answer_avgs, url='id@polls.pollrun_read')
-    rate_data = format_series(pollruns, response_rates, url='id@polls.pollrun_participation')
-
-    question.answer_mean = round(numpy.mean([a['y'] for a in avg_data]), 2)
-    question.answer_stdev = round(numpy.std([a['y'] for a in avg_data]), 2)
-    question.response_rate_average = round(numpy.mean([a['y'] for a in rate_data]), 2)
-
     return {
         'dates': format_x_axis(pollruns),
-        'sum': sum_data,
-        'average': avg_data,
-        'response-rate': rate_data,
+        'sum': format_series(pollruns, answer_sums,
+                             url='id@polls.pollrun_read'),
+        'average': format_series(pollruns, answer_avgs,
+                                 url='id@polls.pollrun_read'),
+        'response-rate': format_series(pollruns, response_rates,
+                                       url='id@polls.pollrun_participation'),
     }
