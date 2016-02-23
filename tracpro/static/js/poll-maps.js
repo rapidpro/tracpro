@@ -8,10 +8,8 @@ $(function() {
 
   var getColors = function(categories) {
     var allColors = [];
-    if (categories.length > 5) {
-      // Use the full set of colors, starting with bright colors.
-      $.each(VIVID_COLORS, function(i, color) { allColors.push(color); });
-    }
+    // Use the full set of colors, starting with bright colors.
+    $.each(VIVID_COLORS, function(i, color) { allColors.push(color); });
     $.each(LIGHT_COLORS, function(i, color) { allColors.push(color); });
 
     var colors = {};
