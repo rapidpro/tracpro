@@ -1,10 +1,13 @@
 from __future__ import absolute_import, unicode_literals
 
+from dateutil.relativedelta import relativedelta
+
 from mptt import models as mptt
 
 from django.conf import settings
 from django.db import models, transaction
 from django.db.models import Count
+from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 
@@ -68,16 +71,17 @@ class AbstractGroup(models.Model):
         return cls.objects.filter(org=org, is_active=True)
 
     @classmethod
-    def get_response_counts(cls, org, window=None, include_empty=False):
+    def get_response_counts(cls, org, include_empty=False):
+        """Return response counts from the last 30 days."""
         from tracpro.polls.models import Response
         qs = Response.objects.filter(pollrun__poll__org=org, is_active=True)
 
         if not include_empty:
             qs = qs.exclude(status=Response.STATUS_EMPTY)
 
-        if window:
-            window_min, window_max = window.to_range()
-            qs = qs.filter(updated_on__gte=window_min, updated_on__lt=window_max)
+        window_max = timezone.now()
+        window_min = window_max - relativedelta(days=30)
+        qs = qs.filter(updated_on__gte=window_min, updated_on__lt=window_max)
 
         field = 'contact__%s' % cls.__name__.lower()
 
@@ -87,9 +91,7 @@ class AbstractGroup(models.Model):
 
     @classmethod
     def get_most_active(cls, org):
-        from tracpro.polls.models import Window
-        count_by_id = cls.get_response_counts(org, window=Window.last_30_days,
-                                              include_empty=False)
+        count_by_id = cls.get_response_counts(org, include_empty=False)
         groups = []
         for group in cls.get_all(org):
             count = count_by_id.get(group.pk, 0)

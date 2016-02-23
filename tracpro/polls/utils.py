@@ -1,37 +1,9 @@
-import math
 import re
 
 from decimal import InvalidOperation
+import numpy
 import pycountry
 import stop_words
-
-
-def auto_range_categories(value_min, value_max):
-    """
-    Tries to pick sensible numerical range categories for the given range of
-    values.
-    """
-    value_range = value_max - value_min
-    if value_range > 1:
-        # 10, 100, etc
-        category_range = int(math.pow(10, math.ceil(math.log10(value_range))))
-
-        if value_range < category_range / 2:
-            category_range /= 2  # 5, 10, 50, 100 etc
-    else:
-        category_range = 5
-
-    category_step = category_range / 5  # aim for 5 categories
-
-    category_min = value_min - (value_min % category_step)
-
-    category_max = category_min + category_step * 5
-
-    # may need an extra category to hold max value
-    while category_max <= value_max:
-        category_max += category_step
-
-    return category_min, category_max, category_step
 
 
 def extract_words(text, language):
@@ -73,3 +45,64 @@ def get_numeric_values(values):
         except (TypeError, ValueError, InvalidOperation):
             pass
     return numeric
+
+
+def summarize_by_pollrun(answers, responses):
+    answer_values = answers.group_values('response__pollrun')
+    response_counts = responses.group_counts('pollrun')
+
+    answer_sums = {}
+    answer_avgs = {}
+    answer_stdevs = {}
+    response_rates = {}
+
+    # Note: Each pollrun has response(s), even if it has no answer(s) -
+    # so iterating over the response pollruns will cover all pollruns.
+    for pollrun_id, response_count in response_counts.items():
+        values = answer_values.get(pollrun_id, [])
+        (answer_sums[pollrun_id],
+         answer_avgs[pollrun_id],
+         answer_stdevs[pollrun_id],
+         response_rates[pollrun_id]) = _summarize(values, response_count)
+
+    return answer_sums, answer_avgs, answer_stdevs, response_rates
+
+
+def summarize_by_region_and_pollrun(answers, responses):
+    answer_values = answers.group_values(
+        'response__contact__region', 'response__pollrun')
+    response_counts = responses.group_counts(
+        'contact__region', 'pollrun')
+
+    data = {}
+    for (region_id, pollrun_id), response_count in response_counts.items():
+        data.setdefault(region_id, ({}, {}, {}, {}))
+        values = answer_values.get((region_id, pollrun_id), [])
+        (data[region_id][0][pollrun_id],
+         data[region_id][1][pollrun_id],
+         data[region_id][2][pollrun_id],
+         data[region_id][3][pollrun_id]) = _summarize(values, response_count)
+    return data
+
+
+def _summarize(values, response_count):
+    numeric_values = get_numeric_values(values)
+
+    answer_sum = round(numpy.sum(numeric_values), 1)
+    answer_avg = round(numpy.mean(numeric_values) if numeric_values else 0, 1)
+    answer_stdev = round(numpy.std(numeric_values) if numeric_values else 0, 1)
+    response_rate = round(100.0 * len(values) / response_count, 1)
+
+    return answer_sum, answer_avg, answer_stdev, response_rate
+
+
+def overall_mean(pollruns, data, default=0, round_to=1):
+    """Return the mean of data values for each pollrun."""
+    padded_data = [data.get(pollrun.pk, default) for pollrun in pollruns]
+    return round(numpy.mean(padded_data), round_to)
+
+
+def overall_stdev(pollruns, data, default=0, round_to=1):
+    """Return the standard deviation of data values for each pollrun."""
+    padded_data = [data.get(pollrun.pk, default) for pollrun in pollruns]
+    return round(numpy.std(padded_data), round_to)

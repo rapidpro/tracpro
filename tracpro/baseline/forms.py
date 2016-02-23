@@ -1,8 +1,9 @@
 from django import forms
 from django.utils.translation import ugettext_lazy as _
 
-from tracpro.polls.models import Poll, Question
+from tracpro.charts import filters
 from tracpro.contacts.models import Contact
+from tracpro.polls.models import Poll, Question
 
 from .models import BaselineTerm
 
@@ -132,17 +133,46 @@ class SpoofDataForm(forms.Form):
         return cleaned_data
 
 
-class BaselineTermFilterForm(forms.Form):
+class BaselineTermFilterForm(filters.DateRangeFilter, filters.DataFieldFilter,
+                             filters.FilterForm):
     goal = forms.FloatField(
         required=False,
         label=_("Goal"),
-        help_text=_("If specified, this value will be used instead of baseline data."))
+        help_text=_("If specified, this value will be used instead of "
+                    "baseline data."))
     region = forms.ModelChoiceField(
         required=False,
-        label=_("Filter by region"),
+        label=_("Contact region"),
         queryset=None,
-        empty_label=_("All regions"))
+        empty_label=_("All regions"),
+        help_text=_("If specified, only responses from contacts in this "
+                    "region will be shown."))
 
-    def __init__(self, baseline_term, *args, **kwargs):
+    def __init__(self, baseline_term, data_regions, *args, **kwargs):
+        if not kwargs.get('data'):
+            # Set valid data if None (or {}) was provided.
+            # Form will always be considered bound.
+            kwargs['data'] = {
+                'date_range': 'custom',
+                'start_date': baseline_term.start_date,
+                'end_date': baseline_term.end_date,
+            }
         super(BaselineTermFilterForm, self).__init__(*args, **kwargs)
-        self.fields['region'].queryset = baseline_term.get_regions()
+
+        self.fields['start_date'].required = True
+        self.fields['end_date'].required = True
+
+        if data_regions is None:
+            queryset = self.org.regions.filter(is_active=True)
+        else:
+            queryset = data_regions
+        queryset = queryset.filter(pk__in=baseline_term.get_regions())
+        queryset = queryset.order_by('name')
+        self.fields['region'].queryset = queryset
+
+    def filter_contacts(self, queryset=None):
+        contacts = super(BaselineTermFilterForm, self).filter_contacts(queryset)
+        region = self.cleaned_data.get('region')
+        if region:
+            contacts = contacts.filter(region=region)
+        return contacts

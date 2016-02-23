@@ -65,7 +65,6 @@ class PollChartFilterForm(filters.DateRangeFilter, filters.DataFieldFilter,
         label=_("Numeric display"),
         help_text=_("How responses to numeric questions will be charted."),
         choices=NUMERIC_DATA_CHOICES)
-
     split_regions = forms.BooleanField(
         required=False,
         help_text=_("Split out regional data for numeric charts."))

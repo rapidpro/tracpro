@@ -12,6 +12,7 @@ from tracpro.test import factories
 from tracpro.test.cases import TracProTest
 
 from .. import filters
+from .. import utils
 
 
 class TestDateRangeFilterForm(filters.DateRangeFilter, filters.FilterForm):
@@ -28,7 +29,7 @@ class TestDateRangeFilter(TracProTest):
         self.mock_get_month_range = self.month_range_patcher.start()
         self.mock_get_month_range.return_value = (
             datetime.datetime(2016, 2, 1, tzinfo=pytz.UTC),
-            datetime.datetime(2016, 2, 29, tzinfo=pytz.UTC),
+            datetime.datetime(2016, 3, 1, tzinfo=pytz.UTC),
         )
 
         self.now_patcher = mock.patch('tracpro.charts.filters.timezone.now')
@@ -59,7 +60,12 @@ class TestDateRangeFilter(TracProTest):
         self.assertEqual(form.data['start_date'], start_date)
         self.assertEqual(form.cleaned_data['start_date'], start_date)
         self.assertEqual(form.data['end_date'], end_date)
-        self.assertEqual(form.cleaned_data['end_date'], end_date)
+        if end_date is not None:
+            self.assertEqual(
+                form.cleaned_data['end_date'],
+                utils.midnight(end_date) + relativedelta(days=1))
+        else:
+            self.assertIsNone(form.cleaned_data['end_date'])
 
     def test_date_range_required(self):
         """Date range choice is required."""

@@ -1,7 +1,7 @@
 {% extends "smartmin/form.html" %}
 {% load smartmin i18n compress %}
 
-{% block script %}
+{% block extra-script %}
 <script>
 $(function() {
     $("input[class^='datepicker']").datepicker();
@@ -13,4 +13,4 @@ $(function() {
     });
 });
 </script>
-{% endblock script %}
+{% endblock extra-script %}

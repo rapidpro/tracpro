@@ -1,0 +1,56 @@
+{% extends "modal.html" %}
+
+{% load i18n %}
+
+{% block modal-id %}start-poll-dialog{% endblock modal-id %}
+
+{% block modal-title %}{% trans "Start Poll" %}{% endblock modal-title %}
+
+{% block modal-body %}
+  <form id='start-poll-form' class='form-horizontal'>
+    {% csrf_token %}
+    <div class='form-group'>
+      <label class='col-sm-2 control-label' for='poll'>
+        {% trans "Poll" %}
+      </label>
+      <div class='col-sm-10'>
+        <select class='form-control' style='width: 100%' name='poll'>
+          {% for poll in polls %}
+            <option value='{{ poll.pk }}'>
+              {{ poll.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class='form-group'>
+      <label class='col-sm-2 control-label' for="region">
+        {% trans "Region" %}
+      </label>
+      <div class='col-sm-10'>
+        <input class='form-control' style='width: 100%'
+               type='text' name="region"
+               readonly='readonly' value='{{ request.region }}' />
+      </div>
+    </div>
+    {% if not request.region.is_leaf_node %}
+      <div class="form-group">
+        <div class="col-sm-10 col-sm-offset-2">
+          <label for="propagate">
+            <input type="checkbox" name="propagate" checked />
+            {% trans "Propagate to sub-regions" %}
+          </label>
+        </div>
+      </div>
+    {% endif %}
+  </form>
+{% endblock modal-body %}
+
+{% block modal-footer %}
+  <button class='btn btn-default' data-dismiss='modal' type='button'>
+    {% trans "Cancel" %}
+  </button>
+  <button class='btn btn-primary' type='button' onclick='onPollCreate()'>
+    {% trans "Start" %}
+  </button>
+{% endblock modal-footer %}

@@ -22,13 +22,13 @@ class TestPollChartFilterForm(TracProTest):
         self.mock_get_month_range1 = self.month_range_patcher1.start()
         self.mock_get_month_range1.return_value = (
             datetime.datetime(2016, 2, 1, tzinfo=pytz.UTC),
-            datetime.datetime(2016, 2, 29, tzinfo=pytz.UTC),
+            datetime.datetime(2016, 3, 1, tzinfo=pytz.UTC),
         )
         self.month_range_patcher2 = mock.patch('tracpro.charts.filters.get_month_range')
         self.mock_get_month_range2 = self.month_range_patcher2.start()
         self.mock_get_month_range2.return_value = (
             datetime.datetime(2016, 2, 1, tzinfo=pytz.UTC),
-            datetime.datetime(2016, 2, 29, tzinfo=pytz.UTC),
+            datetime.datetime(2016, 3, 1, tzinfo=pytz.UTC),
         )
 
         # Data to pass to form for testing.
@@ -37,6 +37,7 @@ class TestPollChartFilterForm(TracProTest):
             'date_range': 'custom',
             'start_date': datetime.datetime(2014, 1, 15, tzinfo=pytz.UTC),
             'end_date': datetime.datetime(2014, 10, 22, tzinfo=pytz.UTC),
+            'split_regions': False,
         }
 
     def tearDown(self):
