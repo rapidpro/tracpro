@@ -326,7 +326,7 @@ class BoundaryCRUDL(SmartCRUDL):
     class List(OrgPermsMixin, SmartListView):
 
         def get_queryset(self):
-            return Boundary.objects.by_org(self.request.org)
+            return Boundary.objects.by_org(self.request.org).order_by('-level')
 
         def render_to_response(self, context, **response_kwargs):
             results = [i.as_geojson()

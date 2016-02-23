@@ -254,11 +254,13 @@ class Boundary(models.Model):
                     'id': self.id,
                     'level': self.level,
                     'name': self.name,
+                    'category': '',
                     'style': {
                         'color': "#FFFFFF",
                         'opacity': 1.0,
                         'fillColor': "#000000",
-                        'fillOpacity': 1.0
+                        'fillOpacity': 1.0,
+                        'weight': 2
                     },
                 },
             }
