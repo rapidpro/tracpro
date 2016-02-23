@@ -29,7 +29,6 @@
       <![endif]-->
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
-    <script type="text/javascript" src="{{ STATIC_URL }}js/jqcloud-1.0.4.min.js"></script>
 
     <!-- Mobile viewport optimized: j.mp/bplateviewport -->
     <meta content='width=device-width, initial-scale=1.0' name='viewport' />
@@ -41,22 +40,18 @@
 /*<![CDATA[*/
 /*]]>*/
 </style>
-    {% compress css %}
-      {% block styles %}
+    {% block styles %}
+      {% compress css %}
         <link href='{{ STATIC_URL }}css/bootstrap.css' type='text/css' rel='stylesheet' />
         <link href='{{ STATIC_URL }}css/bootstrap-theme.css' type='text/css' rel='stylesheet' />
         <link href='{{ STATIC_URL }}css/smartmin_styles.css' type='text/css' rel='stylesheet' />
         <link href='{{ STATIC_URL }}css/select2.css' type='text/css' rel='stylesheet' />
-        <link href='{{ STATIC_URL }}css/jqcloud.css' type='text/css' rel='stylesheet' />
         <link href='{{ STATIC_URL }}less/trac.less' type='text/less' rel='stylesheet' />
 
-      {% endblock %}
-    {% endcompress %}
-    {% block extra-less %}
-    {% endblock %}
-    {% block extra-style %}
+      {% endcompress %}
+    {% endblock styles %}
 
-    {% endblock %}
+    {% block extra-style %}{% endblock extra-style %}
 
     {% if lang_direction == 'ltr' %}
       <link href='{{ STATIC_URL }}css/trac-ltr.css' type='text/css' rel='stylesheet' />
@@ -372,7 +367,6 @@
     <!-- JavaScript at the bottom for fast page loading -->
     <script type="text/javascript" src="{{ STATIC_URL }}js/bootstrap.min.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/angular.min.js"></script>
-    <script type="text/javascript" src="{{ STATIC_URL }}libs/highcharts-4.1.8/highcharts.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/select2.min.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/trac.js"></script>
 
@@ -422,6 +416,5 @@
     {% endif %}
 
     {% block extra-script %}{% endblock %}
-    {% block script %}{% endblock %}
   </body>
 </html>

@@ -16,7 +16,7 @@ from django.utils import timezone
 from tracpro.test import factories
 from tracpro.test.cases import TracProTest, TracProDataTest
 
-from ..models import Answer, Poll, PollRun, Response
+from ..models import Poll, PollRun, Response
 from .. import models
 
 
@@ -535,88 +535,6 @@ class PollRunTest(TracProDataTest):
             response=response4, question=self.poll1_question2,
             value="مطر", category="All Responses")
 
-        # category counts for question #1
-        self.assertEqual(
-            pollrun.get_answer_category_counts(self.poll1_question1),
-            [("1 - 5", 2), ("6 - 10", 1)])
-        self.assertEqual(
-            pollrun.get_answer_category_counts(
-                self.poll1_question1,
-                [self.region1]),
-            [("1 - 5", 2)])
-        self.assertEqual(
-            pollrun.get_answer_category_counts(
-                self.poll1_question1,
-                [self.region2]),
-            [("6 - 10", 1)])
-        self.assertEqual(
-            pollrun.get_answer_category_counts(
-                self.poll1_question1,
-                [self.region3]),
-            [])
-
-        # and from cache... (lists rather than tuples due to JSON serialization)
-        with self.assertNumQueries(0):
-            self.assertEqual(
-                pollrun.get_answer_category_counts(
-                    self.poll1_question1),
-                [["1 - 5", 2], ["6 - 10", 1]])
-            self.assertEqual(
-                pollrun.get_answer_category_counts(
-                    self.poll1_question1,
-                    [self.region1]),
-                [["1 - 5", 2]])
-            self.assertEqual(
-                pollrun.get_answer_category_counts(
-                    self.poll1_question1,
-                    [self.region2]),
-                [["6 - 10", 1]])
-            self.assertEqual(
-                pollrun.get_answer_category_counts(
-                    self.poll1_question1,
-                    [self.region3]),
-                [])
-
-        # auto-range category counts for question #1
-        self.assertEqual(
-            pollrun.get_answer_auto_range_counts(self.poll1_question1),
-            [('2 - 3', 1), ('4 - 5', 1), ('6 - 7', 0), ('8 - 9', 1), ('10 - 11', 0)])
-        self.assertEqual(
-            pollrun.get_answer_auto_range_counts(
-                self.poll1_question1,
-                [self.region1]),
-            [('3', 1), ('4', 1), ('5', 0), ('6', 0), ('7', 0)])
-        self.assertEqual(
-            pollrun.get_answer_auto_range_counts(
-                self.poll1_question1,
-                [self.region2]),
-            [('8', 1), ('9', 0), ('10', 0), ('11', 0), ('12', 0)])
-        self.assertEqual(
-            pollrun.get_answer_auto_range_counts(
-                self.poll1_question1,
-                [self.region3]),
-            [])
-
-        # word counts for question #2
-        self.assertEqual(
-            pollrun.get_answer_word_counts(self.poll1_question2),
-            [("rainy", 3), ("sunny", 2), ('مطر', 1)])
-        self.assertEqual(
-            pollrun.get_answer_word_counts(
-                self.poll1_question2,
-                [self.region1]),
-            [("rainy", 3)])
-        self.assertEqual(
-            pollrun.get_answer_word_counts(
-                self.poll1_question2,
-                [self.region2]),
-            [("sunny", 2)])
-        self.assertEqual(
-            pollrun.get_answer_word_counts(
-                self.poll1_question2,
-                [self.region3]),
-            [('مطر', 1)])
-
 
 class TestResponse(TracProDataTest):
 
@@ -811,40 +729,3 @@ class TestAnswer(TracProDataTest):
             response=response, question=self.poll1_question1,
             value="rain", category=dict(eng="Yes"))
         self.assertEqual(answer3.category, "Yes")
-
-    def test_auto_range_counts(self):
-        qs = Answer.objects.none()
-        self.assertEqual(qs.auto_range_counts(), {})
-
-    def test_auto_range_counts_2(self):
-        a = factories.Answer(value=1, category=None)
-        qs = Answer.objects.filter(pk=a.pk)
-        self.assertEqual(qs.auto_range_counts(), {})
-
-    def test_auto_range_counts_3(self):
-        a = factories.Answer(value=1, category="1 - 100")
-        qs = Answer.objects.filter(pk=a.pk)
-        self.assertEqual(
-            qs.auto_range_counts(),
-            {'1': 1, '2': 0, '3': 0, '4': 0, '5': 0})
-
-    def test_auto_range_counts_4(self):
-        a1 = factories.Answer(value=1, category="1 - 100")
-        a2 = factories.Answer(value=2, category="1 - 100")
-        a3 = factories.Answer(value=2, category="1 - 100")
-        a4 = factories.Answer(value=3, category="1 - 100")
-        qs = Answer.objects.filter(pk__in=[a1.pk, a2.pk, a3.pk, a4.pk])
-        self.assertEqual(
-            qs.auto_range_counts(),
-            {'1': 1, '2': 2, '3': 1, '4': 0, '5': 0})
-
-    def test_auto_range_counts_5(self):
-        a1 = factories.Answer(value=1, category="1 - 100")
-        a2 = factories.Answer(value=2, category="1 - 100")
-        a3 = factories.Answer(value=6, category="1 - 100")
-        a4 = factories.Answer(value=6, category="1 - 100")
-        a5 = factories.Answer(value=13, category="1 - 100")
-        qs = Answer.objects.filter(pk__in=[a1.pk, a2.pk, a3.pk, a4.pk, a5.pk])
-        self.assertEqual(
-            qs.auto_range_counts(),
-            {'0 - 9': 4, '10 - 19': 1, '20 - 29': 0, '30 - 39': 0, '40 - 49': 0})

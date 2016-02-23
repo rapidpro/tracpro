@@ -1,12 +1,12 @@
 from __future__ import absolute_import, unicode_literals
 
-import numpy
+from django.core.urlresolvers import reverse
 
 from tracpro.charts.formatters import format_series, format_x_axis
-from tracpro.charts.utils import render_data
+from tracpro.groups.models import Region
 
 from .models import Answer, Question
-from .utils import get_numeric_values
+from . import utils
 
 
 def single_pollrun(pollrun, responses, question):
@@ -17,33 +17,26 @@ def single_pollrun(pollrun, responses, question):
     """
     chart_type = None
     chart_data = []
-    answer_avg, response_rate, stdev = [0, 0, 0]
+    summary_table = None
 
     answers = Answer.objects.filter(response__in=responses, question=question)
-    chart_data_exists = False
-    if question.question_type == Question.TYPE_OPEN:
-        chart_type = 'open-ended'
-        chart_data = word_cloud_data(answers)
-        if chart_data:
-            chart_data_exists = True
-    else:
-        chart_type = 'bar'
-        chart_data = single_pollrun_multiple_choice(answers, pollrun)
-        if chart_data['data']:
-            chart_data_exists = True
+    if answers:
+        if question.question_type == Question.TYPE_OPEN:
+            chart_type = 'open-ended'
+            chart_data = word_cloud_data(answers)
+        else:
+            chart_type = 'bar'
+            chart_data = single_pollrun_multiple_choice(answers, pollrun)
 
-    # Calculate the average, standard deviation,
-    # and response rate for this pollrun
-    if question.question_type != Question.TYPE_OPEN:
-        _, answer_avgs = answers.get_answer_summaries()
-        response_rates = responses.get_response_rates()
+            _, answer_avgs, answer_stdevs, response_rates = utils.summarize_by_pollrun(
+                answers, responses)
+            summary_table = [
+                ('Mean', answer_avgs.get(pollrun.pk, 0)),
+                ('Standard deviation', answer_stdevs.get(pollrun.pk, 0)),
+                ('Response rate average (%)', response_rates.get(pollrun.pk, 0)),
+            ]
 
-        answer_avg = answer_avgs.get(pollrun.pk, 0)
-        response_rate = response_rates.get(pollrun.pk, 0)
-        numeric_values = get_numeric_values(answers.values_list('value', flat=True))
-        stdev = round(numpy.std(numeric_values), 2)
-
-    return chart_type, render_data(chart_data), chart_data_exists, answer_avg, response_rate, stdev
+    return chart_type, chart_data, summary_table
 
 
 def single_pollrun_multiple_choice(answers, pollrun):
@@ -59,29 +52,36 @@ def single_pollrun_multiple_choice(answers, pollrun):
     }
 
 
-def multiple_pollruns(pollruns, responses, question):
+def multiple_pollruns(pollruns, responses, question, split_regions):
     chart_type = None
-    data = None
+    chart_data = None
+    summary_table = None
 
     pollruns = pollruns.order_by('conducted_on')
-
     answers = Answer.objects.filter(response__in=responses, question=question)
-    if answers:
+
+    # Save a bit of time with .exists();
+    # queryset is re-evaluated later as a values set.
+    if answers.exists():
         if question.question_type == Question.TYPE_NUMERIC:
             chart_type = 'numeric'
-            data = multiple_pollruns_numeric(pollruns, responses, answers, question)
+            if split_regions:
+                chart_data, summary_table = multiple_pollruns_numeric_split(
+                    pollruns, answers, responses, question)
+            else:
+                chart_data, summary_table = multiple_pollruns_numeric(
+                    pollruns, answers, responses, question)
 
         elif question.question_type == Question.TYPE_OPEN:
             chart_type = 'open-ended'
-            data = word_cloud_data(answers)
+            chart_data = word_cloud_data(answers)
 
         elif question.question_type == Question.TYPE_MULTIPLE_CHOICE:
             chart_type = 'multiple-choice'
-            # Call multiple_pollruns_numeric() in order to calculate mean, stdev and resp rate
-            multiple_pollruns_numeric(pollruns, responses, answers, question)
-            data = multiple_pollruns_multiple_choice(pollruns, answers)
+            chart_data, summary_table = multiple_pollruns_multiple_choice(
+                pollruns, answers, responses)
 
-    return chart_type, data
+    return chart_type, chart_data, summary_table
 
 
 def word_cloud_data(answers):
@@ -89,36 +89,108 @@ def word_cloud_data(answers):
     return [{'text': word, 'weight': count} for word, count in answers.word_counts()]
 
 
-def multiple_pollruns_multiple_choice(pollruns, answers):
+def multiple_pollruns_multiple_choice(pollruns, answers, responses):
     series = []
     for category, pollrun_counts in answers.category_counts_by_pollrun():
-        series.append({
-            'name': category,
-            'data': format_series(pollruns, pollrun_counts, url='id@polls.pollrun_read'),
-        })
+        series.append(format_series(
+            pollruns, pollrun_counts, 'id@polls.pollrun_read',
+            name=category))
 
-    return {
+    chart_data = {
         'dates': format_x_axis(pollruns),
         'series': series,
     }
 
+    (answer_sums,
+     answer_avgs,
+     answer_stdevs,
+     response_rates) = utils.summarize_by_pollrun(answers, responses)
 
-def multiple_pollruns_numeric(pollruns, responses, answers, question):
-    """Chart data for multiple pollruns of a poll."""
-    answer_sums, answer_avgs = answers.get_answer_summaries()
-    response_rates = responses.get_response_rates()
+    summary_table = [
+        ('Mean', utils.overall_mean(pollruns, answer_avgs)),
+        ('Standard deviation', utils.overall_stdev(pollruns, answer_avgs)),
+        ('Response rate average (%)', utils.overall_mean(pollruns, response_rates)),
+    ]
 
-    sum_data = format_series(pollruns, answer_sums, url='id@polls.pollrun_read')
-    avg_data = format_series(pollruns, answer_avgs, url='id@polls.pollrun_read')
-    rate_data = format_series(pollruns, response_rates, url='id@polls.pollrun_participation')
+    return chart_data, summary_table
 
-    question.answer_mean = round(numpy.mean([a['y'] for a in avg_data]), 2)
-    question.answer_stdev = round(numpy.std([a['y'] for a in avg_data]), 2)
-    question.response_rate_average = round(numpy.mean([a['y'] for a in rate_data]), 2)
 
-    return {
+def multiple_pollruns_numeric(pollruns, answers, responses, question):
+    (answer_sums,
+     answer_avgs,
+     answer_stdevs,
+     response_rates) = utils.summarize_by_pollrun(answers, responses)
+
+    sum_data = []
+    avg_data = []
+    rate_data = []
+    pollrun_urls = []
+    participation_urls = []
+    for pollrun in pollruns:
+        sum_data.append(answer_sums.get(pollrun.pk, 0))
+        avg_data.append(answer_avgs.get(pollrun.pk, 0))
+        rate_data.append(response_rates.get(pollrun.pk, 0))
+        pollrun_urls.append(reverse('polls.pollrun_read', args=[pollrun.pk]))
+        participation_urls.append(reverse('polls.pollrun_participation', args=[pollrun.pk]))
+
+    chart_data = {
+        'dates': format_x_axis(pollruns),
+        'sum': [{'name': question.name, 'data': sum_data}],
+        'average': [{'name': question.name, 'data': avg_data}],
+        'response-rate': [{'name': question.name, 'data': rate_data}],
+        'pollrun-urls': pollrun_urls,
+        'participation-urls': participation_urls,
+    }
+
+    summary_table = [
+        ('Mean', utils.overall_mean(pollruns, answer_avgs)),
+        ('Standard deviation', utils.overall_stdev(pollruns, answer_avgs)),
+        ('Response rate average (%)', utils.overall_mean(pollruns, response_rates)),
+    ]
+
+    return chart_data, summary_table
+
+
+def multiple_pollruns_numeric_split(pollruns, answers, responses, question):
+    """Return separate series for each contact region."""
+    data = utils.summarize_by_region_and_pollrun(answers, responses)
+
+    sum_data = []
+    avg_data = []
+    rate_data = []
+    for region in Region.objects.filter(pk__in=data.keys()).order_by('name'):
+        answer_sums, answer_avgs, answer_stdevs, response_rates = data.get(region.pk)
+        region_answer_sums = []
+        region_answer_avgs = []
+        region_response_rates = []
+        for pollrun in pollruns:
+            region_answer_sums.append(answer_sums.get(pollrun.pk, 0))
+            region_answer_avgs.append(answer_avgs.get(pollrun.pk, 0))
+            region_response_rates.append(response_rates.get(pollrun.pk, 0))
+
+        sum_data.append({'name': region.name, 'data': region_answer_sums})
+        avg_data.append({'name': region.name, 'data': region_answer_avgs})
+        rate_data.append({'name': region.name, 'data': region_response_rates})
+
+    pollrun_urls = [reverse('polls.pollrun_read', args=[p.pk]) for p in pollruns]
+    participation_urls = [reverse('polls.pollrun_participation', args=[p.pk]) for p in pollruns]
+    chart_data = {
         'dates': format_x_axis(pollruns),
         'sum': sum_data,
         'average': avg_data,
         'response-rate': rate_data,
+        'pollrun-urls': pollrun_urls,
+        'participation-urls': participation_urls,
     }
+
+    (pollrun_answer_sums,
+     pollrun_answer_avgs,
+     pollrun_answer_stdevs,
+     pollrun_response_rates) = utils.summarize_by_pollrun(answers, responses)
+    summary_table = [
+        ('Mean', utils.overall_mean(pollruns, pollrun_answer_avgs)),
+        ('Standard deviation', utils.overall_stdev(pollruns, pollrun_answer_avgs)),
+        ('Response rate average (%)', utils.overall_mean(pollruns, pollrun_response_rates)),
+    ]
+
+    return chart_data, summary_table

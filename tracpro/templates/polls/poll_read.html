@@ -1,8 +1,9 @@
 {% extends "smartmin/base.html" %}
 
+{% load charts %}
+{% load compress %}
 {% load i18n %}
-{% load filters %}
-{% load static %}
+{% load staticfiles %}
 
 {% block pre-content %}
   {% include 'polls/poll_header.html' with poll=object %}
@@ -10,19 +11,31 @@
 
 {% block extra-style %}
   {{ block.super }}
+
   <link rel="stylesheet" type="text/css"
         href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/themes/smoothness/jquery-ui.css">
   <link rel="stylesheet" type="text/css"
         href="http://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.css">
+
+  {% compress css %}
+    <link type="text/css" rel="stylesheet"
+          href="{% static "css/jqcloud.css" %}" />
+  {% endcompress %}
 {% endblock extra-style %}
 
 {% block extra-script %}
   {{ block.super }}
+
   <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
-  <script src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>
-  <script src="{% static "js/filters.js" %}"></script>
-  <script src="{% static "js/poll-charts.js" %}"></script>
-  <script src="{% static "js/poll-maps.js" %}"></script>
+  <script src="http://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.css"></script>
+
+  {% compress js %}
+    <script src="{% static "libs/highcharts-4.1.8/highcharts.js" %}"></script>
+    <script src="{% static "js/jqcloud-1.0.4.min.js" %}"></script>
+    <script src="{% static "js/filters.js" %}"></script>
+    <script src="{% static "js/charts.js" %}"></script>
+    <script src="{% static "js/poll-maps.js" %}"></script>
+  {% endcompress %}
 {% endblock extra-script %}
 
 {% block content %}
@@ -48,21 +61,25 @@
       {% endif %}
 
       <div class="row">
-        {% field form "numeric" %}
+        {% filter_field form "numeric" %}
       </div>
 
       <div class="row">
-        {% field form "date_range" %}
+        {% filter_field form "split_regions" %}
+      </div>
+
+      <div class="row">
+        {% filter_field form "date_range" %}
       </div>
 
       <div class="row hidden" id="filter-dates">
-        {% field form "start_date" col_width=6 label_width=4 field_width=8 %}
-        {% field form "end_date" col_width=6 label_width=4 field_width=8 %}
+        {% filter_field form "start_date" col_width=6 label_width=4 field_width=8 %}
+        {% filter_field form "end_date" col_width=6 label_width=4 field_width=8 %}
       </div>
 
       {% for field_name, _ in form.contact_fields %}
         <div class="row">
-          {% field form field_name %}
+          {% filter_field form field_name %}
         </div>
       {% endfor %}
 
@@ -86,7 +103,7 @@
     </p>
   {% endif %}
 
-  {% for question, chart_type, data, map_data, category_colors in question_data %}
+  {% for question, chart_type, chart_data, map_data, category_colors, summary_table in question_data %}
     <div class="poll-question">
       <h3>
         {{ forloop.counter }}. {{ question.name }}
@@ -102,17 +119,18 @@
         {% endif %}
       </h3>
 
-      {% if data %}
-        <div class="map" id="map_{{ question.id }}"
+      {% if chart_data %}
+        <div class="map"
              data-maps='{{ map_data|chart_json }}'
              data-colors='{{ category_colors|chart_json }}'>
         </div>
+
         <div class="chart-{{ chart_type }}"
-             data-chart='{{ data|chart_json }}'
+             data-chart='{{ chart_data|chart_json }}'
              data-name="{{ question.name }}">
         </div>
 
-        {% include 'polls/answer_calculations.html' %}
+        {% include "charts/summary_table.html" %}
       {% else %}
         <div class="chart-no-data">
           {% trans "No data to display for this time period." %}

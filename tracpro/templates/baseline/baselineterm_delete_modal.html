@@ -1,0 +1,26 @@
+{% extends "modal.html" %}
+
+{% load i18n %}
+
+{% block modal-id %}confirm-delete-dialog{% endblock modal-id %}
+
+{% block modal-title %}
+  {% trans "Confirm" %}
+{% endblock modal-title %}
+
+{% block modal-body %}
+  {% trans "Are you sure that you want to delete this baseline term?" %}
+{% endblock modal-body %}
+
+{% block modal-footer %}
+  <form id="delete-form" method="POST" class="form-inline"
+        action="{% url 'baseline.baselineterm_delete' baselineterm.pk %}">
+    {% csrf_token %}
+    <button type="button" class="btn btn-default" data-dismiss="modal">
+      {% trans "Cancel" %}
+    </button>
+    <button type="submit" class="btn btn-danger">
+      {% trans "Delete" %}
+    </button>
+  </form>
+{% endblock modal-footer %}

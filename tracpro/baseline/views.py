@@ -21,7 +21,7 @@ from tracpro.polls.models import Answer, PollRun, Response
 
 from .models import BaselineTerm
 from .forms import BaselineTermForm, SpoofDataForm, BaselineTermFilterForm
-from .utils import chart_baseline
+from .charts import chart_baseline
 
 
 class BaselineTermCRUDL(SmartCRUDL):
@@ -32,7 +32,10 @@ class BaselineTermCRUDL(SmartCRUDL):
     class BaselineTermMixin(object):
 
         def get_queryset(self):
-            return BaselineTerm.get_all(self.request.org)
+            indicators = BaselineTerm.objects.by_org(self.request.org)
+            indicators = indicators.select_related(
+                'baseline_question', 'follow_up_question')
+            return indicators
 
     class Create(OrgPermsMixin, SmartCreateView):
         form_class = BaselineTermForm
@@ -64,47 +67,26 @@ class BaselineTermCRUDL(SmartCRUDL):
             return kwargs
 
     class Read(BaselineTermMixin, OrgObjPermsMixin, SmartReadView):
-        fields = ("start_date", "end_date", "baseline_poll", "baseline_question",
-                  "follow_up_poll", "follow_up_question")
 
         def get_context_data(self, **kwargs):
-            context = super(BaselineTermCRUDL.Read, self).get_context_data(**kwargs)
-
             filter_form = BaselineTermFilterForm(
-                baseline_term=self.object, data=self.request.GET)
-            filter_form.full_clean()
+                org=self.request.org,
+                baseline_term=self.object,
+                data_regions=self.request.data_regions,
+                data=self.request.GET)
 
-            region = filter_form.cleaned_data.get('region')
-            (follow_up_list, baseline_list, all_regions, date_list,
-             baseline_mean, baseline_std, follow_up_mean, follow_up_std,
-             baseline_response_rate, follow_up_response_rate) = chart_baseline(
-                self.object, self.request.data_regions, region)
+            if filter_form.is_valid():
+                chart_data, summary_table = chart_baseline(
+                    self.object, filter_form, self.request.region,
+                    self.request.include_subregions)
+            else:
+                chart_data = None
+                summary_table = None
 
-            context['form'] = filter_form
-            context['date_list'] = date_list
-            context['baseline_list'] = baseline_list
-            context['follow_up_list'] = follow_up_list
-            context['baseline_mean'] = baseline_mean
-            context['baseline_std'] = baseline_std
-            context['follow_up_mean'] = follow_up_mean
-            context['follow_up_std'] = follow_up_std
-            context['baseline_response_rate'] = baseline_response_rate
-            context['follow_up_response_rate'] = follow_up_response_rate
-
-            # This value is for when the user would rather display a goal they enter manually,
-            # instead of the baseline poll results
-            goal = filter_form.cleaned_data.get('goal')
-            if goal:
-                context['baseline_mean'] = goal
-                context['baseline_std'] = 0
-                context['goal_selected'] = [goal] * len(date_list)
-
-            if len(context['follow_up_list']) == 0 and len(context['baseline_list']) == 0:
-                context['no_data'] = 1
-                context['error_message'] = _(
-                    "No data exists for this baseline chart. You may need to select a different region.")
-
-            return context
+            kwargs.setdefault('form', filter_form)
+            kwargs.setdefault('chart_data', chart_data)
+            kwargs.setdefault('summary_table', summary_table)
+            return super(BaselineTermCRUDL.Read, self).get_context_data(**kwargs)
 
     class DataSpoof(OrgPermsMixin, SmartFormView):
         title = _("Baseline Term Data Spoof")

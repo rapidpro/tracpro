@@ -21,3 +21,7 @@ class ChartsJSONEncoder(json.JSONEncoder):
 
 def render_data(chart_data):
     return json.dumps(chart_data, cls=ChartsJSONEncoder)
+
+
+def midnight(d):
+    return datetime.datetime(d.year, d.month, d.day, tzinfo=d.tzinfo)

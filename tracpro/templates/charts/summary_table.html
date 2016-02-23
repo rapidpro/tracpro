@@ -1,0 +1,16 @@
+{% if summary_table %}
+  <table class="table table-striped">
+    <tbody>
+      {% for label, value in summary_table %}
+        <tr class="read">
+          <td class="read read-label">{{ label }}</td>
+          {% ifequal value None %}
+            <td class="read read-value"><em>n/a</em></td>
+          {% else %}
+            <td class="read read-value">{{ value }}</td>
+          {% endifequal %}
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endif %}
