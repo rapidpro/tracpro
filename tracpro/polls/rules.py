@@ -9,22 +9,20 @@ NUMERIC_TESTS = ('number', 'lt', 'eq', 'gt', 'between')
 
 
 def get_category(rule):
-    """Return the name of the rule category."""
-    # rule['category'] contains a base and/or translated names.
-    # For example:
-    #   {'category': {'base': 'dogs'}}
-    #   {'category': {'eng': 'dogs', 'base': 'dogs'}}
-    #   {'category': {'eng'; 'dogs'}}
-    for key in ('base', 'eng'):
-        return rule['category'][key]
-
-    # Default to the first value if that doesn't work.
-    return rule['category'].values()[0]
+    """Return the rule category name."""
+    if isinstance(rule['category'], dict):
+        if 'base' in rule['category']:
+            return rule['category']['base']
+        # Keys are the languages that the category name is translated in.
+        # Return the first translation.
+        return rule['category'].values()[0]
+    return rule['category']
 
 
 def get_all_categories(question):
     """Return the names of all answer categories, and Other."""
     categories = [get_category(rule) for rule in question.get_rules()]
+    # Use non-lazy evaluation to ensure the list is JSON-serializable.
     categories.append(ugettext("Other"))
     return categories
 
@@ -36,8 +34,8 @@ def passes_test(value, rule):
 
         {'type': 'between', 'min': 5, 'max': 10}
 
-    Currently only numeric types are implemented. All other types will return
-    False.
+    Currently only numeric types are implemented.
+    All other test types will return False.
     """
     test = rule['test'].copy()
     test_funcs = {
@@ -68,7 +66,7 @@ def numeric_rule(function):
 
 @numeric_rule
 def is_numeric(val):
-    return True  # decorator ensures that the argument is numeric.
+    return True  # Decorator ensures that the argument is numeric.
 
 
 @numeric_rule

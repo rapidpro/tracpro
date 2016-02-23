@@ -1,37 +1,79 @@
 from django.test import TestCase
 
 from .. import rules
+from . import factories
 
 
-class RuleTestBase(object):
-    true_tests = []  # Input that the rule test should return True for.
-    false_tests = []  # Input that the rule test should return False for.
+class TestGetCategory(TestCase):
 
-    def call(self, test):
-        self.fail("Subclass should implement this.")
+    def create_rule(self, category):
+        return {
+            'category': category,
+            'test': {},
+        }
+
+    def test_get_category_direct(self):
+        """Return rule['category'] if it is not a dictionary."""
+        rule = self.create_rule('cats')
+        self.assertEqual(rules.get_category(rule), "cats")
+
+    def test_get_category_base(self):
+        """get_category returns the base category name, if available."""
+        rule = self.create_rule({'base': 'base', 'eng': 'eng'})
+        self.assertEqual(rules.get_category(rule), "base")
+
+    def test_get_category_other(self):
+        """get_category returns the first available translation."""
+        rule = self.create_rule({'eng': 'eng'})
+        self.assertEqual(rules.get_category(rule), "eng")
+
+
+class TestGetAllCategories(TestCase):
+
+    def create_rule(self, category):
+        return {
+            'category': {'base': category},
+            'test': {},
+        }
+
+    def test_get_all_no_rules(self):
+        question = factories.Question(rules=[])
+        self.assertEqual(rules.get_all_categories(question), ["Other"])
+
+    def test_get_all(self):
+        question = factories.Question(rules=[
+            self.create_rule('example'),
+            self.create_rule('test'),
+        ])
+        self.assertEqual(
+            rules.get_all_categories(question),
+            ['example', 'test', 'Other'])
+
+
+class CheckRuleTestBase(object):
 
     def test_false(self):
         unexpected_successes = []
         for test in self.false_tests:
-            if self.call(test):
+            if self.call(test) is not False:
                 unexpected_successes.append(test)
         if unexpected_successes:
             self.fail(
-                "Test passed unexpectedly for these inputs:\n" +
+                "Test did not fail for these inputs:\n" +
                 "\n".join(str(s) for s in unexpected_successes))
 
     def test_true(self):
         unexpected_failures = []
         for test in self.true_tests:
-            if not self.call(test):
+            if self.call(test) is not True:
                 unexpected_failures.append(test)
         if unexpected_failures:
             self.fail(
-                "Test failed unexpectedly for these inputs:\n" +
+                "Test did not succeed for these inputs:\n" +
                 "\n".join(str(f) for f in unexpected_failures))
 
 
-class TestIsNumeric(RuleTestBase, TestCase):
+class TestIsNumeric(CheckRuleTestBase, TestCase):
     true_tests = ["1.234", "1", "0", "-1", "-1.23"]
     false_tests = [None, "asdf", "1.asdf", "asdf.1", "asdf1", "1asdf"]
 
@@ -39,7 +81,7 @@ class TestIsNumeric(RuleTestBase, TestCase):
         return rules.is_numeric(test)
 
 
-class TestIsBetween(RuleTestBase, TestCase):
+class TestIsBetween(CheckRuleTestBase, TestCase):
     true_tests = [
         ("1", "1", "2"),
         ("1.5", "1", "2"),
@@ -60,7 +102,7 @@ class TestIsBetween(RuleTestBase, TestCase):
         return rules.is_between(*test)
 
 
-class TestIsEqual(RuleTestBase, TestCase):
+class TestIsEqual(CheckRuleTestBase, TestCase):
     true_tests = [
         ("1.0", "1"),
         ("1", "1.0"),
@@ -76,7 +118,7 @@ class TestIsEqual(RuleTestBase, TestCase):
         return rules.is_equal(*test)
 
 
-class TestIsLessThan(RuleTestBase, TestCase):
+class TestIsLessThan(CheckRuleTestBase, TestCase):
     true_tests = [
         ("1", "1.5"),
         ("1.5", "2"),
@@ -94,7 +136,7 @@ class TestIsLessThan(RuleTestBase, TestCase):
         return rules.is_less_than(*test)
 
 
-class TestIsGreaterThan(RuleTestBase, TestCase):
+class TestIsGreaterThan(CheckRuleTestBase, TestCase):
     true_tests = [
         ("1.5", "1"),
         ("2", "1.5"),
