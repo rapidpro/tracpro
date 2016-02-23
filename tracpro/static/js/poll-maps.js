@@ -46,7 +46,7 @@ $(function() {
       info.update = function (props) {
         this._div.innerHTML = '<h3>Boundary Data</h3>' +  (props ?
           '<h4>' + props.name + '</h4>' + '<h5>Category: ' + props.category + '</h5>'
-          : '<h4>Hover over a <br />region/boundary</h4>');
+          : '<h4>Hover over a boundary</h4><h5>&nbsp;</h5>');
       };
 
       info.addTo(map);
