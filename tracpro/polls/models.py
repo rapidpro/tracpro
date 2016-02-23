@@ -240,17 +240,8 @@ class Question(models.Model):
     def categorize(self, value):
         """Return the first category that the value matches."""
         for rule in self.get_rules():
-            if rules.passes_test(value, rule['test']):
-                # rule['category'] contains a base and/or translated names.
-                # For example:
-                #   {'category': {'base': 'dogs'}}
-                #   {'category': {'eng': 'dogs', 'base': 'dogs'}}
-                #   {'category': {'eng'; 'dogs'}}
-                for key in ('base', 'eng'):
-                    return rule['category'][key]
-
-                # Default to the first value if that doesn't work.
-                return rule.values()[0]
+            if rules.passes_test(value, rule):
+                return rules.get_category(rule)
         return "Other"
 
     def get_rules(self):

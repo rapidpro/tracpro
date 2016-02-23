@@ -6,15 +6,13 @@ import numpy
 
 from django.db.models import F
 
+from . import rules
 from . import utils
 
 
 def get_map_data(responses, question):
     answers = question.answers.filter(response__in=responses)
     answers = answers.annotate(boundary=F('response__contact__region__boundary'))
-
-    all_categories = list(answers.distinct('category').values_list('category', flat=True))
-    all_categories.sort(key=utils.natural_sort_key)
 
     if question.question_type == question.TYPE_NUMERIC:
         map_data = numeric_map_data(answers, question)
@@ -23,7 +21,7 @@ def get_map_data(responses, question):
 
     return {
         'map-data': map_data,
-        'all-categories': all_categories,
+        'all-categories': rules.get_all_categories(question),
     }
 
 

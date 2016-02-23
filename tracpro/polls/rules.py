@@ -1,12 +1,35 @@
 from decimal import Decimal, InvalidOperation
 from functools import wraps
 
+from django.utils.translation import ugettext
+
 
 # Rule tests that suggest that the expected data is numeric.
 NUMERIC_TESTS = ('number', 'lt', 'eq', 'gt', 'between')
 
 
-def passes_test(value, rule_test):
+def get_category(rule):
+    """Return the name of the rule category."""
+    # rule['category'] contains a base and/or translated names.
+    # For example:
+    #   {'category': {'base': 'dogs'}}
+    #   {'category': {'eng': 'dogs', 'base': 'dogs'}}
+    #   {'category': {'eng'; 'dogs'}}
+    for key in ('base', 'eng'):
+        return rule['category'][key]
+
+    # Default to the first value if that doesn't work.
+    return rule['category'].values()[0]
+
+
+def get_all_categories(question):
+    """Return the names of all answer categories, and Other."""
+    categories = [get_category(rule) for rule in question.get_rules()]
+    categories.append(ugettext("Other"))
+    return categories
+
+
+def passes_test(value, rule):
     """Returns whether the value passes the rule test.
 
     `rule_test` is in the format returned by RapidPro, for example:
@@ -16,6 +39,7 @@ def passes_test(value, rule_test):
     Currently only numeric types are implemented. All other types will return
     False.
     """
+    test = rule['test'].copy()
     test_funcs = {
         'numeric': is_numeric,
         'between': is_between,
@@ -24,7 +48,6 @@ def passes_test(value, rule_test):
         'gt': is_greater_than,
     }
 
-    test = rule_test.copy()
     test_func = test_funcs.get(test.pop('type'))
     return test_func(value, **test) if test_func else False
 
