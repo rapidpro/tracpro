@@ -1,35 +1,33 @@
 {% extends "smartmin/list.html" %}
 
+{% load compress %}
 {% load i18n %}
 {% load mptt_tags %}
 {% load smartmin %}
 {% load static from staticfiles %}
 
 {% block extra-script %}
-  {# Required for hierarchical tree structure. #}
-  <script src="{% static "libs/treetable-3.2.0/jquery.treetable.js" %}"></script>
+  {{ block.super }}  {# jQuery UI powers drag-and-drop rows. #}
 
-  {# Required for drag-and-drop rows. #}
-  <script src="{% static "libs/jquery-ui-1.11.4/jquery-ui.min.js" %}"></script>
+  {% compress js %}
+    {# Required for hierarchical tree structure. #}
+    <script src="{% static "libs/treetable-3.2.0/jquery.treetable.js" %}"></script>
 
-  <script src="{% static "js/regions.js" %}"></script>
+    <script src="{% static "js/regions.js" %}"></script>
+  {% endcompress %}
 {% endblock extra-script %}
 
 {% block extra-style %}
-  {# Required for hierarchical tree structure. #}
-  <link href="{% static "libs/treetable-3.2.0/jquery.treetable.css" %}"
-        rel="stylesheet" type="text/css">
+  {{ block.super }}  {# jQuery UI powers drag-and-drop rows. #}
 
-  {# Required for drag-and-drop rows. #}
-  <link href="{% static "libs/jquery-ui-1.11.4/jquery-ui.min.css" %}"
-        rel="stylesheet" type="text/css">
-  <link href="{% static "libs/jquery-ui-1.11.4/jquery-ui.structure.min.css" %}"
-        rel="stylesheet" type="text/css">
-  <link href="{% static "libs/jquery-ui-1.11.4/jquery-ui.theme.min.css" %}"
-        rel="stylesheet" type="text/css">
+  {% compress css %}
+    {# Required for hierarchical tree structure. #}
+    <link type="text/css" rel="stylesheet"
+          href="{% static "libs/treetable-3.2.0/jquery.treetable.css" %}" />
 
-  <link href="{% static "css/regions.css" %}"
-        rel="stylesheet" type="text/css">
+    <link type="text/css" rel="stylesheet"
+          href="{% static "css/regions.css" %}" />
+  {% endcompress %}
 {% endblock extra-style %}
 
 {% block table-controls %}
