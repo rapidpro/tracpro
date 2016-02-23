@@ -1,7 +1,8 @@
 
 $(function() {
-  var VIVID_COLORS = ['#006837', '#A7082C', '#1F49BF', '#FF8200', '#FFD100'];
-  var LIGHT_COLORS = ['#94D192', '#F2A2B3', '#96AEF2', '#FDC690', '#FFFFBF'];
+
+  var VIVID_COLORS = ['#006837', '#A7082C', '#1F49BF', '#FF8200', '#FFD100', '#40004b', '#762a83', '#1b7837'];
+  var LIGHT_COLORS = ['#94D192', '#F2A2B3', '#96AEF2', '#FFFFBF', '#c2a5cf', '#a6dba0', '#92c5de'];
 
   var getColors = function(categories) {
     var allColors = [];
@@ -33,7 +34,7 @@ $(function() {
       // Info box
       // Display information on boundary hover
       var info = L.control({
-          position: 'topright'
+          position: 'bottomleft'
       });
 
       info.onAdd = function (map) {
