@@ -27,7 +27,7 @@
   {{ block.super }}
 
   <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
-  <script src="http://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.css"></script>
+  <script src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>
 
   {% compress js %}
     <script src="{% static "libs/highcharts-4.1.8/highcharts.js" %}"></script>
@@ -120,7 +120,7 @@
       </h3>
 
       {% if chart_data %}
-        <div class="map"
+        <div class="map" id="map_{{ question.id }}"
              data-maps='{{ map_data|chart_json }}'
              data-colors='{{ category_colors|chart_json }}'>
         </div>
