@@ -1,7 +1,11 @@
-from django.db.models import Count, F
+from collections import Counter
+from itertools import groupby
+from operator import itemgetter
+
+from django.db.models import F
 
 from .models import Answer
-from tracpro.polls.utils import natural_sort_key
+from .utils import natural_sort_key
 
 
 def color_code_categories(categories):
@@ -34,39 +38,25 @@ def data_categoric(responses, question):
     # For each region, calculate the most common answer
 
     answers = Answer.objects.filter(response__in=responses, question=question)
-    categories = answers.distinct('category').values_list('category')
-    categories = [category[0].encode('ascii') for category in categories]
+    categories = answers.distinct('category').values_list('category', flat=True)
+    categories = [category.encode('ascii') for category in categories]
     categories.sort(key=natural_sort_key)
     category_colors = color_code_categories(categories)
 
-    answers = answers.annotate(boundary=F(
-        'response__contact__region__boundary')).values('boundary', 'category')
+    answers = answers.annotate(boundary=F('response__contact__region__boundary'))
+    answers = answers.values('boundary', 'category')
     answers = answers.order_by('boundary')
-    answers = answers.annotate(category_count=Count('category'))
 
     # Return the map data with information for category name, color code
     # for each boundary in the map
     map_data = []
-    boundary = ''
-    category = ''
-    category_count = 0
-    for answer in answers:
-        if boundary and boundary != answer['boundary']:
-            # Append the category with most results for boundary
-            map_data.append(
-                {'category': category,
-                 'boundary': boundary,
-                 'color': category_colors[category]})
-            category_count = 0
-            category = ''
-        boundary = answer['boundary']
-        if answer['category_count'] > category_count:
-            category_count = answer['category_count']
-            category = answer['category']
-    # Append last data point
-    map_data.append(
-        {'category': category,
-         'boundary': boundary,
-         'color': category_colors[category]})
+    for boundary_id, _answers in groupby(answers, itemgetter('boundary')):
+        category_counts = Counter(a['category'] for a in _answers)
+        top_category = category_counts.most_common(1)[0][0]
+        map_data.append({
+            'boundary': boundary_id,
+            'color': category_colors[top_category],
+            'category': top_category,
+        })
 
     return map_data, category_colors
