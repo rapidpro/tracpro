@@ -44,7 +44,6 @@ def numeric_map_data(answers, question):
     return map_data
 
 
-
 def categorical_map_data(answers, question):
     """Display the most common Answer category per Boundary."""
     answers = answers.order_by('boundary').values('boundary', 'category')
