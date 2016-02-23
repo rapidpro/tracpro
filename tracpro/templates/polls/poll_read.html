@@ -98,7 +98,7 @@
     </p>
   {% endif %}
 
-  {% for question, chart_type, chart_data, map_data, category_colors, summary_table in question_data %}
+  {% for question, chart_type, chart_data, map_data, summary_table in question_data %}
     <div class="poll-question">
       <h3>
         {{ forloop.counter }}. {{ question.name }}
@@ -115,7 +115,6 @@
       </h3>
 
       {% if chart_data %}
-
         <ul class='nav nav-tabs' style='margin-bottom: 1em'>
           <li class='active'>
             <a class="tab_chart" href=''>
@@ -131,8 +130,9 @@
 
         <div class="visual">
           <div class="map" id="map_{{ question.id }}"
-               data-maps='{{ map_data|chart_json }}'
-               data-colors='{{ category_colors|chart_json }}'>
+               {% for key, value in map_data.items %}
+                 data-{{ key }}='{{ value|chart_json }}'
+               {% endfor %}>
           </div>
 
           <div class="chart-{{ chart_type }}"

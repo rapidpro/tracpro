@@ -3,6 +3,24 @@
 // http://jsfiddle.net/zafrii/4cu28pae/
 
 $(function() {
+  var VIVID_COLORS = ['#006837', '#A7082C', '#1F49BF', '#FF8200', '#FFD100'];
+  var LIGHT_COLORS = ['#94D192', '#F2A2B3', '#96AEF2', '#FDC690', '#FFFFBF'];
+
+  var getColors = function(categories) {
+    var allColors = [];
+    if (categories.length > 5) {
+      // Use the full set of colors, starting with bright colors.
+      $.each(VIVID_COLORS, function(i, color) { allColors.push(color); });
+    }
+    $.each(LIGHT_COLORS, function(i, color) { allColors.push(color); });
+
+    var colors = {};
+    $.each(categories, function(i, category) {
+      colors[category] = allColors[i];
+    });
+
+    return colors;
+  }
 
   $.getJSON( "/boundary/", function( data ) {
     var items = [];
@@ -12,8 +30,8 @@ $(function() {
 
     $('.map').each(function() {
       var map_div = $(this);
-      var map_data = map_div.data('maps');
-      var colors = map_div.data('colors');
+      var map_data = map_div.data('map-data');
+      var colors = getColors(map_div.data('all-categories'));
 
       var map = L.map(this.id);
 
@@ -21,7 +39,7 @@ $(function() {
       for (data_index in map_data) {
         for (b_index in all_boundaries) {
           if (all_boundaries[b_index].properties.id == map_data[data_index].boundary) {
-            all_boundaries[b_index].properties.style.fillColor = map_data[data_index].color;
+            all_boundaries[b_index].properties.style.fillColor = colors[map_data[data_index].category];
             mp = all_boundaries[b_index];
             boundaries = new L.GeoJSON(mp, {
               style: function(feature) {
@@ -43,7 +61,7 @@ $(function() {
       });
       legend.onAdd = function (map) {
 
-          var colors = map_div.data('colors')
+          var colors = getColors(map_div.data('all-categories'));
           var div = L.DomUtil.create('div', 'info legend');
           var label = ['<strong>index</strong>'];
           for (key in colors) {
