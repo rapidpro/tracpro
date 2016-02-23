@@ -120,14 +120,30 @@
       </h3>
 
       {% if chart_data %}
-        <div class="map" id="map_{{ question.id }}"
-             data-maps='{{ map_data|chart_json }}'
-             data-colors='{{ category_colors|chart_json }}'>
-        </div>
 
-        <div class="chart-{{ chart_type }}"
-             data-chart='{{ chart_data|chart_json }}'
-             data-name="{{ question.name }}">
+        <ul class='nav nav-tabs' style='margin-bottom: 1em'>
+          <li class='active'>
+            <a class="tab_chart" href=''>
+              {% trans "Chart" %}
+            </a>
+          </li>
+          <li>
+            <a class="tab_map" href=''>
+              {% trans "Map" %}
+            </a>
+          </li>
+        </ul>
+
+        <div class="visual">
+          <div class="map" id="map_{{ question.id }}"
+               data-maps='{{ map_data|chart_json }}'
+               data-colors='{{ category_colors|chart_json }}'>
+          </div>
+
+          <div class="chart-{{ chart_type }}"
+               data-chart='{{ chart_data|chart_json }}'
+               data-name="{{ question.name }}">
+          </div>
         </div>
 
         {% include "charts/summary_table.html" %}

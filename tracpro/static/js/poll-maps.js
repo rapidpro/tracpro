@@ -3,6 +3,7 @@
 // http://jsfiddle.net/zafrii/4cu28pae/
 
 $(function() {
+
   $.getJSON( "/boundary/", function( data ) {
     var items = [];
     $.each( data, function( key, val ) {
@@ -27,7 +28,6 @@ $(function() {
                 return feature.properties.style
               }
             });
-            console.log(boundaries);
             boundaries.addTo(map);
             boundaries_array.push(boundaries);
           }
@@ -57,5 +57,20 @@ $(function() {
 
       legend.addTo(map);
     });
+    $(".visual .map").hide(); // hide maps on initial page load, after they are drawn
+  });
+
+  $(".tab_chart").click(function(){
+    $(this).closest("div").find('.map').hide();
+    $(this).closest("div").find("div[class^='chart-']").show();
+    $(this).parent().addClass('active');
+    $(this).parent().parent().find(".tab_map").parent().removeClass('active');
+  });
+
+  $(".tab_map").click(function(){
+    $(this).closest("div").find('.map').show();
+    $(this).closest("div").find("div[class^='chart-']").hide();
+    $(this).parent().addClass('active');
+    $(this).parent().parent().find(".tab_chart").parent().removeClass('active');
   });
 });
