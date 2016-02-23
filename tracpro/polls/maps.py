@@ -38,8 +38,8 @@ def data_categoric(responses, question):
     # For each region, calculate the most common answer
 
     answers = Answer.objects.filter(response__in=responses, question=question)
-    categories = answers.distinct('category').values_list('category')
-    categories = [category[0].encode('ascii') for category in categories]
+    categories = answers.distinct('category').values_list('category', flat=True)
+    categories = [category.encode('ascii') for category in categories]
     categories.sort(key=natural_sort_key)
     category_colors = color_code_categories(categories)
 
