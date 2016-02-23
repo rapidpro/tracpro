@@ -292,7 +292,12 @@ class PollRunCRUDL(smartmin.SmartCRUDL):
             for question in self.object.poll.questions.active():
                 chart_type, chart_data, summary_table = charts.single_pollrun(
                     self.object, responses, question)
-                data.append((question, chart_type, chart_data, summary_table))
+                map_data = maps.get_map_data(
+                    responses, question)
+                data.append((
+                    question, chart_type, chart_data,
+                    map_data, summary_table))
+
             kwargs.setdefault('question_data', data)
             return super(PollRunCRUDL.Read, self).get_context_data(**kwargs)
 

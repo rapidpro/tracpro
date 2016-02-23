@@ -16,6 +16,8 @@
   {% compress css %}
     <link type="text/css" rel="stylesheet"
           href="{% static "libs/jqcloud-2.0.1/jqcloud.css" %}" />
+    <link type="text/css" rel="stylesheet"
+          href="{% static "libs/leaflet-0.7.7/leaflet.css" %}" />
   {% endcompress %}
 {% endblock extra-style %}
 
@@ -25,12 +27,14 @@
   {% compress js %}
     <script src="{% static "libs/highcharts-4.1.8/highcharts.js" %}"></script>
     <script src="{% static "libs/jqcloud-2.0.1/jqcloud.js" %}"></script>
+    <script src="{% static "libs/leaflet-0.7.7/leaflet.js" %}"></script>
     <script src="{% static "js/charts.js" %}"></script>
+    <script src="{% static "js/poll-maps.js" %}"></script>
   {% endcompress %}
 {% endblock extra-script %}
 
 {% block content %}
-  {% for question, chart_type, chart_data, summary_table in question_data %}
+  {% for question, chart_type, chart_data, map_data, summary_table in question_data %}
     <div class="poll-question">
       <h3>
         {{ forloop.counter }}. {{ question.name }}
@@ -40,9 +44,30 @@
       </h3>
 
       {% if chart_data %}
-        <div class="chart-{{ chart_type }}"
-             data-chart='{{ chart_data|chart_json }}'
-             data-name="{{ question.name }}">
+        <ul class='nav nav-tabs' style='margin-bottom: 1em'>
+          <li class='active'>
+            <a class="tab_chart" href=''>
+              {% trans "Chart" %}
+            </a>
+          </li>
+          <li>
+            <a class="tab_map" href=''>
+              {% trans "Map" %}
+            </a>
+          </li>
+        </ul>
+
+        <div class="visual">
+          <div class="map" id="map_{{ question.id }}"
+               {% for key, value in map_data.items %}
+                 data-{{ key }}='{{ value|chart_json }}'
+               {% endfor %}>
+          </div>
+
+          <div class="chart-{{ chart_type }}"
+               data-chart='{{ chart_data|chart_json }}'
+               data-name="{{ question.name }}">
+          </div>
         </div>
 
         {% include "charts/summary_table.html" %}
