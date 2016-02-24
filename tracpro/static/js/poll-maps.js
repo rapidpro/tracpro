@@ -19,10 +19,11 @@ $(function() {
   }
 
   $.getJSON( "/boundary/", function( data ) {
-    var items = [];
-    $.each( data, function( key, val ) {
-      all_boundaries = val;
-    });
+    var all_boundaries = {};
+    for (var i in data['results']) {
+      var boundaryInfo = data['results'][i];
+      all_boundaries[boundaryInfo.properties.id] = boundaryInfo;
+    }
 
     $('.map').each(function() {
       var map_div = $(this);
@@ -77,21 +78,20 @@ $(function() {
       }
 
       var boundaries_array = [];
-      for (data_index in map_data) {
-        for (b_index in all_boundaries) {
-          if (all_boundaries[b_index].properties.id == map_data[data_index].boundary) {
-            all_boundaries[b_index].properties.style.fillColor = colors[map_data[data_index].category];
-            all_boundaries[b_index].properties.category = map_data[data_index].category;
-            mp = all_boundaries[b_index];
-            boundary = new L.GeoJSON(mp, {
-              style: function(feature) {
-                return feature.properties.style
-              },
-              onEachFeature: onEachFeature
-            });
-            boundary.addTo(map);
-            boundaries_array.push(boundary);
-          }
+      for (var boundaryId in map_data) {
+        if (boundaryId in all_boundaries) {
+          var category = map_data[boundaryId];
+          var boundaryInfo = all_boundaries[boundaryId];
+          boundaryInfo.properties.style.fillColor = colors[category];
+          boundaryInfo.properties.category = category;
+          boundary = new L.GeoJSON(boundaryInfo, {
+            style: function(feature) {
+              return feature.properties.style;
+            },
+            onEachFeature: onEachFeature
+          });
+          boundary.addTo(map);
+          boundaries_array.push(boundary);
         }
       }
       map_div.data('boundary-array', boundaries_array);
