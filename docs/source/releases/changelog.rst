@@ -7,8 +7,8 @@ Tracpro's version is incremented upon each merge to master according to our
 We recommend reviewing the release notes and code diffs before upgrading
 between versions.
 
-v1.1.0 (unreleased)
--------------------
+v1.1.0 (released 2016-02-24)
+----------------------------
 
 Code diff: https://github.com/rapidpro/tracpro/compare/v1.0.4...develop
 
@@ -22,8 +22,8 @@ Many changes, including:
 * Chart enhancements on Poll detail and PollRun detail pages.
 * Filters on Recent Indicators, Poll detail, and PollRun detail pages.
 
-v1.0.4 (not released)
----------------------
+v1.0.4 (never released)
+-----------------------
 
 Code diff: https://github.com/rapidpro/tracpro/compare/v1.0.3...v1.0.4
 
