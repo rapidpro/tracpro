@@ -42,12 +42,23 @@ class TestGetAllCategories(TracProTest):
 
     def test_get_all(self):
         question = factories.Question(rules=[
-            self.create_rule('example'),
-            self.create_rule('test'),
+            self.create_rule('a'),
+            self.create_rule('b'),
         ])
         self.assertEqual(
             rules.get_all_categories(question),
-            ['example', 'test', 'Other'])
+            ['a', 'b', 'Other'])
+
+    def test_duplicates(self):
+        question = factories.Question(rules=[
+            self.create_rule('b'),
+            self.create_rule('a'),
+            self.create_rule('a'),
+            self.create_rule('b'),
+        ])
+        self.assertEqual(
+            rules.get_all_categories(question),
+            ['b', 'a', 'Other'])
 
 
 class CheckRuleTestBase(object):
