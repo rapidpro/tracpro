@@ -183,7 +183,6 @@ class BoundaryManager(models.Manager.from_queryset(BoundaryQuerySet)):
         # Retrieve current Boundaries known to RapidPro.
         temba_boundaries = org.get_temba_client().get_boundaries()
 
-        import ipdb; ipdb.set_trace()
         # Remove Boundaries that are no longer on RapidPro.
         uuids = [b.boundary for b in temba_boundaries]
         Boundary.objects.by_org(org).exclude(rapidpro_uuid__in=uuids).delete()
