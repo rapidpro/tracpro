@@ -1,8 +1,6 @@
 # coding=utf-8
 from __future__ import absolute_import, unicode_literals
 
-from django.test import TestCase
-
 from tracpro.test.cases import TracProTest
 
 from .. import utils
@@ -22,7 +20,7 @@ class TestExtractWords(TracProTest):
             ['قلم', 'رصاص'])
 
 
-class TestNaturalSortKey(TestCase):
+class TestNaturalSortKey(TracProTest):
 
     def test_category_sort(self):
         categories = ['11-20', '1-10', '<100', None, 'Other', '21-999', '21-99']

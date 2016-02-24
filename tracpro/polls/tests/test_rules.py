@@ -1,10 +1,10 @@
-from django.test import TestCase
+from tracpro.test.cases import TracProTest
 
 from .. import rules
 from . import factories
 
 
-class TestGetCategory(TestCase):
+class TestGetCategory(TracProTest):
 
     def create_rule(self, category):
         return {
@@ -28,7 +28,7 @@ class TestGetCategory(TestCase):
         self.assertEqual(rules.get_category(rule), "eng")
 
 
-class TestGetAllCategories(TestCase):
+class TestGetAllCategories(TracProTest):
 
     def create_rule(self, category):
         return {
@@ -73,7 +73,7 @@ class CheckRuleTestBase(object):
                 "\n".join(str(f) for f in unexpected_failures))
 
 
-class TestIsNumeric(CheckRuleTestBase, TestCase):
+class TestIsNumeric(CheckRuleTestBase, TracProTest):
     true_tests = ["1.234", "1", "0", "-1", "-1.23"]
     false_tests = [None, "asdf", "1.asdf", "asdf.1", "asdf1", "1asdf"]
 
@@ -81,7 +81,7 @@ class TestIsNumeric(CheckRuleTestBase, TestCase):
         return rules.is_numeric(test)
 
 
-class TestIsBetween(CheckRuleTestBase, TestCase):
+class TestIsBetween(CheckRuleTestBase, TracProTest):
     true_tests = [
         ("1", "1", "2"),
         ("1.5", "1", "2"),
@@ -102,7 +102,7 @@ class TestIsBetween(CheckRuleTestBase, TestCase):
         return rules.is_between(*test)
 
 
-class TestIsEqual(CheckRuleTestBase, TestCase):
+class TestIsEqual(CheckRuleTestBase, TracProTest):
     true_tests = [
         ("1.0", "1"),
         ("1", "1.0"),
@@ -118,7 +118,7 @@ class TestIsEqual(CheckRuleTestBase, TestCase):
         return rules.is_equal(*test)
 
 
-class TestIsLessThan(CheckRuleTestBase, TestCase):
+class TestIsLessThan(CheckRuleTestBase, TracProTest):
     true_tests = [
         ("1", "1.5"),
         ("1.5", "2"),
@@ -136,7 +136,7 @@ class TestIsLessThan(CheckRuleTestBase, TestCase):
         return rules.is_less_than(*test)
 
 
-class TestIsGreaterThan(CheckRuleTestBase, TestCase):
+class TestIsGreaterThan(CheckRuleTestBase, TracProTest):
     true_tests = [
         ("1.5", "1"),
         ("2", "1.5"),

@@ -1,13 +1,13 @@
 import json
 
-from django.test import TestCase
-
 from dash.orgs import models
+
+from tracpro.test.cases import TracProTest
 
 from ..utils import OrgConfigField
 
 
-class TestOrgConfigField(TestCase):
+class TestOrgConfigField(TracProTest):
 
     def setUp(self):
         """Create a temporary OrgConfigField for test purposes."""
