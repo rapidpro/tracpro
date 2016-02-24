@@ -21,7 +21,12 @@ def get_category(rule):
 
 def get_all_categories(question):
     """Return the names of all answer categories, and Other."""
-    categories = [get_category(rule) for rule in question.get_rules()]
+    categories = []
+    for rule in question.get_rules():
+        category = get_category(rule)
+        # Prevent duplicates, but keep category order as defined on RapidPro.
+        if category not in categories:
+            categories.append(category)
     # Use non-lazy evaluation to ensure the list is JSON-serializable.
     categories.append(ugettext("Other"))
     return categories
