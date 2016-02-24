@@ -264,7 +264,7 @@ CELERYBEAT_SCHEDULE = {
     'sync-polls': _org_scheduler_task('tracpro.polls.tasks.SyncOrgPolls'),
     'sync-contacts': _org_scheduler_task('tracpro.contacts.tasks.SyncOrgContacts'),
     'sync-data-fields': _org_scheduler_task('tracpro.contacts.tasks.SyncOrgDataFields'),
-    'sync-boundaries': _org_scheduler_task('tracpro.groups.tasks.SyncBoundaries'),
+    'sync-boundaries': _org_scheduler_task('tracpro.groups.tasks.SyncOrgBoundaries'),
     'fetch-runs': _org_scheduler_task('tracpro.polls.tasks.FetchOrgRuns'),
     'fetch-inbox-messages': _org_scheduler_task('tracpro.msgs.tasks.FetchOrgInboxMessages'),
 }
