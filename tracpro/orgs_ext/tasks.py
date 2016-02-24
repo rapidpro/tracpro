@@ -136,7 +136,7 @@ class OrgTask(PostTransactionTask):
                 send_mail(
                     subject=msg,
                     message=msg,
-                    from_email=settings.DEFUALT_FROM_EMAIL,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
                     recipient_list=dict(settings.ADMINS).values(),
                     fail_silently=True)
 
