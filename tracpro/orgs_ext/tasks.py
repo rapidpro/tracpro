@@ -7,7 +7,7 @@ from django.conf import settings
 from django.core.cache import cache
 from django.utils.timezone import now as get_now
 
-from djcelery_transactions import task, PostTransactionTask
+from djcelery_transactions import PostTransactionTask
 
 from temba_client.base import TembaAPIError
 from temba_client.utils import parse_iso8601, format_iso8601
@@ -26,7 +26,6 @@ ORG_TASK_LOCK = 'org_task:{task}:{org}'
 LOCK_EXPIRE = (settings.ORG_TASK_TIMEOUT * 12).seconds
 
 
-@task
 class ScheduleTaskForActiveOrgs(PostTransactionTask):
 
     def apply_async(self, *args, **kwargs):

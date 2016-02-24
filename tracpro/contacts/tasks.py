@@ -34,7 +34,6 @@ def push_contact_change(contact_id, change_type):
     sync_push_contact(org, contact, change_type, [region_uuids, group_uuids])
 
 
-@task
 class SyncOrgContacts(OrgTask):
 
     def org_task(self, org):
@@ -69,7 +68,6 @@ class SyncOrgContacts(OrgTask):
                     (org.id, len(created), len(updated), len(deleted), len(failed)))
 
 
-@task
 class SyncOrgDataFields(OrgTask):
 
     def org_task(self, org):
