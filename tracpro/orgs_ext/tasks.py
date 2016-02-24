@@ -1,4 +1,5 @@
 from celery import signature
+from celery.exceptions import SoftTimeLimitExceeded
 from celery.utils.log import get_task_logger
 import datetime
 
@@ -76,6 +77,10 @@ class OrgTask(PostTransactionTask):
 
     def apply_async(self, *args, **kwargs):
         kwargs.setdefault('expires', datetime.datetime.now() + settings.ORG_TASK_TIMEOUT)
+
+        # FIXME: Increase timeout after testing on staging
+        kwargs.setdefault('timeout', 30)
+        kwargs.setdefault('soft_timeout', 5)
         return super(OrgTask, self).apply_async(*args, **kwargs)
 
     def check_rate_limit(self, org):
@@ -122,6 +127,11 @@ class OrgTask(PostTransactionTask):
                     logger.info(
                         "{}: Finished task for {}.".format(self.__name__, org.name))
                     return result
+            except SoftTimeLimitExceeded:
+                logger.error(
+                    "{}: Time limit exceeded for {}".format(
+                        self.__name__, org.name))
+
             finally:
                 self.release_lock(org)
         logger.info(
