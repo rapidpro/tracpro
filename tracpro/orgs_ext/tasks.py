@@ -6,6 +6,7 @@ import datetime
 from django.apps import apps
 from django.conf import settings
 from django.core.cache import cache
+from django.core.mail import send_mail
 from django.utils.timezone import now as get_now
 
 from djcelery_transactions import PostTransactionTask
@@ -128,9 +129,15 @@ class OrgTask(PostTransactionTask):
                         "{}: Finished task for {}.".format(self.__name__, org.name))
                     return result
             except SoftTimeLimitExceeded:
-                logger.error(
-                    "{}: Time limit exceeded for {}".format(
-                        self.__name__, org.name))
+                msg = "{}: Time limit exceeded for {}".format(self.__name__, org.name)
+                logger.error(msg)
+
+                # FIXME: Logging is not sending us this error email.
+                send_mail(
+                    subject=msg,
+                    body=msg,
+                    recipient_list=dict(settings.ADMINS).values(),
+                    fail_silently=True)
 
             finally:
                 self.release_lock(org)
