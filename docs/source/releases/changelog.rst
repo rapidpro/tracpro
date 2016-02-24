@@ -7,13 +7,16 @@ Tracpro's version is incremented upon each merge to master according to our
 We recommend reviewing the release notes and code diffs before upgrading
 between versions.
 
-v1.0.4 (unreleased)
--------------------
+v1.0.4 (not released)
+---------------------
 
-Code diff: https://github.com/rapidpro/tracpro/compare/v1.0.3...develop
+Code diff: https://github.com/rapidpro/tracpro/compare/v1.0.3...v1.0.4
+
+* Update versions of Celery-related packages.
+
 
 v1.0.3 (released 2015-11-30)
--------------------
+----------------------------
 
 Code diff: https://github.com/rapidpro/tracpro/compare/v1.0.2...v1.0.3
 
