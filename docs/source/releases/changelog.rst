@@ -17,7 +17,8 @@ Many changes, including:
 * Break out deployment-related assets into a private repo.
 * Update Celery task structure.
     - **Note:** Existing tasks are probably very backed up. After deploy,
-      purge all existing tasks by running `celery -A tracpro purge`
+      purge all existing tasks (see
+      [Celery FAQ](http://docs.celeryproject.org/en/latest/faq.html#how-do-i-purge-all-waiting-tasks)).
 * Chart enhancements on Poll detail and PollRun detail pages.
 * Filters on Recent Indicators, Poll detail, and PollRun detail pages.
 
