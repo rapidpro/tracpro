@@ -1,0 +1,30 @@
+{% load smartmin %}
+{% load charts %}
+
+<div class="col-sm-{{ col_width|default:"12" }}">
+  <div class="row form-group{% if field.errors %} has-error{% endif %}">
+    <label class="col-sm-{{ label_width|default:"2" }}" for="{{ field.id_for_label }}">
+      {{ field.label }}
+    </label>
+
+    <div class="col-sm-{{ field_width|default:"10" }}">
+      {% if field|is_checkbox %}
+        {{ field }}
+      {% else %}
+        {{ field|add_css:"form-control" }}
+      {% endif %}
+
+      {% if field.help_text %}
+        <div class="help-block">
+          {{ field.help_text }}
+        </div>
+      {% endif %}
+
+      {% for error in field.errors %}
+        <div class="error">
+          {{ error }}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>

@@ -220,12 +220,6 @@ class DataFieldQuerySet(models.QuerySet):
     def by_org(self, org):
         return self.filter(org=org)
 
-    def show_on_tracpro(self):
-        return self.update(show_on_tracpro=True)
-
-    def hide_on_tracpro(self):
-        return self.update(show_on_tracpro=False)
-
 
 class DataFieldManager(models.Manager.from_queryset(DataFieldQuerySet)):
 
@@ -245,12 +239,10 @@ class DataFieldManager(models.Manager.from_queryset(DataFieldQuerySet)):
             field.value_type = temba_field.value_type
             field.save()
 
-        return temba_fields.keys()
-
     def set_active_for_org(self, org, keys):
         fields = DataField.objects.by_org(org)
-        fields.filter(key__in=keys).show_on_tracpro()
-        fields.exclude(key__in=keys).hide_on_tracpro()
+        fields.filter(key__in=keys).update(show_on_tracpro=True)
+        fields.exclude(key__in=keys).update(show_on_tracpro=False)
 
 
 class DataField(models.Model):
@@ -271,11 +263,16 @@ class DataField(models.Model):
         (TYPE_DISTRICT, _("District")),
     )
 
-    org = models.ForeignKey("orgs.Org")
-    label = models.CharField(max_length=255, blank=True)
-    key = models.CharField(max_length=255)
-    value_type = models.CharField(max_length=1, choices=TYPE_CHOICES)
-    show_on_tracpro = models.BooleanField(default=False)
+    org = models.ForeignKey(
+        "orgs.Org", verbose_name=_("org"))
+    label = models.CharField(
+        max_length=255, blank=True, verbose_name=_("label"))
+    key = models.CharField(
+        max_length=255, verbose_name=_("key"))
+    value_type = models.CharField(
+        max_length=1, choices=TYPE_CHOICES, verbose_name=_("value type"))
+    show_on_tracpro = models.BooleanField(
+        default=False, verbose_name=_("show on TracPro"))
 
     objects = DataFieldManager()
 

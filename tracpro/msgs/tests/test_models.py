@@ -1,7 +1,5 @@
 from __future__ import absolute_import, unicode_literals
 
-from mock import patch
-
 from django.test.utils import override_settings
 from django.utils import timezone
 
@@ -21,9 +19,8 @@ class MessageTest(TracProDataTest):
         CELERY_EAGER_PROPAGATES_EXCEPTIONS=True,
         BROKER_BACKEND='memory',
     )
-    @patch('dash.orgs.models.TembaClient.create_broadcast')
-    def test_create(self, mock_create_broadcast):
-        mock_create_broadcast.return_value = Broadcast.create()
+    def test_create(self):
+        self.mock_temba_client.create_broadcast.return_value = Broadcast.create()
         now = timezone.now()
 
         # create non-regional pollrun with 3 responses (1 complete, 1 partial, 1 empty)

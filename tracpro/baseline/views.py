@@ -3,9 +3,9 @@ from dateutil import rrule
 import pytz
 import random
 
-from django.core.urlresolvers import reverse
+from django.core.urlresolvers import reverse_lazy
+from django.shortcuts import redirect
 from django.utils.translation import ugettext_lazy as _
-from django.http import HttpResponseRedirect
 from django.views.generic import View
 
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
@@ -20,14 +20,22 @@ from smartmin.users.views import SmartFormView
 from tracpro.polls.models import Answer, PollRun, Response
 
 from .models import BaselineTerm
-from .forms import BaselineTermForm, SpoofDataForm
-from .utils import chart_baseline
+from .forms import BaselineTermForm, SpoofDataForm, BaselineTermFilterForm
+from .charts import chart_baseline
 
 
 class BaselineTermCRUDL(SmartCRUDL):
     model = BaselineTerm
     actions = ('create', 'read', 'update', 'delete', 'list', 'data_spoof', 'clear_spoof')
     path = "indicators"
+
+    class BaselineTermMixin(object):
+
+        def get_queryset(self):
+            indicators = BaselineTerm.objects.by_org(self.request.org)
+            indicators = indicators.select_related(
+                'baseline_question', 'follow_up_question')
+            return indicators
 
     class Create(OrgPermsMixin, SmartCreateView):
         form_class = BaselineTermForm
@@ -38,91 +46,47 @@ class BaselineTermCRUDL(SmartCRUDL):
             kwargs['user'] = self.request.user
             return kwargs
 
-    class List(OrgPermsMixin, SmartListView):
+    class List(BaselineTermMixin, OrgPermsMixin, SmartListView):
+        default_order = ('-start_date', '-end_date')
         fields = ('name', 'start_date', 'end_date',
                   'baseline_question', 'follow_up_question')
         link_fields = ('name')
 
-        def derive_queryset(self, **kwargs):
-            qs = BaselineTerm.get_all(self.request.org)
-            qs = qs.order_by('-start_date', '-end_date')
-            return qs
-
-    class Delete(OrgObjPermsMixin, SmartDeleteView):
+    class Delete(BaselineTermMixin, OrgObjPermsMixin, SmartDeleteView):
         cancel_url = '@baseline.baselineterm_list'
+        redirect_url = reverse_lazy('baseline.baselineterm_list')
 
-        def get_redirect_url(self):
-            return reverse('baseline.baselineterm_list')
-
-    class Update(OrgObjPermsMixin,  SmartUpdateView):
+    class Update(BaselineTermMixin, OrgObjPermsMixin,  SmartUpdateView):
         form_class = BaselineTermForm
-        delete_url = ''     # Turn off the smartmin delete button for this view
+        delete_url = ''  # Turn off the smartmin delete button for this view
         success_url = 'id@baseline.baselineterm_read'
-
-        def derive_queryset(self, **kwargs):
-            return BaselineTerm.get_all(self.request.org)
 
         def get_form_kwargs(self):
             kwargs = super(BaselineTermCRUDL.Update, self).get_form_kwargs()
             kwargs['user'] = self.request.user
             return kwargs
 
-    class Read(OrgObjPermsMixin, SmartReadView):
-        fields = ("start_date", "end_date", "baseline_poll", "baseline_question",
-                  "follow_up_poll", "follow_up_question")
-
-        def derive_queryset(self, **kwargs):
-            return BaselineTerm.get_all(self.request.org)
+    class Read(BaselineTermMixin, OrgObjPermsMixin, SmartReadView):
 
         def get_context_data(self, **kwargs):
-            context = super(BaselineTermCRUDL.Read, self).get_context_data(**kwargs)
+            filter_form = BaselineTermFilterForm(
+                org=self.request.org,
+                baseline_term=self.object,
+                data_regions=self.request.data_regions,
+                data=self.request.GET)
 
-            # Get the region from the region filter drop-down, if it was selected
-            try:
-                region = int(self.request.GET.get('region', 0))
-            except ValueError:
-                region = None
-                context['error_message'] = _(
-                    "%s is not a valid region. Please select a valid region from the drop-down."
-                    % (self.request.GET.get('region', '')))
-
-            # If the user selected a region, only retrieve/display data for that region
-            if region:
-                region_selected = region
-                context['region_selected'] = region_selected
+            if filter_form.is_valid():
+                chart_data, summary_table = chart_baseline(
+                    self.object, filter_form, self.request.region,
+                    self.request.include_subregions)
             else:
-                region_selected = None
+                chart_data = None
+                summary_table = None
 
-            (follow_up_list, baseline_list, all_regions, date_list,
-             baseline_mean, baseline_std, follow_up_mean, follow_up_std,
-             baseline_response_rate, follow_up_response_rate) = chart_baseline(
-                self.object, self.request.data_regions, region_selected)
-
-            context['all_regions'] = all_regions
-            context['date_list'] = date_list
-            context['baseline_list'] = baseline_list
-            context['follow_up_list'] = follow_up_list
-            context['baseline_mean'] = baseline_mean
-            context['baseline_std'] = baseline_std
-            context['follow_up_mean'] = follow_up_mean
-            context['follow_up_std'] = follow_up_std
-            context['baseline_response_rate'] = baseline_response_rate
-            context['follow_up_response_rate'] = follow_up_response_rate
-
-            # This value is for when the user would rather display a goal they enter manually,
-            # instead of the baseline poll results
-            context['goal_selected'] = int(self.request.GET.get('goal', 0))
-            if context['goal_selected']:
-                context['baseline_mean'] = context['goal_selected']
-                context['baseline_std'] = 0
-                context['goal_selected'] = [context['goal_selected']] * len(date_list)
-
-            if len(context['follow_up_list']) == 0 and len(context['baseline_list']) == 0:
-                context['no_data'] = 1
-                context['error_message'] = _(
-                    "No data exists for this baseline chart. You may need to select a different region.")
-
-            return context
+            kwargs.setdefault('form', filter_form)
+            kwargs.setdefault('chart_data', chart_data)
+            kwargs.setdefault('summary_table', summary_table)
+            return super(BaselineTermCRUDL.Read, self).get_context_data(**kwargs)
 
     class DataSpoof(OrgPermsMixin, SmartFormView):
         title = _("Baseline Term Data Spoof")
@@ -134,7 +98,7 @@ class BaselineTermCRUDL(SmartCRUDL):
         def dispatch(self, request, *args, **kwargs):
             # Prevent Data Spoof for orgs with show_spoof_data turned off
             if not self.request.org.show_spoof_data:
-                return HttpResponseRedirect(reverse('baseline.baselineterm_list'))
+                return redirect('baseline.baselineterm_list')
             return super(BaselineTermCRUDL.DataSpoof, self).dispatch(request, *args, **kwargs)
 
         def get_form_kwargs(self):
@@ -207,14 +171,14 @@ class BaselineTermCRUDL(SmartCRUDL):
                         category=u'')
                 loop_count += 1
 
-            return HttpResponseRedirect(self.get_success_url())
+            return redirect(self.get_success_url())
 
     class ClearSpoof(OrgPermsMixin, SmartView, View):
 
         def dispatch(self, request, *args, **kwargs):
             # Prevent Data Spoof for orgs with show_spoof_data turned off
             if not self.request.org.show_spoof_data:
-                return HttpResponseRedirect(reverse('baseline.baselineterm_list'))
+                return redirect('baseline.baselineterm_list')
             return super(BaselineTermCRUDL.ClearSpoof, self).dispatch(request, *args, **kwargs)
 
         def post(self, request, *args, **kwargs):
@@ -226,4 +190,4 @@ class BaselineTermCRUDL(SmartCRUDL):
             # from PollRun, Answer and Response
             pollruns.delete()
 
-            return HttpResponseRedirect(reverse('baseline.baselineterm_list'))
+            return redirect('baseline.baselineterm_list')

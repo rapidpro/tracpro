@@ -25,8 +25,8 @@ class OrgExtForm(OrgForm):
     show_spoof_data = forms.BooleanField(
         required=False,
         help_text=_("Whether to show spoof data for this organization."))
-    contact_fields = forms.MultipleChoiceField(
-        choices=[], required=False,
+    contact_fields = forms.ModelMultipleChoiceField(
+        queryset=None, required=False,
         help_text=_("Custom contact data fields that should be visible "
                     "and editable in TracPro."))
 
@@ -38,6 +38,9 @@ class OrgExtForm(OrgForm):
         language.required = True
         language.label = _("Default language")
         language.help_text = _("The default language for your organization")
+
+        # All orgs must use a subdomain.
+        self.fields['subdomain'].required = True
 
         # Config field values are not set automatically.
         self.fields['available_languages'].initial = self.instance.available_languages or []
@@ -60,11 +63,9 @@ class OrgExtForm(OrgForm):
                 else:
                     raise
 
-            queryset = self.instance.datafield_set.all()
-            choices = [(f.key, f.display_name) for f in queryset]
-            initial = list(queryset.visible().values_list('key', flat=True))
-            self.fields['contact_fields'].choices = choices
-            self.fields['contact_fields'].initial = initial
+            data_fields = self.instance.datafield_set.all()
+            self.fields['contact_fields'].queryset = data_fields
+            self.fields['contact_fields'].initial = data_fields.visible()
 
     def clean(self):
         """Ensure the default language is chosen from the available languages."""
@@ -88,6 +89,8 @@ class OrgExtForm(OrgForm):
 
         if 'contact_fields' in self.fields:
             # Set hook that will be picked up by a post-save signal.
+            # Must be done post-save to avoid making changes if any earlier
+            # part of the transaction fails.
             self.instance._visible_data_fields = self.cleaned_data.get('contact_fields')
 
         return super(OrgExtForm, self).save(*args, **kwargs)

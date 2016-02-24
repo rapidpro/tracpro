@@ -1,124 +1,196 @@
 from __future__ import absolute_import, unicode_literals
 
-import cgi
-from collections import defaultdict, OrderedDict
-import datetime
-from decimal import Decimal
-import json
-import operator
+from django.core.urlresolvers import reverse
 
-from dash.utils import datetime_to_ms
+from tracpro.charts.formatters import format_series, format_x_axis
+from tracpro.groups.models import Region
 
-from django.utils.safestring import mark_safe
-
-from .models import Question
+from .models import Answer, Question
+from . import utils
 
 
-class ChartJsonEncoder(json.JSONEncoder):
-    """Encode millisecond timestamps & Decimal objects as floats."""
-
-    def default(self, obj):
-        if isinstance(obj, datetime.datetime):
-            return datetime_to_ms(obj)
-        elif isinstance(obj, Decimal):
-            return float(obj)
-        return json.JSONEncoder.default(self, obj)
-
-
-def single_pollrun(pollrun, question, regions):
+def single_pollrun(pollrun, responses, question):
     """Chart data for a single pollrun.
 
     Will be a word cloud for open-ended questions, and pie chart of categories
     for everything else.
     """
-    if question.type == Question.TYPE_OPEN:
-        word_counts = pollrun.get_answer_word_counts(question, regions)
-        chart_type = 'word'
-        chart_data = word_cloud_data(word_counts)
-    elif question.type in (Question.TYPE_MULTIPLE_CHOICE, Question.TYPE_KEYPAD, Question.TYPE_MENU):
-        category_counts = pollrun.get_answer_category_counts(question, regions)
-        chart_type = 'pie'
-        chart_data = pie_chart_data(category_counts)
-    elif question.type == Question.TYPE_NUMERIC:
-        range_counts = pollrun.get_answer_auto_range_counts(question, regions)
-        chart_type = 'column'
-        chart_data = column_chart_data(range_counts)
-    else:
-        chart_type = None
-        chart_data = []
+    chart_type = None
+    chart_data = []
+    summary_table = None
 
-    return chart_type, render_data(chart_data)
+    answers = Answer.objects.filter(response__in=responses, question=question)
+    if answers:
+        if question.question_type == Question.TYPE_OPEN:
+            chart_type = 'open-ended'
+            chart_data = word_cloud_data(answers)
+        else:
+            chart_type = 'bar'
+            chart_data = single_pollrun_multiple_choice(answers, pollrun)
+
+            _, answer_avgs, answer_stdevs, response_rates = utils.summarize_by_pollrun(
+                answers, responses)
+            summary_table = [
+                ('Mean', answer_avgs.get(pollrun.pk, 0)),
+                ('Standard deviation', answer_stdevs.get(pollrun.pk, 0)),
+                ('Response rate average (%)', response_rates.get(pollrun.pk, 0)),
+            ]
+
+    return chart_type, chart_data, summary_table
 
 
-def multiple_pollruns(pollruns, question, regions):
+def single_pollrun_multiple_choice(answers, pollrun):
+    data = []
+    categories = []
+    for category, pollrun_counts in answers.category_counts_by_pollrun():
+        categories.append(category)
+        count = pollrun_counts.get(pollrun.pk, 0)
+        data.append(count)
+    return {
+        'categories': categories,
+        'data': data,
+    }
+
+
+def multiple_pollruns(pollruns, responses, question, split_regions):
+    chart_type = None
+    chart_data = None
+    summary_table = None
+
+    pollruns = pollruns.order_by('conducted_on')
+    answers = Answer.objects.filter(response__in=responses, question=question)
+
+    # Save a bit of time with .exists();
+    # queryset is re-evaluated later as a values set.
+    if answers.exists():
+        if question.question_type == Question.TYPE_NUMERIC:
+            chart_type = 'numeric'
+            if split_regions:
+                chart_data, summary_table = multiple_pollruns_numeric_split(
+                    pollruns, answers, responses, question)
+            else:
+                chart_data, summary_table = multiple_pollruns_numeric(
+                    pollruns, answers, responses, question)
+
+        elif question.question_type == Question.TYPE_OPEN:
+            chart_type = 'open-ended'
+            chart_data = word_cloud_data(answers)
+
+        elif question.question_type == Question.TYPE_MULTIPLE_CHOICE:
+            chart_type = 'multiple-choice'
+            chart_data, summary_table = multiple_pollruns_multiple_choice(
+                pollruns, answers, responses)
+
+    return chart_type, chart_data, summary_table
+
+
+def word_cloud_data(answers):
     """Chart data for multiple pollruns of a poll."""
+    return [{'text': word, 'weight': count} for word, count in answers.word_counts()]
 
-    if question.type == Question.TYPE_OPEN:
-        overall_counts = defaultdict(int)
 
+def multiple_pollruns_multiple_choice(pollruns, answers, responses):
+    series = []
+    for category, pollrun_counts in answers.category_counts_by_pollrun():
+        series.append(format_series(
+            pollruns, pollrun_counts, 'id@polls.pollrun_read',
+            name=category))
+
+    chart_data = {
+        'dates': format_x_axis(pollruns),
+        'series': series,
+    }
+
+    (answer_sums,
+     answer_avgs,
+     answer_stdevs,
+     response_rates) = utils.summarize_by_pollrun(answers, responses)
+
+    summary_table = [
+        ('Mean', utils.overall_mean(pollruns, answer_avgs)),
+        ('Standard deviation', utils.overall_stdev(pollruns, answer_avgs)),
+        ('Response rate average (%)', utils.overall_mean(pollruns, response_rates)),
+    ]
+
+    return chart_data, summary_table
+
+
+def multiple_pollruns_numeric(pollruns, answers, responses, question):
+    (answer_sums,
+     answer_avgs,
+     answer_stdevs,
+     response_rates) = utils.summarize_by_pollrun(answers, responses)
+
+    sum_data = []
+    avg_data = []
+    rate_data = []
+    pollrun_urls = []
+    participation_urls = []
+    for pollrun in pollruns:
+        sum_data.append(answer_sums.get(pollrun.pk, 0))
+        avg_data.append(answer_avgs.get(pollrun.pk, 0))
+        rate_data.append(response_rates.get(pollrun.pk, 0))
+        pollrun_urls.append(reverse('polls.pollrun_read', args=[pollrun.pk]))
+        participation_urls.append(reverse('polls.pollrun_participation', args=[pollrun.pk]))
+
+    chart_data = {
+        'dates': format_x_axis(pollruns),
+        'sum': [{'name': question.name, 'data': sum_data}],
+        'average': [{'name': question.name, 'data': avg_data}],
+        'response-rate': [{'name': question.name, 'data': rate_data}],
+        'pollrun-urls': pollrun_urls,
+        'participation-urls': participation_urls,
+    }
+
+    summary_table = [
+        ('Mean', utils.overall_mean(pollruns, answer_avgs)),
+        ('Standard deviation', utils.overall_stdev(pollruns, answer_avgs)),
+        ('Response rate average (%)', utils.overall_mean(pollruns, response_rates)),
+    ]
+
+    return chart_data, summary_table
+
+
+def multiple_pollruns_numeric_split(pollruns, answers, responses, question):
+    """Return separate series for each contact region."""
+    data = utils.summarize_by_region_and_pollrun(answers, responses)
+
+    sum_data = []
+    avg_data = []
+    rate_data = []
+    for region in Region.objects.filter(pk__in=data.keys()).order_by('name'):
+        answer_sums, answer_avgs, answer_stdevs, response_rates = data.get(region.pk)
+        region_answer_sums = []
+        region_answer_avgs = []
+        region_response_rates = []
         for pollrun in pollruns:
-            word_counts = pollrun.get_answer_word_counts(question, regions)
-            for word, count in word_counts:
-                overall_counts[word] += count
+            region_answer_sums.append(answer_sums.get(pollrun.pk, 0))
+            region_answer_avgs.append(answer_avgs.get(pollrun.pk, 0))
+            region_response_rates.append(response_rates.get(pollrun.pk, 0))
 
-        sorted_counts = sorted(
-            overall_counts.items(), key=operator.itemgetter(1), reverse=True)
-        chart_type = 'word'
-        chart_data = word_cloud_data(sorted_counts[:50])
-    elif question.type == Question.TYPE_MULTIPLE_CHOICE:
-        categories = set()
-        counts_by_pollrun = OrderedDict()
+        sum_data.append({'name': region.name, 'data': region_answer_sums})
+        avg_data.append({'name': region.name, 'data': region_answer_avgs})
+        rate_data.append({'name': region.name, 'data': region_response_rates})
 
-        # fetch category counts for all pollruns, keeping track of all found
-        # categories
-        for pollrun in pollruns:
-            category_counts = pollrun.get_answer_category_counts(question, regions)
-            as_dict = dict(category_counts)
-            counts_by_pollrun[pollrun] = as_dict
+    pollrun_urls = [reverse('polls.pollrun_read', args=[p.pk]) for p in pollruns]
+    participation_urls = [reverse('polls.pollrun_participation', args=[p.pk]) for p in pollruns]
+    chart_data = {
+        'dates': format_x_axis(pollruns),
+        'sum': sum_data,
+        'average': avg_data,
+        'response-rate': rate_data,
+        'pollrun-urls': pollrun_urls,
+        'participation-urls': participation_urls,
+    }
 
-            for category in as_dict.keys():
-                categories.add(category)
+    (pollrun_answer_sums,
+     pollrun_answer_avgs,
+     pollrun_answer_stdevs,
+     pollrun_response_rates) = utils.summarize_by_pollrun(answers, responses)
+    summary_table = [
+        ('Mean', utils.overall_mean(pollruns, pollrun_answer_avgs)),
+        ('Standard deviation', utils.overall_stdev(pollruns, pollrun_answer_avgs)),
+        ('Response rate average (%)', utils.overall_mean(pollruns, pollrun_response_rates)),
+    ]
 
-        categories = list(categories)
-        category_series = defaultdict(list)
-
-        for pollrun, category_counts in counts_by_pollrun.iteritems():
-            for category in categories:
-                count = category_counts.get(category, 0)
-                category_series[category].append((pollrun.conducted_on, count))
-
-        chart_type = 'time-area'
-        chart_data = [{'name': cgi.escape(category), 'data': data}
-                      for category, data in category_series.iteritems()]
-    elif question.type == Question.TYPE_NUMERIC:
-        chart_type = 'time-line'
-        chart_data = []
-        for pollrun in pollruns:
-            average = pollrun.get_answer_numeric_average(question, regions)
-            chart_data.append((pollrun.conducted_on, average))
-    else:
-        chart_type = None
-        chart_data = []
-
-    return chart_type, render_data(chart_data)
-
-
-def word_cloud_data(word_counts):
-    return [{'text': word, 'weight': count} for word, count in word_counts]
-
-
-def pie_chart_data(category_counts):
-    return [[cgi.escape(category), count] for category, count in category_counts]
-
-
-def column_chart_data(range_counts):
-    # highcharts needs the category labels and values separate for column charts
-    if range_counts:
-        labels, counts = zip(*range_counts)
-        return [cgi.escape(l) for l in labels], counts
-    else:
-        return []
-
-
-def render_data(chart_data):
-    return mark_safe(json.dumps(chart_data, cls=ChartJsonEncoder))
+    return chart_data, summary_table

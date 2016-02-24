@@ -53,7 +53,7 @@ class Command(BaseCommand):
 
         client = org.get_temba_client()
 
-        polls_by_flow_uuids = {p.flow_uuid: p for p in Poll.get_all(org)}
+        polls_by_flow_uuids = {p.flow_uuid: p for p in Poll.objects.active().by_org(org)}
 
         runs = client.get_runs(flows=polls_by_flow_uuids.keys(), after=since)
 

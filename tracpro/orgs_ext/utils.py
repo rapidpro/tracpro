@@ -1,11 +1,6 @@
-import logging
-
 from requests import HTTPError
 
 from temba_client.base import TembaAPIError
-
-
-logger = logging.getLogger(__name__)
 
 
 class OrgConfigField(object):
@@ -47,24 +42,6 @@ class OrgConfigField(object):
     def __set__(self, instance, value):
         instance.set_config(self.name, value, commit=False)
         instance.__dict__.pop(self.cache_name, None)
-
-
-def run_org_task(org, task):
-    """Handle common errors when running a task for an Org."""
-
-    if not org.api_token:
-        logger.info(
-            "Skipping {} because it does not have an API token.".format(org))
-        return None
-
-    try:
-        return task(org.pk)
-    except TembaAPIError as e:
-        if caused_by_bad_api_key(e):
-            logger.warning(
-                "API token for {} is invalid.".format(org), exc_info=True)
-            return None
-        raise
 
 
 def caused_by_bad_api_key(exception):

@@ -40,22 +40,18 @@
 /*<![CDATA[*/
 /*]]>*/
 </style>
-    {% compress css %}
-      {% block styles %}
+    {% block styles %}
+      {% compress css %}
         <link href='{{ STATIC_URL }}css/bootstrap.css' type='text/css' rel='stylesheet' />
         <link href='{{ STATIC_URL }}css/bootstrap-theme.css' type='text/css' rel='stylesheet' />
         <link href='{{ STATIC_URL }}css/smartmin_styles.css' type='text/css' rel='stylesheet' />
         <link href='{{ STATIC_URL }}css/select2.css' type='text/css' rel='stylesheet' />
-        <link href='{{ STATIC_URL }}css/jqcloud.css' type='text/css' rel='stylesheet' />
         <link href='{{ STATIC_URL }}less/trac.less' type='text/less' rel='stylesheet' />
 
-      {% endblock %}
-    {% endcompress %}
-    {% block extra-less %}
-    {% endblock %}
-    {% block extra-style %}
+      {% endcompress %}
+    {% endblock styles %}
 
-    {% endblock %}
+    {% block extra-style %}{% endblock extra-style %}
 
     {% if lang_direction == 'ltr' %}
       <link href='{{ STATIC_URL }}css/trac-ltr.css' type='text/css' rel='stylesheet' />
@@ -78,14 +74,17 @@
               <span class='icon-bar'></span>
             </button>
           </div>
-          <div id='admin-brand' class='navbar-brand'>
-            {% if not org %}
-              {% trans "TracPro" %}
-            {% else %}
-              {{ org.name }}
-
-            {% endif %}
-          </div>
+          {% thumbnail org.logo "x50" as logo %}
+            <img class="navbar-logo" src="{{ logo.url }}" />
+          {% empty %}
+            <div class="navbar-brand">
+              {% if org %}
+                {{ org.name }}
+              {% else %}
+                {% trans "TracPro" %}
+              {% endif %}
+            </div>
+          {% endthumbnail %}
           <nav id='admin-top-navbar-collapse' class='admin-top-navbar collapse navbar-collapse' role='navigation'>
             <ul class='nav navbar-nav'>
               {% if org and request.user.is_authenticated %}
@@ -368,9 +367,7 @@
     <!-- JavaScript at the bottom for fast page loading -->
     <script type="text/javascript" src="{{ STATIC_URL }}js/bootstrap.min.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/angular.min.js"></script>
-    <script type="text/javascript" src="{{ STATIC_URL }}libs/highcharts-4.1.8/highcharts.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/select2.min.js"></script>
-    <script type="text/javascript" src="{{ STATIC_URL }}js/jqcloud-1.0.4.min.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/trac.js"></script>
 
     {% compress js %}
@@ -419,6 +416,5 @@
     {% endif %}
 
     {% block extra-script %}{% endblock %}
-    {% block script %}{% endblock %}
   </body>
 </html>

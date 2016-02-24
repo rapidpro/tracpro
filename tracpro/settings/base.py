@@ -69,6 +69,7 @@ INSTALLED_APPS = [
     'dash.utils',
 
     'tracpro.baseline',
+    'tracpro.charts',
     'tracpro.contacts',
     'tracpro.groups',
     'tracpro.home',
@@ -243,30 +244,29 @@ ANONYMOUS_USER_ID = -1
 
 BROKER_URL = CELERY_RESULT_BACKEND = 'redis://localhost:6379/4'
 
-CELERYBEAT_SCHEDULE = {
-    'sync-contacts': {
-        'task': 'tracpro.contacts.tasks.sync_all_contacts',
-        'schedule': datetime.timedelta(minutes=30),
-        'args': (),
-    },
-    'sync-fields': {
-        'task': 'tracpro.contacts.tasks.sync_all_fields',
-        'schedule': datetime.timedelta(days=1),
-        'args': (),
-    },
-    'fetch-runs': {
-        'task': 'tracpro.polls.tasks.fetch_all_runs',
-        'schedule': datetime.timedelta(minutes=5),
-        'args': (),
-    },
-    'fetch-inbox-messages': {
-        'task': 'tracpro.msgs.tasks.fetch_all_inbox_messages',
-        'schedule': datetime.timedelta(minutes=5),
-        'args': (),
-    }
-}
+CELERYD_PREFETCH_MULTIPLIER = 1
 
 CELERY_TIMEZONE = 'UTC'
+
+ORG_TASK_TIMEOUT = datetime.timedelta(minutes=10)
+
+
+def _org_scheduler_task(task_name):
+    return {
+        'task': 'tracpro.orgs_ext.tasks.ScheduleTaskForActiveOrgs',
+        'schedule': ORG_TASK_TIMEOUT,
+        'kwargs': {
+            'task_name': task_name,
+        },
+    }
+
+CELERYBEAT_SCHEDULE = {
+    'sync-polls': _org_scheduler_task('tracpro.polls.tasks.SyncOrgPolls'),
+    'sync-contacts': _org_scheduler_task('tracpro.contacts.tasks.SyncOrgContacts'),
+    'sync-data-fields': _org_scheduler_task('tracpro.contacts.tasks.SyncOrgDataFields'),
+    'fetch-runs': _org_scheduler_task('tracpro.polls.tasks.FetchOrgRuns'),
+    'fetch-inbox-messages': _org_scheduler_task('tracpro.msgs.tasks.FetchOrgInboxMessages'),
+}
 
 COMPRESS_PRECOMPILERS = (
     ('text/coffeescript', 'coffee --compile --stdio'),

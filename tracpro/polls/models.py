@@ -1,123 +1,181 @@
 from __future__ import absolute_import, unicode_literals
 
-from collections import Counter, defaultdict, OrderedDict
-from decimal import Decimal, InvalidOperation
-import operator
+from collections import Counter, OrderedDict
+from itertools import chain, groupby
+from operator import itemgetter
 
-from dateutil.relativedelta import relativedelta
-from enum import Enum
 import pytz
 
 from django.conf import settings
-from django.core.cache import cache
-from django.db import models
-from django.db.models import Q, Count
+from django.db import models, transaction
+from django.db.models import Count, Q
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 
-from dash.utils import get_cacheable, get_month_range
-
 from tracpro.contacts.models import Contact
 
 from .tasks import pollrun_start
-from .utils import auto_range_categories, extract_words
+from .utils import extract_words, natural_sort_key
 
 
-class Window(Enum):
-    """A window of time."""
+class PollQuerySet(models.QuerySet):
 
-    this_month = (0, _("This month"))
-    last_30_days = (30, _("Last 30 days"))
-    last_60_days = (60, _("Last 60 days"))
-    last_90_days = (90, _("Last 90 days"))
+    def active(self):
+        return self.filter(is_active=True)
 
-    def __init__(self, ordinal, label):
-        self.ordinal = ordinal
-        self.label = label
+    def by_org(self, org):
+        return self.filter(org=org)
 
-    def to_range(self, now=None):
-        now = now if now is not None else timezone.now()
-        if self.ordinal == 0:
-            return get_month_range(now)
+
+class PollManager(models.Manager.from_queryset(PollQuerySet)):
+
+    def from_temba(self, org, temba_poll):
+        """Create new or update existing Poll from RapidPro data."""
+        poll, _ = self.get_or_create(org=org, flow_uuid=temba_poll.uuid)
+
+        if poll.name == poll.rapidpro_name:
+            # Name is tracking RapidPro name so we must update both.
+            poll.name = poll.rapidpro_name = temba_poll.name
         else:
-            return (now - relativedelta(days=self.ordinal), now)
+            # Custom name will be maintained despite update of RapidPro name.
+            poll.rapidpro_name = temba_poll.name
+
+        poll.save()
+
+        return poll
+
+    @transaction.atomic
+    def set_active_for_org(self, org, uuids):
+        """Set matching org Polls to be active, and all others to be inactive.
+
+        If an invalid UUID is given, a ValueError is raised and the transaction
+        is rolled back.
+        """
+        active_count = org.polls.filter(flow_uuid__in=uuids).update(is_active=True)
+        if active_count != len(uuids):
+            invalid_uuids = set(uuids) - set(org.polls.values_list('flow_uuid', flat=True))
+            raise ValueError(
+                "No Poll for {} matching these UUIDS: {}".format(
+                    org.name, invalid_uuids))
+        org.polls.exclude(flow_uuid__in=uuids).update(is_active=False)
+
+    def sync(self, org):
+        """Update the org's Polls and Questions from RapidPro."""
+        # Retrieve current Polls known to RapidPro.
+        temba_polls = org.get_temba_client().get_flows(archived=False)
+        temba_polls = {p.uuid: p for p in temba_polls}
+
+        # Remove Polls that are no longer on RapidPro.
+        org.polls.exclude(flow_uuid__in=temba_polls.keys()).delete()
+
+        # Create new or update existing Polls to match RapidPro data.
+        for temba_poll in temba_polls.values():
+            poll = Poll.objects.from_temba(org, temba_poll)
+
+            temba_questions = OrderedDict((r.uuid, r) for r in temba_poll.rulesets)
+
+            # Remove questions that are no longer on RapidPro.
+            poll.questions.exclude(ruleset_uuid__in=temba_questions.keys()).delete()
+
+            # Create new or update existing Questions to match RapidPro data.
+            for order, temba_question in enumerate(temba_questions.values(), 1):
+                Question.objects.from_temba(poll, temba_question, order)
 
 
 @python_2_unicode_compatible
 class Poll(models.Model):
-    """
-    Corresponds to a RapidPro Flow
-    """
-    flow_uuid = models.CharField(max_length=36, unique=True)
+    """Corresponds to a RapidPro flow.
 
+    Keeping track of contact responses to a flow is data-intensive, so Tracpro
+    only tracks flows that the user has selected. Selected flows are managed
+    as Polls.
+    """
+    flow_uuid = models.CharField(max_length=36)
     org = models.ForeignKey(
-        'orgs.Org', verbose_name=_("Organization"), related_name='polls')
-
+        'orgs.Org', related_name='polls', verbose_name=_('org'))
+    rapidpro_name = models.CharField(
+        max_length=64, verbose_name=_('RapidPro name'))
     name = models.CharField(
-        max_length=64, verbose_name=_("Name"))  # taken from flow name
+        max_length=64, blank=True, verbose_name=_('name'))
 
+    # Set this to False rather than deleting a Poll. If the user should
+    # re-select the corresponding flow later, we can avoid re-importing
+    # existing data.
     is_active = models.BooleanField(
-        default=True, help_text=_("Whether this item is active"))
+        default=False, verbose_name=_("show on TracPro"))
+
+    objects = PollManager()
+
+    class Meta:
+        unique_together = (
+            ('org', 'flow_uuid'),
+        )
+
+    def __init__(self, *args, **kwargs):
+        """Name should default to the RapidPro name."""
+        super(Poll, self).__init__(*args, **kwargs)
+        self.name = self.name or self.rapidpro_name
 
     def __str__(self):
         return self.name
 
-    @classmethod
-    def sync_with_flows(cls, org, flow_uuids):
-        # de-activate polls whose flows were not selected
-        org.polls.exclude(flow_uuid=flow_uuids).update(is_active=False)
+    def get_flow_definition(self):
+        """Retrieve extra metadata about the RapidPro flow."""
+        if not hasattr(self, '_flow_definition'):
+            # NOTE: Flow definition endpoint is not documented in the
+            # RapidPro API docs.
+            client = self.org.get_temba_client()
+            definition = client.get_flow_definition(self.flow_uuid)
+            self._flow_definition = definition
+        return self._flow_definition
 
-        # fetch flow details
-        temba_flows = org.get_temba_client().get_flows(uuids=flow_uuids)
-        flows_by_uuid = {flow.uuid: flow for flow in temba_flows}
+    def save(self, *args, **kwargs):
+        """Don't save custom name if it is the same as the RapidPro name.
 
-        for flow_uuid in flow_uuids:
-            flow = flows_by_uuid[flow_uuid]
+        This allows us to track changes to the name on RapidPro.
+        """
+        self.name = "" if self.name == self.rapidpro_name else self.name.strip()
+        super(Poll, self).save(*args, **kwargs)
+        self.name = self.name or self.rapidpro_name
 
-            poll = org.polls.filter(flow_uuid=flow.uuid).first()
-            if poll:
-                poll.name = flow.name
-                poll.is_active = True
-                poll.save()
-            else:
-                poll = cls.objects.create(org=org, name=flow.name, flow_uuid=flow.uuid)
 
-            poll.update_questions_from_rulesets(flow.rulesets)
+class QuestionQuerySet(models.QuerySet):
 
-    def update_questions_from_rulesets(self, rulesets):
-        # de-activate any existing questions no longer included
-        self.questions.exclude(ruleset_uuid=[r.uuid for r in rulesets]).update(is_active=False)
+    def active(self):
+        return self.filter(is_active=True)
 
-        order = 1
-        for ruleset in rulesets:
-            question = self.questions.filter(ruleset_uuid=ruleset.uuid).first()
-            if question:
-                question.text = ruleset.label
-                question.type = ruleset.response_type
-                question.order = order
-                question.is_active = True
-                question.save()
-            else:
-                Question.objects.create(
-                    poll=self, text=ruleset.label, type=ruleset.response_type,
-                    order=order, ruleset_uuid=ruleset.uuid)
-            order += 1
 
-    @classmethod
-    def get_all(cls, org):
-        return org.polls.filter(is_active=True)
+class QuestionManager(models.Manager.from_queryset(QuestionQuerySet)):
 
-    def get_questions(self):
-        return self.questions.filter(is_active=True).order_by('order')
+    def from_temba(self, poll, temba_question, order):
+        """Create new or update existing Question from RapidPro data."""
+        question, _ = self.get_or_create(poll=poll, ruleset_uuid=temba_question.uuid)
 
-    def get_pollruns(self, org, region=None, include_subregions=True):
-        return PollRun.objects.get_all(org, region, include_subregions).filter(poll=self)
+        if question.name == question.rapidpro_name:
+            # Name is tracking RapidPro name so we must update both.
+            question.name = question.rapidpro_name = temba_question.label
+        else:
+            # Custom name will be maintained despite update of RapidPro name.
+            question.rapidpro_name = temba_question.label
+
+        # The user can alter or correct the question's type after it is
+        # initially set, so we shouldn't override the existing type.
+        if not question.question_type:
+            question.question_type = question._guess_question_type()
+
+        question.order = order
+        question.save()
+
+        return question
 
 
 @python_2_unicode_compatible
 class Question(models.Model):
     """Corresponds to RapidPro RuleSet."""
+    # Types of rules that RapidPro applies to incoming messages
+    # that suggest the expected data is numeric.
+    _NUMERIC_TESTS = ('number', 'lt', 'eq', 'gt', 'between')
 
     TYPE_OPEN = 'O'
     TYPE_MULTIPLE_CHOICE = 'C'
@@ -134,20 +192,65 @@ class Question(models.Model):
         (TYPE_RECORDING, _("Recording")),
     )
 
-    ruleset_uuid = models.CharField(max_length=36, unique=True)
+    ruleset_uuid = models.CharField(max_length=36)
+    poll = models.ForeignKey(
+        'polls.Poll', related_name='questions', verbose_name=_('poll'))
+    rapidpro_name = models.CharField(
+        max_length=64, verbose_name=_('RapidPro name'))
+    name = models.CharField(
+        max_length=64, blank=True, verbose_name=_('name'))
+    question_type = models.CharField(
+        max_length=1, choices=TYPE_CHOICES, verbose_name=_('question type'))
+    order = models.IntegerField(
+        default=0, verbose_name=_('order'))
+    is_active = models.BooleanField(
+        default=True, verbose_name=_("show on TracPro"))
 
-    poll = models.ForeignKey('polls.Poll', related_name='questions')
+    objects = QuestionManager()
 
-    text = models.CharField(max_length=64)
+    class Meta:
+        ordering = ('order',)
+        unique_together = (
+            ('ruleset_uuid', 'poll'),
+        )
 
-    type = models.CharField(max_length=1, choices=TYPE_CHOICES)
-
-    order = models.IntegerField()
-
-    is_active = models.BooleanField(default=True, help_text="Whether this item is active")
+    def __init__(self, *args, **kwargs):
+        """Name should default to the RapidPro name."""
+        super(Question, self).__init__(*args, **kwargs)
+        self.name = self.name or self.rapidpro_name
 
     def __str__(self):
-        return self.text
+        return self.name
+
+    def _guess_question_type(self):
+        """Inspect rules applied to question input to guess data type.
+
+        Historically, the "response_type" field on the ruleset was used to
+        determine question type. This field appears to have been deprecated
+        and currently returns from a limited subset of possible types.
+        """
+        # Collect the type of each test applied to question input, e.g.,
+        # "has any of these words", "has a number", "has a number between", etc.
+        defn = self.poll.get_flow_definition()
+        rules = {r['uuid']: r['rules'] for r in defn.rule_sets}.get(self.ruleset_uuid)
+        tests = [r['test']['type'] for r in rules] if rules else []
+        tests = tests[:-1]  # The last test is always "Other".
+
+        if not tests:
+            return self.TYPE_OPEN
+        elif all(t in self._NUMERIC_TESTS for t in tests):
+            return self.TYPE_NUMERIC
+        else:
+            return self.TYPE_MULTIPLE_CHOICE
+
+    def save(self, *args, **kwargs):
+        """Don't save custom name if it is the same as the RapidPro name.
+
+        This allows us to track changes to the name on RapidPro.
+        """
+        self.name = "" if self.name == self.rapidpro_name else self.name.strip()
+        super(Question, self).save(*args, **kwargs)
+        self.name = self.name or self.rapidpro_name
 
 
 class PollRunQuerySet(models.QuerySet):
@@ -155,6 +258,14 @@ class PollRunQuerySet(models.QuerySet):
     def active(self):
         """Return all active PollRuns."""
         return self.filter(poll__is_active=True)
+
+    def by_dates(self, start_date=None, end_date=None):
+        pollruns = self.all()
+        if start_date:
+            pollruns = pollruns.filter(conducted_on__gte=start_date)
+        if end_date:
+            pollruns = pollruns.filter(conducted_on__lt=end_date)
+        return pollruns
 
     def by_region(self, region, include_subregions=True):
         """Return all PollRuns for the region."""
@@ -247,16 +358,6 @@ class PollRunManager(models.Manager.from_queryset(PollRunQuerySet)):
         return qs
 
 
-class AnswerCache(Enum):
-    word_counts = 1
-    category_counts = 2
-    range_counts = 3
-    average = 4
-
-
-ANSWER_CACHE_TTL = 60 * 60 * 24 * 7  # 1 week
-
-
 @python_2_unicode_compatible
 class PollRun(models.Model):
     """Associates polls conducted on the same day."""
@@ -295,20 +396,6 @@ class PollRun(models.Model):
             when=self.conducted_on.strftime(settings.SITE_DATE_FORMAT),
         )
 
-    def _answer_cache_key(self, question, item, regions):
-        ANSWER_CACHE_KEY = ('pollrun:{pollrun_id}:question:{question_id}'
-                            ':{item_name}:{region_id}')
-        if regions:
-            region_id = '_'.join(str(r.pk) for r in regions)
-        else:
-            region_id = str(0)
-        return ANSWER_CACHE_KEY.format(
-            pollrun_id=self.pk,
-            question_id=question.pk,
-            item_name=item.name,
-            region_id=region_id,
-        )
-
     def as_json(self, region=None, include_subregions=True):
         return {
             'id': self.pk,
@@ -320,17 +407,6 @@ class PollRun(models.Model):
             'region': {'id': self.region.pk, 'name': self.region.name} if self.region else None,
             'responses': self.get_response_counts(region, include_subregions),
         }
-
-    def clear_answer_cache(self, question, regions):
-        """
-        Clears all answer cache for the given question for the given region
-        and the non-regional (0) cache
-        """
-        for item in AnswerCache.__members__.values():
-            # always clear the non-regional cache
-            cache.delete(self._answer_cache_key(question, item, None))
-            if regions:
-                cache.delete(self._answer_cache_key(question, item, regions))
 
     def covers_region(self, region, include_subregions):
         """Return whether this PollRun is related to all given regions."""
@@ -351,63 +427,13 @@ class PollRun(models.Model):
             else:
                 return region in self.region.get_descendants()
 
-    def get_answers_to(self, question, regions=None):
-        """Return all answers from active responses to the question."""
-        qs = Answer.objects.filter(
-            response__pollrun=self,
-            response__is_active=True,
-            question=question,
-        )
-        if regions:
-            qs = qs.filter(response__contact__region__in=regions)
-        return qs.select_related('response__contact')
-
-    def get_answer_auto_range_counts(self, question, regions=None):
-        """
-        Return automatic numeric range counts for answers to the question,
-        most frequent first.
-
-        Example: [("0 - 9", 2), ("10 - 19", 1)]
-        """
-        def calculate():
-            return self.get_answers_to(question, regions).auto_range_counts().items()
-        cache_key = self._answer_cache_key(question, AnswerCache.range_counts, regions)
-        return get_cacheable(cache_key, ANSWER_CACHE_TTL, calculate)
-
-    def get_answer_numeric_average(self, question, regions=None):
-        """Return the numeric average of answers to the question."""
-        def calculate():
-            return self.get_answers_to(question, regions).numeric_average()
-        cache_key = self._answer_cache_key(question, AnswerCache.average, regions)
-        return get_cacheable(cache_key, ANSWER_CACHE_TTL, calculate)
-
-    def get_answer_category_counts(self, question, regions=None):
-        """Return category counts for answers to the question, most frequent first.
-
-        Example: [("Rainy", 2), ("Sunny", 1)]
-        """
-        def calculate():
-            return self.get_answers_to(question, regions).category_counts()
-        cache_key = self._answer_cache_key(question, AnswerCache.category_counts, regions)
-        return get_cacheable(cache_key, ANSWER_CACHE_TTL, calculate)
-
-    def get_answer_word_counts(self, question, regions=None):
-        """Return word counts for answers to the question, most frequent first.
-
-        Example: [("zombies", 2), ("floods", 1)]
-        """
-        def calculate():
-            return self.get_answers_to(question, regions).word_counts()
-        cache_key = self._answer_cache_key(question, AnswerCache.word_counts, regions)
-        return get_cacheable(cache_key, ANSWER_CACHE_TTL, calculate)
-
     def get_responses(self, region=None, include_subregions=True,
                       include_empty=True):
         """Return all PollRun responses for this region and sub-regions."""
         if not self.covers_region(region, include_subregions):
             raise ValueError(
                 "Request for responses in region where poll wasn't conducted")
-        responses = self.responses.filter(is_active=True)
+        responses = self.responses.filter(is_active=True, contact__region__is_active=True)
         if region:
             if include_subregions:
                 regions = region.get_descendants(include_self=True)
@@ -441,6 +467,20 @@ class PollRun(models.Model):
         return not newer_pollruns.exists()
 
 
+class ResponseQuerySet(models.QuerySet):
+
+    def active(self):
+        return self.filter(is_active=True)
+
+    def group_counts(self, *fields):
+        """Group responses by the given fields then map to the count of matching responses."""
+        responses = self.order_by(*fields).values(*fields)
+        data = {}
+        for field_values, _responses in groupby(responses, itemgetter(*fields)):
+            data[field_values] = len(list(_responses))
+        return data
+
+
 class Response(models.Model):
     """Corresponds to RapidPro FlowRun."""
     STATUS_EMPTY = 'E'
@@ -471,6 +511,8 @@ class Response(models.Model):
     is_active = models.BooleanField(
         default=True,
         help_text=_("Whether this response is active"))
+
+    objects = ResponseQuerySet.as_manager()
 
     @classmethod
     def create_empty(cls, org, pollrun, run):
@@ -504,7 +546,7 @@ class Response(models.Model):
             return response
 
         if not poll:
-            poll = Poll.get_all(org).get(flow_uuid=run.flow)
+            poll = Poll.objects.active().by_org(org).get(flow_uuid=run.flow)
 
         contact = Contact.get_or_fetch(poll.org, uuid=run.contact)
 
@@ -541,7 +583,7 @@ class Response(models.Model):
             response.is_new = True
 
         # organize values by ruleset UUID
-        questions = poll.get_questions()
+        questions = poll.questions.active()
         valuesets_by_ruleset = {valueset.node: valueset for valueset in run.values}
         valuesets_by_question = {q: valuesets_by_ruleset.get(q.ruleset_uuid, None)
                                  for q in questions}
@@ -556,10 +598,6 @@ class Response(models.Model):
                     category=valueset.category,
                     submitted_on=valueset.time,
                 )
-
-        # clear answer caches for this contact's region
-        for question in questions:
-            response.pollrun.clear_answer_cache(question, [contact.region])
 
         return response
 
@@ -577,145 +615,34 @@ class Response(models.Model):
 class AnswerQuerySet(models.QuerySet):
 
     def word_counts(self):
-        word_counts = defaultdict(int)
-        for answer in self:
-            contact = answer.response.contact
-            for w in extract_words(answer.value, contact.language):
-                word_counts[w] += 1
+        answers = self.values_list('value', 'response__contact__language')
+        words = [extract_words(*a) for a in answers]
+        counts = Counter(chain(*words))
+        return counts.most_common(50)
 
-        sorted_counts = sorted(
-            word_counts.items(), key=operator.itemgetter(1), reverse=True)
-        return sorted_counts[:50]  # only return top 50
+    def group_values(self, *fields):
+        """Group answers by the given fields then map to a list of matching values."""
+        answers = self.order_by(*fields).values('value', *fields)
+        data = {}
+        for field_values, _answers in groupby(answers, itemgetter(*fields)):
+            data[field_values] = [a['value'] for a in _answers]
+        return data
 
     def category_counts(self):
-        category_counts = Counter([answer.category for answer in self
-                                   if answer.category])
-        return sorted(category_counts.items(), key=operator.itemgetter(1), reverse=True)
+        categories = self.values_list('category', flat=True)
+        counts = Counter(categories)
+        return counts.most_common()
 
-    def numeric_average(self):
-        """
-        Parses decimals out of a set of answers and returns the average.
-        Returns zero if no valid numbers are found.
-        """
-        total = Decimal(0)
-        count = 0
-        for answer in self:
-            if answer.category is not None:
-                # ignore answers with no category as they weren't in the
-                # required range
-                try:
-                    value = Decimal(answer.value)
-                    total += value
-                    count += 1
-                except (TypeError, ValueError, InvalidOperation):
-                    continue
+    def category_counts_by_pollrun(self):
+        counts = []
+        answers = self.order_by('category').values('category', 'response__pollrun')
+        for category, _answers in groupby(answers, itemgetter('category')):
+            pollrun_counts = Counter(a['response__pollrun'] for a in _answers)
+            counts.append((category, pollrun_counts))
 
-        return float(total / count) if count else 0
-
-    def numeric_sum_group_by_date(self):
-        """
-        Parses decimals out of a set of answers and returns the sum for each
-        distinct date.  Returns:
-
-        answer_sums: list of sum of each value on each date ie. [33, 40, ...]
-        dates: list of distinct dates ie. [datetime.date(2015, 8, 12),...]
-        """
-        answer_sums = []
-        dates = []
-        total = float(0)
-        answer_date = ""
-        for answer in self:
-            if answer.category is not None:
-                # ignore answers with no category as they weren't in the
-                # required range
-                if answer_date != answer.submitted_on.date():
-                    # Append the sum total value for each date
-                    if total:
-                        answer_sums.append(total)
-                        dates.append(answer_date)
-                    answer_date = answer.submitted_on.date()
-                    total = float(0)
-                try:
-                    total += float(answer.value)
-                except (TypeError, ValueError, InvalidOperation):
-                    continue
-        # One last value to append, for the final date
-        if total:
-            answer_sums.append(total)
-            dates.append(answer_date)
-        return answer_sums, dates
-
-    def numeric_sum_all_dates(self):
-        """
-        Parses decimals out of a set of answers and returns the sum for all
-        answers, regardless of dates.
-        Returns:
-        total: total sum of all answer values
-        """
-        total = Decimal(0)
-        for answer in self:
-            if answer.category is not None:
-                # ignore answers with no category as they weren't in the
-                # required range
-                try:
-                    total += Decimal(answer.value)
-                except (TypeError, ValueError, InvalidOperation):
-                    continue
-        return total
-
-    def auto_range_counts(self):
-        """
-        Creates automatic range "categories" for a given set of answers and
-        returns the count of values in each range
-        """
-        # convert to integers and find minimum and maximum
-        values = []
-        value_min = None
-        value_max = None
-        for answer in self:
-            if answer.category is not None:
-                # ignore answers with no category as they weren't in the
-                # required range
-                try:
-                    value = int(Decimal(answer.value))
-                    if value < value_min or value_min is None:
-                        value_min = value
-                    if value > value_max or value_max is None:
-                        value_max = value
-                    values.append(value)
-                except (TypeError, ValueError, InvalidOperation):
-                    continue
-
-        if not values:
-            return {}
-
-        # pick best fitting categories
-        category_min, category_max, category_step = auto_range_categories(
-            value_min, value_max)
-
-        # create category labels and initialize counts
-        category_counts = OrderedDict()
-        category_labels = {}
-
-        cat_index = 0
-        for cat_min in range(category_min, category_max, category_step):
-            if category_step > 1:
-                cat_max = cat_min + category_step - 1
-                cat_label = '%d - %d' % (cat_min, cat_max)
-            else:
-                cat_label = str(cat_min)
-
-            category_labels[cat_index] = cat_label
-            category_counts[cat_label] = 0
-            cat_index += 1
-
-        # count categorized values
-        for value in values:
-            category = int((value - category_min) / category_step)
-            label = category_labels[category]
-            category_counts[label] += 1
-
-        return category_counts
+        # Order the data by the category name.
+        counts.sort(key=lambda (category, pollrun_counts): natural_sort_key(category))
+        return counts
 
 
 class AnswerManager(models.Manager.from_queryset(AnswerQuerySet)):
@@ -738,13 +665,9 @@ class Answer(models.Model):
     """Corresponds to RapidPro FlowStep."""
 
     response = models.ForeignKey('polls.Response', related_name='answers')
-
     question = models.ForeignKey('polls.Question', related_name='answers')
-
     value = models.CharField(max_length=640, null=True)
-
     category = models.CharField(max_length=36, null=True)
-
     submitted_on = models.DateTimeField(
         help_text=_("When this answer was submitted"))
 

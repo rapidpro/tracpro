@@ -1,24 +1,65 @@
 {% extends "smartmin/base.html" %}
-{% load smartmin i18n %}
+
+{% load charts %}
+{% load compress %}
+{% load i18n %}
+{% load smartmin %}
+{% load staticfiles %}
 
 {% block pre-content %}
-
   {% include 'polls/pollrun_header.html' with pollrun=object %}
+{% endblock pre-content %}
 
-{% endblock %}
+{% block extra-style %}
+  {{ block.super }}
+
+  <link rel="stylesheet" type="text/css"
+        href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/themes/smoothness/jquery-ui.css">
+
+  {% compress css %}
+    <link type="text/css" rel="stylesheet"
+          href="{% static "css/jqcloud.css" %}" />
+  {% endcompress %}
+{% endblock extra-style %}
+
+{% block extra-script %}
+  {{ block.super }}
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
+
+  {% compress js %}
+    <script src="{% static "libs/highcharts-4.1.8/highcharts.js" %}"></script>
+    <script src="{% static "js/charts.js" %}"></script>
+    <script src="{% static "js/jqcloud-1.0.4.min.js" %}"></script>
+  {% endcompress %}
+{% endblock extra-script %}
 
 {% block content %}
+  {% for question, chart_type, chart_data, summary_table in question_data %}
+    <div class="poll-question">
+      <h3>
+        {{ forloop.counter }}. {{ question.name }}
+        {% if request.region %}
+           / Region: {{ request.region }}
+        {% endif %}
+      </h3>
 
-  {% for question in questions %}
-    <h3>
-      {{ question.order }}. {{ question.text }}
+      {% if chart_data %}
+        <div class="chart-{{ chart_type }}"
+             data-chart='{{ chart_data|chart_json }}'
+             data-name="{{ question.name }}">
+        </div>
 
-    </h3>
-    <div class='chart' data-chart-type='{{ question.chart_type }}' data-unit-text='{{ question.text }}' data-question-id='{{ question.pk }}' dir='ltr'></div>
-    <script type='text/javascript'>
-      var chart_{{ question.pk }}_data = {{ question.chart_data }};
-
-    </script>
+        {% include "charts/summary_table.html" %}
+      {% else %}
+        <div class="chart-no-data">
+          {% trans "No data to display for this time period." %}
+        </div>
+      {% endif %}
+    </div>
+  {% empty %}
+    <div>
+      {% trans "There are no questions to display." %}
+    </div>
   {% endfor %}
-{% endblock %}
-
+{% endblock content %}

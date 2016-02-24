@@ -84,6 +84,10 @@ footer {
   width: 66%
 }
 
+.read-half {
+  width: 50%
+}
+
 /**
  * Custom URN widget used on Contact update page
  */
@@ -102,39 +106,11 @@ footer {
 /**
  * Charts
  */
-.chart {
-  min-width: 320px;
-  max-width: 700px;
-  height: 320px;
-  margin: 0 auto
-}
-
-.chart-baseline {
-  min-width: 310px;
-  height: 400px;
-  max-width: 1000px;
-  margin: 0 auto;
-}
-
-.chart-home {
-  min-width: 210px;
-  max-width: 800px;
-  height: 400px;
-  margin: 0 auto;
-}
-
 .chart-no-data {
   border: 2px dashed #DDDDDD;
   padding: 1em;
-  height: auto !important;
   font-size: 20px;
   color: #DDDDDD;
-  text-align: center;
-}
-
-.chart-dates {
-  font-weight: bold;
-  padding-bottom: 1em;
   text-align: center;
 }
 
@@ -191,5 +167,35 @@ footer {
                 width: 0;  /* exact width set by Javascript */
             }
         }
+    }
+}
+
+#filters {
+    margin-top: 10px;
+    margin-bottom: 50px;
+
+    .filter-form {
+        input, textarea, select {
+            &.form-control {
+                width: 100%;
+            }
+        }
+        .help-block {
+            margin-bottom: 0;
+        }
+        .error {
+            &:extend(.help-block);
+
+            color: #a94442;
+            font-weight: bold;
+        }
+    }
+}
+
+.navbar-logo {
+    height: 50px;
+    float: left;
+    @media (min-width: 768px) {
+        margin-left: -15px;
     }
 }

@@ -124,7 +124,7 @@ class RegionCRUDL(SmartCRUDL):
             regions = regions.prefetch_related(
                 Prefetch(
                     "contacts",
-                    Contact.objects.filter(is_active=True),
+                    Contact.objects.active(),
                     "prefetched_contacts",
                 ),
             )

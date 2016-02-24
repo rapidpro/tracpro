@@ -3,9 +3,7 @@ from __future__ import unicode_literals
 from celery.utils.log import get_task_logger
 from djcelery_transactions import task
 
-from dash.orgs.models import Org
-
-from tracpro.orgs_ext.utils import run_org_task
+from tracpro.orgs_ext.tasks import OrgTask
 
 
 logger = get_task_logger(__name__)
@@ -47,52 +45,43 @@ def send_unsolicited_message(org, text, contact):
         logger.error("Error sending unsolicited message to %s failed" % (contact.name), exc_info=1)
 
 
-@task
-def fetch_all_inbox_messages():
-    """
-    Fetches all unsolicited inbox messages (type="I") into InboxMessage
-    """
-    logger.info("Starting inbox message fetch for all orgs...")
-    for org in Org.objects.filter(is_active=True):
-        run_org_task(org, fetch_inbox_messages)
+class FetchOrgInboxMessages(OrgTask):
 
+    def org_task(self, org):
+        from .models import InboxMessage
+        from tracpro.contacts.models import Contact
 
-def fetch_inbox_messages(org_id):
-    from .models import InboxMessage
-    from tracpro.contacts.models import Contact
+        client = org.get_temba_client()
 
-    org = Org.objects.get(pk=org_id)
+        inbox_messages = client.get_messages(_types="I")
 
-    client = org.get_temba_client()
-
-    inbox_messages = client.get_messages(_types="I")
-
-    for inbox_message in inbox_messages:
-        contact = Contact.objects.filter(uuid=inbox_message.contact).first()
-        # If the sync_all_contacts() task hasn't gotten this contact yet,
-        # don't get the message yet
-        if contact:
-            inbox_message_record = InboxMessage.objects.filter(rapidpro_message_id=inbox_message.id)
-            if inbox_message_record:
-                inbox_message_record.update(
-                    org=org,
-                    contact=contact,
-                    text=inbox_message.text,
-                    archived=inbox_message.archived,
-                    created_on=inbox_message.created_on,
-                    delivered_on=inbox_message.delivered_on,
-                    sent_on=inbox_message.sent_on,
-                    direction=inbox_message.direction
+        for inbox_message in inbox_messages:
+            contact = Contact.objects.filter(uuid=inbox_message.contact).first()
+            # If the contact sync task hasn't gotten this contact yet,
+            # don't get the message yet
+            if contact:
+                inbox_message_record = InboxMessage.objects.filter(
+                    rapidpro_message_id=inbox_message.id)
+                if inbox_message_record:
+                    inbox_message_record.update(
+                        org=org,
+                        contact=contact,
+                        text=inbox_message.text,
+                        archived=inbox_message.archived,
+                        created_on=inbox_message.created_on,
+                        delivered_on=inbox_message.delivered_on,
+                        sent_on=inbox_message.sent_on,
+                        direction=inbox_message.direction,
                     )
-            else:
-                InboxMessage.objects.create(
-                    org=org,
-                    rapidpro_message_id=inbox_message.id,
-                    contact=contact,
-                    text=inbox_message.text,
-                    archived=inbox_message.archived,
-                    created_on=inbox_message.created_on,
-                    delivered_on=inbox_message.delivered_on,
-                    sent_on=inbox_message.sent_on,
-                    direction=inbox_message.direction
+                else:
+                    InboxMessage.objects.create(
+                        org=org,
+                        rapidpro_message_id=inbox_message.id,
+                        contact=contact,
+                        text=inbox_message.text,
+                        archived=inbox_message.archived,
+                        created_on=inbox_message.created_on,
+                        delivered_on=inbox_message.delivered_on,
+                        sent_on=inbox_message.sent_on,
+                        direction=inbox_message.direction,
                     )

@@ -1,8 +1,8 @@
 {% extends "smartmin/base.html" %}
 
-{% load compress %}
 {% load i18n %}
-{% load smartmin %}
+{% load charts %}
+{% load staticfiles %}
 
 {% block content %}
   {% if not request.user_regions %}
@@ -11,16 +11,25 @@
     </div>
   {% else %}
     <div class='row bottom-margin'>
-        <div class='col-md-9'>
-          <h2>
-            {{ baselineterm.name }}
-          </h2>
-          <div id="container" class="chart-home">
-          </div>
-          <div class="chart-dates">
-            {{ baselineterm.start_date|date:"F d, Y" }} -
-            {{ baselineterm.end_date|date:"F d, Y" }}
-          </div>
+      <div class='col-md-9'>
+         {% if chart_data %}
+           <div class="chart-baseline"
+                data-title="{{ featured_indicator.name }}"
+                data-subtitle="Baseline: {{ featured_indicator.baseline_question|escapejs }}, Follow Ups: {{ featured_indicator.follow_up_question }}"
+                data-y-axis-title="{{ featured_indicator.y_axis_title }}"
+                data-chart="{{ chart_data|chart_json }}">
+            </div>
+            <div class="text-center bottom-margin">
+              <strong>
+                {{ featured_indicator.start_date|date:"F d, Y" }} -
+                {{ featured_indicator.end_date|date:"F d, Y" }}
+              </strong>
+            </div>
+          {% else %}
+            <div class="chart-no-data">
+              No data to display for this time period.
+            </div>
+          {% endif %}
         </div>
         <div class='col-md-3'>
           <div class='page-header'>
@@ -35,36 +44,36 @@
             </h2>
           </div>
           <table class='table table-striped' style='width: 100%'>
-          <thead>
-            <tr>
-              <th>
-                {% trans "Name" %}
-              </th>
-              <th>
-                {% trans "End Date" %}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for baselinetermitem in baselineterms %}
+            <thead>
               <tr>
-                <td>
-                  <a href='{% url "baseline.baselineterm_read" baselinetermitem.pk %}'>
-                    {{ baselinetermitem.name }}
-                  </a>
-                  {% if baselinetermitem.pk == baselineterm.pk %}
-                    (displayed)
-                  {% endif %}
-                </td>
-                <td>
-                  {{ baselinetermitem.end_date|date:"F d, Y"  }}
-                </td>
+                <th>
+                  {% trans "Name" %}
+                </th>
+                <th>
+                  {% trans "End Date" %}
+                </th>
               </tr>
-            {% endfor %}
-          </tbody>
+            </thead>
+            <tbody>
+              {% for indicator in recent_indicators %}
+                <tr>
+                  <td>
+                    <a href='{% url "baseline.baselineterm_read" indicator.pk %}'>
+                      {{ indicator.name }}
+                    </a>
+                    {% if indicator.pk == featured_indicator.pk %}
+                      (displayed)
+                    {% endif %}
+                  </td>
+                  <td>
+                    {{ indicator.end_date|date:"F d, Y"  }}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
           </table>
         </div>
-    </div>
+      </div>
 
     <div class='page-header'>
       <div class='btn-group pull-away'>
@@ -149,67 +158,7 @@
       </div>
     </div>
     {% if request.region %}
-      <div id='start-poll-dialog' class='modal fade' role='dialog'>
-        <div class='modal-dialog'>
-          <div class='modal-content'>
-            <div class='modal-header'>
-              <button class='close' data-dismiss='modal' type='button'>
-                &times;
-              </button>
-              <h4 class='modal-title'>
-                {% trans "Start Poll" %}
-              </h4>
-            </div>
-            <div class='modal-body'>
-              <form id='start-poll-form' class='form-horizontal'>
-                {% csrf_token %}
-                <div class='form-group'>
-                  <label class='col-sm-2 control-label' for='poll'>
-                    {% trans "Poll" %}
-                  </label>
-                  <div class='col-sm-10'>
-                    <select class='form-control' style='width: 100%' name='poll'>
-                      {% for poll in polls %}
-                        <option value='{{ poll.pk }}'>
-                          {{ poll.name }}
-                        </option>
-                      {% endfor %}
-                    </select>
-                  </div>
-                </div>
-                <div class='form-group'>
-                  <label class='col-sm-2 control-label' for="region">
-                    {% trans "Region" %}
-                  </label>
-                  <div class='col-sm-10'>
-                    <input class='form-control' style='width: 100%'
-                           type='text' name="region"
-                           readonly='readonly' value='{{ request.region }}' />
-                  </div>
-                </div>
-                {% if not request.region.is_leaf_node %}
-                  <div class="form-group">
-                    <div class="col-sm-10 col-sm-offset-2">
-                      <label for="propagate">
-                        <input type="checkbox" name="propagate" checked />
-                        {% trans "Propagate to sub-regions" %}
-                      </label>
-                    </div>
-                  </div>
-                {% endif %}
-              </form>
-            </div>
-            <div class='modal-footer'>
-              <button class='btn btn-default' data-dismiss='modal' type='button'>
-                {% trans "Cancel" %}
-              </button>
-              <button class='btn btn-primary' type='button' onclick='onPollCreate()'>
-                {% trans "Start" %}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      {% include "home/start_poll_modal.html" %}
     {% endif %}
     <div class='row'>
       <div class='col-md-6'>
@@ -294,7 +243,6 @@
                 </td>
                 <td>
                   [[ group.response_count ]]
-
                 </td>
               </tr>
             </tbody>
@@ -310,9 +258,10 @@
 {% endblock content %}
 
 {% block extra-script %}
-  {% include 'baseline/baselineterm_chart.html' %}
   {{ block.super }}
-  <script type='text/javascript'>
+  <script src="{% static "libs/highcharts-4.1.8/highcharts.js" %}"></script>
+  <script src="{% static "js/charts.js" %}"></script>
+  <script>
 // <![CDATA[
     function onPollCreate() {
       data = $('#start-poll-form').serialize();
