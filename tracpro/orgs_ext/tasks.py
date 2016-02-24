@@ -78,10 +78,9 @@ class OrgTask(PostTransactionTask):
 
     def apply_async(self, *args, **kwargs):
         kwargs.setdefault('expires', datetime.datetime.now() + settings.ORG_TASK_TIMEOUT)
-
-        # FIXME: Increase time limit after testing on staging
-        kwargs.setdefault('time_limit', 30)
-        kwargs.setdefault('soft_time_limit', 5)
+        time_limit = settings.ORG_TASK_TIMEOUT.seconds
+        kwargs.setdefault('time_limit', time_limit + 15)
+        kwargs.setdefault('soft_time_limit', time_limit)
         return super(OrgTask, self).apply_async(*args, **kwargs)
 
     def check_rate_limit(self, org):
