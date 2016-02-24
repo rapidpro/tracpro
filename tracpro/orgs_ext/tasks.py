@@ -31,7 +31,7 @@ class ScheduleTaskForActiveOrgs(PostTransactionTask):
     def apply_async(self, *args, **kwargs):
         kwargs.setdefault('queue', 'org_scheduler')
         kwargs.setdefault('expires', datetime.datetime.now() + settings.ORG_TASK_TIMEOUT)
-        return PostTransactionTask.apply_async(self, *args, **kwargs)
+        return super(ScheduleTaskForActiveOrgs, self).apply_async(*args, **kwargs)
 
     def run(self, task_name):
         """Schedule the OrgTask to be run for each active org."""
@@ -54,7 +54,7 @@ class ScheduleTaskForActiveOrgs(PostTransactionTask):
                     "{}: Skipping {} for {} because it has no API token.".format(
                         self.__name__, task_name, org.name))
             else:
-                signature(task_name, args=[org.pk])
+                signature(task_name, args=[org.pk]).delay()
                 logger.info(
                     "{}: Scheduled {} for {}.".format(
                         self.__name__, task_name, org.name))
@@ -76,7 +76,7 @@ class OrgTask(PostTransactionTask):
 
     def apply_async(self, *args, **kwargs):
         kwargs.setdefault('expires', datetime.datetime.now() + settings.ORG_TASK_TIMEOUT)
-        return PostTransactionTask.apply_async(self, *args, **kwargs)
+        return super(OrgTask, self).apply_async(*args, **kwargs)
 
     def check_rate_limit(self, org):
         """Return True if the task has been run too recently for this org."""
