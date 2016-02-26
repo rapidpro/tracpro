@@ -82,7 +82,14 @@ $(function() {
         if (boundaryId in allBoundaries) {
           var category = mapData[boundaryId];
           var boundaryInfo = $.extend({}, allBoundaries[boundaryId]);
-          boundaryInfo.properties.style.fillColor = colors[category];
+          boundaryInfo.properties = $.extend({}, boundaryInfo.properties);
+          boundaryInfo.properties.style = {
+            'color': '#fff',
+            'opacity': 1,
+            'fillColor': colors[category],
+            'fillOpacity': 1,
+            'weight': 2
+          }
           boundaryInfo.properties.category = category;
           boundary = new L.GeoJSON(boundaryInfo, {
             style: function(feature) {

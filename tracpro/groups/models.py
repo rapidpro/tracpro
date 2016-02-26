@@ -246,7 +246,6 @@ class Boundary(models.Model):
 
     def as_geojson(self):
         if not hasattr(self, '_geojson'):
-            # Send in default styles that will be overriden later
             self._geojson = {
                 'type': "Feature",
                 'geometry': json.loads(self.geometry),
@@ -254,14 +253,6 @@ class Boundary(models.Model):
                     'id': self.id,
                     'level': self.level,
                     'name': self.name,
-                    'category': '',
-                    'style': {
-                        'color': "#FFFFFF",
-                        'opacity': 1.0,
-                        'fillColor': "#000000",
-                        'fillOpacity': 1.0,
-                        'weight': 2
-                    },
                 },
             }
         return self._geojson
