@@ -51,33 +51,35 @@
 
       {% if display_maps and map_data and chart_data %}
         <ul class='nav nav-tabs' style='margin-bottom: 1em'>
-          <li class='active'>
-            <a class="tab_chart" href=''>
-              {% trans "Chart" %}
-            </a>
+          <li role="presentation" class='active'>
+            <a role="tab" data-toggle="tab" aria-controls="chart-{{ question.pk }}"
+               href="#chart-{{ question.pk }}">{% trans "Chart" %}</a>
           </li>
-          <li>
-            <a class="tab_map" href=''>
-              {% trans "Map" %}
-            </a>
+          <li role="presentation">
+            <a role="tab" data-toggle="tab" aria-controls="map-{{ question.pk }}"
+               href="#map-{{ question.pk }}">{% trans "Map" %}</a>
           </li>
         </ul>
       {% endif %}
 
       {% if display_maps and map_data or chart_data %}
-        <div class="visual">
-          {% if map_data %}
-            <div class="map"
-              {% for key, value in map_data.items %}
-                 data-{{ key }}='{{ value|chart_json }}'
-              {% endfor %}>
+        <div class="tab-content">
+          {% if chart_data %}
+            <div role="tabpanel" class="tab-pane active" id="chart-{{ question.pk }}">
+              <div class="chart-{{ chart_type }}"
+                   data-chart='{{ chart_data|chart_json }}'
+                   data-name="{{ question.name }}">
+              </div>
             </div>
           {% endif %}
 
-          {% if chart_data %}
-            <div class="chart-{{ chart_type }}"
-                 data-chart='{{ chart_data|chart_json }}'
-                 data-name="{{ question.name }}">
+          {% if map_data %}
+            <div role="tabpanel" class="tab-pane" id="map-{{ question.pk }}">
+              <div class="map"
+                {% for key, value in map_data.items %}
+                   data-{{ key }}='{{ value|chart_json }}'
+                {% endfor %}>
+              </div>
             </div>
           {% endif %}
         </div>

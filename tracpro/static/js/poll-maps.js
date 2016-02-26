@@ -20,6 +20,16 @@ $(function() {
     return colors;
   }
 
+  /* Center map to include all boundaries whenever a map tab is opened. */
+  $("body").on("shown.bs.tab", function(e) {
+    var mapDiv = $($(e.target).attr('href')).find('.map');
+    if (mapDiv.length) {
+      var map = mapDiv.data('map');
+      var boundariesGroup = mapDiv.data('boundary-array');
+      map.fitBounds(L.featureGroup(boundariesGroup).getBounds());
+    }
+  });
+
   $.getJSON("/boundary/", function(data) {
     var allBoundaries = data['results'];
 
@@ -98,10 +108,7 @@ $(function() {
         }
       }
       mapDiv.data('boundary-array', boundariesArray);
-
-      // Center the map to include all boundaries
-      var boundaries_group = new L.featureGroup(mapDiv.data('boundary-array'));
-      map.fitBounds(boundaries_group.getBounds());
+      mapDiv.data('map', map);
 
       // Add legend to bottom-right corner
       var legend = L.control({
@@ -121,22 +128,6 @@ $(function() {
           return div;
       };
       legend.addTo(map);
-
     });
-    $(".visual .map").hide(); // hide maps on initial page load, after they are drawn
-  });
-
-  $(".tab_chart").click(function(){
-    $(this).closest("div").find('.map').hide();
-    $(this).closest("div").find("div[class^='chart-']").show();
-    $(this).parent().addClass('active');
-    $(this).parent().parent().find(".tab_map").parent().removeClass('active');
-  });
-
-  $(".tab_map").click(function(){
-    $(this).closest("div").find('.map').show();
-    $(this).closest("div").find("div[class^='chart-']").hide();
-    $(this).parent().addClass('active');
-    $(this).parent().parent().find(".tab_chart").parent().removeClass('active');
   });
 });
