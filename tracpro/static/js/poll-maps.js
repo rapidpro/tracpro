@@ -1,14 +1,14 @@
 
 $(function() {
 
-  var VIVID_COLORS = ['#006837', '#A7082C', '#1F49BF', '#FF8200', '#FFD100', '#40004b', '#762a83', '#1b7837'];
-  var LIGHT_COLORS = ['#94D192', '#F2A2B3', '#96AEF2', '#FFFFBF', '#c2a5cf', '#a6dba0', '#92c5de'];
+  var VIVIDCOLORS = ['#006837', '#A7082C', '#1F49BF', '#FF8200', '#FFD100', '#40004b', '#762a83', '#1b7837'];
+  var LIGHTCOLORS = ['#94D192', '#F2A2B3', '#96AEF2', '#FFFFBF', '#c2a5cf', '#a6dba0', '#92c5de'];
 
   var getColors = function(categories) {
     var allColors = [];
     // Use the full set of colors, starting with bright colors.
-    $.each(VIVID_COLORS, function(i, color) { allColors.push(color); });
-    $.each(LIGHT_COLORS, function(i, color) { allColors.push(color); });
+    $.each(VIVIDCOLORS, function(i, color) { allColors.push(color); });
+    $.each(LIGHTCOLORS, function(i, color) { allColors.push(color); });
 
     var colors = {};
     $.each(categories, function(i, category) {
@@ -19,15 +19,15 @@ $(function() {
   }
 
   $.getJSON( "/boundary/", function( data ) {
-    var all_boundaries = {};
+    var allBoundaries = {};
     for (var i in data['results']) {
       var boundaryInfo = data['results'][i];
-      all_boundaries[boundaryInfo.properties.id] = boundaryInfo;
+      allBoundaries[boundaryInfo.properties.id] = boundaryInfo;
     }
 
     $('.map').each(function() {
       var map_div = $(this);
-      var map_data = map_div.data('map-data');
+      var mapData = map_div.data('map-data');
       var colors = getColors(map_div.data('all-categories'));
 
       var map = L.map(this.id);
@@ -77,11 +77,11 @@ $(function() {
           });
       }
 
-      var boundaries_array = [];
-      for (var boundaryId in map_data) {
-        if (boundaryId in all_boundaries) {
-          var category = map_data[boundaryId];
-          var boundaryInfo = all_boundaries[boundaryId];
+      var boundariesArray = [];
+      for (var boundaryId in mapData) {
+        if (boundaryId in allBoundaries) {
+          var category = mapData[boundaryId];
+          var boundaryInfo = $.extend({}, allBoundaries[boundaryId]);
           boundaryInfo.properties.style.fillColor = colors[category];
           boundaryInfo.properties.category = category;
           boundary = new L.GeoJSON(boundaryInfo, {
@@ -91,10 +91,10 @@ $(function() {
             onEachFeature: onEachFeature
           });
           boundary.addTo(map);
-          boundaries_array.push(boundary);
+          boundariesArray.push(boundary);
         }
       }
-      map_div.data('boundary-array', boundaries_array);
+      map_div.data('boundary-array', boundariesArray);
 
       // Center the map to include all boundaries
       var boundaries_group = new L.featureGroup(map_div.data('boundary-array'));
