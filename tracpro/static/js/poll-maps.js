@@ -1,22 +1,19 @@
 
 $(function() {
 
-  var VIVIDCOLORS = ['#006837', '#A7082C', '#1F49BF', '#FF8200', '#FFD100', '#40004b', '#762a83', '#1b7837'];
-  var LIGHTCOLORS = ['#94D192', '#F2A2B3', '#96AEF2', '#FFFFBF', '#c2a5cf', '#a6dba0', '#92c5de'];
+  var COLORS = [
+    // vivid colors
+    '#006837', '#A7082C', '#1F49BF', '#FF8200', '#FFD100', '#40004b',
+    '#762a83', '#1b7837',
+    // light colors
+    '#94D192', '#F2A2B3', '#96AEF2', '#FFFFBF', '#c2a5cf', '#a6dba0',
+    '#92c5de'];
 
   var getColors = function(categories) {
-    var allColors = [];
-    // Use the full set of colors, starting with bright colors.
-    $.each(VIVIDCOLORS, function(i, color) { allColors.push(color); });
-    $.each(LIGHTCOLORS, function(i, color) { allColors.push(color); });
-    // Double this set of colors using the same colors for questions with many categories
-    $.each(allColors, function(i, color) { allColors.push(color); });
-
     var colors = {};
     $.each(categories, function(i, category) {
-      colors[category] = allColors[i];
+      colors[category] = COLORS[i % COLORS.length];
     });
-
     return colors;
   }
 
