@@ -8,10 +8,18 @@ from django.db.models import F
 
 from .utils import get_numeric_values
 from . import rules
+from tracpro.groups.models import Region
 
 
 def get_map_data(responses, question):
     answers = question.answers.filter(response__in=responses)
+
+    region_count = Region.objects.filter(
+        id__in=answers.values('response__contact__region'), boundary__isnull=False).count()
+    # If there are no region-boundary connections, there is nothing to map
+    if not region_count:
+        return {}
+
     answers = answers.annotate(boundary=F('response__contact__region__boundary'))
     answers = answers.order_by('boundary')
 

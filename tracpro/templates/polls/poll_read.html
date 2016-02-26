@@ -100,6 +100,7 @@
 
   {% for question, chart_type, chart_data, map_data, summary_table in question_data %}
     <div class="poll-question">
+
       <h3>
         {{ forloop.counter }}. {{ question.name }}
         {% if question.question_type == question.TYPE_NUMERIC %}
@@ -114,6 +115,12 @@
         {% endif %}
       </h3>
 
+      {% if not map_data and chart_data %}
+        <div class="alert alert-info">
+          You don't currently have regions and boundaries linked, so the maps feature is unavailable. Edit your Region-Boundary relationships from Administration - Regions.
+        </div>
+      {% endif %}
+
       {% if chart_data %}
         <ul class='nav nav-tabs' style='margin-bottom: 1em'>
           <li class='active'>
@@ -121,19 +128,23 @@
               {% trans "Chart" %}
             </a>
           </li>
-          <li>
-            <a class="tab_map" href=''>
-              {% trans "Map" %}
-            </a>
-          </li>
+          {% if map_data %}
+            <li>
+              <a class="tab_map" href=''>
+                {% trans "Map" %}
+              </a>
+            </li>
+          {% endif %}
         </ul>
 
         <div class="visual">
-          <div class="map" id="map_{{ question.id }}"
-               {% for key, value in map_data.items %}
-                 data-{{ key }}='{{ value|chart_json }}'
-               {% endfor %}>
-          </div>
+          {% if map_data %}
+            <div class="map" id="map_{{ question.id }}"
+                 {% for key, value in map_data.items %}
+                   data-{{ key }}='{{ value|chart_json }}'
+                 {% endfor %}>
+            </div>
+          {% endif %}
 
           <div class="chart-{{ chart_type }}"
                data-chart='{{ chart_data|chart_json }}'
