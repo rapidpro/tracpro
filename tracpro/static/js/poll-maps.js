@@ -9,6 +9,8 @@ $(function() {
     // Use the full set of colors, starting with bright colors.
     $.each(VIVIDCOLORS, function(i, color) { allColors.push(color); });
     $.each(LIGHTCOLORS, function(i, color) { allColors.push(color); });
+    // Double this set of colors using the same colors for questions with many categories
+    $.each(allColors, function(i, color) { allColors.push(color); });
 
     var colors = {};
     $.each(categories, function(i, category) {
