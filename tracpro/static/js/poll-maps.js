@@ -24,11 +24,8 @@ $(function() {
     var allBoundaries = data['results'];
 
     $('.map').each(function() {
-      var map_div = $(this);
-      var mapData = map_div.data('map-data');
-      var colors = getColors(map_div.data('all-categories'));
-
-      var map = L.map(this.id);
+      var mapDiv = $(this);
+      var map = L.map(this);
 
       // Info box
       // Display information on boundary hover
@@ -76,6 +73,8 @@ $(function() {
       }
 
       var boundariesArray = [];
+      var mapData = mapDiv.data('map-data');
+      var colors = getColors(mapDiv.data('all-categories'));
       for (var boundaryId in mapData) {
         if (boundaryId in allBoundaries) {
           var category = mapData[boundaryId];
@@ -98,10 +97,10 @@ $(function() {
           boundariesArray.push(boundary);
         }
       }
-      map_div.data('boundary-array', boundariesArray);
+      mapDiv.data('boundary-array', boundariesArray);
 
       // Center the map to include all boundaries
-      var boundaries_group = new L.featureGroup(map_div.data('boundary-array'));
+      var boundaries_group = new L.featureGroup(mapDiv.data('boundary-array'));
       map.fitBounds(boundaries_group.getBounds());
 
       // Add legend to bottom-right corner
@@ -110,7 +109,7 @@ $(function() {
       });
       legend.onAdd = function (map) {
 
-          var colors = getColors(map_div.data('all-categories'));
+          var colors = getColors(mapDiv.data('all-categories'));
           var div = L.DomUtil.create('div', 'info legend');
           var label = ['<strong>index</strong>'];
           for (key in colors) {

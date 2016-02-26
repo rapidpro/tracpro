@@ -132,7 +132,7 @@
       {% if display_maps and map_data or chart_data %}
         <div class="visual">
           {% if display_maps and map_data %}
-            <div class="map" id="map_{{ question.id }}"
+            <div class="map"
               {% for key, value in map_data.items %}
                  data-{{ key }}='{{ value|chart_json }}'
               {% endfor %}>
