@@ -8,7 +8,6 @@ from django.db.models import F
 
 from .utils import get_numeric_values
 from . import rules
-from tracpro.groups.models import Region
 
 
 def get_map_data(responses, question):
