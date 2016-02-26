@@ -83,8 +83,7 @@ $(function() {
       for (var boundaryId in mapData) {
         if (boundaryId in allBoundaries) {
           var category = mapData[boundaryId];
-          var boundaryInfo = $.extend({}, allBoundaries[boundaryId]);
-          boundaryInfo.properties = $.extend({}, boundaryInfo.properties);
+          var boundaryInfo = $.extend(true, {}, allBoundaries[boundaryId]);  // deep copy
           boundaryInfo.properties.style = {
             'color': '#fff',
             'opacity': 1,
