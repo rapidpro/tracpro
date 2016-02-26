@@ -3,11 +3,9 @@ $(function() {
 
   var COLORS = [
     // vivid colors
-    '#006837', '#A7082C', '#1F49BF', '#FF8200', '#FFD100', '#40004b',
-    '#762a83', '#1b7837',
+    '#006837', '#1F49BF', '#762a83', '#A7082C', '#FF8200', '#FFD100',
     // light colors
-    '#94D192', '#F2A2B3', '#96AEF2', '#FFFFBF', '#c2a5cf', '#a6dba0',
-    '#92c5de'];
+    '#94D192', '#92c5de', '#c2a5cf', '#F2A2B3', '#f7cca0', '#FFFFBF' ];
 
   var getColors = function(categories) {
     var colors = {};
@@ -93,7 +91,12 @@ $(function() {
             'fillOpacity': 1,
             'weight': 2
           }
-          boundaryInfo.properties.category = category;
+          if (category) {
+            boundaryInfo.properties.category = category;
+          }
+          else {
+            boundaryInfo.properties.category = "None";
+          }
           boundary = new L.GeoJSON(boundaryInfo, {
             style: function(feature) {
               return feature.properties.style;
