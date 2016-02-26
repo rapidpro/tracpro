@@ -12,7 +12,6 @@
 
 {% block extra-style %}
   {{ block.super }}
-
   {% compress css %}
     <link type="text/css" rel="stylesheet"
           href="{% static "libs/jqcloud-2.0.1/jqcloud.css" %}" />
@@ -23,7 +22,6 @@
 
 {% block extra-script %}
   {{ block.super }}
-
   {% compress js %}
     <script src="{% static "libs/highcharts-4.1.8/highcharts.js" %}"></script>
     <script src="{% static "libs/jqcloud-2.0.1/jqcloud.js" %}"></script>
@@ -34,6 +32,7 @@
 {% endblock extra-script %}
 
 {% block content %}
+  {% include "polls/maps_warning.html" %}
 
   {% for question, chart_type, chart_data, map_data, summary_table in question_data %}
     <div class="poll-question">
@@ -50,43 +49,45 @@
         </div>
       {% endif %}
 
-      {% if chart_data %}
+      {% if display_maps and map_data and chart_data %}
         <ul class='nav nav-tabs' style='margin-bottom: 1em'>
           <li class='active'>
             <a class="tab_chart" href=''>
               {% trans "Chart" %}
             </a>
           </li>
-          {% if map_data %}
-            <li>
-              <a class="tab_map" href=''>
-                {% trans "Map" %}
-              </a>
-            </li>
-          {% endif %}
+          <li>
+            <a class="tab_map" href=''>
+              {% trans "Map" %}
+            </a>
+          </li>
         </ul>
+      {% endif %}
 
+      {% if display_maps and map_data or chart_data %}
         <div class="visual">
           {% if map_data %}
             <div class="map" id="map_{{ question.id }}"
-                 {% for key, value in map_data.items %}
-                   data-{{ key }}='{{ value|chart_json }}'
-                 {% endfor %}>
+              {% for key, value in map_data.items %}
+                 data-{{ key }}='{{ value|chart_json }}'
+              {% endfor %}>
             </div>
           {% endif %}
 
-          <div class="chart-{{ chart_type }}"
-               data-chart='{{ chart_data|chart_json }}'
-               data-name="{{ question.name }}">
-          </div>
+          {% if chart_data %}
+            <div class="chart-{{ chart_type }}"
+                 data-chart='{{ chart_data|chart_json }}'
+                 data-name="{{ question.name }}">
+            </div>
+          {% endif %}
         </div>
-
-        {% include "charts/summary_table.html" %}
       {% else %}
         <div class="chart-no-data">
           {% trans "No data to display for this time period." %}
         </div>
       {% endif %}
+
+      {% include "charts/summary_table.html" %}
     </div>
   {% empty %}
     <div>

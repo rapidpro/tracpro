@@ -12,21 +12,14 @@ from tracpro.groups.models import Region
 
 
 def get_map_data(responses, question):
-    answers = question.answers.filter(response__in=responses)
-
-    region_count = Region.objects.filter(
-        id__in=answers.values('response__contact__region'), boundary__isnull=False).count()
-    # If there are no region-boundary connections, there is nothing to map
-    if not region_count:
-        return {}
-
-    answers = answers.annotate(boundary=F('response__contact__region__boundary'))
-    answers = answers.order_by('boundary')
-
-    if question.question_type == question.TYPE_NUMERIC:
-        map_data = numeric_map_data(answers, question)
+    answers = get_answers(responses, question)
+    if answers.exists():
+        if question.question_type == question.TYPE_NUMERIC:
+            map_data = numeric_map_data(answers, question)
+        else:
+            map_data = categorical_map_data(answers, question)
     else:
-        map_data = categorical_map_data(answers, question)
+        map_data = None
 
     return {
         'map-data': map_data,
@@ -34,10 +27,17 @@ def get_map_data(responses, question):
     }
 
 
+def get_answers(responses, question):
+    """Return answers to the question from the responses, annotated with `boundary`."""
+    answers = question.answers.filter(response__in=responses)
+    answers = answers.annotate(boundary=F('response__contact__region__boundary'))
+    return answers
+
+
 def numeric_map_data(answers, question):
     """For each boundary, display the category of the average answer value."""
     map_data = {}
-    answer_data = answers.values('boundary', 'value')
+    answer_data = answers.order_by('boundary').values('boundary', 'value')
     for boundary_id, _answers in groupby(answer_data, itemgetter('boundary')):
         average = numpy.mean(get_numeric_values(a['value'] for a in _answers))
         map_data[boundary_id] = question.categorize(average)
@@ -47,7 +47,7 @@ def numeric_map_data(answers, question):
 def categorical_map_data(answers, question):
     """For each boundary, display the most common answer category."""
     map_data = {}
-    answer_data = answers.values('boundary', 'category')
+    answer_data = answers.order_by('boundary').values('boundary', 'category')
     for boundary_id, _answers in groupby(answer_data, itemgetter('boundary')):
         category_counts = Counter(a['category'] for a in _answers)
         top_category = category_counts.most_common(1)[0][0]

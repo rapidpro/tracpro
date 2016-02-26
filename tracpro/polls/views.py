@@ -38,6 +38,8 @@ class PollCRUDL(smartmin.SmartCRUDL):
     class Read(PollMixin, OrgObjPermsMixin, smartmin.SmartReadView):
 
         def get(self, request, *args, **kwargs):
+            display_maps = self.request.org.regions.filter(
+                is_active=True).exclude(boundary=None).exists()
             self.object = self.get_object()
             self.filter_form = forms.PollChartFilterForm(
                 org=self.object.org, data=request.GET)
@@ -45,6 +47,7 @@ class PollCRUDL(smartmin.SmartCRUDL):
                 object=self.object,
                 form=self.filter_form,
                 question_data=self.get_question_data(),
+                display_maps=display_maps,
             ))
 
         def get_pollruns(self):
@@ -96,8 +99,12 @@ class PollCRUDL(smartmin.SmartCRUDL):
                     pollruns, responses, question, split_regions)
                 map_data = maps.get_map_data(responses, question)
                 data.append((
-                    question, chart_type, chart_data,
-                    map_data, summary_table))
+                    question,
+                    chart_type,
+                    chart_data,
+                    map_data,
+                    summary_table,
+                ))
             return data
 
     class Update(PollMixin, OrgObjPermsMixin, smartmin.SmartUpdateView):
@@ -287,17 +294,22 @@ class PollRunCRUDL(smartmin.SmartCRUDL):
             return responses
 
         def get_context_data(self, **kwargs):
+            display_maps = self.request.org.regions.filter(
+                is_active=True).exclude(boundary=None).exists()
+            kwargs.setdefault('display_maps', display_maps)
             responses = self.get_responses(self.object)
             data = []
             for question in self.object.poll.questions.active():
                 chart_type, chart_data, summary_table = charts.single_pollrun(
                     self.object, responses, question)
-                map_data = maps.get_map_data(
-                    responses, question)
+                map_data = maps.get_map_data(responses, question)
                 data.append((
-                    question, chart_type, chart_data,
-                    map_data, summary_table))
-
+                    question,
+                    chart_type,
+                    chart_data,
+                    map_data,
+                    summary_table,
+                ))
             kwargs.setdefault('question_data', data)
             return super(PollRunCRUDL.Read, self).get_context_data(**kwargs)
 
