@@ -20,12 +20,8 @@ $(function() {
     return colors;
   }
 
-  $.getJSON( "/boundary/", function( data ) {
-    var allBoundaries = {};
-    for (var i in data['results']) {
-      var boundaryInfo = data['results'][i];
-      allBoundaries[boundaryInfo.properties.id] = boundaryInfo;
-    }
+  $.getJSON("/boundary/", function(data) {
+    var allBoundaries = data['results'];
 
     $('.map').each(function() {
       var map_div = $(this);

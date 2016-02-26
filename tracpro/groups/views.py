@@ -329,5 +329,5 @@ class BoundaryCRUDL(SmartCRUDL):
             return Boundary.objects.by_org(self.request.org).order_by('-level')
 
         def render_to_response(self, context, **response_kwargs):
-            results = [boundary.as_geojson() for boundary in context['object_list']]
+            results = {b.pk: b.as_geojson() for b in context['object_list']}
             return JsonResponse({'results': results})
