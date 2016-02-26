@@ -17,13 +17,12 @@ def get_map_data(responses, question):
             map_data = numeric_map_data(answers, question)
         else:
             map_data = categorical_map_data(answers, question)
-    else:
-        map_data = None
 
-    return {
-        'map-data': map_data,
-        'all-categories': rules.get_all_categories(question),
-    }
+        return {
+            'map-data': map_data,
+            'all-categories': rules.get_all_categories(question),
+        }
+    return None
 
 
 def get_answers(responses, question):

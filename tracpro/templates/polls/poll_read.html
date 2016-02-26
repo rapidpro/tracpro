@@ -114,7 +114,7 @@
         {% endif %}
       </h3>
 
-      {% if display_maps and map_data and chart_data %}
+      {% if display_maps and map_data %}
         <ul class='nav nav-tabs' style='margin-bottom: 1em'>
           <li role="presentation" class='active'>
             <a role="tab" data-toggle="tab" aria-controls="chart-{{ question.pk }}"
@@ -127,32 +127,30 @@
         </ul>
       {% endif %}
 
-      {% if display_maps and map_data or chart_data %}
-        <div class="tab-content">
+      <div class="tab-content">
+        <div role="tabpanel" class="tab-pane active" id="chart-{{ question.pk }}">
           {% if chart_data %}
-            <div role="tabpanel" class="tab-pane active" id="chart-{{ question.pk }}">
-              <div class="chart-{{ chart_type }}"
-                   data-chart='{{ chart_data|chart_json }}'
-                   data-name="{{ question.name }}">
-              </div>
+            <div class="chart-{{ chart_type }}"
+                 data-chart='{{ chart_data|chart_json }}'
+                 data-name="{{ question.name }}">
+            </div>
+          {% else %}
+            <div class="chart-no-data">
+              {% trans "No data to display for this time period." %}
             </div>
           {% endif %}
+        </div>
 
-          {% if display_maps and map_data %}
-            <div role="tabpanel" class="tab-pane maps" id="map-{{ question.pk }}">
-              <div class="map"
-                {% for key, value in map_data.items %}
-                   data-{{ key }}='{{ value|chart_json }}'
-                {% endfor %}>
-              </div>
+        {% if display_maps and map_data %}
+          <div role="tabpanel" class="tab-pane maps" id="map-{{ question.pk }}">
+            <div class="map"
+              {% for key, value in map_data.items %}
+                 data-{{ key }}='{{ value|chart_json }}'
+              {% endfor %}>
             </div>
-          {% endif %}
-        </div>
-      {% else %}
-        <div class="chart-no-data">
-          {% trans "No data to display for this time period." %}
-        </div>
-      {% endif %}
+          </div>
+        {% endif %}
+      </div>
 
       {% include "charts/summary_table.html" %}
     </div>
