@@ -31,8 +31,9 @@ def get_all_categories(question):
 
     # Flow definitions change over time.
     # Find any categories that aren't in the rules.
-    extra = question.answers.exclude(category__in=categories)
-    extra = set(extra.values_list('category', flat=True))
+    extra = question.answers.exclude(category__in=categories + [''])
+    extra = extra.exclude(category=None)
+    extra = extra.values_list('category', flat=True).distinct('category')
     for category in extra:
         if category not in categories:
             categories.append(category)
