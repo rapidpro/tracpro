@@ -60,7 +60,7 @@ class TestGetAllCategories(TracProTest):
             rules.get_all_categories(question),
             ['a', 'b', 'Other'])
 
-    def test_get_all__answers_have_other_categories(self):
+    def test_get_all_with_answers(self):
         """Include Answer categories that aren't in the rules."""
         question = factories.Question(rules=[
             self.create_rule('a'),
@@ -69,7 +69,7 @@ class TestGetAllCategories(TracProTest):
         factories.Answer(question=question, category='apple')
         factories.Answer(question=question, category='a')
         self.assertEqual(
-            rules.get_all_categories(question),
+            rules.get_all_categories(question, answers=question.answers.all()),
             ['a', 'b', 'apple', 'Other'])
 
     def test_duplicates(self):

@@ -20,7 +20,7 @@ def get_map_data(responses, question):
 
         return {
             'map-data': map_data,
-            'all-categories': rules.get_all_categories(question),
+            'all-categories': rules.get_all_categories(question, answers),
         }
     return None
 

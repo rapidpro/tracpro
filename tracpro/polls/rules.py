@@ -19,8 +19,12 @@ def get_category(rule):
     return rule['category']
 
 
-def get_all_categories(question):
-    """Return the names of all possible Answer categories, and Other."""
+def get_all_categories(question, answers=None):
+    """Return the names of all possible Answer categories, and Other.
+
+    Pass `answers` to include any categories those Answers have that aren't in
+    the rules.
+    """
     categories = []
 
     # Add categories in the order they are defined on RapidPro.
@@ -29,14 +33,15 @@ def get_all_categories(question):
         if category not in categories:
             categories.append(category)
 
-    # Flow definitions change over time.
-    # Find any categories that aren't in the rules.
-    extra = question.answers.exclude(category__in=categories + [''])
-    extra = extra.exclude(category=None)
-    extra = extra.values_list('category', flat=True).distinct('category')
-    for category in extra:
-        if category not in categories:
-            categories.append(category)
+    if answers is not None:
+        # Flow definitions change over time.
+        # Find any categories that aren't in the rules.
+        extra = answers.exclude(category__in=categories + [''])
+        extra = extra.exclude(category=None)
+        extra = extra.values_list('category', flat=True).distinct('category')
+        for category in extra:
+            if category not in categories:
+                categories.append(category)
 
     # The last category should be "Other."
     other = str(_("Other"))  # Evaluate to keep the list JSON serializable.
