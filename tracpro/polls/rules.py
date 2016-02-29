@@ -1,7 +1,7 @@
 from decimal import Decimal, InvalidOperation
 from functools import wraps
 
-from django.utils.translation import ugettext
+from django.utils.translation import ugettext_lazy as _
 
 
 # Rule tests that suggest that the expected data is numeric.
@@ -20,15 +20,29 @@ def get_category(rule):
 
 
 def get_all_categories(question):
-    """Return the names of all answer categories, and Other."""
+    """Return the names of all possible Answer categories, and Other."""
     categories = []
+
+    # Add categories in the order they are defined on RapidPro.
     for rule in question.get_rules():
         category = get_category(rule)
-        # Prevent duplicates, but keep category order as defined on RapidPro.
         if category not in categories:
             categories.append(category)
-    # Use non-lazy evaluation to ensure the list is JSON-serializable.
-    categories.append(ugettext("Other"))
+
+    # Flow definitions change over time.
+    # Find any categories that aren't in the rules.
+    extra = question.answers.exclude(category__in=categories)
+    extra = set(extra.values_list('category', flat=True))
+    for category in extra:
+        if category not in categories:
+            categories.append(category)
+
+    # The last category should be "Other."
+    other = str(_("Other"))  # Evaluate to keep the list JSON serializable.
+    if other in categories:
+        categories.remove(other)
+    categories.append(other)
+
     return categories
 
 
