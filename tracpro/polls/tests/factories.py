@@ -1,6 +1,8 @@
 import datetime
 import json
 
+from dateutil.relativedelta import relativedelta
+
 import factory
 import factory.fuzzy
 
@@ -96,7 +98,7 @@ class Answer(factory.django.DjangoModelFactory):
     value = factory.fuzzy.FuzzyText()
     category = factory.fuzzy.FuzzyText()
     submitted_on = factory.fuzzy.FuzzyDate(
-        start_date=datetime.date.today() - datetime.timedelta(days=7),
+        start_date=datetime.date.today() - relativedelta(days=7),
         end_date=datetime.date.today())
 
     class Meta:
@@ -108,7 +110,7 @@ class Response(factory.django.DjangoModelFactory):
     pollrun = factory.SubFactory('tracpro.test.factories.PollRun')
     contact = factory.SubFactory('tracpro.test.factories.Contact')
     created_on = factory.fuzzy.FuzzyDate(
-        start_date=datetime.date.today() - datetime.timedelta(days=7),
+        start_date=datetime.date.today() - relativedelta(days=7),
         end_date=datetime.date.today())
     updated_on = factory.LazyAttribute(lambda o: o.created_on)
     status = factory.fuzzy.FuzzyChoice(c[0] for c in models.Response.STATUS_CHOICES)
