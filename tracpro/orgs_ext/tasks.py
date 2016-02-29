@@ -1,13 +1,15 @@
 from celery import signature
+from celery.exceptions import SoftTimeLimitExceeded
 from celery.utils.log import get_task_logger
 import datetime
 
 from django.apps import apps
 from django.conf import settings
 from django.core.cache import cache
+from django.core.mail import send_mail
 from django.utils.timezone import now as get_now
 
-from djcelery_transactions import task, PostTransactionTask
+from djcelery_transactions import PostTransactionTask
 
 from temba_client.base import TembaAPIError
 from temba_client.utils import parse_iso8601, format_iso8601
@@ -26,13 +28,12 @@ ORG_TASK_LOCK = 'org_task:{task}:{org}'
 LOCK_EXPIRE = (settings.ORG_TASK_TIMEOUT * 12).seconds
 
 
-@task
 class ScheduleTaskForActiveOrgs(PostTransactionTask):
 
     def apply_async(self, *args, **kwargs):
         kwargs.setdefault('queue', 'org_scheduler')
         kwargs.setdefault('expires', datetime.datetime.now() + settings.ORG_TASK_TIMEOUT)
-        return PostTransactionTask.apply_async(self, *args, **kwargs)
+        return super(ScheduleTaskForActiveOrgs, self).apply_async(*args, **kwargs)
 
     def run(self, task_name):
         """Schedule the OrgTask to be run for each active org."""
@@ -55,7 +56,7 @@ class ScheduleTaskForActiveOrgs(PostTransactionTask):
                     "{}: Skipping {} for {} because it has no API token.".format(
                         self.__name__, task_name, org.name))
             else:
-                signature(task_name, args=[org.pk])
+                signature(task_name, args=[org.pk]).delay()
                 logger.info(
                     "{}: Scheduled {} for {}.".format(
                         self.__name__, task_name, org.name))
@@ -77,7 +78,10 @@ class OrgTask(PostTransactionTask):
 
     def apply_async(self, *args, **kwargs):
         kwargs.setdefault('expires', datetime.datetime.now() + settings.ORG_TASK_TIMEOUT)
-        return PostTransactionTask.apply_async(self, *args, **kwargs)
+        time_limit = settings.ORG_TASK_TIMEOUT.seconds
+        kwargs.setdefault('time_limit', time_limit + 15)
+        kwargs.setdefault('soft_time_limit', time_limit)
+        return super(OrgTask, self).apply_async(*args, **kwargs)
 
     def check_rate_limit(self, org):
         """Return True if the task has been run too recently for this org."""
@@ -123,6 +127,18 @@ class OrgTask(PostTransactionTask):
                     logger.info(
                         "{}: Finished task for {}.".format(self.__name__, org.name))
                     return result
+            except SoftTimeLimitExceeded:
+                msg = "{}: Time limit exceeded for {}".format(self.__name__, org.name)
+                logger.error(msg)
+
+                # FIXME: Logging is not sending us this error email.
+                send_mail(
+                    subject=msg,
+                    message=msg,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=dict(settings.ADMINS).values(),
+                    fail_silently=True)
+
             finally:
                 self.release_lock(org)
         logger.info(

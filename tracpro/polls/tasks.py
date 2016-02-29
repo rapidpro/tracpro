@@ -20,7 +20,6 @@ logger = get_task_logger(__name__)
 LAST_FETCHED_RUN_TIME_KEY = 'org:%d:last_fetched_run_time'
 
 
-@task
 class FetchOrgRuns(OrgTask):
 
     def org_task(self, org):
@@ -123,7 +122,6 @@ def pollrun_restart_participants(pollrun_id, contact_uuids):
     logger.info("Created %d restart runs for poll pollrun #%d" % (len(runs), pollrun.pk))
 
 
-@task
 class SyncOrgPolls(OrgTask):
 
     def org_task(self, org):

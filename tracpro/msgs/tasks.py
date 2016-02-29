@@ -49,7 +49,6 @@ def send_unsolicited_message(org, text, contact):
         logger.error("Error sending unsolicited message to %s failed" % (contact.name), exc_info=1)
 
 
-@task
 class FetchOrgInboxMessages(OrgTask):
 
     def org_task(self, org):

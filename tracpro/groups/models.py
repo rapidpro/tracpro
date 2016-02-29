@@ -67,7 +67,7 @@ class AbstractGroup(models.Model):
                 if obj:
                     obj.deactivate()
 
-        SyncOrgContacts.delay(org.pk)
+        SyncOrgContacts().delay(org.pk)
 
     @classmethod
     def get_all(cls, org):
