@@ -43,12 +43,6 @@
         {% endif %}
       </h3>
 
-      {% if not map_data and chart_data %}
-        <div class="alert alert-info">
-          You don't currently have regions and boundaries linked, so the maps feature is unavailable. Edit your Region-Boundary relationships from Administration - Regions.
-        </div>
-      {% endif %}
-
       {% if display_maps and map_data %}
         <ul class='nav nav-tabs' style='margin-bottom: 1em'>
           <li role="presentation" class='active'>
