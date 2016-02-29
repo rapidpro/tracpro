@@ -26,9 +26,13 @@ def get_map_data(responses, question):
 
 
 def get_answers(responses, question):
-    """Return answers to the question from the responses, annotated with `boundary`."""
+    """Return answers to the question from the responses, annotated with `boundary`.
+
+    Excludes answers that are not associated with a boundary.
+    """
     answers = question.answers.filter(response__in=responses)
     answers = answers.annotate(boundary=F('response__contact__region__boundary'))
+    answers = answers.exclude(boundary=None)
     return answers
 
 
