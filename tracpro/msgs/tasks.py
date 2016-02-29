@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
-from datetime import timedelta
+
+from dateutil.relativedelta import relativedelta
 
 from django.utils import timezone
 
@@ -58,7 +59,7 @@ class FetchOrgInboxMessages(OrgTask):
 
         # Get non-archived, incoming inbox messages from the past week only
         # because getting all messages was taking too long
-        last_week = timezone.now() - timedelta(days=7)
+        last_week = timezone.now() - relativedelta(days=7)
         inbox_messages = client.get_messages(_types="I", archived="N", after=last_week)
 
         for inbox_message in inbox_messages:
