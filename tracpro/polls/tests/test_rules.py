@@ -49,6 +49,29 @@ class TestGetAllCategories(TracProTest):
             rules.get_all_categories(question),
             ['a', 'b', 'Other'])
 
+    def test_get_all__include_other(self):
+        """Ensure that "Other" is at the end of the list."""
+        question = factories.Question(rules=[
+            self.create_rule('a'),
+            self.create_rule('Other'),
+            self.create_rule('b'),
+        ])
+        self.assertEqual(
+            rules.get_all_categories(question),
+            ['a', 'b', 'Other'])
+
+    def test_get_all__answers_have_other_categories(self):
+        """Include Answer categories that aren't in the rules."""
+        question = factories.Question(rules=[
+            self.create_rule('a'),
+            self.create_rule('b'),
+        ])
+        answer1 = factories.Answer(question=question, category='apple')
+        answer2 = factories.Answer(question=question, category='a')
+        self.assertEqual(
+            rules.get_all_categories(question),
+            ['a', 'b', 'apple', 'Other'])
+
     def test_duplicates(self):
         question = factories.Question(rules=[
             self.create_rule('b'),
