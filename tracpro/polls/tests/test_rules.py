@@ -66,8 +66,8 @@ class TestGetAllCategories(TracProTest):
             self.create_rule('a'),
             self.create_rule('b'),
         ])
-        answer1 = factories.Answer(question=question, category='apple')
-        answer2 = factories.Answer(question=question, category='a')
+        factories.Answer(question=question, category='apple')
+        factories.Answer(question=question, category='a')
         self.assertEqual(
             rules.get_all_categories(question),
             ['a', 'b', 'apple', 'Other'])
