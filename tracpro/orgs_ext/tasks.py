@@ -133,7 +133,7 @@ class OrgTask(PostTransactionTask):
 
                 # FIXME: Logging is not sending us this error email.
                 send_mail(
-                    subject=msg,
+                    subject="{} {}".format(settings.EMAIL_SUBJECT_PREFIX, msg),
                     message=msg,
                     from_email=settings.DEFAULT_FROM_EMAIL,
                     recipient_list=dict(settings.ADMINS).values(),
