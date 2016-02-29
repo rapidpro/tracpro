@@ -457,7 +457,10 @@ class PollRun(models.Model):
         if not self.covers_region(region, include_subregions):
             raise ValueError(
                 "Request for responses in region where poll wasn't conducted")
-        responses = self.responses.filter(is_active=True, contact__region__is_active=True)
+        responses = self.responses.filter(
+            is_active=True,
+            contact__region__is_active=True,
+            contact__is_active=True)  # Filter out inactive contacts
         if region:
             if include_subregions:
                 regions = region.get_descendants(include_self=True)

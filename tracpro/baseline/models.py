@@ -80,7 +80,7 @@ class BaselineTerm(models.Model):
         else:
             pollruns = pollruns.universal()
 
-        responses = Response.objects.filter(pollrun__in=pollruns)
+        responses = Response.objects.filter(pollrun__in=pollruns, contact__is_active=True)
         if contacts is not None:
             responses = responses.filter(contact__in=contacts)
 
