@@ -1,4 +1,7 @@
 from __future__ import unicode_literals
+from datetime import timedelta
+
+from django.utils import timezone
 
 from celery.utils.log import get_task_logger
 from djcelery_transactions import task
@@ -53,7 +56,10 @@ class FetchOrgInboxMessages(OrgTask):
 
         client = org.get_temba_client()
 
-        inbox_messages = client.get_messages(_types="I")
+        # Get non-archived, incoming inbox messages from the past week only
+        # because getting all messages was taking too long
+        last_week = timezone.now() - timedelta(days=7)
+        inbox_messages = client.get_messages(_types="I", archived="N", after=last_week)
 
         for inbox_message in inbox_messages:
             contact = Contact.objects.filter(uuid=inbox_message.contact).first()
