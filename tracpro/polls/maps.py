@@ -12,16 +12,18 @@ from . import rules
 
 def get_map_data(responses, question):
     answers = get_answers(responses, question)
-    if answers.exists():
-        if question.question_type == question.TYPE_NUMERIC:
-            map_data = numeric_map_data(answers, question)
-        else:
-            map_data = categorical_map_data(answers, question)
 
+    if question.question_type == question.TYPE_NUMERIC:
+        map_data = numeric_map_data(answers, question)
+    else:
+        map_data = categorical_map_data(answers, question)
+
+    if map_data:
         return {
             'map-data': map_data,
             'all-categories': rules.get_all_categories(question, answers),
         }
+
     return None
 
 
