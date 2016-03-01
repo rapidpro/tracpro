@@ -2,7 +2,7 @@
 -e git+https://github.com/caktus/dash.git@master#egg=dash
 -e git+https://github.com/caktus/smartmin.git@master#egg=smartmin-1.8.1
 
-Django==1.8.6
+Django==1.8.10
 Pillow==3.0.0
 boto==2.38.0
 django-celery==3.1.17

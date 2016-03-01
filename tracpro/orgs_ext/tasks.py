@@ -81,6 +81,7 @@ class OrgTask(PostTransactionTask):
         time_limit = settings.ORG_TASK_TIMEOUT.seconds
         kwargs.setdefault('time_limit', time_limit + 15)
         kwargs.setdefault('soft_time_limit', time_limit)
+        kwargs.setdefault('max_retries', 0)
         return super(OrgTask, self).apply_async(*args, **kwargs)
 
     def check_rate_limit(self, org):
@@ -127,13 +128,14 @@ class OrgTask(PostTransactionTask):
                     logger.info(
                         "{}: Finished task for {}.".format(self.__name__, org.name))
                     return result
+
             except SoftTimeLimitExceeded:
                 msg = "{}: Time limit exceeded for {}".format(self.__name__, org.name)
                 logger.error(msg)
 
                 # FIXME: Logging is not sending us this error email.
                 send_mail(
-                    subject=msg,
+                    subject="{} {}".format(settings.EMAIL_SUBJECT_PREFIX, msg),
                     message=msg,
                     from_email=settings.DEFAULT_FROM_EMAIL,
                     recipient_list=dict(settings.ADMINS).values(),
