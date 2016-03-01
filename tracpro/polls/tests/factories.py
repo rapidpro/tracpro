@@ -3,8 +3,6 @@ import json
 
 from dateutil.relativedelta import relativedelta
 
-from dateutil.relativedelta import relativedelta
-
 import factory
 import factory.fuzzy
 
