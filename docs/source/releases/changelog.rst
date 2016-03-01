@@ -7,10 +7,21 @@ Tracpro's version is incremented upon each merge to master according to our
 We recommend reviewing the release notes and code diffs before upgrading
 between versions.
 
+v1.1.1 (in development)
+-----------------------
+
+Code diff: https://github.com/rapidpro/tracpro/compare/v1.1.0...develop
+
+* Send Celery task error emails.
+* Limit InboxMessages fetch to the past 7 days.
+* Use relativedelta where possible.
+* Update 404 page template.
+
+
 v1.1.0 (released 2016-02-24)
 ----------------------------
 
-Code diff: https://github.com/rapidpro/tracpro/compare/v1.0.4...develop
+Code diff: https://github.com/rapidpro/tracpro/compare/v1.0.4...v1.1.0
 
 Many changes, including:
 
@@ -21,6 +32,7 @@ Many changes, including:
       [Celery FAQ](http://docs.celeryproject.org/en/latest/faq.html#how-do-i-purge-all-waiting-tasks)).
 * Chart enhancements on Poll detail and PollRun detail pages.
 * Filters on Recent Indicators, Poll detail, and PollRun detail pages.
+
 
 v1.0.4 (never released)
 -----------------------
