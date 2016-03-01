@@ -12,6 +12,7 @@ v1.1.1 (in development)
 
 Code diff: https://github.com/rapidpro/tracpro/compare/v1.1.0...develop
 
+* Updated to Django==1.8.10 from Django==1.8.6
 * Send Celery task error emails.
 * Limit InboxMessages fetch to the past 7 days.
 * Use relativedelta where possible.
