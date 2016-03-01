@@ -49,7 +49,8 @@ def numeric_map_data(answers, question):
 def categorical_map_data(answers, question):
     """For each boundary, display the most common answer category."""
     map_data = {}
-    answer_data = answers.order_by('boundary').values('boundary', 'category')
+    answer_data = answers.exclude(category=None).exclude(category="")
+    answer_data = answer_data.order_by('boundary').values('boundary', 'category')
     for boundary_id, _answers in groupby(answer_data, itemgetter('boundary')):
         category_counts = Counter(a['category'] for a in _answers)
         top_category = category_counts.most_common(1)[0][0]
