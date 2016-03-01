@@ -1,8 +1,8 @@
 from __future__ import unicode_literals
 
+import datetime
 import os
 
-from dateutil.relativedelta import relativedelta
 import djcelery
 
 from django.core.urlresolvers import reverse_lazy
@@ -250,7 +250,7 @@ CELERY_SEND_TASK_ERROR_EMAILS = True
 
 CELERY_TIMEZONE = 'UTC'
 
-ORG_TASK_TIMEOUT = relativedelta(minutes=10)
+ORG_TASK_TIMEOUT = datetime.timedelta(minutes=10)
 
 
 def _org_scheduler_task(task_name):
