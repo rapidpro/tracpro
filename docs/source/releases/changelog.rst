@@ -7,10 +7,15 @@ Tracpro's version is incremented upon each merge to master according to our
 We recommend reviewing the release notes and code diffs before upgrading
 between versions.
 
-v1.1.1 (in development)
+v1.1.2 (in development)
 -----------------------
 
-Code diff: https://github.com/rapidpro/tracpro/compare/v1.1.0...develop
+Code diff: https://github.com/rapidpro/tracpro/compare/v1.1.1...develop
+
+v1.1.1 (released 2016-03-01)
+----------------------------
+
+Code diff: https://github.com/rapidpro/tracpro/compare/v1.1.0...v1.1.1
 
 * Updated to Django==1.8.10 from Django==1.8.6
 * Send Celery task error emails.
