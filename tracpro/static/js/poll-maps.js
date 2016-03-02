@@ -30,7 +30,9 @@ $(function() {
 
     $('.map').each(function() {
       var mapDiv = $(this);
-      var map = L.map(this);
+      var map = L.map(this, {
+        'scrollWheelZoom': false
+      });
 
       // Info box
       // Display information on boundary hover
