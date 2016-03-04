@@ -37,7 +37,7 @@ $(function() {
       // Info box
       // Display information on boundary hover
       var info = L.control({
-          position: 'bottomleft'
+        position: 'bottomleft'
       });
 
       info.onAdd = function (map) {
@@ -47,36 +47,33 @@ $(function() {
       };
 
       info.update = function (props) {
-        this._div.innerHTML = '<h3>Boundary Data</h3>' +  (props ?
-          '<h4>' + props.name + '</h4>' + '<h5>Category: ' + props.category + '</h5>'
-          : '<h4>Hover over a boundary</h4><h5>&nbsp;</h5>');
+        this._div.innerHTML = '<h3>Boundary Data</h3>';
+        if (props) {
+          this._div.innerHTML += "<h4>" + props.name + "</h4>";
+          this._div.innerHTML += "<h5>Category: " + props.category + "</h5>";
+        } else {
+          this._div.innerHTML += "<h4>Hover over a boundary</h4>";
+          this._div.innerHTML += "<h5>&nbsp;</h5>";
+        }
       };
 
       info.addTo(map);
 
-      function highlightFeature(e) {
-        var layer = e.target;
-
-        layer.setStyle({
-            weight: 6
-        });
-
-        info.update(layer.feature.properties);
-      }
-
-      function resetHighlight(e) {
-        var layer = e.target;
-          layer.setStyle({
-              weight: 2
-          });
-        info.update();
-      }
-
       function onEachFeature(feature, layer) {
-          layer.on({
-            mouseover: highlightFeature,
-            mouseout: resetHighlight
-          });
+        layer.on({
+          mouseover: function (e) {
+            /* Add info about the boundary to the info box. */
+            var layer = e.target;
+            layer.setStyle({weight: 6});
+            info.update(layer.feature.properties);
+          },
+          mouseout: function (e) {
+            /* Reset the info box. */
+            var layer = e.target;
+            layer.setStyle({weight: 2});
+            info.update();
+          }
+        });
       }
 
       var boundariesArray = [];
@@ -117,17 +114,16 @@ $(function() {
           position: 'bottomright'
       });
       legend.onAdd = function (map) {
+        var colors = getColors(mapDiv.data('all-categories'));
+        var div = L.DomUtil.create('div', 'info legend');
+        var label = ['<strong>index</strong>'];
+        for (key in colors) {
+          div.innerHTML += label.push(
+            '<div class="legend_color" style="background:' + colors[key] + '"></div><span>' + key + '</span>');
+        }
 
-          var colors = getColors(mapDiv.data('all-categories'));
-          var div = L.DomUtil.create('div', 'info legend');
-          var label = ['<strong>index</strong>'];
-          for (key in colors) {
-            div.innerHTML += label.push(
-              '<div class="legend_color" style="background:' + colors[key] + '"></div><span>' + key + '</span>');
-          }
-
-          div.innerHTML = label.join('<br>');
-          return div;
+        div.innerHTML = label.join('<br>');
+        return div;
       };
       legend.addTo(map);
     });
