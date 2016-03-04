@@ -47,6 +47,27 @@ $(function() {
     }
   });
 
+  /* Display a legend of category colors. */
+  var Legend = L.Control.extend({
+    options: {
+      position: 'bottomright'
+    },
+    onAdd: function(map) {
+      var items = [];
+      var colors = getColors($(map._container).data('all-categories'));
+      for (var category in colors) {
+        var color = colors[category];
+        var item = '<div class="legend_color" style="background: ' + color + ';"></div>';
+        item += "<span>" + category + "</span>";
+        items.push(item);
+      }
+
+      var legend = L.DomUtil.create('div', 'info legend');
+      legend.innerHTML = items.join("<br>");
+      return legend;
+    }
+  });
+
   $.getJSON("/boundary/", function(data) {
     var allBoundaries = data['results'];
 
@@ -110,21 +131,7 @@ $(function() {
       mapDiv.data('map', map);
 
       // Add legend to bottom-right corner
-      var legend = L.control({
-          position: 'bottomright'
-      });
-      legend.onAdd = function (map) {
-        var colors = getColors(mapDiv.data('all-categories'));
-        var div = L.DomUtil.create('div', 'info legend');
-        var label = ['<strong>index</strong>'];
-        for (key in colors) {
-          div.innerHTML += label.push(
-            '<div class="legend_color" style="background:' + colors[key] + '"></div><span>' + key + '</span>');
-        }
-
-        div.innerHTML = label.join('<br>');
-        return div;
-      };
+      var legend = new Legend();
       legend.addTo(map);
     });
   });
