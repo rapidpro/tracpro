@@ -92,7 +92,9 @@
          data-chart="{{ chart_data|chart_json }}">
     </div>
   {% else %}
-    <div class="chart-no-data">No data to display for this time period.</div>
+    <div class="chart-no-data">
+      {% trans "No data to display for the current filters." %}
+    </div>
   {% endif %}
 
   {% include "charts/summary_table.html" %}
