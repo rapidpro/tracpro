@@ -25,6 +25,28 @@ $(function() {
     }
   });
 
+  /* Info box that will display extra data on boundary hover. */
+  var InfoBox = L.Control.extend({
+    options: {
+      position: 'bottomleft'
+    },
+    onAdd: function(map) {
+      this._div = L.DomUtil.create('div', 'info');
+      this.update();
+      return this._div;
+    },
+    update: function(properties) {
+      this._div.innerHTML = '<h3>Boundary Data</h3>';
+      if (properties) {
+        this._div.innerHTML += "<h4>" + properties.name + "</h4>";
+        this._div.innerHTML += "<h5>Category: " + properties.category + "</h5>";
+      } else {
+        this._div.innerHTML += "<h4>Hover over a boundary</h4>";
+        this._div.innerHTML += "<h5>&nbsp;</h5>";
+      }
+    }
+  });
+
   $.getJSON("/boundary/", function(data) {
     var allBoundaries = data['results'];
 
@@ -34,29 +56,7 @@ $(function() {
         'scrollWheelZoom': false
       });
 
-      // Info box
-      // Display information on boundary hover
-      var info = L.control({
-        position: 'bottomleft'
-      });
-
-      info.onAdd = function (map) {
-        this._div = L.DomUtil.create('div', 'info');
-        this.update();
-        return this._div;
-      };
-
-      info.update = function (props) {
-        this._div.innerHTML = '<h3>Boundary Data</h3>';
-        if (props) {
-          this._div.innerHTML += "<h4>" + props.name + "</h4>";
-          this._div.innerHTML += "<h5>Category: " + props.category + "</h5>";
-        } else {
-          this._div.innerHTML += "<h4>Hover over a boundary</h4>";
-          this._div.innerHTML += "<h5>&nbsp;</h5>";
-        }
-      };
-
+      var info = new InfoBox();
       info.addTo(map);
 
       function onEachFeature(feature, layer) {
