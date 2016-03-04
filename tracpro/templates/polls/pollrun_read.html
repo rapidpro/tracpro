@@ -43,7 +43,7 @@
         {% endif %}
       </h3>
 
-      {% if display_maps and map_data %}
+      {% if request.org.display_maps and map_data %}
         <ul class='nav nav-tabs' style='margin-bottom: 1em'>
           <li role="presentation" class='active'>
             <a role="tab" data-toggle="tab" aria-controls="chart-{{ question.pk }}"
@@ -70,7 +70,7 @@
           {% endif %}
         </div>
 
-        {% if display_maps and map_data %}
+        {% if request.org.display_maps and map_data %}
           <div role="tabpanel" class="tab-pane" id="map-{{ question.pk }}">
             <div class="map"
               {% for key, value in map_data.items %}
