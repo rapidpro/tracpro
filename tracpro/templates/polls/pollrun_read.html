@@ -26,6 +26,7 @@
     <script src="{% static "libs/highcharts-4.1.8/highcharts.js" %}"></script>
     <script src="{% static "libs/jqcloud-2.0.1/jqcloud.js" %}"></script>
     <script src="{% static "libs/leaflet-0.7.7/leaflet.js" %}"></script>
+    <script src="{% static "js/filters.js" %}"></script>
     <script src="{% static "js/charts.js" %}"></script>
     <script src="{% static "js/poll-maps.js" %}"></script>
   {% endcompress %}
@@ -33,6 +34,44 @@
 
 {% block content %}
   {% include "polls/maps_warning.html" %}
+
+  <div class="pull-right buttons">
+    <button type="button" class="btn btn-default" id="toggle-filters"
+            data-toggle="collapse" data-target="#filters">
+      {% trans "Hide filters..." %}
+    </button>
+  </div>
+
+  <div class="clearfix"></div>
+
+  <div class="collapse in" id="filters">
+    <form class="filter-form form-horizontal" method="GET">
+      {% if form.non_field_errors %}
+        {% for error in form.non_field_errors %}
+          <div class="alert alert-danger">{{ error }}</div>
+        {% endfor %}
+      {% elif form.errors %}
+        <div class="alert alert-danger">
+          {% trans "Please fix the errors below." %}
+        </div>
+      {% endif %}
+
+      {% for field_name, _ in form.contact_fields %}
+        <div class="row">
+          {% filter_field form field_name %}
+        </div>
+      {% endfor %}
+
+      <div class="well">
+        <button type="submit" class="btn btn-primary">
+          {% trans "Update" %}
+        </button>
+        <a href="{% url "polls.poll_read" object.pk %}" class="btn btn-default">
+          {% trans "Clear filters" %}
+        </a>
+      </div>
+    </form>
+  </div>
 
   {% for question, chart_type, chart_data, map_data, summary_table in question_data %}
     <div class="poll-question">
