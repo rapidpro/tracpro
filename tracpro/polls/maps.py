@@ -46,7 +46,7 @@ def numeric_map_data(answers, question):
     for boundary_id, _answers in groupby(answer_data, itemgetter('boundary')):
         average = round(numpy.mean(get_numeric_values(a['value'] for a in _answers)), 2)
         map_data[boundary_id] = {
-            'average': number_format(average, 2),
+            'average': number_format(average, 2, force_grouping=True),
             'category': question.categorize(average),
         }
     return map_data

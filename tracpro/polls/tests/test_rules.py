@@ -112,7 +112,7 @@ class TestIsNumeric(CheckRuleTestBase, TracProTest):
     false_tests = [None, "asdf", "1.asdf", "asdf.1", "asdf1", "1asdf"]
 
     def call(self, test):
-        return rules.is_numeric(test)
+        return rules.passes_test(is_numeric(test)
 
 
 class TestIsBetween(CheckRuleTestBase, TracProTest):
