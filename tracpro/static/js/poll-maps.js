@@ -22,7 +22,15 @@ $(function() {
     if (mapDiv.length) {
       var map = mapDiv.data('map');
       map.fitBounds(map.boundaries.getBounds());
+
+      // Prevent the user from zooming out any further.
       map.options.minZoom = map.getZoom();
+
+      // Ensure that the zoom out control appears disabled.
+      // Leaflet only does this automatically when the user zooms in and then
+      // zooms out again.
+      var zoomOut = $(map.zoomControl._container).find('.leaflet-control-zoom-out');
+      zoomOut.addClass('leaflet-disabled');
     }
   });
 
