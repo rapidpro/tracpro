@@ -1,0 +1,57 @@
+.map {
+  min-width: 320px;
+  height: 400px;
+}
+
+.leaflet-control {
+  &.info, &.legend {
+    background: #fff;
+    border: 3px solid #000;
+    color: #555;
+    font-size: 14px;
+    padding: 10px;
+
+    ul {
+      line-height: 18px;
+      margin: 0;
+
+      li {
+        padding-bottom: 1px;
+      }
+    }
+  }
+
+  &.info {
+    width: 225px;
+    min-height: 112px;
+
+    h3 {
+      font-weight: bold;
+      font-size: 18px;
+      margin: 0 0 10px;
+      text-align: center;
+    }
+
+    ul {
+      padding-left: 15px;
+    }
+  }
+
+  &.legend {
+    ul {
+      list-style: none;
+      padding: 0;
+
+      li {
+
+        .color {
+          float: left;
+          width: 18px;
+          height: 18px;
+          margin-right: 8px;
+          opacity: 0.7;
+        }
+      }
+    }
+  }
+}
