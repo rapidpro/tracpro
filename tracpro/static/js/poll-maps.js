@@ -98,21 +98,21 @@ $(function() {
           mouseover: function(e) {
             /* Add boundary data to the info box when the user hovers on this boundary. */
             var layer = e.target;
-            layer.setStyle({weight: 6});
+            layer.setStyle({fillOpacity: 0.9, weight: 3});
             layer._map.infoBox.update(layer.feature);
           },
           mouseout: function(e) {
             /* Reset the info box when the user stops hovering on this boundary. */
             var layer = e.target;
-            layer.setStyle({weight: 2});
+            layer.setStyle({fillOpacity: 1.0, weight: 2});
             layer._map.infoBox.update();
           }
         });
       },
       style: {
-        color: '#fff',
+        color: "#eee",
         opacity: 1,
-        fillOpacity: 1,
+        fillOpacity: 1.0,
         weight: 2
       }
     }
