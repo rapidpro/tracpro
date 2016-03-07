@@ -1,6 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
 from django.core.urlresolvers import reverse
+from django.utils.http import urlencode
 
 from tracpro.charts.formatters import format_series, format_x_axis
 from tracpro.groups.models import Region
@@ -52,7 +53,7 @@ def single_pollrun_multiple_choice(answers, pollrun):
     }
 
 
-def multiple_pollruns(pollruns, responses, question, split_regions):
+def multiple_pollruns(pollruns, responses, question, split_regions, contact_filters):
     chart_type = None
     chart_data = None
     summary_table = None
@@ -67,10 +68,10 @@ def multiple_pollruns(pollruns, responses, question, split_regions):
             chart_type = 'numeric'
             if split_regions:
                 chart_data, summary_table = multiple_pollruns_numeric_split(
-                    pollruns, answers, responses, question)
+                    pollruns, answers, responses, question, contact_filters)
             else:
                 chart_data, summary_table = multiple_pollruns_numeric(
-                    pollruns, answers, responses, question)
+                    pollruns, answers, responses, question, contact_filters)
 
         elif question.question_type == Question.TYPE_OPEN:
             chart_type = 'open-ended'
@@ -115,7 +116,7 @@ def multiple_pollruns_multiple_choice(pollruns, answers, responses):
     return chart_data, summary_table
 
 
-def multiple_pollruns_numeric(pollruns, answers, responses, question):
+def multiple_pollruns_numeric(pollruns, answers, responses, question, contact_filters):
     (answer_sums,
      answer_avgs,
      answer_stdevs,
@@ -130,8 +131,8 @@ def multiple_pollruns_numeric(pollruns, answers, responses, question):
         sum_data.append(answer_sums.get(pollrun.pk, 0))
         avg_data.append(answer_avgs.get(pollrun.pk, 0))
         rate_data.append(response_rates.get(pollrun.pk, 0))
-        pollrun_urls.append(reverse('polls.pollrun_read', args=[pollrun.pk]))
-        participation_urls.append(reverse('polls.pollrun_participation', args=[pollrun.pk]))
+        pollrun_urls.append("{}?{}".format(reverse('polls.pollrun_read', args=[pollrun.pk]), urlencode(contact_filters)))
+        participation_urls.append("{}?{}".format(reverse('polls.pollrun_participation', args=[pollrun.pk]), urlencode(contact_filters)))
 
     chart_data = {
         'dates': format_x_axis(pollruns),
@@ -151,7 +152,7 @@ def multiple_pollruns_numeric(pollruns, answers, responses, question):
     return chart_data, summary_table
 
 
-def multiple_pollruns_numeric_split(pollruns, answers, responses, question):
+def multiple_pollruns_numeric_split(pollruns, answers, responses, question, contact_filters):
     """Return separate series for each contact region."""
     data = utils.summarize_by_region_and_pollrun(answers, responses)
 
@@ -172,8 +173,8 @@ def multiple_pollruns_numeric_split(pollruns, answers, responses, question):
         avg_data.append({'name': region.name, 'data': region_answer_avgs})
         rate_data.append({'name': region.name, 'data': region_response_rates})
 
-    pollrun_urls = [reverse('polls.pollrun_read', args=[p.pk]) for p in pollruns]
-    participation_urls = [reverse('polls.pollrun_participation', args=[p.pk]) for p in pollruns]
+    pollrun_urls = ["{}?{}".format(reverse('polls.pollrun_read', args=[p.pk]), urlencode(contact_filters)) for p in pollruns]
+    participation_urls = ["{}?{}".format(reverse('polls.pollrun_participation', args=[p.pk]), urlencode(contact_filters)) for p in pollruns]
     chart_data = {
         'dates': format_x_axis(pollruns),
         'sum': sum_data,

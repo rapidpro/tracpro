@@ -91,11 +91,16 @@ class PollCRUDL(smartmin.SmartCRUDL):
             pollruns = self.get_pollruns()
             responses = self.get_responses(pollruns)
             split_regions = self.filter_form.cleaned_data['split_regions']
+            # Get the contact fields so we can pass them to the pollrun url
+            contact_filters = {}
+            for fieldname in self.filter_form.fields:
+                if fieldname.startswith('contact'):
+                    contact_filters[fieldname] = self.filter_form.cleaned_data[fieldname]
 
             data = []
             for question in self.object.questions.active():
                 chart_type, chart_data, summary_table = charts.multiple_pollruns(
-                    pollruns, responses, question, split_regions)
+                    pollruns, responses, question, split_regions, contact_filters)
                 map_data = maps.get_map_data(responses, question)
                 data.append((
                     question,
