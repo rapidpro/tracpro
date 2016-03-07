@@ -126,7 +126,7 @@ $(function() {
       var boundaries = [];
       $.each(allBoundaries, function(boundaryId, boundaryData) {
         var data = mapData[boundaryId] || null;
-        var fillColor = data ? mapColors[data.category] : "#eee";
+        var fillColor = data ? mapColors[data.category] : "#c2aa7e";
 
         // Deep-copy the basic boundary info and augment with map-specific data.
         var info = $.extend(true, {data: data}, boundaryData);
