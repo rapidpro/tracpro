@@ -7,6 +7,7 @@ $(function() {
     // light colors
     '#94D192', '#92c5de', '#c2a5cf', '#F2A2B3', '#f7cca0', '#FFFFBF' ];
 
+  /* Associate categories with colors. */
   var getColors = function(categories) {
     var colors = {};
     $.each(categories, function(i, category) {
@@ -20,8 +21,7 @@ $(function() {
     var mapDiv = $($(e.target).attr('href')).find('.map');
     if (mapDiv.length) {
       var map = mapDiv.data('map');
-      var boundariesGroup = mapDiv.data('boundary-array');
-      map.fitBounds(L.featureGroup(boundariesGroup).getBounds());
+      map.fitBounds(map.boundaries.getBounds());
     }
   });
 
@@ -68,71 +68,70 @@ $(function() {
     }
   });
 
+  /* Display a geographic boundary on the map. */
+  var Boundary = L.GeoJSON.extend({
+    options: {
+      onEachFeature: function(feature, layer) {
+        layer.on({
+          mouseover: function(e) {
+            /* Add boundary data to the info box when the user hovers on this boundary. */
+            var layer = e.target;
+            layer.setStyle({weight: 6});
+            layer._map.infoBox.update(layer.feature.properties);
+          },
+          mouseout: function(e) {
+            /* Reset the info box when the user stops hovering on this boundary. */
+            var layer = e.target;
+            layer.setStyle({weight: 2});
+            layer._map.infoBox.update();
+          }
+        });
+      }
+    }
+  })
+
+  /* Retrieve boundary data from the server, and create the map. */
   $.getJSON("/boundary/", function(data) {
     var allBoundaries = data['results'];
 
     $('.map').each(function() {
       var mapDiv = $(this);
-      var map = L.map(this, {
-        'scrollWheelZoom': false
+
+      var boundaries = [];
+      var colors = getColors(mapDiv.data('all-categories'));
+      $.each(mapDiv.data('map-data'), function(boundaryId, category) {
+        if (boundaryId in allBoundaries) {
+          // Create a deep copy of the boundary info from the server
+          var boundaryInfo = $.extend(true, {}, allBoundaries[boundaryId]);
+
+          boundaryInfo.properties.category = category || "None";
+          boundary = new Boundary(boundaryInfo, {
+            style: {
+              'color': '#fff',
+              'opacity': 1,
+              'fillColor': colors[category],
+              'fillOpacity': 1,
+              'weight': 2
+            }
+          });
+          boundaries.push(boundary);
+        }
       });
 
-      var info = new InfoBox();
-      info.addTo(map);
+      var map = L.map(this, {
+        scrollWheelZoom: false
+      });
 
-      function onEachFeature(feature, layer) {
-        layer.on({
-          mouseover: function (e) {
-            /* Add info about the boundary to the info box. */
-            var layer = e.target;
-            layer.setStyle({weight: 6});
-            info.update(layer.feature.properties);
-          },
-          mouseout: function (e) {
-            /* Reset the info box. */
-            var layer = e.target;
-            layer.setStyle({weight: 2});
-            info.update();
-          }
-        });
-      }
+      map.infoBox = new InfoBox();
+      map.addControl(map.infoBox);
 
-      var boundariesArray = [];
-      var mapData = mapDiv.data('map-data');
-      var colors = getColors(mapDiv.data('all-categories'));
-      for (var boundaryId in mapData) {
-        if (boundaryId in allBoundaries) {
-          var category = mapData[boundaryId];
-          var boundaryInfo = $.extend(true, {}, allBoundaries[boundaryId]);  // deep copy
-          boundaryInfo.properties.style = {
-            'color': '#fff',
-            'opacity': 1,
-            'fillColor': colors[category],
-            'fillOpacity': 1,
-            'weight': 2
-          }
-          if (category) {
-            boundaryInfo.properties.category = category;
-          }
-          else {
-            boundaryInfo.properties.category = "None";
-          }
-          boundary = new L.GeoJSON(boundaryInfo, {
-            style: function(feature) {
-              return feature.properties.style;
-            },
-            onEachFeature: onEachFeature
-          });
-          boundary.addTo(map);
-          boundariesArray.push(boundary);
-        }
-      }
-      mapDiv.data('boundary-array', boundariesArray);
+      map.legend = new Legend();
+      map.addControl(map.legend);
+
+      map.boundaries = L.featureGroup(boundaries);
+      map.addControl(map.boundaries);
+
       mapDiv.data('map', map);
-
-      // Add legend to bottom-right corner
-      var legend = new Legend();
-      legend.addTo(map);
     });
   });
 });
