@@ -140,6 +140,7 @@ $(function() {
       });
 
       var map = L.map(this, {
+        attributionControl: false,
         scrollWheelZoom: false,
         maxBoundsViscosity: 1  // prevent scrolling out of bounds
       });
