@@ -41,14 +41,14 @@ $(function() {
     },
     onAdd: function(map) {
       this._div = L.DomUtil.create('div', 'info');
-      this.update();
+      this.update(null);
       return this._div;
     },
-    update: function(properties) {
+    update: function(feature) {
       this._div.innerHTML = '<h3>Boundary Data</h3>';
-      if (properties) {
-        this._div.innerHTML += "<h4>" + properties.name + "</h4>";
-        this._div.innerHTML += "<h5>Category: " + properties.category + "</h5>";
+      if (feature) {
+        this._div.innerHTML += "<h4>" + feature.properties.name + "</h4>";
+        this._div.innerHTML += "<h5>Category: " + feature.data.category + "</h5>";
       } else {
         this._div.innerHTML += "<h4>Hover over a boundary</h4>";
         this._div.innerHTML += "<h5>&nbsp;</h5>";
@@ -64,12 +64,11 @@ $(function() {
     onAdd: function(map) {
       var items = [];
       var colors = getColors($(map._container).data('all-categories'));
-      for (var category in colors) {
-        var color = colors[category];
+      $.each(colors, function(category, color) {
         var item = '<div class="legend_color" style="background: ' + color + ';"></div>';
         item += "<span>" + category + "</span>";
         items.push(item);
-      }
+      });
 
       var legend = L.DomUtil.create('div', 'info legend');
       legend.innerHTML = items.join("<br>");
@@ -86,7 +85,7 @@ $(function() {
             /* Add boundary data to the info box when the user hovers on this boundary. */
             var layer = e.target;
             layer.setStyle({weight: 6});
-            layer._map.infoBox.update(layer.feature.properties);
+            layer._map.infoBox.update(layer.feature);
           },
           mouseout: function(e) {
             /* Reset the info box when the user stops hovering on this boundary. */
@@ -108,17 +107,17 @@ $(function() {
 
       var boundaries = [];
       var colors = getColors(mapDiv.data('all-categories'));
-      $.each(mapDiv.data('map-data'), function(boundaryId, category) {
+      $.each(mapDiv.data('map-data'), function(boundaryId, data) {
         if (boundaryId in allBoundaries) {
           // Create a deep copy of the boundary info from the server
           var boundaryInfo = $.extend(true, {}, allBoundaries[boundaryId]);
 
-          boundaryInfo.properties.category = category || "None";
+          boundaryInfo.data = data;
           boundary = new Boundary(boundaryInfo, {
             style: {
               'color': '#fff',
               'opacity': 1,
-              'fillColor': colors[category],
+              'fillColor': colors[data.category],
               'fillOpacity': 1,
               'weight': 2
             }

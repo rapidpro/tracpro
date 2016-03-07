@@ -44,7 +44,9 @@ def numeric_map_data(answers, question):
     answer_data = answers.order_by('boundary').values('boundary', 'value')
     for boundary_id, _answers in groupby(answer_data, itemgetter('boundary')):
         average = numpy.mean(get_numeric_values(a['value'] for a in _answers))
-        map_data[boundary_id] = question.categorize(average)
+        map_data[boundary_id] = {
+            'category': question.categorize(average),
+        }
     return map_data
 
 
@@ -56,5 +58,7 @@ def categorical_map_data(answers, question):
     for boundary_id, _answers in groupby(answer_data, itemgetter('boundary')):
         category_counts = Counter(a['category'] for a in _answers)
         top_category = category_counts.most_common(1)[0][0]
-        map_data[boundary_id] = top_category
+        map_data[boundary_id] = {
+            'category': top_category,
+        }
     return map_data

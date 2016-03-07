@@ -147,7 +147,9 @@ class TestNumericMapData(BaseMapsTest):
         self.assertEqual(set(data), set(('all-categories', 'map-data')))
         self.assertEqual(data['all-categories'], ['1-5', '>5', 'Other'])
         self.assertEqual(data['map-data'], {
-            self.boundary_a.pk: '>5',  # (3 + 11) / 2 = 7
+            self.boundary_a.pk: {
+                'category': '>5',  # (3 + 11) / 2
+            },
         })
 
     def test_numeric__multiple_answers_per_region(self):
@@ -164,7 +166,9 @@ class TestNumericMapData(BaseMapsTest):
         self.assertEqual(set(data), set(('all-categories', 'map-data')))
         self.assertEqual(data['all-categories'], ['1-5', '>5', 'Other'])
         self.assertEqual(data['map-data'], {
-            self.boundary_b.pk: '>5',  # (3 + 11) / 2 = 7
+            self.boundary_b.pk: {
+                'category': '>5',  # (3 + 11) / 2
+            },
         })
 
     def test_numeric__other_category(self):
@@ -180,7 +184,9 @@ class TestNumericMapData(BaseMapsTest):
         self.assertEqual(set(data), set(('all-categories', 'map-data')))
         self.assertEqual(data['all-categories'], ['1-5', '>5', 'Other'])
         self.assertEqual(data['map-data'], {
-            self.boundary_b.pk: 'Other',  # (3 + -5) / 2 = -1
+            self.boundary_b.pk: {
+                'category': 'Other',  # (3 + -5) / 2
+            },
         })
 
     def test_numeric(self):
@@ -214,8 +220,12 @@ class TestNumericMapData(BaseMapsTest):
         self.assertEqual(set(data), set(('all-categories', 'map-data')))
         self.assertEqual(data['all-categories'], ['1-5', '>5', 'foo', 'Other'])
         self.assertEqual(data['map-data'], {
-            self.boundary_a.pk: '1-5',  # (2 + 6) / 2 = 4
-            self.boundary_b.pk: '>5',  # (4 + 8) / 2 = 6
+            self.boundary_a.pk: {
+                'category': '1-5',  # (2 + 6) / 2
+            },
+            self.boundary_b.pk: {
+                'category': '>5',  # (4 + 8) / 2
+            },
         })
 
 
