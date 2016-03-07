@@ -148,7 +148,8 @@ class TestNumericMapData(BaseMapsTest):
         self.assertEqual(data['all-categories'], ['1-5', '>5', 'Other'])
         self.assertEqual(data['map-data'], {
             self.boundary_a.pk: {
-                'category': '>5',  # (3 + 11) / 2
+                'average': 7,  # (3 + 11) / 2
+                'category': '>5',
             },
         })
 
@@ -167,7 +168,8 @@ class TestNumericMapData(BaseMapsTest):
         self.assertEqual(data['all-categories'], ['1-5', '>5', 'Other'])
         self.assertEqual(data['map-data'], {
             self.boundary_b.pk: {
-                'category': '>5',  # (3 + 11) / 2
+                'average': 7,  # (3 + 11) / 2
+                'category': '>5',
             },
         })
 
@@ -185,7 +187,8 @@ class TestNumericMapData(BaseMapsTest):
         self.assertEqual(data['all-categories'], ['1-5', '>5', 'Other'])
         self.assertEqual(data['map-data'], {
             self.boundary_b.pk: {
-                'category': 'Other',  # (3 + -5) / 2
+                'average': -1,  # (3 + -5) / 2
+                'category': 'Other',
             },
         })
 
@@ -221,10 +224,12 @@ class TestNumericMapData(BaseMapsTest):
         self.assertEqual(data['all-categories'], ['1-5', '>5', 'foo', 'Other'])
         self.assertEqual(data['map-data'], {
             self.boundary_a.pk: {
-                'category': '1-5',  # (2 + 6) / 2
+                'average': 4,  # (2 + 6) / 2
+                'category': '1-5',
             },
             self.boundary_b.pk: {
-                'category': '>5',  # (4 + 8) / 2
+                'average': 6,  # (4 + 8) / 2
+                'category': '>5',
             },
         })
 

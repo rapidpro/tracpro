@@ -40,18 +40,23 @@ $(function() {
       position: 'bottomleft'
     },
     onAdd: function(map) {
-      this._div = L.DomUtil.create('div', 'info');
+      this._container = L.DomUtil.create('div', 'info');
       this.update(null);
-      return this._div;
+      return this._container;
     },
     update: function(feature) {
-      this._div.innerHTML = '<h3>Boundary Data</h3>';
+      var container = $(this._container);
+      container.empty();
+      container.append("<h3>Boundary Data</h3>");
       if (feature) {
-        this._div.innerHTML += "<h4>" + feature.properties.name + "</h4>";
-        this._div.innerHTML += "<h5>Category: " + feature.data.category + "</h5>";
+        var dataList = $("<ul>");
+        dataList.append("<li><strong>Name:</strong> " + feature.properties.name + "</li>");
+        $.each(feature.data, function(name, value) {
+          dataList.append("<li><strong>" + name + ":</strong> " + value + "</li>");
+        });
+        container.append(dataList);
       } else {
-        this._div.innerHTML += "<h4>Hover over a boundary</h4>";
-        this._div.innerHTML += "<h5>&nbsp;</h5>";
+        container.append("<p>Hover over a boundary to see more info.</p>");
       }
     }
   });
