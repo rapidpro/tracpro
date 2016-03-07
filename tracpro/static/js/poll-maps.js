@@ -47,15 +47,19 @@ $(function() {
     update: function(feature) {
       var container = $(this._container);
       container.empty();
-      container.append("<h3>Boundary Data</h3>");
       if (feature) {
-        var dataList = $("<ul>");
-        dataList.append("<li><strong>Name:</strong> " + feature.properties.name + "</li>");
-        $.each(feature.data, function(name, value) {
-          dataList.append("<li><strong>" + name + ":</strong> " + value + "</li>");
-        });
-        container.append(dataList);
+        container.append("<h3>" + feature.properties.name + "</h3>");
+        if (feature.data) {
+          var dataList = $("<ul>");
+          $.each(feature.data, function(name, value) {
+            dataList.append("<li><strong>" + name + ":</strong> " + value + "</li>");
+          });
+          container.append(dataList);
+        } else {
+          container.append("<p>No data available.</p>");
+        }
       } else {
+        container.append("<h3>Boundary Data</h3>");
         container.append("<p>Hover over a boundary to see more info.</p>");
       }
     }
@@ -100,6 +104,12 @@ $(function() {
             layer._map.infoBox.update();
           }
         });
+      },
+      style: {
+        color: '#fff',
+        opacity: 1,
+        fillOpacity: 1,
+        weight: 2
       }
     }
   })
@@ -110,26 +120,19 @@ $(function() {
 
     $('.map').each(function() {
       var mapDiv = $(this);
+      var mapData = mapDiv.data('map-data');  // boundary id -> {'category': 'foo', ...}
+      var mapColors = getColors(mapDiv.data('all-categories'));  // category -> display color
 
       var boundaries = [];
-      var colors = getColors(mapDiv.data('all-categories'));
-      $.each(mapDiv.data('map-data'), function(boundaryId, data) {
-        if (boundaryId in allBoundaries) {
-          // Create a deep copy of the boundary info from the server
-          var boundaryInfo = $.extend(true, {}, allBoundaries[boundaryId]);
+      $.each(allBoundaries, function(boundaryId, boundaryData) {
+        var data = mapData[boundaryId] || null;
+        var fillColor = data ? mapColors[data.category] : "#eee";
 
-          boundaryInfo.data = data;
-          boundary = new Boundary(boundaryInfo, {
-            style: {
-              'color': '#fff',
-              'opacity': 1,
-              'fillColor': colors[data.category],
-              'fillOpacity': 1,
-              'weight': 2
-            }
-          });
-          boundaries.push(boundary);
-        }
+        // Deep-copy the basic boundary info and augment with map-specific data.
+        var info = $.extend(true, {data: data}, boundaryData);
+        var boundary = new Boundary(info);
+        boundary.setStyle({fillColor: fillColor});
+        boundaries.push(boundary);
       });
 
       var map = L.map(this, {
