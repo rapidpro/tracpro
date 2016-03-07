@@ -80,7 +80,7 @@ def multiple_pollruns(pollruns, responses, question, split_regions, contact_filt
         elif question.question_type == Question.TYPE_MULTIPLE_CHOICE:
             chart_type = 'multiple-choice'
             chart_data, summary_table = multiple_pollruns_multiple_choice(
-                pollruns, answers, responses)
+                pollruns, answers, responses, contact_filters)
 
     return chart_type, chart_data, summary_table
 
@@ -90,7 +90,7 @@ def word_cloud_data(answers):
     return [{'text': word, 'weight': count} for word, count in answers.word_counts()]
 
 
-def multiple_pollruns_multiple_choice(pollruns, answers, responses):
+def multiple_pollruns_multiple_choice(pollruns, answers, responses, contact_filters):
     series = []
     for category, pollrun_counts in answers.category_counts_by_pollrun():
         series.append(format_series(
