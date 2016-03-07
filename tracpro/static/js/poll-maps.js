@@ -22,6 +22,7 @@ $(function() {
     if (mapDiv.length) {
       var map = mapDiv.data('map');
       map.fitBounds(map.boundaries.getBounds());
+      map.options.minZoom = map.getZoom();
     }
   });
 
@@ -119,7 +120,8 @@ $(function() {
       });
 
       var map = L.map(this, {
-        scrollWheelZoom: false
+        scrollWheelZoom: false,
+        maxBoundsViscosity: 1  // prevent scrolling out of bounds
       });
 
       map.infoBox = new InfoBox();
@@ -130,6 +132,7 @@ $(function() {
 
       map.boundaries = L.featureGroup(boundaries);
       map.addControl(map.boundaries);
+      map.setMaxBounds(map.boundaries.getBounds());
 
       mapDiv.data('map', map);
     });
