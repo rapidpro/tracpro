@@ -64,13 +64,12 @@ def passes_test(value, rule):
     """
     test = rule['test'].copy()
     test_funcs = {
-        'numeric': is_numeric,
-        'between': is_between,
+        'number': is_number,
+        'between': is_number,
         'eq': is_equal,
-        'lt': is_less_than,
-        'gt': is_greater_than,
+        'lt': is_number,
+        'gt': is_number,
     }
-
     test_func = test_funcs.get(test.pop('type'))
     return test_func(value, **test) if test_func else False
 
@@ -90,25 +89,14 @@ def numeric_rule(function):
 
 
 @numeric_rule
-def is_numeric(val):
-    return True  # Decorator ensures that the argument is numeric.
-
-
-@numeric_rule
-def is_between(val, min, max):
-    return min <= val <= max
+def is_number(val, max=None, min=None):
+    if max is not None and val > max:
+        return False
+    if min is not None and val < min:
+        return False
+    return True
 
 
 @numeric_rule
 def is_equal(val, test):
     return val == test
-
-
-@numeric_rule
-def is_less_than(val, test):
-    return val < test
-
-
-@numeric_rule
-def is_greater_than(val, test):
-    return val > test
