@@ -51,8 +51,12 @@ $(function() {
         container.append("<h3>" + feature.properties.name + "</h3>");
         if (feature.data) {
           var dataList = $("<ul>");
-          $.each(feature.data, function(name, value) {
-            dataList.append("<li><strong>" + name + ":</strong> " + value + "</li>");
+          $.each(feature.data, function(key, value) {
+            var name = key.replace(/-/g, " ") + ": "  // replace dashes with spaces
+            var item = $("<li>");
+            item.append($("<span>").addClass("property-name").html(name));
+            item.append(value);
+            dataList.append(item);
           });
           container.append(dataList);
         } else {
