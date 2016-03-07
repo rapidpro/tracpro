@@ -62,17 +62,18 @@ $(function() {
       position: 'bottomright'
     },
     onAdd: function(map) {
-      var items = [];
-      var colors = getColors($(map._container).data('all-categories'));
+      this._container = L.DomUtil.create('div', 'legend');
+      this.update(getColors($(map._container).data('all-categories')));
+      return this._container;
+    },
+    update: function(colors) {
+      var legend = $("<ul>");
       $.each(colors, function(category, color) {
-        var item = '<div class="legend_color" style="background: ' + color + ';"></div>';
-        item += "<span>" + category + "</span>";
-        items.push(item);
+        var colorSwatch = $("<span>").addClass("color").css("background-color", color);
+        var item = $("<li>").append(colorSwatch).append(category);
+        legend.append(item);
       });
-
-      var legend = L.DomUtil.create('div', 'info legend');
-      legend.innerHTML = items.join("<br>");
-      return legend;
+      $(this._container).append(legend);
     }
   });
 

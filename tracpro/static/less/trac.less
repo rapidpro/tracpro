@@ -123,17 +123,33 @@ footer {
   height: 400px;
 }
 
-.legend {
-    line-height: 18px;
+.leaflet-control {
+  &.legend {
+    background: #fff;
+    border: 3px solid #000;
     color: #555;
-}
+    font-size: 14px;
+    padding: 10px;
 
-.legend .legend_color {
-    width: 18px;
-    height: 18px;
-    float: left;
-    margin-right: 8px;
-    opacity: 0.7;
+    ul {
+      line-height: 18px;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+
+      li {
+        padding: 0 0 1px;
+
+        .color {
+          float: left;
+          width: 18px;
+          height: 18px;
+          margin-right: 8px;
+          opacity: 0.7;
+        }
+      }
+    }
+  }
 }
 
 /**
