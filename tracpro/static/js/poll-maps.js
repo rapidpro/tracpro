@@ -56,7 +56,7 @@ $(function() {
           });
           container.append(dataList);
         } else {
-          container.append("<p>No data available.</p>");
+          container.append("<p>No data available for this boundary.</p>");
         }
       } else {
         container.append("<h3>Boundary Data</h3>");
