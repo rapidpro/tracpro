@@ -116,7 +116,7 @@ $(function() {
         weight: 2
       }
     }
-  })
+  });
 
   /* Retrieve boundary data from the server, and create the map. */
   $.getJSON("/boundary/", function(data) {
@@ -141,6 +141,9 @@ $(function() {
 
       var map = L.map(this, {
         attributionControl: false,
+        fullscreenControl: {
+          position: "topright"
+        },
         scrollWheelZoom: false,
         maxBoundsViscosity: 1  // prevent scrolling out of bounds
       });
