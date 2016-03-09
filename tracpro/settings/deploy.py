@@ -64,5 +64,3 @@ SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
 SITE_HOST_PATTERN = os.environ.get('SITE_HOST_PATTERN')
 
 STATIC_ROOT = os.path.join(WEBSERVER_ROOT, 'public', 'static')
-
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
