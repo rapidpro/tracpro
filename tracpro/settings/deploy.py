@@ -40,9 +40,23 @@ DATABASES['default'].update({
     'PASSWORD': from_env('DB_PASSWORD', ''),
 })
 
-DEFAULT_FROM_EMAIL = 'no-reply@caktusgroup.com'
+DEFAULT_FROM_EMAIL = "no-reply@{}".format(from_env('DOMAIN'))
+
+EMAIL_HOST = from_env_or_django('EMAIL_HOST')
+
+EMAIL_HOST_PASSWORD = from_env_or_django('EMAIL_HOST_PASSWORD')
+
+EMAIL_HOST_USER = from_env_or_django('EMAIL_HOST_USER')
 
 EMAIL_SUBJECT_PREFIX = '[Edutrac {}]'.format(ENVIRONMENT.title())
+
+EMAIL_USE_SSL = from_env_or_django('EMAIL_USE_SSL')
+
+EMAIL_USE_TLS = from_env_or_django('EMAIL_USE_TLS')
+
+assert not (EMAIL_USE_SSL and EMAIL_USE_TLS)  # cannot use both at once
+
+EMAIL_PORT = from_env('EMAIL_PORT', 587 if EMAIL_USE_TLS else 465 if EMAIL_USE_SSL else 25)
 
 HOSTNAME = from_env('DOMAIN')
 
@@ -53,6 +67,8 @@ MEDIA_ROOT = os.path.join(WEBSERVER_ROOT, 'public', 'media')
 SECRET_KEY = from_env('SECRET_KEY')
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'HTTPS')
+
+SERVER_EMAIL = "no-reply@{}".format(from_env('DOMAIN'))
 
 SESSION_CACHE_ALIAS = "default"
 
