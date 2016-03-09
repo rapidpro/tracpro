@@ -43,7 +43,7 @@ DEFAULT_FROM_EMAIL = 'no-reply@caktusgroup.com'
 
 EMAIL_SUBJECT_PREFIX = '[Edutrac {}]'.format(ENVIRONMENT.title())
 
-HOSTNAME = os.environ.get('HOSTNAME')
+HOSTNAME = os.environ['DOMAIN']
 
 LOGGING['handlers']['file']['filename'] = os.path.join(WEBSERVER_ROOT, 'log', 'tracpro.log')
 
