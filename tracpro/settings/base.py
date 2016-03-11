@@ -107,9 +107,6 @@ LOGGING = {
         'verbose': {
             'format': '%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s'
         },
-        'basic': {
-            'format': '%(levelname)s %(asctime)s %(message)s'
-        },
     },
     'handlers': {
         'console': {
@@ -122,36 +119,27 @@ LOGGING = {
             'filters': ['require_debug_false'],
             'class': 'django.utils.log.AdminEmailHandler',
         },
-        'file': {
-            'level': 'DEBUG',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'formatter': 'basic',
-            'filename': os.path.join(PROJECT_ROOT, 'edutrac.log'),
-            'maxBytes': 10 * 1024 * 1024,  # 10 Mb
-            'backupCount': 10,
-        }
     },
     'loggers': {
         'celery': {
-            'handlers': ['file', 'mail_admins'],
+            'handlers': ['console', 'mail_admins'],
             'level': 'INFO',
         },
         'httprouterthread': {
-            'handlers': ['file'],
+            'handlers': ['console', 'mail_admins'],
             'level': 'INFO',
         },
         'django.request': {
-            'handlers': ['mail_admins'],
+            'handlers': ['console', 'mail_admins'],
             'level': 'ERROR',
             'propagate': True,
         },
         'django.db.backends': {
             'level': 'ERROR',
-            'handlers': ['mail_admins'],
-            'propagate': False,
+            'handlers': ['console', 'mail_admins'],
         },
         'tracpro': {
-            'handlers': ['file', 'mail_admins'],
+            'handlers': ['console', 'mail_admins'],
             'level': 'INFO',
         },
     },
