@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 from .base import *  # noqa
 
 
-require_env('DOMAIN', 'ENVIRONMENT', 'SECRET_KEY')
+require_env('DB_NAME', 'DB_USER', 'DOMAIN', 'ENVIRONMENT', 'SECRET_KEY')
 
 DOMAIN = from_env('DOMAIN')
 
@@ -35,8 +35,8 @@ COMPRESS_OFFLINE_CONTEXT = {
 CSRF_COOKIE_DOMAIN = ".{}".format(DOMAIN)
 
 DATABASES['default'].update({
-    'NAME': 'tracpro_{}'.format(ENVIRONMENT),
-    'USER': 'tracpro_{}'.format(ENVIRONMENT),
+    'NAME': from_env('DB_NAME', ''),
+    'USER': from_env('DB_USER', ''),
     'HOST': from_env('DB_HOST', ''),
     'PORT': from_env('DB_PORT', ''),
     'PASSWORD': from_env('DB_PASSWORD', ''),
