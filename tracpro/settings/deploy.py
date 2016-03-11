@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 from .base import *  # noqa
 
 
-require_env('DOMAIN', 'ENVIRONMENT')
+require_env('DOMAIN', 'ENVIRONMENT', 'SECRET_KEY')
 
 ENVIRONMENT = from_env('ENVIRONMENT').lower()
 
