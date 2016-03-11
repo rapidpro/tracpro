@@ -54,8 +54,6 @@ EMAIL_USE_SSL = from_env_or_django('EMAIL_USE_SSL')
 
 EMAIL_USE_TLS = from_env_or_django('EMAIL_USE_TLS')
 
-assert not (EMAIL_USE_SSL and EMAIL_USE_TLS)  # cannot use both at once
-
 EMAIL_PORT = from_env('EMAIL_PORT', 587 if EMAIL_USE_TLS else 465 if EMAIL_USE_SSL else 25)
 
 HOSTNAME = from_env('DOMAIN')
