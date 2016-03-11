@@ -76,6 +76,4 @@ SESSION_COOKIE_SECURE = False
 
 SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
 
-SITE_HOST_PATTERN = from_env('SITE_HOST_PATTERN')
-
 STATIC_ROOT = os.path.join(WEBSERVER_ROOT, 'public', 'static')
