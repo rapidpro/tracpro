@@ -8,6 +8,8 @@ import djcelery
 from django.core.urlresolvers import reverse_lazy
 from django.utils.translation import ugettext_lazy as _
 
+from .utils import *  # noqa
+
 
 djcelery.setup_loader()
 
