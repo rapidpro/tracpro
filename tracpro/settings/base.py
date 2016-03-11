@@ -122,27 +122,25 @@ LOGGING = {
     },
     'loggers': {
         'celery': {
-            'handlers': ['console', 'mail_admins'],
             'level': 'INFO',
         },
         'httprouterthread': {
-            'handlers': ['console', 'mail_admins'],
             'level': 'INFO',
         },
         'django.request': {
-            'handlers': ['console', 'mail_admins'],
             'level': 'ERROR',
             'propagate': True,
         },
         'django.db.backends': {
             'level': 'ERROR',
-            'handlers': ['console', 'mail_admins'],
         },
         'tracpro': {
-            'handlers': ['console', 'mail_admins'],
             'level': 'INFO',
         },
     },
+    'root': {
+        'handlers': ['console', 'mail_admins'],
+    }
 }
 
 LOGIN_REDIRECT_URL = reverse_lazy('home.home')

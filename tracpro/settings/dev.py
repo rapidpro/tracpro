@@ -15,6 +15,7 @@ SECRET_KEY = 'secret-key' * 5
 
 TEMPLATE_DEBUG = True
 
+LOGGING['root']['handlers'] = ['console']
+
 for logger in LOGGING.get('loggers', {}):
     LOGGING['loggers'][logger]['level'] = 'DEBUG'
-    LOGGING['loggers'][logger]['handlers'] = ['console']
