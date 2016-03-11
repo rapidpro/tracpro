@@ -60,8 +60,6 @@ EMAIL_PORT = from_env('EMAIL_PORT', 587 if EMAIL_USE_TLS else 465 if EMAIL_USE_S
 
 HOSTNAME = DOMAIN
 
-LOGGING['handlers']['file']['filename'] = os.path.join(WEBSERVER_ROOT, 'log', 'tracpro.log')
-
 MEDIA_ROOT = os.path.join(WEBSERVER_ROOT, 'public', 'media')
 
 SECRET_KEY = from_env('SECRET_KEY')
