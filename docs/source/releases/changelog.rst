@@ -7,10 +7,23 @@ Tracpro's version is incremented upon each merge to master according to our
 We recommend reviewing the release notes and code diffs before upgrading
 between versions.
 
-v1.1.1 (in development)
------------------------
+v1.2.0 (released 2016-03-14)
+----------------------------
 
-Code diff: https://github.com/rapidpro/tracpro/compare/v1.1.0...develop
+Code diff: https://github.com/rapidpro/tracpro/compare/v1.1.1...v1.2.0
+
+* Settings changes:
+    - Update `LOGGING` to reflect sending logs to `syslog`
+    - Utility for grabbing settings from the environment
+    - Utility for falling back to Django default settings
+    - Email configuration
+    - Remove unused `HOSTNAME` setting
+    - Misc. settings tweaks related to deployment.
+
+v1.1.1 (released 2016-03-01)
+----------------------------
+
+Code diff: https://github.com/rapidpro/tracpro/compare/v1.1.0...v1.1.1
 
 * Updated to Django==1.8.10 from Django==1.8.6
 * Send Celery task error emails.

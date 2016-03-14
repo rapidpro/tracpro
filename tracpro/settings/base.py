@@ -8,6 +8,8 @@ import djcelery
 from django.core.urlresolvers import reverse_lazy
 from django.utils.translation import ugettext_lazy as _
 
+from .utils import *  # noqa
+
 
 djcelery.setup_loader()
 
@@ -105,9 +107,6 @@ LOGGING = {
         'verbose': {
             'format': '%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s'
         },
-        'basic': {
-            'format': '%(levelname)s %(asctime)s %(message)s'
-        },
     },
     'handlers': {
         'console': {
@@ -120,39 +119,28 @@ LOGGING = {
             'filters': ['require_debug_false'],
             'class': 'django.utils.log.AdminEmailHandler',
         },
-        'file': {
-            'level': 'DEBUG',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'formatter': 'basic',
-            'filename': os.path.join(PROJECT_ROOT, 'edutrac.log'),
-            'maxBytes': 10 * 1024 * 1024,  # 10 Mb
-            'backupCount': 10,
-        }
     },
     'loggers': {
         'celery': {
-            'handlers': ['file', 'mail_admins'],
             'level': 'INFO',
         },
         'httprouterthread': {
-            'handlers': ['file'],
             'level': 'INFO',
         },
         'django.request': {
-            'handlers': ['mail_admins'],
             'level': 'ERROR',
             'propagate': True,
         },
         'django.db.backends': {
             'level': 'ERROR',
-            'handlers': ['mail_admins'],
-            'propagate': False,
         },
         'tracpro': {
-            'handlers': ['file', 'mail_admins'],
             'level': 'INFO',
         },
     },
+    'root': {
+        'handlers': ['console', 'mail_admins'],
+    }
 }
 
 LOGIN_REDIRECT_URL = reverse_lazy('home.home')
