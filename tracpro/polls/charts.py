@@ -94,7 +94,7 @@ def multiple_pollruns_multiple_choice(pollruns, answers, responses, contact_filt
     series = []
     for category, pollrun_counts in answers.category_counts_by_pollrun():
         series.append(format_series(
-            pollruns, pollrun_counts, 'id@polls.pollrun_read',
+            pollruns, pollrun_counts, 'polls.pollrun_read', filters=contact_filters,
             name=category))
 
     chart_data = {

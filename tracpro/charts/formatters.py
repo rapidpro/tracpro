@@ -1,9 +1,10 @@
 from __future__ import unicode_literals
 
-from smartmin.views import smart_url
+from django.core.urlresolvers import reverse
+from django.utils.http import urlencode
 
 
-def format_series(pollruns, data, url=None, **extra):
+def format_series(pollruns, data, url=None, filters=None, **extra):
     """Format a series of data. A point will be created for each pollrun.
 
     If a url is provided, each point will be a link.
@@ -11,7 +12,7 @@ def format_series(pollruns, data, url=None, **extra):
     def format_point(pollrun):
         point = {'y': data.get(pollrun.pk, 0)}
         if url:
-            point['url'] = smart_url(url, pollrun)
+            point['url'] = "{}?{}".format(reverse(url, args=[pollrun.pk]), urlencode(filters))
         return point
 
     extra['data'] = [format_point(pollrun) for pollrun in pollruns]
