@@ -32,6 +32,7 @@ $(function() {
       var zoomOut = $(map.zoomControl._container).find('.leaflet-control-zoom-out');
       zoomOut.addClass('leaflet-disabled');
     }
+    $(window).resize();  // Fix the chart size when map displayed
   });
 
   /* Info box that will display extra data on boundary hover. */
