@@ -131,8 +131,12 @@ def multiple_pollruns_numeric(pollruns, answers, responses, question, contact_fi
         sum_data.append(answer_sums.get(pollrun.pk, 0))
         avg_data.append(answer_avgs.get(pollrun.pk, 0))
         rate_data.append(response_rates.get(pollrun.pk, 0))
-        pollrun_urls.append("{}?{}".format(reverse('polls.pollrun_read', args=[pollrun.pk]), urlencode(contact_filters)))
-        participation_urls.append("{}?{}".format(reverse('polls.pollrun_participation', args=[pollrun.pk]), urlencode(contact_filters)))
+        pollrun_urls.append("{}?{}".format(
+            reverse('polls.pollrun_read', args=[pollrun.pk]),
+            urlencode(contact_filters)))
+        participation_urls.append("{}?{}".format(
+            reverse('polls.pollrun_participation', args=[pollrun.pk]),
+            urlencode(contact_filters)))
 
     chart_data = {
         'dates': format_x_axis(pollruns),
@@ -173,8 +177,12 @@ def multiple_pollruns_numeric_split(pollruns, answers, responses, question, cont
         avg_data.append({'name': region.name, 'data': region_answer_avgs})
         rate_data.append({'name': region.name, 'data': region_response_rates})
 
-    pollrun_urls = ["{}?{}".format(reverse('polls.pollrun_read', args=[p.pk]), urlencode(contact_filters)) for p in pollruns]
-    participation_urls = ["{}?{}".format(reverse('polls.pollrun_participation', args=[p.pk]), urlencode(contact_filters)) for p in pollruns]
+    pollrun_urls = ["{}?{}".format(
+        reverse('polls.pollrun_read', args=[p.pk]),
+        urlencode(contact_filters)) for p in pollruns]
+    participation_urls = ["{}?{}".format(
+        reverse('polls.pollrun_participation', args=[p.pk]),
+        urlencode(contact_filters)) for p in pollruns]
     chart_data = {
         'dates': format_x_axis(pollruns),
         'sum': sum_data,
