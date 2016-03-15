@@ -6,8 +6,9 @@ from operator import itemgetter
 
 import numpy
 
-from django.utils.formats import number_format
 from django.db.models import F
+
+from tracpro.charts.formatters import format_number
 
 from .utils import get_numeric_values
 from . import rules
@@ -48,7 +49,7 @@ def numeric_map_data(answers, question):
     for boundary_id, _answers in groupby(answer_data, itemgetter('boundary')):
         average = round(numpy.mean(get_numeric_values(a['value'] for a in _answers)), 2)
         map_data[boundary_id] = {
-            'average': number_format(average, 2, force_grouping=True),
+            'average': format_number(average, digits=2),
             'category': question.categorize(average),
         }
     return map_data

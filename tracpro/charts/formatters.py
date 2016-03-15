@@ -1,7 +1,12 @@
 from __future__ import unicode_literals
 
 from django.core.urlresolvers import reverse
+from django.utils.formats import number_format
 from django.utils.http import urlencode
+
+
+def format_number(number, digits):
+    return number_format(number, digits, force_grouping=True)
 
 
 def format_series(pollruns, data, url=None, filters=None, **extra):
