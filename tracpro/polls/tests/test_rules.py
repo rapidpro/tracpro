@@ -86,6 +86,10 @@ class TestGetAllCategories(TracProTest):
 
 class CheckRuleTestBase(object):
 
+    def call(self, test):
+        val, kwargs = test
+        return self.rule(val, **kwargs)
+
     def test_false(self):
         unexpected_successes = []
         for test in self.false_tests:
@@ -107,82 +111,85 @@ class CheckRuleTestBase(object):
                 "\n".join(str(f) for f in unexpected_failures))
 
 
-class TestIsNumeric(CheckRuleTestBase, TracProTest):
-    true_tests = ["1.234", "1", "0", "-1", "-1.23"]
-    false_tests = [None, "asdf", "1.asdf", "asdf.1", "asdf1", "1asdf"]
-
-    def call(self, test):
-        return rules.passes_test(is_numeric(test)
+class TestIsNumber(CheckRuleTestBase, TracProTest):
+    rule = staticmethod(rules.is_number)
+    true_tests = [
+        ("1.234", {}),
+        ("1", {}),
+        ("0", {}),
+        ("-1", {}),
+        ("-1.23", {}),
+    ]
+    false_tests = [
+        (None, {}),
+        ("asdf", {}),
+        ("1.asdf", {}),
+        ("asdf.1", {}),
+        ("asdf1", {}),
+        ("1asdf", {}),
+    ]
 
 
 class TestIsBetween(CheckRuleTestBase, TracProTest):
+    rule = staticmethod(rules.is_between)
     true_tests = [
-        ("1", "1", "2"),
-        ("1.5", "1", "2"),
-        ("2", "1", "2"),
+        ("1", {'min': "1", 'max': "2"}),
+        ("1.5", {'min': "1", 'max': "2"}),
+        ("2", {'min': "1", 'max': "2"}),
     ]
     false_tests = [
-        (None, "1", "2"),
-        ("asdf", "1", "2"),
-        ("1", None, "2"),
-        ("1", "1", None),
-        ("1", "asdf", "2"),
-        ("1", "1", "asdf"),
-        ("0.9", "1", "2"),
-        ("1.5", "2", "1"),
+        (None, {'min': "1", 'max': "2"}),
+        ("asdf", {'min': "1", 'max': "2"}),
+        ("1", {'min': None, 'max': "2"}),
+        ("1", {'min': "1", 'max': None}),
+        ("1", {'min': "asdf", 'max': "2"}),
+        ("1", {'min': "1", 'max': "asdf"}),
+        ("0.9", {'min': "1", 'max': "2"}),
+        ("1.5", {'min': "2", 'max': "1"}),
     ]
-
-    def call(self, test):
-        return rules.is_between(*test)
 
 
 class TestIsEqual(CheckRuleTestBase, TracProTest):
+    rule = staticmethod(rules.is_equal)
     true_tests = [
-        ("1.0", "1"),
-        ("1", "1.0"),
+        ("1.0", {'test': "1"}),
+        ("1", {'test': "1.0"}),
     ]
     false_tests = [
-        ("1", "1.01"),
-        ("asdf", "1"),
-        ("1", "asdf"),
-        (None, "1"),
+        ("1", {'test': "1.01"}),
+        ("asdf", {'test': "1"}),
+        ("1", {'test': "asdf"}),
+        (None, {'test': "1"}),
     ]
-
-    def call(self, test):
-        return rules.is_equal(*test)
 
 
 class TestIsLessThan(CheckRuleTestBase, TracProTest):
+    rule = staticmethod(rules.is_less_than)
     true_tests = [
-        ("1", "1.5"),
-        ("1.5", "2"),
-        ("-1", "1"),
+        ("1", {'test': "1.5"}),
+        ("1.5", {'test': "2"}),
+        ("-1", {'test': "1"}),
     ]
     false_tests = [
-        ("1.5", "1"),
-        ("1.0", "1"),
-        (None, "1"),
-        ("asdf", "1"),
-        ("1", "asdf"),
+        ("1.5", {'test': "1"}),
+        ("1.0", {'test': "1"}),
+        (None, {'test': "1"}),
+        ("asdf", {'test': "1"}),
+        ("1", {'test': "asdf"}),
     ]
-
-    def call(self, test):
-        return rules.is_less_than(*test)
 
 
 class TestIsGreaterThan(CheckRuleTestBase, TracProTest):
+    rule = staticmethod(rules.is_greater_than)
     true_tests = [
-        ("1.5", "1"),
-        ("2", "1.5"),
-        ("1", "-1"),
+        ("1.5", {'test': "1"}),
+        ("2", {'test': "1.5"}),
+        ("1", {'test': "-1"}),
     ]
     false_tests = [
-        ("1", "1.5"),
-        ("1.0", "1"),
-        (None, "-1"),
-        ("asdf", "1"),
-        ("1", "asdf"),
+        ("1", {'test': "1.5"}),
+        ("1.0", {'test': "1"}),
+        (None, {'test': "-1"}),
+        ("asdf", {'test': "1"}),
+        ("1", {'test': "asdf"}),
     ]
-
-    def call(self, test):
-        return rules.is_greater_than(*test)
