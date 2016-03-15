@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from requests import HTTPError
 
 from temba_client.base import TembaAPIError

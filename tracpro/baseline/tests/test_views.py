@@ -1,10 +1,13 @@
+from __future__ import unicode_literals
+
 import datetime
 
 from django.core.urlresolvers import reverse
 
-from tracpro.test.cases import TracProDataTest
-from ..models import BaselineTerm
 from tracpro.polls.models import Answer, PollRun, Response
+from tracpro.test.cases import TracProDataTest
+
+from ..models import BaselineTerm
 
 
 class TestBaselineTermCRUDL(TracProDataTest):

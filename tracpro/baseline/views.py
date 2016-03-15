@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from datetime import datetime
 from dateutil import rrule
 import pytz
@@ -130,7 +132,7 @@ class BaselineTermCRUDL(SmartCRUDL):
                     question=baseline_question,
                     value=random_answer,
                     submitted_on=baseline_datetime,
-                    category=u'')
+                    category='')
 
         def form_valid(self, form):
             baseline_question = self.form.cleaned_data['baseline_question']
@@ -168,7 +170,7 @@ class BaselineTermCRUDL(SmartCRUDL):
                         question=follow_up_question,
                         value=random_answer,
                         submitted_on=follow_up_datetime,
-                        category=u'')
+                        category='')
                 loop_count += 1
 
             return redirect(self.get_success_url())

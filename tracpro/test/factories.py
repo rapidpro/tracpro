@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from tracpro.test.temba_factories import *  # noqa
 from tracpro.contacts.tests.factories import *  # noqa
 from tracpro.groups.tests.factories import *  # noqa

@@ -1,6 +1,8 @@
-import re
+from __future__ import unicode_literals
 
 from decimal import InvalidOperation
+import re
+
 import numpy
 import pycountry
 import stop_words
