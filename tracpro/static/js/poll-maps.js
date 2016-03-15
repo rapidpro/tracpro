@@ -19,7 +19,7 @@ $(function() {
   /* Center map to include all boundaries whenever a map tab is opened. */
   $("body").on("shown.bs.tab", function(e) {
     var mapDiv = $($(e.target).attr('href')).find('.map');
-    if (mapDiv.length) {
+    if (mapDiv.length) {  // User has activated the "Map" tab.
       var map = mapDiv.data('map');
       map.fitBounds(map.boundaries.getBounds());
 
@@ -31,8 +31,12 @@ $(function() {
       // zooms out again.
       var zoomOut = $(map.zoomControl._container).find('.leaflet-control-zoom-out');
       zoomOut.addClass('leaflet-disabled');
+    } else {  // User has activated the "Chart" tab.
+      // If the window was resized while the chart was hidden, it is now the
+      // wrong width. Trigger a window resize to redraw the chart at the
+      // current width.
+      $(window).resize();
     }
-    $(window).resize();  // Fix the chart size when map displayed
   });
 
   /* Info box that will display extra data on boundary hover. */
