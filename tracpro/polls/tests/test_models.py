@@ -313,7 +313,7 @@ class TestQuestion(TracProTest):
             },
             {
                 'category': {'base': 'cats'},
-                'test': {'type': 'numeric'},
+                'test': {'type': 'number'},
             },
         ]
         question = factories.Question(json_rules=json.dumps(rules))
