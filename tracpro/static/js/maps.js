@@ -1,11 +1,11 @@
-
 $(function() {
 
   var COLORS = [
     // vivid colors
     '#006837', '#1F49BF', '#762a83', '#A7082C', '#FF8200', '#FFD100',
     // light colors
-    '#94D192', '#92c5de', '#c2a5cf', '#F2A2B3', '#f7cca0', '#FFFFBF' ];
+    '#94D192', '#92c5de', '#c2a5cf', '#F2A2B3', '#f7cca0', '#FFFFBF'
+  ];
 
   /* Associate categories with colors. */
   var getColors = function(categories) {
