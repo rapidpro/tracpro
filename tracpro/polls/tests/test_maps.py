@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from tracpro.test import factories
 from tracpro.test.cases import TracProTest
 
