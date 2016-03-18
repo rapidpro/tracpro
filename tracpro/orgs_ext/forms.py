@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from dash.orgs.forms import OrgForm
 
 from temba_client.base import TembaAPIError

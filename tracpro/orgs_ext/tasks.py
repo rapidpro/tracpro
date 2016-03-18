@@ -1,7 +1,10 @@
+from __future__ import unicode_literals
+
+import datetime
+
 from celery import signature
 from celery.exceptions import SoftTimeLimitExceeded
 from celery.utils.log import get_task_logger
-import datetime
 
 from django.apps import apps
 from django.conf import settings
