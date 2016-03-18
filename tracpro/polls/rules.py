@@ -41,9 +41,7 @@ def get_all_categories(question, answers=None):
         extra = answers.exclude(category__in=categories + [''])
         extra = extra.exclude(category=None)
         extra = extra.values_list('category', flat=True).distinct('category')
-        for category in extra:
-            if category not in categories:
-                categories.append(category)
+        categories.extend(list(extra))
 
     # The last category should be "Other."
     other = str(_("Other"))  # Evaluate to keep the list JSON serializable.

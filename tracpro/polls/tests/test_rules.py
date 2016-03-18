@@ -8,7 +8,7 @@ from . import factories
 
 class TestGetCategory(TracProTest):
 
-    def create_rule(self, category):
+    def _create_rule(self, category):
         return {
             'category': category,
             'test': {},
@@ -16,23 +16,23 @@ class TestGetCategory(TracProTest):
 
     def test_get_category_direct(self):
         """Return rule['category'] if it is not a dictionary."""
-        rule = self.create_rule('cats')
+        rule = self._create_rule('cats')
         self.assertEqual(rules.get_category(rule), "cats")
 
     def test_get_category_base(self):
         """get_category returns the base category name, if available."""
-        rule = self.create_rule({'base': 'base', 'eng': 'eng'})
+        rule = self._create_rule({'base': 'base', 'eng': 'eng'})
         self.assertEqual(rules.get_category(rule), "base")
 
     def test_get_category_other(self):
         """get_category returns the first available translation."""
-        rule = self.create_rule({'eng': 'eng'})
+        rule = self._create_rule({'eng': 'eng'})
         self.assertEqual(rules.get_category(rule), "eng")
 
 
 class TestGetAllCategories(TracProTest):
 
-    def create_rule(self, category):
+    def _create_rule(self, category):
         return {
             'category': {'base': category},
             'test': {},
@@ -44,8 +44,8 @@ class TestGetAllCategories(TracProTest):
 
     def test_get_all(self):
         question = factories.Question(rules=[
-            self.create_rule('a'),
-            self.create_rule('b'),
+            self._create_rule('a'),
+            self._create_rule('b'),
         ])
         self.assertEqual(
             rules.get_all_categories(question),
@@ -54,9 +54,9 @@ class TestGetAllCategories(TracProTest):
     def test_get_all__include_other(self):
         """Ensure that "Other" is at the end of the list."""
         question = factories.Question(rules=[
-            self.create_rule('a'),
-            self.create_rule('Other'),
-            self.create_rule('b'),
+            self._create_rule('a'),
+            self._create_rule('Other'),
+            self._create_rule('b'),
         ])
         self.assertEqual(
             rules.get_all_categories(question),
@@ -65,8 +65,8 @@ class TestGetAllCategories(TracProTest):
     def test_get_all_with_answers(self):
         """Include Answer categories that aren't in the rules."""
         question = factories.Question(rules=[
-            self.create_rule('a'),
-            self.create_rule('b'),
+            self._create_rule('a'),
+            self._create_rule('b'),
         ])
         factories.Answer(question=question, category='apple')
         factories.Answer(question=question, category='a')
@@ -76,10 +76,10 @@ class TestGetAllCategories(TracProTest):
 
     def test_duplicates(self):
         question = factories.Question(rules=[
-            self.create_rule('b'),
-            self.create_rule('a'),
-            self.create_rule('a'),
-            self.create_rule('b'),
+            self._create_rule('b'),
+            self._create_rule('a'),
+            self._create_rule('a'),
+            self._create_rule('b'),
         ])
         self.assertEqual(
             rules.get_all_categories(question),
