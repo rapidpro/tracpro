@@ -3,9 +3,10 @@ from __future__ import unicode_literals
 import mock
 
 from django.core.exceptions import NON_FIELD_ERRORS
-from django.test import override_settings, TestCase
+from django.test import override_settings
 
 from tracpro.test import factories
+from tracpro.test.cases import TracProTest
 
 from .. import forms
 
@@ -16,10 +17,11 @@ from .. import forms
     ('es', 'Spanish'),
     ('fr', 'French'),
 ])
-class TestOrgExtForm(TestCase):
+class TestOrgExtForm(TracProTest):
     form_class = forms.OrgExtForm
 
     def setUp(self):
+        super(TestOrgExtForm, self).setUp()
         self.user = factories.User()
         self.data = {
             'name': 'Organization',

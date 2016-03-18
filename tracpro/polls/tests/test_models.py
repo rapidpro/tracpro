@@ -2,12 +2,13 @@
 from __future__ import absolute_import, unicode_literals
 
 import datetime
+import json
 
 import mock
 
 import pytz
 
-from temba_client.types import Run, RunValueSet, FlowDefinition
+from temba_client.types import Run, RunValueSet
 
 from django.db import IntegrityError
 from django.utils import timezone
@@ -152,6 +153,8 @@ class TestPollManager(TracProTest):
 
     def test_sync__update_existing(self):
         """Sync should update existing objects if they have changed on RapidPro."""
+        self.mock_temba_client.get_flow_definition.return_value = factories.TembaFlowDefinition()
+
         org = factories.Org()
         poll = factories.Poll(org=org, is_active=True)
         question = factories.Question(poll=poll)
@@ -199,7 +202,7 @@ class TestPoll(TracProTest):
 
     def test_get_flow_definition(self):
         """Flow definition should be retrieved from the API and cached on the poll."""
-        definition = FlowDefinition()
+        definition = factories.TembaFlowDefinition()
         self.mock_temba_client.get_flow_definition.return_value = definition
         poll = factories.Poll()
         self.assertFalse(hasattr(poll, '_flow_definition'))
@@ -225,9 +228,7 @@ class TestQuestionManager(TracProTest):
 
     def setUp(self):
         super(TestQuestionManager, self).setUp()
-        self.definition = FlowDefinition()
-        self.definition.rule_sets = []
-        self.mock_temba_client.get_flow_definition.return_value = self.definition
+        self.mock_temba_client.get_flow_definition.return_value = factories.TembaFlowDefinition()
 
     def test_from_temba__new(self):
         """Should create a new Question to match the Poll and uuid."""
@@ -304,47 +305,42 @@ class TestQuestion(TracProTest):
         factories.Question(poll=factories.Poll(), ruleset_uuid='abc')
         factories.Question(poll=factories.Poll(), ruleset_uuid='abc')
 
-    @mock.patch.object(models.Poll, 'get_flow_definition')
-    def test_guess_question_type_numeric(self, mock_get_flow_definition):
+    def test_categorize(self):
+        rules = [
+            {
+                'category': {'base': 'dogs'},
+                'test': {'type': 'between', 'min': 1, 'max': 3}
+            },
+            {
+                'category': {'base': 'cats'},
+                'test': {'type': 'number'},
+            },
+        ]
+        question = factories.Question(json_rules=json.dumps(rules))
+        self.assertEqual(question.categorize(2), 'dogs')
+        self.assertEqual(question.categorize(5), 'cats')
+        self.assertEqual(question.categorize("foo"), 'Other')
+
+    def test_guess_question_type_numeric(self):
         """Guess NUMERIC if rule types are all numeric."""
-        definition = FlowDefinition()
-        definition.rule_sets = [{
-            'uuid': 'a',
-            'rules': [
-                {'test': {'type': 'number'}},
-                {'test': {'type': 'number'}},
-            ],
-        }]
-        mock_get_flow_definition.return_value = definition
-        question = factories.Question(ruleset_uuid='a')
-        self.assertEqual(question._guess_question_type(), models.Question.TYPE_NUMERIC)
+        question = factories.Question(json_rules=json.dumps([
+            {'test': {'type': 'number'}},
+            {'test': {'type': 'number'}},
+        ]))
+        self.assertEqual(question.guess_question_type(), models.Question.TYPE_NUMERIC)
 
-    @mock.patch.object(models.Poll, 'get_flow_definition')
-    def test_guess_question_type_open(self, mock_get_flow_definition):
+    def test_guess_question_type_open(self):
         """Guess OPEN if there are no rules."""
-        definition = FlowDefinition()
-        definition.rule_sets = [{
-            'uuid': 'a',
-            'rules': [],
-        }]
-        mock_get_flow_definition.return_value = definition
-        question = factories.Question(ruleset_uuid='a')
-        self.assertEqual(question._guess_question_type(), models.Question.TYPE_OPEN)
+        question = factories.Question(json_rules=json.dumps([]))
+        self.assertEqual(question.guess_question_type(), models.Question.TYPE_OPEN)
 
-    @mock.patch.object(models.Poll, 'get_flow_definition')
-    def test_guess_question_type_multiple_choice(self, mock_get_flow_definition):
+    def test_guess_question_type_multiple_choice(self):
         """Guess MULTIPLE_CHOICE if not all rules are numeric."""
-        definition = FlowDefinition()
-        definition.rule_sets = [{
-            'uuid': 'a',
-            'rules': [
-                {'test': {'type': 'number'}},
-                {'test': {'type': 'text'}},
-            ],
-        }]
-        mock_get_flow_definition.return_value = definition
-        question = factories.Question(ruleset_uuid='a')
-        self.assertEqual(question._guess_question_type(), models.Question.TYPE_NUMERIC)
+        question = factories.Question(json_rules=json.dumps([
+            {'test': {'type': 'number'}},
+            {'test': {'type': 'text'}},
+        ]))
+        self.assertEqual(question.guess_question_type(), models.Question.TYPE_MULTIPLE_CHOICE)
 
 
 class PollRunTest(TracProDataTest):

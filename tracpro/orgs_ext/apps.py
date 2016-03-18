@@ -28,11 +28,20 @@ class DashOrgConfig(AppConfig):
             cache_key = Org.LAST_TASK_CACHE_KEY % (org.pk, task_type.name)
             cache.set(cache_key, json.dumps(result), Org.LAST_TASK_CACHE_TTL)
 
+        def _display_maps(org):
+            """Return whether regions with boundaries have been configured."""
+            if not hasattr(org, '_display_maps'):
+                boundary_regions = org.regions.filter(is_active=True).exclude(boundary=None)
+                org._display_maps = boundary_regions.exists()
+            return org._display_maps
+
         Org.add_to_class('LAST_TASK_CACHE_KEY', 'org:%d:task_result:%s')
         Org.add_to_class('LAST_TASK_CACHE_TTL', 60 * 60 * 24 * 7)  # 1 week
 
         Org.add_to_class('get_task_result', _org_get_task_result)
         Org.add_to_class('set_task_result', _org_set_task_result)
+
+        Org.add_to_class('display_maps', _display_maps)
 
         # Never set config directly;
         # allow config attributes to be set as if they were normal attributes.

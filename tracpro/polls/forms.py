@@ -84,3 +84,7 @@ class PollChartFilterForm(filters.DateRangeFilter, filters.DataFieldFilter,
                 'split_regions': False,
             }
         super(PollChartFilterForm, self).__init__(*args, **kwargs)
+
+
+class PollRunChartFilterForm(filters.DataFieldFilter, filters.FilterForm):
+    pass

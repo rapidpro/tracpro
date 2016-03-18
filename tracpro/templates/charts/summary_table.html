@@ -1,3 +1,4 @@
+{% load humanize %}
 {% if summary_table %}
   <table class="table table-striped">
     <tbody>
@@ -7,7 +8,7 @@
           {% ifequal value None %}
             <td class="read read-value"><em>n/a</em></td>
           {% else %}
-            <td class="read read-value">{{ value }}</td>
+            <td class="read read-value">{{ value|intcomma }}</td>
           {% endifequal %}
         </tr>
       {% endfor %}

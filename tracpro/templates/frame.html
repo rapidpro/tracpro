@@ -3,6 +3,7 @@
 {% load i18n %}
 {% load mptt_tags %}
 {% load smartmin %}
+{% load staticfiles %}
 {% load thumbnail %}
 <html ng-app='trac' dir='{{ lang_direction }}'>
 
@@ -42,6 +43,13 @@
 </style>
     {% block styles %}
       {% compress css %}
+        <link type="text/css" rel="stylesheet"
+              href="{% static "libs/jquery-ui-1.11.4/jquery-ui.css" %}" />
+        <link type="text/css" rel="stylesheet"
+              href="{% static "libs/jquery-ui-1.11.4/jquery-ui.structure.css" %}" />
+        <link type="text/css" rel="stylesheet"
+              href="{% static "libs/jquery-ui-1.11.4/jquery-ui.theme.css" %}" />
+
         <link href='{{ STATIC_URL }}css/bootstrap.css' type='text/css' rel='stylesheet' />
         <link href='{{ STATIC_URL }}css/bootstrap-theme.css' type='text/css' rel='stylesheet' />
         <link href='{{ STATIC_URL }}css/smartmin_styles.css' type='text/css' rel='stylesheet' />
@@ -371,6 +379,7 @@
     <script type="text/javascript" src="{{ STATIC_URL }}js/trac.js"></script>
 
     {% compress js %}
+    <script src="{% static "libs/jquery-ui-1.11.4/jquery-ui.js" %}"></script>
     <script src='{{ STATIC_URL }}coffee/trac.coffee' type='text/coffeescript'></script>
     <script src='{{ STATIC_URL }}coffee/services.coffee' type='text/coffeescript'></script>
     <script src='{{ STATIC_URL }}coffee/controllers.coffee' type='text/coffeescript'></script>

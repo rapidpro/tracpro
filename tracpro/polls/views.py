@@ -21,7 +21,7 @@ from smartmin.templatetags.smartmin import format_datetime
 from tracpro.contacts.models import Contact
 from tracpro.groups.models import Group, Region
 
-from . import charts, forms, tasks
+from . import charts, forms, maps, tasks
 from .models import Poll, Question, PollRun, Response
 
 
@@ -70,7 +70,9 @@ class PollCRUDL(smartmin.SmartCRUDL):
         def get_responses(self, pollruns):
             """Limit the responses from which data is shown."""
             contacts = Contact.objects.filter(org=self.request.org)
-            contacts = contacts.filter(region__is_active=True)
+            contacts = contacts.filter(
+                region__is_active=True,
+                is_active=True)  # Filter out inactive contacts
             contacts = self.filter_form.filter_contacts(contacts)
 
             if self.request.region:
@@ -89,12 +91,24 @@ class PollCRUDL(smartmin.SmartCRUDL):
             pollruns = self.get_pollruns()
             responses = self.get_responses(pollruns)
             split_regions = self.filter_form.cleaned_data['split_regions']
+            # Get the contact fields so we can pass them to the pollrun url
+            contact_filters = {}
+            for fieldname in self.filter_form.fields:
+                if fieldname.startswith('contact'):
+                    contact_filters[fieldname] = self.filter_form.cleaned_data[fieldname]
 
             data = []
             for question in self.object.questions.active():
                 chart_type, chart_data, summary_table = charts.multiple_pollruns(
-                    pollruns, responses, question, split_regions)
-                data.append((question, chart_type, chart_data, summary_table))
+                    pollruns, responses, question, split_regions, contact_filters)
+                map_data = maps.get_map_data(responses, question)
+                data.append((
+                    question,
+                    chart_type,
+                    chart_data,
+                    map_data,
+                    summary_table,
+                ))
             return data
 
     class Update(PollMixin, OrgObjPermsMixin, smartmin.SmartUpdateView):
@@ -273,25 +287,43 @@ class PollRunCRUDL(smartmin.SmartCRUDL):
                 self.request.region,
                 self.request.include_subregions)
 
-        def get_responses(self, pollrun):
+        def get_context_data(self, **kwargs):
+            filter_form = forms.PollRunChartFilterForm(
+                org=self.request.org,
+                data=self.request.GET)
+
+            if filter_form.is_valid():
+                responses = self.get_responses(filter_form, self.object)
+                question_data = []
+                for question in self.object.poll.questions.active():
+                    chart_type, chart_data, summary_table = charts.single_pollrun(
+                        self.object, responses, question)
+                    map_data = maps.get_map_data(responses, question)
+                    question_data.append((
+                        question,
+                        chart_type,
+                        chart_data,
+                        map_data,
+                        summary_table,
+                    ))
+            else:
+                question_data = None
+
+            kwargs.setdefault('form', filter_form)
+            kwargs.setdefault('question_data', question_data)
+            return super(PollRunCRUDL.Read, self).get_context_data(**kwargs)
+
+        def get_responses(self, filter_form, pollrun):
             contacts = Contact.objects.filter(org=self.request.org)
-            contacts = contacts.filter(region__is_active=True)
+            contacts = contacts.filter(region__is_active=True, is_active=True)
+            contacts = filter_form.filter_contacts(contacts)
+
             if self.request.region:
                 contacts = contacts.filter(region__in=self.request.data_regions)
             responses = Response.objects.active()
             responses = responses.filter(pollrun=pollrun)
             responses = responses.filter(contact__in=contacts)
             return responses
-
-        def get_context_data(self, **kwargs):
-            responses = self.get_responses(self.object)
-            data = []
-            for question in self.object.poll.questions.active():
-                chart_type, chart_data, summary_table = charts.single_pollrun(
-                    self.object, responses, question)
-                data.append((question, chart_type, chart_data, summary_table))
-            kwargs.setdefault('question_data', data)
-            return super(PollRunCRUDL.Read, self).get_context_data(**kwargs)
 
     class Participation(OrgPermsMixin, smartmin.SmartReadView):
 

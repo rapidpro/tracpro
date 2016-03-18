@@ -2,6 +2,7 @@ from __future__ import absolute_import, unicode_literals
 
 from collections import Counter, OrderedDict
 from itertools import chain, groupby
+import json
 from operator import itemgetter
 
 import pytz
@@ -15,6 +16,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from tracpro.contacts.models import Contact
 
+from . import rules
 from .tasks import pollrun_start
 from .utils import extract_words, natural_sort_key
 
@@ -42,6 +44,17 @@ class PollManager(models.Manager.from_queryset(PollQuerySet)):
             poll.rapidpro_name = temba_poll.name
 
         poll.save()
+
+        # Sync related Questions, and maintain question order.
+        temba_questions = temba_poll.rulesets
+        temba_questions = OrderedDict((r.uuid, r) for r in temba_poll.rulesets)
+
+        # Remove Questions that are no longer on RapidPro.
+        poll.questions.exclude(ruleset_uuid__in=temba_questions.keys()).delete()
+
+        # Create new or update existing Questions to match RapidPro data.
+        for order, temba_question in enumerate(temba_questions.values(), 1):
+            Question.objects.from_temba(poll, temba_question, order)
 
         return poll
 
@@ -71,16 +84,7 @@ class PollManager(models.Manager.from_queryset(PollQuerySet)):
 
         # Create new or update existing Polls to match RapidPro data.
         for temba_poll in temba_polls.values():
-            poll = Poll.objects.from_temba(org, temba_poll)
-
-            temba_questions = OrderedDict((r.uuid, r) for r in temba_poll.rulesets)
-
-            # Remove questions that are no longer on RapidPro.
-            poll.questions.exclude(ruleset_uuid__in=temba_questions.keys()).delete()
-
-            # Create new or update existing Questions to match RapidPro data.
-            for order, temba_question in enumerate(temba_questions.values(), 1):
-                Question.objects.from_temba(poll, temba_question, order)
+            Poll.objects.from_temba(org, temba_poll)
 
 
 @python_2_unicode_compatible
@@ -159,10 +163,22 @@ class QuestionManager(models.Manager.from_queryset(QuestionQuerySet)):
             # Custom name will be maintained despite update of RapidPro name.
             question.rapidpro_name = temba_question.label
 
+        # Save the rules used to categorize answers to this question.
+        rules = []
+        for rule_set in question.poll.get_flow_definition().rule_sets:
+            if rule_set['uuid'] == question.ruleset_uuid:  # Find the first matching rule set.
+                for rule in rule_set['rules'][:-1]:  # The last rule is always "Other".
+                    rules.append({
+                        'category': rule['category'],
+                        'test': rule['test'],
+                    })
+                break
+        question.json_rules = json.dumps(rules)
+
         # The user can alter or correct the question's type after it is
         # initially set, so we shouldn't override the existing type.
         if not question.question_type:
-            question.question_type = question._guess_question_type()
+            question.question_type = question.guess_question_type()
 
         question.order = order
         question.save()
@@ -173,10 +189,6 @@ class QuestionManager(models.Manager.from_queryset(QuestionQuerySet)):
 @python_2_unicode_compatible
 class Question(models.Model):
     """Corresponds to RapidPro RuleSet."""
-    # Types of rules that RapidPro applies to incoming messages
-    # that suggest the expected data is numeric.
-    _NUMERIC_TESTS = ('number', 'lt', 'eq', 'gt', 'between')
-
     TYPE_OPEN = 'O'
     TYPE_MULTIPLE_CHOICE = 'C'
     TYPE_NUMERIC = 'N'
@@ -205,6 +217,9 @@ class Question(models.Model):
         default=0, verbose_name=_('order'))
     is_active = models.BooleanField(
         default=True, verbose_name=_("show on TracPro"))
+    json_rules = models.TextField(
+        blank=True,
+        verbose_name=_("RapidPro rules"))
 
     objects = QuestionManager()
 
@@ -222,7 +237,19 @@ class Question(models.Model):
     def __str__(self):
         return self.name
 
-    def _guess_question_type(self):
+    def categorize(self, value):
+        """Return the first category that the value matches."""
+        for rule in self.get_rules():
+            if rules.passes_test(value, rule):
+                return rules.get_category(rule)
+        return "Other"
+
+    def get_rules(self):
+        if not hasattr(self, "_rules"):
+            self._rules = json.loads(self.json_rules) if self.json_rules else []
+        return self._rules
+
+    def guess_question_type(self):
         """Inspect rules applied to question input to guess data type.
 
         Historically, the "response_type" field on the ruleset was used to
@@ -231,14 +258,11 @@ class Question(models.Model):
         """
         # Collect the type of each test applied to question input, e.g.,
         # "has any of these words", "has a number", "has a number between", etc.
-        defn = self.poll.get_flow_definition()
-        rules = {r['uuid']: r['rules'] for r in defn.rule_sets}.get(self.ruleset_uuid)
-        tests = [r['test']['type'] for r in rules] if rules else []
-        tests = tests[:-1]  # The last test is always "Other".
+        tests = [rule['test']['type'] for rule in self.get_rules()]
 
         if not tests:
             return self.TYPE_OPEN
-        elif all(t in self._NUMERIC_TESTS for t in tests):
+        elif all(t in rules.NUMERIC_TESTS for t in tests):
             return self.TYPE_NUMERIC
         else:
             return self.TYPE_MULTIPLE_CHOICE
@@ -433,7 +457,10 @@ class PollRun(models.Model):
         if not self.covers_region(region, include_subregions):
             raise ValueError(
                 "Request for responses in region where poll wasn't conducted")
-        responses = self.responses.filter(is_active=True, contact__region__is_active=True)
+        responses = self.responses.filter(
+            is_active=True,
+            contact__region__is_active=True,
+            contact__is_active=True)  # Filter out inactive contacts
         if region:
             if include_subregions:
                 regions = region.get_descendants(include_self=True)

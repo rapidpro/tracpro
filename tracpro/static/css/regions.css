@@ -1,14 +1,35 @@
 #region-actions {
     margin-bottom: 10px;
 }
-#region-actions .btn.hierarchy {
-    width: 170px;  /* prevent visual shift when toggling between buttons */
+#region-actions .btn {
+    width: 133px;  /* prevent visual shift when toggling between buttons */
 }
 
 
-#edit-hierarchy-help {
-    color: #2d6ca2;  /* color of btn-primary */
-    font-weight: bold;
+/* Boundary selection. */
+.list_groups_region .header-boundary {
+    padding-left: 21px;  /* extra 13px padding to match start of text in body rows */
+}
+.list_groups_region .region td.value-boundary .value {
+    display: inline-block;
+    padding-left: 13px;  /* extra 5px padding to match start of text in <select> element */
+    width: 200px;
+}
+.list_groups_region.edit-mode .region td.value-boundary {
+    padding: 4px 8px;  /* reduce top/bottom padding to give more room to the <select> */
+}
+.list_groups_region.edit-mode .region td.value-boundary select {
+    width: 200px;
+    height: 28px;  /* match line height to prevent visual shift when toggling edit mode */
+    padding: 1px 8px;
+}
+@media (min-width: 992px) {  /* increase boundary column size on desktops */
+    .list_groups_region .region td.value-boundary .value {
+        width: 300px;
+    }
+    .list_groups_region.edit-mode .region td.value-boundary select {
+        width: 300px;
+    }
 }
 
 

@@ -223,6 +223,13 @@ class DataFieldQuerySet(models.QuerySet):
 
 class DataFieldManager(models.Manager.from_queryset(DataFieldQuerySet)):
 
+    def from_temba(self, org, temba_field):
+        field, _ = DataField.objects.get_or_create(org=org, key=temba_field.key)
+        field.label = temba_field.label
+        field.value_type = temba_field.value_type
+        field.save()
+        return field
+
     def sync(self, org):
         """Update the org's DataFields from RapidPro."""
         # Retrieve current DataFields known to RapidPro.
@@ -233,11 +240,8 @@ class DataFieldManager(models.Manager.from_queryset(DataFieldQuerySet)):
         DataField.objects.by_org(org).exclude(key__in=temba_fields.keys()).delete()
 
         # Create new or update existing DataFields to match RapidPro data.
-        for key, temba_field in temba_fields.items():
-            field, _ = DataField.objects.get_or_create(org=org, key=key)
-            field.label = temba_field.label
-            field.value_type = temba_field.value_type
-            field.save()
+        for temba_field in temba_fields.values():
+            DataField.objects.from_temba(org, temba_field)
 
     def set_active_for_org(self, org, keys):
         fields = DataField.objects.by_org(org)

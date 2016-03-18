@@ -23,7 +23,7 @@ from smartmin.users.views import (
 
 from tracpro.contacts.models import Contact
 
-from .models import Group, Region
+from .models import Boundary, Group, Region
 from .forms import ContactGroupsForm
 
 
@@ -113,10 +113,10 @@ class ToggleSubregions(View):
 
 class RegionCRUDL(SmartCRUDL):
     model = Region
-    actions = ('list', 'most_active', 'select', 'update_hierarchy')
+    actions = ('list', 'most_active', 'select', 'update_all')
 
     class List(OrgPermsMixin, SmartListView):
-        fields = ('name', 'contacts')
+        fields = ('name', 'boundary', 'contacts')
         paginate_by = None
 
         def derive_queryset(self, **kwargs):
@@ -130,8 +130,16 @@ class RegionCRUDL(SmartCRUDL):
             )
             return regions
 
+        def get_context_data(self, **kwargs):
+            org_boundaries = Boundary.objects.by_org(self.request.org)
+            kwargs.setdefault('org_boundaries', org_boundaries)
+            return super(RegionCRUDL.List, self).get_context_data(**kwargs)
+
         def get_contacts(self, obj):
             return len(obj.prefetched_contacts)
+
+        def get_boundary(self, obj):
+            return obj.boundary.name if obj.boundary else "-"
 
     class MostActive(OrgPermsMixin, SmartListView):
 
@@ -162,76 +170,103 @@ class RegionCRUDL(SmartCRUDL):
             Region.sync_with_temba(self.request.org, uuids)
             return HttpResponseRedirect(self.get_success_url())
 
-    class UpdateHierarchy(OrgPermsMixin, SmartView, View):
+    class UpdateAll(OrgPermsMixin, SmartView, View):
         http_method_names = ['post']
 
         @transaction.atomic
         def post(self, request, *args, **kwargs):
-            """AJAX endpoint to update Region hierarchy at once."""
+            """AJAX endpoint to update boundaries and hierarchy for all org regions."""
             org = request.org
 
             # Load data and validate that it is in the correct format.
-            raw_data = request.POST.get('data', "").strip() or None
+            self.raw_data = request.POST.get('data', "").strip() or None
             try:
-                data = json.loads(raw_data)
+                data = json.loads(self.raw_data)
             except TypeError:
-                msg = "No data was provided in the `data` parameter."
-                logger.warning("{} Hierarchy: {}".format(org, msg), exc_info=True)
-                return self.error_response(400, msg)
+                return self.error(
+                    "No data was provided in the `data` parameter.")
             except ValueError:
-                msg = "Data must be valid JSON."
-                logger.warning("{} Hierarchy: {} {}".format(org, msg, raw_data), exc_info=True)
-                return self.error_response(400, msg)
+                return self.error(
+                    "Data must be valid JSON.")
             if not isinstance(data, dict):
-                msg = "Data must be a dict that maps region id to parent id."
-                logger.warning("{} Hierarchy: {} {}".format(org, msg, raw_data))
-                return self.error_response(400, msg)
+                return self.error(
+                    "Data must be a dict that maps region id to "
+                    "(parent id, boundary id).")
+            if not all(isinstance(v, list) and len(v) == 2 for v in data.values()):
+                return self.error(
+                    "All data values must be of the format "
+                    "(parent id, boundary id).")
 
-            # Grab all of the org's regions at once.
+            # Grab all of the org's regions and boundaries at once.
             regions = {str(r.pk): r for r in Region.get_all(org)}
+            boundaries = {str(b.pk): b for b in Boundary.objects.by_org(org)}
 
             # Check that the user is updating exactly the regions from this
-            # org, and that specified parents are regions from this org.
-            expected_ids = set(regions.keys())
+            # org, and that specified parents and boundaries are valid for
+            # this org.
+            valid_regions = set(regions.keys())
+            valid_boundaries = set(boundaries.keys())
             sent_regions = set(str(i) for i in data.keys())
-            sent_parents = set(str(i) for i in data.values() if i is not None)
-            if sent_regions != expected_ids:
-                msg = ("Data must map region id to parent id for each "
-                       "region in this org.")
-                logger.warning("{} Hierarchy: {} {}".format(org, msg, raw_data))
-                return self.error_response(400, msg)
-            elif not sent_parents.issubset(expected_ids):
-                msg = ("Region parent must be a region from the same org, "
-                       "or null.")
-                logger.warning("{} Hierarchy: {} {}".format(org, msg, raw_data))
-                return self.error_response(400, msg)
+            sent_parents = set(str(i[0]) for i in data.values() if i[0] is not None)
+            sent_boundaries = set(str(i[1]) for i in data.values() if i[1] is not None)
+            if sent_regions != valid_regions:
+                return self.error(
+                    "Data must map region id to parent id for every region "
+                    "in this org.")
+            if not sent_parents.issubset(valid_regions):
+                return self.error(
+                    "Region parent must be a region from the same org, "
+                    "or null.")
+            if not sent_boundaries.issubset(valid_boundaries):
+                return self.error(
+                    "Region boundary must be a boundary from the same "
+                    "org, or null.")
 
-            # Re-set parent values for each region, then rebuild the mptt tree.
+            # Re-set parent and boundary values for each region,
+            # then rebuild the mptt tree.
             with Region.objects.disable_mptt_updates():
-                for region_id, parent_id in data.items():
+                for region_id, (parent_id, boundary_id) in data.items():
                     region = regions.get(str(region_id))
-                    parent = regions.get(str(parent_id))
+                    parent = regions.get(str(parent_id)) if parent_id else None
+                    boundary = boundaries.get(str(boundary_id)) if boundary_id else None
+
+                    changed = False
+                    if region.boundary != boundary:
+                        changed = True
+                        self.log_change("boundary", region, region.boundary, boundary)
+                        region.boundary = boundary
                     if region.parent != parent:
-                        old = region.parent.name if region.parent else None
-                        new = parent.name if parent else None
-                        msg = "Updating parent of {} from {} -> {}".format(region, old, new)
-                        logger.debug("{} Hierarchy: {}".format(org, msg))
+                        changed = True
+                        self.log_change("parent", region, region.parent, parent)
                         region.parent = parent
+
+                    if changed:
                         region.save()
             Region.objects.rebuild()
 
-            msg = '{} region hierarchy has been updated.'.format(org.name)
-            logger.info("{} Hierarchy: {} {}".format(org, msg, raw_data))
-            return self.success_response(msg)
+            return self.success("{} regions have been updated.".format(request.org))
 
-        def error_response(self, status, message):
+        def log_change(self, name, region, old, new):
+            message = "Updating {name} of {region} from {old} -> {new}.".format(
+                name=name,
+                region=region,
+                old=old.name if old else None,
+                new=new.name if new else None,
+            )
+            logger.debug("{} Regions: {}".format(self.request.org, message))
+
+        def error(self, message):
+            template = "{} Regions: {} {}"
+            logger.warning(template.format(self.request.org, message, self.raw_data))
             return JsonResponse({
-                'status': status,
+                'status': 400,
                 'success': False,
                 'message': message,
             })
 
-        def success_response(self, message):
+        def success(self, message):
+            template = "{} Regions: {} {}"
+            logger.info(template.format(self.request.org, message, self.raw_data))
             return JsonResponse({
                 'status': 200,
                 'success': True,
@@ -282,3 +317,17 @@ class GroupCRUDL(SmartCRUDL):
             uuids = form.cleaned_data['groups']
             Group.sync_with_temba(self.request.org, uuids)
             return HttpResponseRedirect(self.get_success_url())
+
+
+class BoundaryCRUDL(SmartCRUDL):
+    model = Boundary
+    actions = ('list',)
+
+    class List(OrgPermsMixin, SmartListView):
+
+        def get_queryset(self):
+            return Boundary.objects.by_org(self.request.org).order_by('-level')
+
+        def render_to_response(self, context, **response_kwargs):
+            results = {b.pk: b.as_geojson() for b in context['object_list']}
+            return JsonResponse({'results': results})
