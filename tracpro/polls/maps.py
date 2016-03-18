@@ -27,8 +27,8 @@ def get_map_data(responses, question):
             'map-data': map_data,
             'all-categories': rules.get_all_categories(question, answers),
         }
-
-    return None
+    else:
+        return None
 
 
 def get_answers(responses, question):
@@ -61,8 +61,7 @@ def categorical_map_data(answers, question):
     answer_data = answers.exclude(category=None).exclude(category="")
     answer_data = answer_data.order_by('boundary').values('boundary', 'category')
     for boundary_id, _answers in groupby(answer_data, itemgetter('boundary')):
-        category_counts = Counter(a['category'] for a in _answers)
-        top_category = category_counts.most_common(1)[0][0]
+        top_category = Counter(a['category'] for a in _answers).most_common(1)[0][0]
         map_data[boundary_id] = {
             'category': top_category,
         }
