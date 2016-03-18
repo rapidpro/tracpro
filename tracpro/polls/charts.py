@@ -10,6 +10,13 @@ from .models import Answer, Question
 from . import utils
 
 
+def _url(name, args=None, kwargs=None, params=None):
+    url = reverse(name, args=args, kwargs=kwargs)
+    if params:
+        url = '{}?{}'.format(url, urlencode(params))
+    return url
+
+
 def single_pollrun(pollrun, responses, question):
     """Chart data for a single pollrun.
 
@@ -94,7 +101,7 @@ def multiple_pollruns_multiple_choice(pollruns, answers, responses, contact_filt
     series = []
     for category, pollrun_counts in answers.category_counts_by_pollrun():
         series.append(format_series(
-            pollruns, pollrun_counts, 'polls.pollrun_read', filters=contact_filters,
+            pollruns, pollrun_counts, 'id@polls.pollrun_read', params=contact_filters,
             name=category))
 
     chart_data = {
@@ -131,12 +138,10 @@ def multiple_pollruns_numeric(pollruns, answers, responses, question, contact_fi
         sum_data.append(answer_sums.get(pollrun.pk, 0))
         avg_data.append(answer_avgs.get(pollrun.pk, 0))
         rate_data.append(response_rates.get(pollrun.pk, 0))
-        pollrun_urls.append("{}?{}".format(
-            reverse('polls.pollrun_read', args=[pollrun.pk]),
-            urlencode(contact_filters)))
-        participation_urls.append("{}?{}".format(
-            reverse('polls.pollrun_participation', args=[pollrun.pk]),
-            urlencode(contact_filters)))
+        pollrun_urls.append(
+            _url('polls.pollrun_read', [pollrun.pk], params=contact_filters))
+        participation_urls.append(
+            _url('polls.pollrun_participation', [pollrun.pk], params=contact_filters))
 
     chart_data = {
         'dates': format_x_axis(pollruns),
@@ -177,12 +182,12 @@ def multiple_pollruns_numeric_split(pollruns, answers, responses, question, cont
         avg_data.append({'name': region.name, 'data': region_answer_avgs})
         rate_data.append({'name': region.name, 'data': region_response_rates})
 
-    pollrun_urls = ["{}?{}".format(
-        reverse('polls.pollrun_read', args=[p.pk]),
-        urlencode(contact_filters)) for p in pollruns]
-    participation_urls = ["{}?{}".format(
-        reverse('polls.pollrun_participation', args=[p.pk]),
-        urlencode(contact_filters)) for p in pollruns]
+    pollrun_urls = [
+        _url('polls.pollrun_read', [p.pk], params=contact_filters)
+        for p in pollruns]
+    participation_urls = [
+        _url('polls.pollrun_participation', [p.pk], params=contact_filters)
+        for p in pollruns]
     chart_data = {
         'dates': format_x_axis(pollruns),
         'sum': sum_data,
