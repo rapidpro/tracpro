@@ -19,8 +19,10 @@ def get_map_data(responses, question):
 
     if question.question_type == question.TYPE_NUMERIC:
         map_data = numeric_map_data(answers, question)
+    elif question.question_type == question.TYPE_MULTIPLE_CHOICE:
+        map_data = multiple_choice_map_data(answers, question)
     else:
-        map_data = categorical_map_data(answers, question)
+        map_data = None
 
     if map_data:
         return {
@@ -55,7 +57,7 @@ def numeric_map_data(answers, question):
     return map_data
 
 
-def categorical_map_data(answers, question):
+def multiple_choice_map_data(answers, question):
     """For each boundary, display the most common answer category."""
     map_data = {}
     answer_data = answers.exclude(category=None).exclude(category="")

@@ -17,34 +17,36 @@ class BaseMapsTest(TracProTest):
         self.poll = factories.Poll()
         self.pollrun = factories.PollRun(poll=self.poll)
 
-        # Sometimes multiple regions share a Boundary.
         self.boundary_a = factories.Boundary(org=self.org)
-        self.region_a1 = factories.Region(org=self.org, boundary=self.boundary_a)
-        self.region_a2 = factories.Region(org=self.org, boundary=self.boundary_a)
-
-        # Sometimes only one region uses a particular Boundary.
         self.boundary_b = factories.Boundary(org=self.org)
-        self.region_b = factories.Region(org=self.org, boundary=self.boundary_b)
 
-        # Sometimes regions are not associated with a Boundary.
-        self.region_no_boundary = factories.Region(org=self.org, boundary=None)
+    def _create_answer(self, question=None, **kwargs):
+        """Wrapper to create an Answer with common default values."""
+        # If user did not specify response, generate one.
+        response = kwargs.pop('response', None)
+        region = kwargs.pop('region', None)
+        boundary = kwargs.pop('boundary', None)
+        if response:
+            if region or boundary:
+                raise Exception("Cannot specify region or boundary with response.")
+        else:
+            if region and boundary:
+                raise Exception("Please specify either region or boundary, but not both. ")
+            region = region or self._create_region(boundary)
+            response = self._create_response(region)
 
-        # Create empty responses for several scenarios.
-        self.response_for_a1 = factories.Response(
+        return factories.Answer(
+            question=question or self.question, response=response, **kwargs)
+
+    def _create_region(self, boundary):
+        """Wrapper to create a region for the boundary."""
+        return factories.Region(org=self.org, boundary=boundary)
+
+    def _create_response(self, region):
+        """Wrapper to create a response for the region."""
+        return factories.Response(
             pollrun=self.pollrun,
-            contact=factories.Contact(org=self.org, region=self.region_a1))
-        self.response_for_a2 = factories.Response(
-            pollrun=self.pollrun,
-            contact=factories.Contact(org=self.org, region=self.region_a2))
-        self.response1_for_b = factories.Response(
-            pollrun=self.pollrun,
-            contact=factories.Contact(org=self.org, region=self.region_b))
-        self.response2_for_b = factories.Response(
-            pollrun=self.pollrun,
-            contact=factories.Contact(org=self.org, region=self.region_b))  # repeated region.
-        self.response_for_no_boundary = factories.Response(
-            pollrun=self.pollrun,
-            contact=factories.Contact(org=self.org, region=self.region_no_boundary))
+            contact=factories.Contact(org=self.org, region=region))
 
 
 class TestGetAnswers(BaseMapsTest):
@@ -55,46 +57,37 @@ class TestGetAnswers(BaseMapsTest):
 
     def test_get_answers(self):
         """Function should return all Answers that are associated with a Boundary."""
-        answer1 = factories.Answer(
-            response=self.response_for_a1, question=self.question)
-        answer2 = factories.Answer(
-            response=self.response_for_a2, question=self.question)
-        answer3 = factories.Answer(
-            response=self.response1_for_b, question=self.question)
-        answer4 = factories.Answer(
-            response=self.response2_for_b, question=self.question)
-        factories.Answer(  # not in results because it has no boundary
-            response=self.response_for_no_boundary, question=self.question)
+        region_a1 = self._create_region(self.boundary_a)
+        region_a2 = self._create_region(self.boundary_a)
+        region_b = self._create_region(self.boundary_b)
 
-        other_question = factories.Question(poll=self.poll)
-        factories.Answer(  # not in results because it is for another question
-            response=self.response_for_a1, question=other_question)
+        answer1 = self._create_answer(region=region_a1)
+        answer2 = self._create_answer(region=region_a2)
+        answer3 = self._create_answer(region=region_b)
+        answer4 = self._create_answer(region=region_b)
+        self._create_answer(boundary=None)  # not in results - no boundary
+        self._create_answer(  # not in results - for another question
+            question=factories.Question(poll=self.poll),
+            response=answer1.response)
 
         answers = maps.get_answers(self.pollrun.responses.all(), self.question)
-        self.assertEqual(len(answers), 4)
+        self.assertEqual(len(answers), 4, answers)
         self.assertIn(answer1, answers)
         self.assertIn(answer2, answers)
         self.assertIn(answer3, answers)
         self.assertIn(answer4, answers)
 
         # Each answer should have the boundary annotated.
-        self.assertEqual(
-            answers.get(pk=answer1.pk).boundary, self.boundary_a.pk)
-        self.assertEqual(
-            answers.get(pk=answer2.pk).boundary, self.boundary_a.pk)
-        self.assertEqual(
-            answers.get(pk=answer3.pk).boundary, self.boundary_b.pk)
-        self.assertEqual(
-            answers.get(pk=answer4.pk).boundary, self.boundary_b.pk)
+        self.assertEqual(answers.get(pk=answer1.pk).boundary, self.boundary_a.pk)
+        self.assertEqual(answers.get(pk=answer2.pk).boundary, self.boundary_a.pk)
+        self.assertEqual(answers.get(pk=answer3.pk).boundary, self.boundary_b.pk)
+        self.assertEqual(answers.get(pk=answer4.pk).boundary, self.boundary_b.pk)
 
     def test_get_answer__response_no_boundary(self):
-        """Function should return no answers if the responses have no associated Boundaries."""
+        """Return no answers if the responses have no associated Boundaries."""
         # Ensure that a related answer exists.
-        factories.Answer(
-            response=self.response_for_no_boundary, question=self.question)
-
-        responses = models.Response.objects.filter(pk=self.response_for_no_boundary.pk)
-        answers = maps.get_answers(responses, self.question)
+        self._create_answer(boundary=None)
+        answers = maps.get_answers(self.pollrun.responses.all(), self.question)
         self.assertEqual(len(answers), 0)
 
 
@@ -118,33 +111,21 @@ class TestNumericMapData(BaseMapsTest):
 
     def test_numeric__no_responses(self):
         """Returns None if an empty response queryset is passed."""
-        # Ensure one relevant answer exists.
-        factories.Answer(
-            response=self.response_for_a1, question=self.question)
-
-        responses = models.Response.objects.none()
-        data = maps.get_map_data(responses, self.question)
+        # Ensure that a relevant answer exists.
+        self._create_answer(boundary=self.boundary_a)
+        data = maps.get_map_data(self.pollrun.responses.none(), self.question)
         self.assertEqual(data, None)
 
     def test_numeric__no_boundaries(self):
         """Responses not associated with a boundary should be filtered out."""
-        factories.Answer(
-            response=self.response_for_no_boundary, question=self.question)
-
-        responses = models.Response.objects.filter(pk=self.response_for_no_boundary.pk)
-        data = maps.get_map_data(responses, self.question)
+        self._create_answer(boundary=None)
+        data = maps.get_map_data(self.pollrun.responses.all(), self.question)
         self.assertEqual(data, None)
 
     def test_numeric__multiple_regions_per_boundary(self):
         """Responses should be grouped by Boundary rather than region."""
-        # Both region_a1 and region_a2 point to boundary_a.
-        factories.Answer(
-            category="1-5", value="3",
-            response=self.response_for_a1, question=self.question)
-        factories.Answer(
-            category=">5", value="11",
-            response=self.response_for_a2, question=self.question)
-
+        self._create_answer(boundary=self.boundary_a, category="1-5", value="3")
+        self._create_answer(boundary=self.boundary_a, category=">5", value="11")
         data = maps.get_map_data(self.pollrun.responses.all(), self.question)
         self.assertEqual(set(data), set(('all-categories', 'map-data')))
         self.assertEqual(data['all-categories'], ['1-5', '>5', 'Other'])
@@ -157,19 +138,14 @@ class TestNumericMapData(BaseMapsTest):
 
     def test_numeric__multiple_answers_per_region(self):
         """Multiple answers per region are averaged."""
-        # Create two answers for region_b.
-        factories.Answer(
-            category="1-5", value="3",
-            response=self.response1_for_b, question=self.question)
-        factories.Answer(
-            category=">5", value="11",
-            response=self.response2_for_b, question=self.question)
-
+        region = self._create_region(self.boundary_a)
+        self._create_answer(region=region, category="1-5", value="3")
+        self._create_answer(region=region, category=">5", value="11")
         data = maps.get_map_data(self.pollrun.responses.all(), self.question)
         self.assertEqual(set(data), set(('all-categories', 'map-data')))
         self.assertEqual(data['all-categories'], ['1-5', '>5', 'Other'])
         self.assertEqual(data['map-data'], {
-            self.boundary_b.pk: {
+            self.boundary_a.pk: {
                 'average': '7.00',  # (3 + 11) / 2
                 'category': '>5',
             },
@@ -177,49 +153,47 @@ class TestNumericMapData(BaseMapsTest):
 
     def test_numeric__other_category(self):
         """Categorize average as "Other" if no rule matches."""
-        factories.Answer(
-            category="1-5", value="3",
-            response=self.response1_for_b, question=self.question)
-        factories.Answer(
-            category="", value="-5",
-            response=self.response2_for_b, question=self.question)
-
+        self._create_answer(boundary=self.boundary_a, category="1-5", value="3")
+        self._create_answer(boundary=self.boundary_a, category="", value="-5")
         data = maps.get_map_data(self.pollrun.responses.all(), self.question)
         self.assertEqual(set(data), set(('all-categories', 'map-data')))
         self.assertEqual(data['all-categories'], ['1-5', '>5', 'Other'])
         self.assertEqual(data['map-data'], {
-            self.boundary_b.pk: {
+            self.boundary_a.pk: {
                 'average': '-1.00',  # (3 + -5) / 2
                 'category': 'Other',
             },
         })
 
+    def test_numeric__non_numeric_ignored(self):
+        """Non-numeric answers should be silently ignored."""
+        self._create_answer(boundary=self.boundary_a, category="1-5", value="3")
+        self._create_answer(boundary=self.boundary_a, category="1-5", value="invalid")
+        data = maps.get_map_data(self.pollrun.responses.all(), self.question)
+        self.assertEqual(set(data), set(('all-categories', 'map-data')))
+        self.assertEqual(data['all-categories'], ['1-5', '>5', 'Other'])
+        self.assertEqual(data['map-data'], {
+            self.boundary_a.pk: {
+                'average': '3.00',
+                'category': '1-5',
+            },
+        })
+
     def test_numeric(self):
         """Test expected response with a full slate of answers."""
-        factories.Answer(
-            category="1-5", value="2",
-            response=self.response_for_a1, question=self.question)
-        factories.Answer(
-            category=">5", value="6",
-            response=self.response_for_a2, question=self.question)
-        factories.Answer(
-            category="1-5", value="4",
-            response=self.response1_for_b, question=self.question)
-        factories.Answer(
-            category="foo", value="8",  # previously unknown category
-            response=self.response2_for_b, question=self.question)
-        factories.Answer(
-            category=">5", value="6",
-            response=self.response_for_no_boundary, question=self.question)
+        region_a1 = self._create_region(self.boundary_a)
+        region_a2 = self._create_region(self.boundary_a)
+        region_b = self._create_region(self.boundary_b)
 
-        # Data from another question is ignored.
-        other_question = factories.Question(poll=self.poll)
-        other_response = factories.Response(
-            pollrun=self.pollrun,
-            contact=factories.Contact(org=self.org, region=self.region_a1))
-        factories.Answer(
-            category="zero", value="0",
-            response=other_response, question=other_question)
+        self._create_answer(region=region_a1, category="1-5", value="2")
+        self._create_answer(region=region_a2, category=">5", value="6")
+        self._create_answer(region=region_b, category="1-5", value="4")
+        self._create_answer(region=region_b, category="foo", value="8")
+        self._create_answer(  # ignored - no boundary
+            boundary=None, category=">5", value="6")
+        self._create_answer(  # ignored - from another question
+            question=factories.Question(poll=self.poll),
+            region=region_a1, category="zero", value="0")
 
         data = maps.get_map_data(self.pollrun.responses.all(), self.question)
         self.assertEqual(set(data), set(('all-categories', 'map-data')))
@@ -244,10 +218,117 @@ class TestCategoryMapData(BaseMapsTest):
             poll=self.poll,
             question_type=models.Question.TYPE_MULTIPLE_CHOICE,
             rules=[
-                {'category': 'orange', 'test': {}},
-                {'category': 'red', 'test': {}},
-                {'category': 'purple', 'test': {}},
+                {'category': 'orange'},
+                {'category': 'red'},
+                {'category': 'purple'},
             ])
+
+    def test_multiple_choice__no_responses(self):
+        """Returns None if an empty response queryset is passed."""
+        # Ensure that a relevant answer exists.
+        self._create_answer(boundary=self.boundary_a, category='orange')
+        data = maps.get_map_data(self.pollrun.responses.none(), self.question)
+        self.assertEqual(data, None)
+
+    def test_multiple_choice__no_boundaries(self):
+        """Responses not associated with a boundary should be filtered out."""
+        self._create_answer(boundary=None, category='orange')
+        data = maps.get_map_data(self.pollrun.responses.all(), self.question)
+        self.assertEqual(data, None)
+
+    def test_multiple_choice__no_category(self):
+        """Answers with a null or blank category should be ignored."""
+        self._create_answer(boundary=self.boundary_a, category='')
+        self._create_answer(boundary=self.boundary_a, category=None)
+        data = maps.get_map_data(self.pollrun.responses.all(), self.question)
+        self.assertEqual(data, None)
+
+    def test_multiple_choice__disregard_no_category(self):
+        """Answers with a null or blank category should be ignored."""
+        self._create_answer(boundary=self.boundary_a, category='red')
+        self._create_answer(boundary=self.boundary_a, category='')
+        self._create_answer(boundary=self.boundary_a, category='')
+        data = maps.get_map_data(self.pollrun.responses.all(), self.question)
+        self.assertEqual(set(data), set(('all-categories', 'map-data')))
+        self.assertEqual(data['all-categories'], ['orange', 'red', 'purple', 'Other'])
+        self.assertEqual(data['map-data'], {
+            self.boundary_a.pk: {
+                'category': 'red',
+            },
+        })
+
+    def test_multiple_choice__multiple_regions_per_boundary(self):
+        """Responses should be grouped by Boundary rather than region."""
+        self._create_answer(boundary=self.boundary_a, category='orange')
+        self._create_answer(boundary=self.boundary_a, category='orange')
+        self._create_answer(boundary=self.boundary_a, category='red')
+        data = maps.get_map_data(self.pollrun.responses.all(), self.question)
+        self.assertEqual(set(data), set(('all-categories', 'map-data')))
+        self.assertEqual(data['all-categories'], ['orange', 'red', 'purple', 'Other'])
+        self.assertEqual(data['map-data'], {
+            self.boundary_a.pk: {
+                'category': 'orange',
+            },
+        })
+
+    def test_multiple_choice__multiple_answers_per_region(self):
+        """Responses should be grouped by Boundary rather than region."""
+        region = self._create_region(self.boundary_a)
+        self._create_answer(region=region, category='orange')
+        self._create_answer(region=region, category='red')
+        self._create_answer(region=region, category='red')
+        data = maps.get_map_data(self.pollrun.responses.all(), self.question)
+        self.assertEqual(set(data), set(('all-categories', 'map-data')))
+        self.assertEqual(data['all-categories'], ['orange', 'red', 'purple', 'Other'])
+        self.assertEqual(data['map-data'], {
+            self.boundary_a.pk: {
+                'category': 'red',
+            },
+        })
+
+    def test_multiple_choice__other_category(self):
+        """Return most common result even if it is from an unknown category."""
+        self._create_answer(boundary=self.boundary_a, category='red')
+        self._create_answer(boundary=self.boundary_a, category='foo')
+        self._create_answer(boundary=self.boundary_a, category='foo')
+        data = maps.get_map_data(self.pollrun.responses.all(), self.question)
+        self.assertEqual(set(data), set(('all-categories', 'map-data')))
+        self.assertEqual(data['all-categories'], ['orange', 'red', 'purple', 'foo', 'Other'])
+        self.assertEqual(data['map-data'], {
+            self.boundary_a.pk: {
+                'category': 'foo',
+            },
+        })
+
+    def test_multiple_choice(self):
+        """Test expected response with a full slate of answers."""
+        region_a1 = self._create_region(self.boundary_a)
+        region_a2 = self._create_region(self.boundary_a)
+        region_b = self._create_region(self.boundary_b)
+
+        self._create_answer(region=region_a1, category="red")
+        self._create_answer(region=region_a2, category="red")
+        self._create_answer(region=region_b, category="red")
+        self._create_answer(region=region_b, category="orange")
+        self._create_answer(region=region_b, category="foo")
+        self._create_answer(region=region_b, category="foo")
+        self._create_answer(  # ignored - no boundary
+            boundary=None, category="foo2")
+        self._create_answer(  # ignored - from another question
+            question=factories.Question(poll=self.poll),
+            region=region_a1, category="bar")
+
+        data = maps.get_map_data(self.pollrun.responses.all(), self.question)
+        self.assertEqual(set(data), set(('all-categories', 'map-data')))
+        self.assertEqual(data['all-categories'], ['orange', 'red', 'purple', 'foo', 'Other'])
+        self.assertEqual(data['map-data'], {
+            self.boundary_a.pk: {
+                'category': 'red',
+            },
+            self.boundary_b.pk: {
+                'category': 'foo',
+            },
+        })
 
 
 class TestOpenEndedMapData(BaseMapsTest):
@@ -258,3 +339,10 @@ class TestOpenEndedMapData(BaseMapsTest):
             poll=self.poll,
             question_type=models.Question.TYPE_OPEN,
             rules=[])
+
+    def test_not_supported(self):
+        """Map data is only supported for numeric and multiple choice questions."""
+        # Ensure that a relevant answer exists.
+        self._create_answer(boundary=self.boundary_a)
+        data = maps.get_map_data(self.pollrun.responses.all(), self.question)
+        self.assertIsNone(data)
