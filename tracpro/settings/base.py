@@ -44,8 +44,6 @@ DATABASES = {
     },
 }
 
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -126,6 +124,10 @@ LOGGING = {
         },
         'httprouterthread': {
             'level': 'INFO',
+        },
+        'django': {
+            'level': 'ERROR',
+            'propagate': True,
         },
         'django.request': {
             'level': 'ERROR',
@@ -231,6 +233,8 @@ USE_TZ = True
 ANONYMOUS_USER_ID = -1
 
 BROKER_URL = CELERY_RESULT_BACKEND = 'redis://localhost:6379/4'
+
+CELERYD_HIJACK_ROOT_LOGGER = False
 
 CELERYD_PREFETCH_MULTIPLIER = 1
 
