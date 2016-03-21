@@ -7,10 +7,19 @@ Tracpro's version is incremented upon each merge to master according to our
 We recommend reviewing the release notes and code diffs before upgrading
 between versions.
 
-v1.2.1 (in development)
+v1.3.0 (in development)
 -----------------------
 
-Code diff: https://github.com/rapidpro/tracpro/compare/v1.2.0...develop
+Code diff: https://github.com/rapidpro/tracpro/compare/v1.2.1...develop
+
+v1.2.1 (released 2016-03-21)
+----------------------------
+
+Code diff: https://github.com/rapidpro/tracpro/compare/v1.2.0...v1.2.1
+
+* Fix EMAIL_HANDLER
+* Add `django` logger
+* Prevent Celery from hijacking the root logger
 
 v1.2.0 (released 2016-03-14)
 ----------------------------
