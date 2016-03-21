@@ -127,6 +127,10 @@ LOGGING = {
         'httprouterthread': {
             'level': 'INFO',
         },
+        'django': {
+            'level': 'ERROR',
+            'propagate': True,
+        },
         'django.request': {
             'level': 'ERROR',
             'propagate': True,
