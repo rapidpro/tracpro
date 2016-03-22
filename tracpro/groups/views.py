@@ -130,7 +130,7 @@ class RegionCRUDL(SmartCRUDL):
             return regions
 
         def get_context_data(self, **kwargs):
-            org_boundaries = Boundary.objects.by_org(self.request.org)
+            org_boundaries = Boundary.objects.by_org(self.request.org).order_by('name')
             kwargs.setdefault('org_boundaries', org_boundaries)
             return super(RegionCRUDL.List, self).get_context_data(**kwargs)
 
