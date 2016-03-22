@@ -18,8 +18,7 @@ from django.utils.http import is_safe_url
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic import View
 
-from smartmin.users.views import (
-    SmartCRUDL, SmartListView, SmartFormView, SmartView)
+from smartmin.views import SmartCRUDL, SmartListView, SmartFormView, SmartView
 
 from tracpro.contacts.models import Contact
 

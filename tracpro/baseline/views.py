@@ -13,11 +13,8 @@ from django.views.generic import View
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 
 from smartmin.views import (
-    SmartCRUDL, SmartCreateView, SmartDeleteView,
-    SmartListView, SmartReadView, SmartUpdateView,
-    SmartView
-)
-from smartmin.users.views import SmartFormView
+    SmartCRUDL, SmartCreateView, SmartDeleteView, SmartFormView,
+    SmartListView, SmartReadView, SmartUpdateView, SmartView)
 
 from tracpro.polls.models import Answer, PollRun, Response
 

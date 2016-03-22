@@ -9,7 +9,7 @@ from django.http import Http404
 from django.utils.encoding import force_text
 from django.utils.translation import ugettext_lazy as _
 
-from smartmin.users.views import (
+from smartmin.views import (
     SmartCRUDL, SmartCreateView, SmartListView, SmartReadView, SmartUpdateView)
 
 from .forms import UserForm
