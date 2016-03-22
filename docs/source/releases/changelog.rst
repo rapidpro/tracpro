@@ -10,7 +10,7 @@ between versions.
 v1.3.0 (released 2016-03-22)
 ----------------------------
 
-Code diff: https://github.com/rapidpro/tracpro/compare/v1.2.1...develop
+Code diff: https://github.com/rapidpro/tracpro/compare/v1.2.1...v1.3.0
 
 ### Infrastructure
 * Update to Django==1.8.11
