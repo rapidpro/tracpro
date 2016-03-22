@@ -7,10 +7,32 @@ Tracpro's version is incremented upon each merge to master according to our
 We recommend reviewing the release notes and code diffs before upgrading
 between versions.
 
-v1.3.0 (in development)
------------------------
+v1.3.0 (released 2016-03-22)
+----------------------------
 
 Code diff: https://github.com/rapidpro/tracpro/compare/v1.2.1...develop
+
+### Infrastructure
+* Update to Django==1.8.11
+* Update versions on many third-party packages (excluding forks)
+* Updated the Caktus smartmin fork
+* Serve library scripts and stylesheets from `/static/libs/` rather than CDNs
+* Ensure all test classes inherit from `TracProTest`, which ensures that critical features are mocked
+
+### Features & Bugfixes
+* Fix email prefix on deployed environments
+* Add `from __future__ import unicode_literals` to all files
+* Only show responses from active contacts on charts for baseline, poll detail, and pollrun detail
+* Don't abbreviate big numbers on charts (1,000,000 rather than 1M)
+* Add user documentation about designing flows
+* Add `Boundary` model to `tracpro.groups`
+    * Sync with RapidPro
+    * Add endpoint to retrieve all boundaries for an Org
+* Add `boundary` foreign key to `Region` and allow setting the `boundary` on the Region list page
+* Add contact data field filters to PollRun detail page & pass applicable filters to PollRun detail page when clicking on a data point on the Poll detail page.
+* Store ruleset on the `Question` model
+* Add ability to categorize arbitrary (numeric) values
+* Display results on a map
 
 v1.2.1 (released 2016-03-21)
 ----------------------------
