@@ -9,16 +9,19 @@ from django import forms
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.text import force_text
 from django.utils.translation import ugettext_lazy as _
 
-from dash.utils.sync import ChangeType
+from dash.utils import datetime_to_ms
+from dash.utils.sync import ChangeType, sync_pull_contacts
 
 from temba_client.types import Contact as TembaContact
 
 from tracpro.groups.models import Region, Group
+from tracpro.orgs_ext.constants import TaskType
 
 from .tasks import push_contact_change
 
@@ -39,7 +42,30 @@ class ContactQuerySet(models.QuerySet):
 
 
 class ContactManager(models.Manager.from_queryset(ContactQuerySet)):
-    pass
+
+    def sync(self, org):
+        recent_contacts = Contact.objects.by_org(org).active()
+        recent_contacts = recent_contacts.exclude(temba_modified_on=None)
+        recent_contacts = recent_contacts.order_by('-temba_modified_on')
+
+        most_recent = recent_contacts.first()
+        sync_regions = [r.uuid for r in Region.get_all(org)]
+        sync_groups = [g.uuid for g in Group.get_all(org)]
+
+        created, updated, deleted, failed = sync_pull_contacts(
+            org=org, contact_class=Contact, fields=(), delete_blocked=True,
+            groups=sync_regions + sync_groups,
+            last_time=most_recent.temba_modified_on if most_recent else None)
+
+        org.set_task_result(TaskType.sync_contacts, {
+            'time': datetime_to_ms(timezone.now()),
+            'counts': {
+                'created': len(created),
+                'updated': len(updated),
+                'deleted': len(deleted),
+                'failed': len(failed),
+            },
+        })
 
 
 @python_2_unicode_compatible
