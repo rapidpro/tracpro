@@ -1,3 +1,4 @@
+from __future__ import unicode_literals
 
 
 def show_subregions_toggle_form(request):

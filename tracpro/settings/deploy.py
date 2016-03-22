@@ -50,8 +50,6 @@ EMAIL_HOST_PASSWORD = from_env_or_django('EMAIL_HOST_PASSWORD')
 
 EMAIL_HOST_USER = from_env_or_django('EMAIL_HOST_USER')
 
-EMAIL_SUBJECT_PREFIX = '[Edutrac {}]'.format(ENVIRONMENT.title())
-
 EMAIL_USE_SSL = from_env_or_django('EMAIL_USE_SSL')
 
 EMAIL_USE_TLS = from_env_or_django('EMAIL_USE_TLS')
@@ -77,3 +75,9 @@ SESSION_COOKIE_SECURE = False
 SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
 
 STATIC_ROOT = os.path.join(WEBSERVER_ROOT, 'public', 'static')
+
+if ENVIRONMENT.endswith('production'):
+    EMAIL_SUBJECT_PREFIX = '[Edutrac] '
+else:
+    env_type = ENVIRONMENT.rsplit("_", 1)[-1]  # edutrac_staging -> staging
+    EMAIL_SUBJECT_PREFIX = '[Edutrac {}] '.format(env_type.title())

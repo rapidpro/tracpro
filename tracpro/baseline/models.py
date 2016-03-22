@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
@@ -80,7 +82,7 @@ class BaselineTerm(models.Model):
         else:
             pollruns = pollruns.universal()
 
-        responses = Response.objects.filter(pollrun__in=pollruns)
+        responses = Response.objects.filter(pollrun__in=pollruns, contact__is_active=True)
         if contacts is not None:
             responses = responses.filter(contact__in=contacts)
 

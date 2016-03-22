@@ -78,7 +78,7 @@ class PollChartTest(TracProTest):
     def test_multiple_pollruns_multiple_choice(self):
         answers = models.Answer.objects.filter(question=self.question1)
         data, summary_table = charts.multiple_pollruns_multiple_choice(
-            self.pollruns, answers, self.responses)
+            self.pollruns, answers, self.responses, contact_filters={})
 
         self.assertEqual(
             data['dates'],
@@ -100,7 +100,8 @@ class PollChartTest(TracProTest):
 
     def test_multiple_pollruns_numeric(self):
         chart_type, data, summary_table = charts.multiple_pollruns(
-            self.pollruns, self.responses, self.question3, split_regions=False)
+            self.pollruns, self.responses, self.question3, split_regions=False,
+            contact_filters={})
         summary_data = dict(summary_table)
 
         self.assertEqual(chart_type, "numeric")
@@ -150,7 +151,8 @@ class PollChartTest(TracProTest):
         self.response1.answers.get(question=self.question3).delete()
 
         chart_type, data, summary_table = charts.multiple_pollruns(
-            self.pollruns, self.responses, self.question3, split_regions=False)
+            self.pollruns, self.responses, self.question3, split_regions=False,
+            contact_filters={})
         summary_data = dict(summary_table)
 
         self.assertEqual(chart_type, "numeric")
@@ -164,7 +166,8 @@ class PollChartTest(TracProTest):
 
     def test_multiple_pollruns_numeric_split(self):
         chart_type, data, summary_table = charts.multiple_pollruns(
-            self.pollruns, self.responses, self.question3, split_regions=True)
+            self.pollruns, self.responses, self.question3, split_regions=True,
+            contact_filters={})
         summary_data = dict(summary_table)
 
         self.assertEqual(chart_type, "numeric")

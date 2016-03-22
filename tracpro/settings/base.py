@@ -258,6 +258,7 @@ CELERYBEAT_SCHEDULE = {
     'sync-polls': _org_scheduler_task('tracpro.polls.tasks.SyncOrgPolls'),
     'sync-contacts': _org_scheduler_task('tracpro.contacts.tasks.SyncOrgContacts'),
     'sync-data-fields': _org_scheduler_task('tracpro.contacts.tasks.SyncOrgDataFields'),
+    'sync-boundaries': _org_scheduler_task('tracpro.groups.tasks.SyncOrgBoundaries'),
     'fetch-runs': _org_scheduler_task('tracpro.polls.tasks.FetchOrgRuns'),
     'fetch-inbox-messages': _org_scheduler_task('tracpro.msgs.tasks.FetchOrgInboxMessages'),
 }
@@ -275,6 +276,7 @@ GROUP_PERMISSIONS = {
         'orgs.org_edit',
         'baseline.baselineterm.*',
         'contacts.contact.*',
+        'groups.boundary.*',
         'groups.group.*',
         'groups.region.*',
         'msgs.message.*',
@@ -287,6 +289,7 @@ GROUP_PERMISSIONS = {
     "Editors": (
         'baseline.baselineterm.*',
         'contacts.contact.*',
+        'groups.boundary.*',
         'groups.group_most_active',
         'groups.region_most_active',
         'msgs.inboxmessage.*',
@@ -336,7 +339,7 @@ PERMISSIONS = {
     'baseline.baselineterm': ('create', 'read', 'update', 'delete', 'list', 'data_spoof', 'clear_spoof'),
     'contacts.contact': ('create', 'read', 'update', 'delete', 'list'),
     'groups.group': ('list', 'most_active', 'select'),
-    'groups.region': ('list', 'most_active', 'select', 'update_hierarchy'),
+    'groups.region': ('list', 'most_active', 'select', 'update_all'),
     'msgs.message': ('list', 'send', 'by_contact'),
     'msgs.inboxmessage': ('read', 'list', 'conversation'),
     'polls.poll': ('read', 'update', 'list', 'select'),

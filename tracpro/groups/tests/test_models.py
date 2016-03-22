@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from django.contrib.auth.models import User
 from django.test.utils import override_settings
 
@@ -209,3 +211,137 @@ class TestGroup(TracProDataTest):
     def test_get_all(self):
         self.assertEqual(len(models.Group.get_all(self.unicef)), 3)
         self.assertEqual(len(models.Group.get_all(self.nyaruka)), 1)
+
+
+class TestBoundaryQuerySet(TracProTest):
+
+    def test_by_org(self):
+        """Test by_org filter."""
+        boundary1 = factories.Boundary()
+        boundary2 = factories.Boundary()
+        self.assertEqual(
+            list(models.Boundary.objects.by_org(boundary1.org)),
+            [boundary1])
+        self.assertEqual(
+            list(models.Boundary.objects.by_org(boundary2.org)),
+            [boundary2])
+
+
+class TestBoundaryManager(TracProTest):
+
+    def setUp(self):
+        super(TestBoundaryManager, self).setUp()
+
+        self.org = factories.Org()
+        self.boundary = factories.Boundary(
+            org=self.org,
+            parent=None,
+            level=models.Boundary.LEVEL_STATE,
+        )
+        self.temba = factories.TembaBoundary(
+            boundary=self.boundary.rapidpro_uuid,
+            name=self.boundary.name,
+            parent=None,
+            level=models.Boundary.LEVEL_STATE,
+        )
+
+    def test_from_temba__existing(self):
+        """Update the existing object for the org/uuid combination."""
+        self.temba.name = "new name"
+        result = models.Boundary.objects.from_temba(self.org, self.temba)
+        self.assertEqual(result, self.boundary)
+        self.assertEqual(result.name, "new name")
+
+    def test_from_temba__existing__parent(self):
+        """Parent should be set if we have an existing object for it."""
+        parent = factories.Boundary(org=self.org)
+        self.temba.parent = parent.rapidpro_uuid
+        result = models.Boundary.objects.from_temba(self.org, self.temba)
+        self.assertEqual(result, self.boundary)
+        self.assertEqual(result.parent, parent)
+
+    def test_from_temba__existing__parent_does_not_exist(self):
+        """Parent shouldn't be set if we don't have an existing object for it."""
+        self.temba.parent = "non-existant"
+        result = models.Boundary.objects.from_temba(self.org, self.temba)
+        self.assertEqual(result, self.boundary)
+        self.assertIsNone(result.parent)
+
+    def test_from_temba__existing__parent_in_other_org(self):
+        """Parent shouldn't be set if parent UUID exists, but only for another org."""
+        parent = factories.Boundary()  # another org
+        self.temba.parent = parent.rapidpro_uuid
+        result = models.Boundary.objects.from_temba(self.org, self.temba)
+        self.assertEqual(result, self.boundary)
+        self.assertIsNone(result.parent)
+
+    def test_from_temba__new(self):
+        """Create a new Boundary if UUID does not exist for org."""
+        new_temba = factories.TembaBoundary(boundary="12345", name="hello")
+        result = models.Boundary.objects.from_temba(self.org, new_temba)
+        self.assertNotEqual(result, self.boundary)
+        self.assertEqual(result.org, self.org)
+        self.assertEqual(result.rapidpro_uuid, "12345")
+        self.assertEqual(result.name, "hello")
+        self.assertEqual(result.level, models.Boundary.LEVEL_COUNTRY)
+        self.assertIsNone(result.parent)
+
+    def test_from_temba__new_for_org(self):
+        """Create a new Boundary if UUID exists, but only for another org."""
+        other_org = factories.Org()
+        result = models.Boundary.objects.from_temba(other_org, self.temba)
+        self.assertNotEqual(result, self.boundary)
+        self.assertEqual(result.org, other_org)
+        self.assertEqual(result.rapidpro_uuid, self.boundary.rapidpro_uuid)
+
+    def test_sync__remove_deleted(self):
+        """Sync should remove Boundaries that are no longer on RapidPro."""
+        self.mock_temba_client.get_boundaries.return_value = []
+        models.Boundary.objects.sync(self.org)
+        with self.assertRaises(models.Boundary.DoesNotExist):
+            self.boundary.refresh_from_db()
+
+    def test_sync__create_new(self):
+        """Create a new Boundary if UUID does not exist for org."""
+        new_temba = factories.TembaBoundary()
+        self.mock_temba_client.get_boundaries.return_value = [
+            self.temba,
+            new_temba,
+        ]
+        models.Boundary.objects.sync(self.org)
+        self.assertEqual(models.Boundary.objects.count(), 2)
+        new_boundary = models.Boundary.objects.get(
+            org=self.org, rapidpro_uuid=new_temba.boundary)
+        self.assertEqual(new_boundary.name, new_temba.name)
+
+    def test_sync__update_existing(self):
+        """Update the existing object for the org/uuid combination."""
+        self.temba.name = "new name"
+        self.mock_temba_client.get_boundaries.return_value = [self.temba]
+        models.Boundary.objects.sync(self.org)
+        self.boundary.refresh_from_db()
+        self.assertEqual(self.boundary.name, "new name")
+
+    def test_sync__create_in_order(self):
+        """Parent should be created/updated before child."""
+        parent_temba = factories.TembaBoundary(level=models.Boundary.LEVEL_COUNTRY)
+        self.temba.parent = parent_temba.boundary
+        self.mock_temba_client.get_boundaries.return_value = [
+            self.temba,
+            parent_temba,
+        ]
+        models.Boundary.objects.sync(self.org)
+        self.boundary.refresh_from_db()
+        self.assertEqual(models.Boundary.objects.count(), 2)
+        parent = models.Boundary.objects.get(
+            org=self.org, rapidpro_uuid=parent_temba.boundary)
+        self.assertEqual(parent.name, parent_temba.name)
+        self.assertEqual(self.boundary.parent.rapidpro_uuid, parent_temba.boundary)
+
+
+class TestBoundary(TracProTest):
+
+    def test_str(self):
+        """Smoke test for string representation."""
+        boundary = factories.Boundary(name="hello")
+        self.assertEqual(str(boundary), "hello")

@@ -11,30 +11,34 @@
 
 {% block extra-style %}
   {{ block.super }}
-
-  <link rel="stylesheet" type="text/css"
-        href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/themes/smoothness/jquery-ui.css">
-
   {% compress css %}
     <link type="text/css" rel="stylesheet"
-          href="{% static "css/jqcloud.css" %}" />
+          href="{% static "libs/jqcloud-2.0.1/jqcloud.css" %}" />
+    <link type="text/css" rel="stylesheet"
+          href="{% static "libs/leaflet-0.7.7/leaflet.css" %}" />
+    <link type="text/css" rel="stylesheet"
+          href="{% static "libs/leaflet-fullscreen-1.0.1/leaflet.fullscreen.css" %}" />
+    <link type="text/less" rel="stylesheet"
+          href="{% static "less/maps.less" %}" />
   {% endcompress %}
 {% endblock extra-style %}
 
 {% block extra-script %}
   {{ block.super }}
-
-  <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
-
   {% compress js %}
     <script src="{% static "libs/highcharts-4.1.8/highcharts.js" %}"></script>
+    <script src="{% static "libs/jqcloud-2.0.1/jqcloud.js" %}"></script>
+    <script src="{% static "libs/leaflet-0.7.7/leaflet.js" %}"></script>
+    <script src="{% static "libs/leaflet-fullscreen-1.0.1/Leaflet.fullscreen.js" %}"></script>
     <script src="{% static "js/filters.js" %}"></script>
     <script src="{% static "js/charts.js" %}"></script>
-    <script src="{% static "js/jqcloud-1.0.4.min.js" %}"></script>
+    <script src="{% static "js/maps.js" %}"></script>
   {% endcompress %}
 {% endblock extra-script %}
 
 {% block content %}
+  {% include "polls/maps_warning.html" %}
+
   <div class="pull-right buttons">
     <button type="button" class="btn btn-default" id="toggle-filters"
             data-toggle="collapse" data-target="#filters">
@@ -99,7 +103,7 @@
     </p>
   {% endif %}
 
-  {% for question, chart_type, chart_data, summary_table in question_data %}
+  {% for question, chart_type, chart_data, map_data, summary_table in question_data %}
     <div class="poll-question">
       <h3>
         {{ forloop.counter }}. {{ question.name }}
@@ -115,18 +119,45 @@
         {% endif %}
       </h3>
 
-      {% if chart_data %}
-        <div class="chart-{{ chart_type }}"
-             data-chart='{{ chart_data|chart_json }}'
-             data-name="{{ question.name }}">
+      {% if request.org.display_maps and map_data %}
+        <ul class='nav nav-tabs' style='margin-bottom: 1em'>
+          <li role="presentation" class='active'>
+            <a role="tab" data-toggle="tab" aria-controls="chart-{{ question.pk }}"
+               href="#chart-{{ question.pk }}">{% trans "Chart" %}</a>
+          </li>
+          <li role="presentation">
+            <a role="tab" data-toggle="tab" aria-controls="map-{{ question.pk }}"
+               href="#map-{{ question.pk }}">{% trans "Map" %}</a>
+          </li>
+        </ul>
+      {% endif %}
+
+      <div class="tab-content">
+        <div role="tabpanel" class="tab-pane active" id="chart-{{ question.pk }}">
+          {% if chart_data %}
+            <div class="chart-{{ chart_type }}"
+                 data-chart='{{ chart_data|chart_json }}'
+                 data-name="{{ question.name }}">
+            </div>
+          {% else %}
+            <div class="chart-no-data">
+              {% trans "No data to display for the current filters." %}
+            </div>
+          {% endif %}
         </div>
 
-        {% include "charts/summary_table.html" %}
-      {% else %}
-        <div class="chart-no-data">
-          {% trans "No data to display for this time period." %}
-        </div>
-      {% endif %}
+        {% if request.org.display_maps and map_data %}
+          <div role="tabpanel" class="tab-pane maps" id="map-{{ question.pk }}">
+            <div class="map"
+              {% for key, value in map_data.items %}
+                 data-{{ key }}='{{ value|chart_json }}'
+              {% endfor %}>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+
+      {% include "charts/summary_table.html" %}
     </div>
   {% empty %}
     <div>

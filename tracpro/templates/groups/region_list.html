@@ -1,35 +1,33 @@
 {% extends "smartmin/list.html" %}
 
+{% load compress %}
 {% load i18n %}
 {% load mptt_tags %}
 {% load smartmin %}
 {% load static from staticfiles %}
 
 {% block extra-script %}
-  {# Required for hierarchical tree structure. #}
-  <script src="{% static "libs/treetable-3.2.0/jquery.treetable.js" %}"></script>
+  {{ block.super }}  {# jQuery UI powers drag-and-drop rows. #}
 
-  {# Required for drag-and-drop rows. #}
-  <script src="{% static "libs/jquery-ui-1.11.4/jquery-ui.min.js" %}"></script>
+  {% compress js %}
+    {# Required for hierarchical tree structure. #}
+    <script src="{% static "libs/treetable-3.2.0/jquery.treetable.js" %}"></script>
 
-  <script src="{% static "js/regions.js" %}"></script>
+    <script src="{% static "js/regions.js" %}"></script>
+  {% endcompress %}
 {% endblock extra-script %}
 
 {% block extra-style %}
-  {# Required for hierarchical tree structure. #}
-  <link href="{% static "libs/treetable-3.2.0/jquery.treetable.css" %}"
-        rel="stylesheet" type="text/css">
+  {{ block.super }}  {# jQuery UI powers drag-and-drop rows. #}
 
-  {# Required for drag-and-drop rows. #}
-  <link href="{% static "libs/jquery-ui-1.11.4/jquery-ui.min.css" %}"
-        rel="stylesheet" type="text/css">
-  <link href="{% static "libs/jquery-ui-1.11.4/jquery-ui.structure.min.css" %}"
-        rel="stylesheet" type="text/css">
-  <link href="{% static "libs/jquery-ui-1.11.4/jquery-ui.theme.min.css" %}"
-        rel="stylesheet" type="text/css">
+  {% compress css %}
+    {# Required for hierarchical tree structure. #}
+    <link type="text/css" rel="stylesheet"
+          href="{% static "libs/treetable-3.2.0/jquery.treetable.css" %}" />
 
-  <link href="{% static "css/regions.css" %}"
-        rel="stylesheet" type="text/css">
+    <link type="text/css" rel="stylesheet"
+          href="{% static "css/regions.css" %}" />
+  {% endcompress %}
 {% endblock extra-style %}
 
 {% block table-controls %}
@@ -40,18 +38,18 @@
         <span class="glyphicon glyphicon-download"></span>
         {% trans "Select Groups" %}
       </a>
-      <button id="edit-hierarchy"
-              class="btn btn-default hierarchy">
-        {% trans "Edit Region Hierarchy" %}
+      <button id="edit-regions"
+              class="btn btn-default action">
+        {% trans "Edit Regions" %}
       </button>
-      <button id="save-hierarchy"
-              class="btn btn-primary hierarchy hidden">
-        {% trans "Save Region Hierarchy" %}
+      <button id="save-regions"
+              class="btn btn-primary action hidden">
+        {% trans "Save Regions" %}
       </button>
-      <button id="saving-hierarchy"
-              class="btn btn-primary disabled hierarchy hidden"
+      <button id="saving-regions"
+              class="btn btn-primary disabled action hidden"
               disabled>
-        {% trans "Saving..." %}
+        {% trans "Saving Regions..." %}
       </button>
     </div>
     <div class="clearfix"></div>
@@ -59,22 +57,16 @@
 
   <div>
     <p>{% trans "Each region is a contact group in RapidPro." %}</p>
-
-    {% if org_perms.groups.region_select %}
-      <p id="edit-hierarchy-help" class="hidden">
-        {% trans "Edit region hierarchy by dragging and dropping table rows. Click 'Save Region Hierarchy' when changes are complete." %}
-      </p>
-    {% endif %}
   </div>
 {% endblock table-controls %}
 
 {% block table %}
   <table class="treetable list-table {% get_list_class object_list %} table"
-         data-update-hierarchy-url="{% url "groups.region_update_hierarchy" %}">
+         data-update-regions-url="{% url "groups.region_update_all" %}">
     <thead>
       <tr>
         {% for field in fields %}
-          <th>{% get_label field %}</th>
+          <th class="header-{{ field }}">{% get_label field %}</th>
         {% endfor %}
       </tr>
     </thead>
@@ -97,6 +89,18 @@
               <span class="value">
                 {% get_value node field %}
               </span>
+              {% if org_perms.groups.region_select and field == "boundary" %}
+                <select class="form-control boundary-select hidden">
+                  <option value=""{% if not node.boundary %} selected{% endif %}>
+                    -
+                  </option>
+                  {% for boundary in org_boundaries %}
+                    <option value="{{ boundary.id }}"{% if node.boundary == boundary %} selected{% endif %}>
+                      {{ boundary.name }}
+                    </option>
+                  {% endfor %}
+                </select>
+              {% endif %}
             </td>
           {% endfor %}
         </tr>

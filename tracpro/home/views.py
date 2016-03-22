@@ -4,7 +4,7 @@ from dash.orgs.views import OrgPermsMixin
 
 from django.utils.translation import ugettext_lazy as _
 
-from smartmin.users.views import SmartTemplateView
+from smartmin.views import SmartTemplateView
 
 from tracpro.baseline.charts import chart_baseline
 from tracpro.baseline.forms import BaselineTermFilterForm

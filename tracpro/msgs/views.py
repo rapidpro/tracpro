@@ -10,8 +10,7 @@ from django.shortcuts import redirect, get_object_or_404
 from dash.orgs.views import OrgPermsMixin
 from dash.utils import get_obj_cacheable
 
-from smartmin.users.views import (
-    SmartCRUDL, SmartListView, SmartCreateView, SmartReadView)
+from smartmin.views import SmartCRUDL, SmartListView, SmartCreateView, SmartReadView
 
 from tracpro.contacts.models import Contact
 from tracpro.polls.models import PollRun

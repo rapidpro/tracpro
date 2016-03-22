@@ -1,0 +1,15 @@
+{% if not request.org.display_maps and org_perms.groups.region_list %}
+  <div class="alert alert-info alert-dismissable" role="alert">
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+      <span aria-hidden="true">&times;</span>
+    </button>
+
+    <strong>Action required to map regional results:</strong>
+
+    You have not yet associated {{ request.org.name }} regions with
+    boundaries, so we can't display results on a map.
+    <a class="alert-link" href="{% url "groups.region_list" %}">Add
+    region-boundary relationships</a>
+    to enable this feature.
+  </div>
+{% endif %}

@@ -11,7 +11,7 @@ from dash.utils.sync import ChangeType
 from django.http import JsonResponse
 from django.utils.translation import ugettext_lazy as _
 
-from smartmin.users.views import (
+from smartmin.views import (
     SmartListView, SmartCreateView, SmartReadView, SmartUpdateView,
     SmartDeleteView, SmartCRUDL)
 

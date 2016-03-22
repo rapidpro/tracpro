@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from mptt import forms as mptt
 
 from django.db.models import Min
