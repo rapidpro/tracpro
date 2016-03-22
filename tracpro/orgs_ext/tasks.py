@@ -144,6 +144,8 @@ class OrgTask(PostTransactionTask):
                     recipient_list=dict(settings.ADMINS).values(),
                     fail_silently=True)
 
+                return None
+
             finally:
                 self.release_lock(org)
         logger.info(
