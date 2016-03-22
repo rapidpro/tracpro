@@ -17,14 +17,16 @@ v1.3.0 (released 2016-03-22)
 
 Code diff: https://github.com/rapidpro/tracpro/compare/v1.2.1...v1.3.0
 
-### Infrastructure
+**Infrastructure**
+
 * Update to Django==1.8.11
 * Update versions on many third-party packages (excluding forks)
 * Updated the Caktus smartmin fork
 * Serve library scripts and stylesheets from `/static/libs/` rather than CDNs
 * Ensure all test classes inherit from `TracProTest`, which ensures that critical features are mocked
 
-### Features & Bugfixes
+**Features & Bugfixes**
+
 * Fix email prefix on deployed environments
 * Add `from __future__ import unicode_literals` to all files
 * Only show responses from active contacts on charts for baseline, poll detail, and pollrun detail
@@ -84,7 +86,7 @@ Many changes, including:
 * Update Celery task structure.
     - **Note:** Existing tasks are probably very backed up. After deploy,
       purge all existing tasks (see
-      [Celery FAQ](http://docs.celeryproject.org/en/latest/faq.html#how-do-i-purge-all-waiting-tasks)).
+      `Celery FAQ <http://docs.celeryproject.org/en/latest/faq.html#how-do-i-purge-all-waiting-tasks>`_).
 * Chart enhancements on Poll detail and PollRun detail pages.
 * Filters on Recent Indicators, Poll detail, and PollRun detail pages.
 
