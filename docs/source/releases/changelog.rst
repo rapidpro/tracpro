@@ -12,6 +12,11 @@ v1.3.1 (in development)
 
 Code diff: https://github.com/rapidpro/tracpro/compare/v1.3.0...develop
 
+* Fix formatting errors in this changelog
+* Return `None` if `SoftTimeLimitExceeded` is raised during `OrgTask`
+* Run `pipconflictchecker` on Travis builds
+* Fail before running Travis tests if there are missing migrations
+
 v1.3.0 (released 2016-03-22)
 ----------------------------
 
