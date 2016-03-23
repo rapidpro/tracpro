@@ -82,7 +82,7 @@ class OrgTask(PostTransactionTask):
     def apply_async(self, *args, **kwargs):
         kwargs.setdefault('expires', datetime.datetime.now() + settings.ORG_TASK_TIMEOUT)
         time_limit = settings.ORG_TASK_TIMEOUT.seconds
-        kwargs.setdefault('time_limit', time_limit + 15)
+        kwargs.setdefault('time_limit', time_limit + 60)
         kwargs.setdefault('soft_time_limit', time_limit)
         kwargs.setdefault('max_retries', 0)
         return super(OrgTask, self).apply_async(*args, **kwargs)
