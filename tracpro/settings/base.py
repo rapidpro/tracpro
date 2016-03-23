@@ -137,7 +137,7 @@ LOGGING = {
             'level': 'ERROR',
         },
         'tracpro': {
-            'level': 'INFO',
+            'level': 'DEBUG',
         },
     },
     'root': {

@@ -133,6 +133,10 @@ class OrgTask(PostTransactionTask):
                     return result
 
             except SoftTimeLimitExceeded:
+                logger.debug(
+                    "{}: Caught SoftTimeLimitExceeded exception for {}.".format(
+                        self.__name__, org.name))
+
                 msg = "{}: Time limit exceeded for {}".format(self.__name__, org.name)
                 logger.error(msg)
 
@@ -144,10 +148,20 @@ class OrgTask(PostTransactionTask):
                     recipient_list=dict(settings.ADMINS).values(),
                     fail_silently=True)
 
+                logger.debug(
+                    "{}: Finished processing SoftTimeLimitExceeded exception "
+                    "for {}.".format(
+                        self.__name__, org.name))
                 return None
 
             finally:
+                logger.debug(
+                    "{}: Starting to release lock for {}.".format(
+                        self.__name__, org.name))
                 self.release_lock(org)
+                logger.debug(
+                    "{}: Released lock for {}.".format(
+                        self.__name__, org.name))
         logger.info(
             "{}: Skipping task for {} because the task is already "
             "running for this org.".format(self.__name__, org.name))
