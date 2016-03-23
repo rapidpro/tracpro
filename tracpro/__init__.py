@@ -6,7 +6,7 @@ from .celery import app as celery_app  # noqa
 
 
 # NOTE: Version must be updated in docs/source/conf.py as well.
-VERSION = (1, 3, 2, "final")
+VERSION = (1, 3, 3, "dev")
 
 
 def get_version(version):
