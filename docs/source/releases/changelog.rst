@@ -7,10 +7,12 @@ Tracpro's version is incremented upon each merge to master according to our
 We recommend reviewing the release notes and code diffs before upgrading
 between versions.
 
-v1.3.2 (in development)
------------------------
+v1.3.2 (released 2016-03-23)
+----------------------------
 
-Code diff: https://github.com/rapidpro/tracpro/compare/v1.3.1...develop
+Code diff: https://github.com/rapidpro/tracpro/compare/v1.3.1...v1.3.2
+
+* Add debug logging for OrgTask
 
 v1.3.1 (released 2016-03-23)
 ----------------------------
