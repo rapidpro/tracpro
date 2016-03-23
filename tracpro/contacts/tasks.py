@@ -1,13 +1,11 @@
 from __future__ import absolute_import, unicode_literals
 
 from django.apps import apps
-from django.utils import timezone
 
 from celery.utils.log import get_task_logger
 from djcelery_transactions import task
 
-from dash.utils import datetime_to_ms
-from dash.utils.sync import sync_pull_contacts, sync_push_contact
+from dash.utils.sync import sync_push_contact
 
 from tracpro.orgs_ext.tasks import OrgTask
 
@@ -37,35 +35,7 @@ def push_contact_change(contact_id, change_type):
 class SyncOrgContacts(OrgTask):
 
     def org_task(self, org):
-        from tracpro.groups.models import Region, Group
-        from tracpro.orgs_ext.constants import TaskType
-        from .models import Contact
-
-        logger.info('Starting contact sync task for org #%d' % org.id)
-
-        sync_groups = [r.uuid for r in Region.get_all(org)] + [g.uuid for g in Group.get_all(org)]
-
-        most_recent_contact = Contact.objects.by_org(org).active().exclude(temba_modified_on=None)
-        most_recent_contact = most_recent_contact.order_by('-temba_modified_on').first()
-        if most_recent_contact:
-            last_time = most_recent_contact.temba_modified_on
-        else:
-            last_time = None
-
-        created, updated, deleted, failed = sync_pull_contacts(
-            org, Contact, fields=(), groups=sync_groups, last_time=last_time,
-            delete_blocked=True)
-
-        task_result = dict(time=datetime_to_ms(timezone.now()),
-                           counts=dict(created=len(created),
-                                       updated=len(updated),
-                                       deleted=len(deleted),
-                                       failed=len(failed)))
-        org.set_task_result(TaskType.sync_contacts, task_result)
-
-        logger.info("Finished contact sync for org #%d (%d created, "
-                    "%d updated, %d deleted, %d failed)" %
-                    (org.id, len(created), len(updated), len(deleted), len(failed)))
+        apps.get_model('contacts', 'Contact').objects.sync(org)
 
 
 class SyncOrgDataFields(OrgTask):
