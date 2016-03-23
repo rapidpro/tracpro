@@ -7,10 +7,10 @@ Tracpro's version is incremented upon each merge to master according to our
 We recommend reviewing the release notes and code diffs before upgrading
 between versions.
 
-v1.3.1 (in development)
------------------------
+v1.3.1 (released 2016-03-23)
+----------------------------
 
-Code diff: https://github.com/rapidpro/tracpro/compare/v1.3.0...develop
+Code diff: https://github.com/rapidpro/tracpro/compare/v1.3.0...v1.3.1
 
 * Fix formatting errors in this changelog
 * Return `None` if `SoftTimeLimitExceeded` is raised during `OrgTask`
