@@ -33,6 +33,10 @@ ORG_TASK_LOCK = 'org_task:{task}:{org}'
 
 LOCK_EXPIRE = (settings.ORG_TASK_TIMEOUT * 12).seconds
 
+RUNS_EXPIRE = datetime.timedelta(days=7).seconds
+
+MAX_TIME_BETWEEN_RUNS = datetime.timedelta(days=1)
+
 
 class ScheduleTaskForActiveOrgs(PostTransactionTask):
 
@@ -113,30 +117,32 @@ class OrgTask(PostTransactionTask):
         if last_run_time is not None:
             # Calculate how long until the task is eligible to run again.
             last_run_time = parse_iso8601(last_run_time)
-            delta = settings.ORG_TASK_TIMEOUT * 2 ** self.cache_get(org, FAILURE_COUNT, 0)
-            delta = max(delta, datetime.timedelta(days=1))
+            failure_count = self.cache_get(org, FAILURE_COUNT, default=0)
+            delta = settings.ORG_TASK_TIMEOUT * 2 ** failure_count
+            delta = max(delta, MAX_TIME_BETWEEN_RUNS)
             if now - last_run_time < delta:
                 return last_run_time + delta
 
         # Set the current time as the last run time and allow the task to run now.
-        self.cache_set(org, LAST_RUN_TIME, format_iso8601(now))
+        self.cache_set(org, LAST_RUN_TIME, value=format_iso8601(now), timeout=RUNS_EXPIRE)
         return None
 
     def fail_count_incr(self, org):
         """Increment the org's recorded failure count by 1."""
-        self.cache_add(org, FAILURE_COUNT, 0)  # Set default value to 0.
+        # Set default value to 0.
+        self.cache_add(org, FAILURE_COUNT, value=0, timeout=RUNS_EXPIRE)
         return self.cache_incr(org, FAILURE_COUNT)  # Increment value by 1.
 
     def fail_count_reset(self, org):
         """Reset the org's recorded failure count to 0."""
-        self.cache_set(org, FAILURE_COUNT, 0)
+        self.cache_set(org, FAILURE_COUNT, value=0, timeout=RUNS_EXPIRE)
 
     def lock_acquire(self, org):
         """Set a cache key that indicates the task is currently in progress.
 
         If the key is already set (task in progress), return False.
         """
-        return self.cache_add(org, ORG_TASK_LOCK, 'true', LOCK_EXPIRE)
+        return self.cache_add(org, ORG_TASK_LOCK, value='true', timeout=LOCK_EXPIRE)
 
     def lock_release(self, org):
         """Delete cache key that indicates that this task is in progress."""
