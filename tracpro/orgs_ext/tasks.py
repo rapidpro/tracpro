@@ -183,6 +183,8 @@ class OrgTask(WrapCacheMixin, WrapLoggerMixin, PostTransactionTask):
             except ValueError as e:
                 self.log_info(org, e.message)
                 return None
+            finally:
+                self.lock_release(org)
 
             try:
                 self.log_info(org, "Starting task.")
