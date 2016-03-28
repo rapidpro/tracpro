@@ -24,6 +24,8 @@ from . import utils
 
 logger = get_task_logger(__name__)
 
+FAILURE_COUNT = 'failure_count:{task}:{org}'
+
 LAST_RUN_TIME = 'last_run_time:{task}:{org}'
 
 ORG_TASK_LOCK = 'org_task:{task}:{org}'
@@ -138,6 +140,10 @@ class OrgTask(PostTransactionTask):
                 else:
                     logger.info(
                         "{}: Finished task for {}.".format(self.__name__, org.name))
+
+                    failure_count_key = self.get_cache_key(org, FAILURE_COUNT)
+                    cache.set(failure_count_key, 0)
+
                     return result
 
             except SoftTimeLimitExceeded:
@@ -147,6 +153,9 @@ class OrgTask(PostTransactionTask):
 
                 msg = "{}: Time limit exceeded for {}".format(self.__name__, org.name)
                 logger.error(msg)
+
+                failure_count_key = self.get_cache_key(org, FAILURE_COUNT)
+                cache.set(failure_count_key, 1 + cache.get(failure_count_key, 0))
 
                 # FIXME: Logging is not sending us this error email.
                 send_mail(
