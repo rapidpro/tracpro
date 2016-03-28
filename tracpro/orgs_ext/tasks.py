@@ -179,9 +179,9 @@ class OrgTask(WrapCacheMixin, WrapLoggerMixin, PostTransactionTask):
         org = apps.get_model('orgs', 'Org').objects.get(pk=org_pk)
         if self.lock_acquire(org):
             try:
-                next_run_time = self.check_rate_limit(org)
+                self.check_rate_limit(org)
             except ValueError as e:
-                self.log_info(org, e.message, next_run_time=next_run_time)
+                self.log_info(org, e.message)
                 return None
 
             try:
