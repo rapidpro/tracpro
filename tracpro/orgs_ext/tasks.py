@@ -157,7 +157,8 @@ class OrgTask(PostTransactionTask):
                 else:
                     self.reset_failure_count(org)
                     logger.info(
-                        "{}: Finished task for {}.".format(self.__name__, org.name))
+                        "{}: Finished task for {}.".format(
+                            self.__name__, org.name))
                     return result
 
             except SoftTimeLimitExceeded:
@@ -166,7 +167,8 @@ class OrgTask(PostTransactionTask):
                         self.__name__, org.name))
 
                 failure_count = self.increase_failure_count(org)
-                msg = "{}: Time limit exceeded for {}".format(self.__name__, org.name)
+                msg = "{}: Time limit exceeded (#{})for {}.".format(
+                    self.__name__, failure_count, org.name)
                 logger.error(msg)
 
                 # FIXME: Logging is not sending us this error email.
