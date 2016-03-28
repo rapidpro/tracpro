@@ -146,7 +146,7 @@ class OrgTask(WrapCacheMixin, WrapLoggerMixin, PostTransactionTask):
                     "Last run time was {}. "
                     "Task has failed {} times recently. "
                     "Task won't be run again before {}.".format(
-                        last_run_time, failue_count,next_run_time))
+                        last_run_time, failure_count, next_run_time))
 
         # Set the current time as the last run time.
         self.cache_set(org, LAST_RUN_TIME, value=format_iso8601(now), timeout=RUNS_EXPIRE)
