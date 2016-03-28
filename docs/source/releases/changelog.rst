@@ -7,10 +7,13 @@ Tracpro's version is incremented upon each merge to master according to our
 We recommend reviewing the release notes and code diffs before upgrading
 between versions.
 
-v1.3.4 (in development)
------------------------
+v1.4.0 (released 2016-03-28)
+----------------------------
 
-Code diff: https://github.com/rapidpro/tracpro/compare/v1.3.3...v1.3.4
+Code diff: https://github.com/rapidpro/tracpro/compare/v1.3.3...v1.4.0
+
+* Migration to move uuid unique constraint to unique_together with another
+  attribute item (Response, Contact, Region, and Group models)
 
 v1.3.3 (released 2016-03-28)
 ----------------------------
