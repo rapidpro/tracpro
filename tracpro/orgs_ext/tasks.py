@@ -82,8 +82,7 @@ class OrgTask(PostTransactionTask):
 
         If the key is already set (task in progress), return False.
         """
-        key = self.get_cache_key(org, ORG_TASK_LOCK)
-        return cache.add(key, 'true', LOCK_EXPIRE)
+        return self.cache_add(org, ORG_TASK_LOCK, 'true', LOCK_EXPIRE)
 
     def apply_async(self, *args, **kwargs):
         kwargs.setdefault('expires', datetime.datetime.now() + settings.ORG_TASK_TIMEOUT)
@@ -96,39 +95,51 @@ class OrgTask(PostTransactionTask):
     def check_rate_limit(self, org):
         """Return the next run time if this task has run too recently."""
         now = timezone.now()
-        last_run_key = self.get_cache_key(org, LAST_RUN_TIME)
-        fail_count_key = self.get_cache_key(org, FAILURE_COUNT)
 
-        last_run_time = cache.get(last_run_key)
+        last_run_time = self.cache_get(org, LAST_RUN_TIME)
         if last_run_time is not None:
             # Calculate how long until the task is eligible to run again.
             last_run_time = parse_iso8601(last_run_time)
-            delta = settings.ORG_TASK_TIMEOUT * 2 ** cache.get(fail_count_key, 0)
+            delta = settings.ORG_TASK_TIMEOUT * 2 ** self.cache_get(org, FAILURE_COUNT, 0)
             delta = max(delta, datetime.timedelta(days=1))
             if now - last_run_time < delta:
                 return last_run_time + delta
 
         # Set the current time as the last run time and allow the task to run now.
-        cache.set(last_run_key, format_iso8601(now))
+        self.cache_set(org, LAST_RUN_TIME, format_iso8601(now))
         return None
 
-    def get_cache_key(self, org, tmpl):
-        return tmpl.format(task=self.__name__, org=org.pk)
+    def _wrap_cache(self, method, org, key, *args, **kwargs):
+        cache_key = key.format(task=self.__name__, org=org.pk)
+        return getattr(cache, method)(cache_key, *args, **kwargs)
+
+    def cache_add(self, *args, **kwargs):
+        return self._wrap_cache("add", *args, **kwargs)
+
+    def cache_delete(self, *args, **kwargs):
+        return self._wrap_cache("delete", *args, **kwargs)
+
+    def cache_get(self, *args, **kwargs):
+        return self._wrap_cache("get", *args, **kwargs)
+
+    def cache_incr(self, *args, **kwargs):
+        return self._wrap_cache("incr", *args, **kwargs)
+
+    def cache_set(self, *args, **kwargs):
+        return self._wrap_cache("set", *args, **kwargs)
 
     def fail_count_incr(self, org):
         """Increment the org's recorded failure count by 1."""
-        key = self.get_cache_key(org, FAILURE_COUNT)
-        cache.add(key, 0)  # Set default value to 0.
-        return cache.incr(key)  # Increment the value by 1.
+        self.cache_add(org, FAILURE_COUNT, 0)  # Set default value to 0.
+        return self.cache_incr(org, FAILURE_COUNT)  # Increment value by 1.
 
     def fail_count_reset(self, org):
         """Reset the org's recorded failure count to 0."""
-        cache.set(self.get_cache_key(org, FAILURE_COUNT), 0)
+        self.cache_set(org, FAILURE_COUNT, 0)
 
     def release_lock(self, org):
         """Delete cache key that indicates that this task is in progress."""
-        key = self.get_cache_key(org, ORG_TASK_LOCK)
-        return cache.delete(key)
+        self.cache_delete(org, ORG_TASK_LOCK)
 
     def run(self, org_pk):
         """Run the org_task with locks and logging."""
