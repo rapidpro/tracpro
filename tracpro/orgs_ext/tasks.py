@@ -139,7 +139,7 @@ class OrgTask(WrapCacheMixin, WrapLoggerMixin, PostTransactionTask):
             last_run_time = parse_iso8601(last_run_time)
             failure_count = self.cache_get(org, FAILURE_COUNT, default=0)
             delta = settings.ORG_TASK_TIMEOUT * 2 ** failure_count
-            delta = max(delta, MAX_TIME_BETWEEN_RUNS)
+            delta = min(delta, MAX_TIME_BETWEEN_RUNS)
             if now - last_run_time < delta:
                 return last_run_time + delta
 
