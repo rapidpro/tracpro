@@ -132,20 +132,23 @@ class OrgTask(WrapCacheMixin, WrapLoggerMixin, PostTransactionTask):
     def check_rate_limit(self, org):
         """Return the next run time if this task has run too recently."""
         now = timezone.now()
-
         last_run_time = self.cache_get(org, LAST_RUN_TIME)
         if last_run_time is not None:
-            # Calculate how long until the task is eligible to run again.
-            last_run_time = parse_iso8601(last_run_time)
+            # Calculate when the task will be eligible to run again.
+            last_run_time = parse_iso8601(last_run_time) if last_run_time else None
             failure_count = self.cache_get(org, FAILURE_COUNT, default=0)
             delta = settings.ORG_TASK_TIMEOUT * 2 ** failure_count
-            delta = min(delta, MAX_TIME_BETWEEN_RUNS)
-            if now - last_run_time < delta:
-                return last_run_time + delta
+            next_run_time = last_run_time + delta
+            if now < next_run_time:
+                # Task has been run too recently.
+                raise ValueError(
+                    "Skipping task because rate limit was exceeded. "
+                    "Last run time was {}. "
+                    "Task won't be run again before {}.".format(
+                        last_run_time, next_run_time))
 
-        # Set the current time as the last run time and allow the task to run now.
+        # Set the current time as the last run time.
         self.cache_set(org, LAST_RUN_TIME, value=format_iso8601(now), timeout=RUNS_EXPIRE)
-        return None
 
     def fail_count_incr(self, org):
         """Increment the org's recorded failure count by 1."""
@@ -176,12 +179,11 @@ class OrgTask(WrapCacheMixin, WrapLoggerMixin, PostTransactionTask):
         if self.lock_acquire(org):
             try:
                 next_run_time = self.check_rate_limit(org)
-                if next_run_time is not None:
-                    msg = ("Skipping task because rate limit was exceeded. "
-                           "Task will not be run again before {next_run_time}.")
-                    self.log_info(org, msg, next_run_time=next_run_time)
-                    return None
+            except ValueError as e:
+                self.log_info(org, e.message, next_run_time=next_run_time)
+                return None
 
+            try:
                 self.log_info(org, "Starting task.")
                 result = self.org_task(org)
             except Exception as e:
