@@ -72,8 +72,7 @@ class ContactManager(models.Manager.from_queryset(ContactQuerySet)):
 class Contact(models.Model):
     """Corresponds to a RapidPro contact."""
 
-    uuid = models.CharField(
-        max_length=36, unique=True)
+    uuid = models.CharField(max_length=36)
     org = models.ForeignKey(
         'orgs.Org', verbose_name=_("Organization"), related_name="contacts")
     name = models.CharField(
@@ -115,6 +114,11 @@ class Contact(models.Model):
         editable=False)
 
     objects = ContactManager()
+
+    class Meta:
+        unique_together = [
+            ('uuid', 'org'),
+        ]
 
     def __init__(self, *args, **kwargs):
         self._data_field_values = kwargs.pop('_data_field_values', None)

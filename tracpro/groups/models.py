@@ -21,7 +21,7 @@ from tracpro.contacts.tasks import SyncOrgContacts
 class AbstractGroup(models.Model):
     """Corresponds to a RapidPro contact group."""
 
-    uuid = models.CharField(max_length=36, unique=True)
+    uuid = models.CharField(max_length=36)
     org = models.ForeignKey(
         'orgs.Org', verbose_name=_("Organization"), related_name="%(class)ss")
     name = models.CharField(
@@ -33,6 +33,9 @@ class AbstractGroup(models.Model):
 
     class Meta:
         abstract = True
+        unique_together = [
+            ('org', 'uuid'),
+        ]
 
     def __str__(self):
         return self.name
