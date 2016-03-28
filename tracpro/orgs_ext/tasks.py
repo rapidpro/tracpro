@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import datetime
+import logging
 
 from celery import signature
 from celery.exceptions import SoftTimeLimitExceeded
@@ -139,7 +140,28 @@ class OrgTask(PostTransactionTask):
 
     def lock_release(self, org):
         """Delete cache key that indicates that this task is in progress."""
+        self.log_debug(org, "Starting to release lock.")
         self.cache_delete(org, ORG_TASK_LOCK)
+        self.log_debug(org, "Released lock.")
+
+    def _wrap_log(self, level, org, msg, exc_info=False, *args, **kwargs):
+        kwargs.setdefault('org', org.name)
+        kwargs.setdefault('task', self.__name__)
+        full_msg = ('{task} for {org}: ' + msg).format(*args, **kwargs)
+        logger.log(level, full_msg, exc_info=exc_info)
+        return full_msg
+
+    def log_debug(self, *args, **kwargs):
+        return self._wrap_log(logging.DEBUG, *args, **kwargs)
+
+    def log_error(self, *args, **kwargs):
+        return self._wrap_log(logging.ERROR, *args, **kwargs)
+
+    def log_info(self, *args, **kwargs):
+        return self._wrap_log(logging.INFO, *args, **kwargs)
+
+    def log_warning(self, *args, **kwargs):
+        return self._wrap_log(logging.WARNING, *args, **kwargs)
 
     def run(self, org_pk):
         """Run the org_task with locks and logging."""
@@ -148,71 +170,50 @@ class OrgTask(PostTransactionTask):
             try:
                 next_run_time = self.check_rate_limit(org)
                 if next_run_time is not None:
-                    logger.info(
-                        "{}: Skipping task for {} because rate limit was "
-                        "exceeded. Task will not be run again before {}.".format(
-                            self.__name__, org.name, next_run_time))
+                    msg = ("Skipping task because rate limit was exceeded. "
+                           "Task will not be run again before {next_run_time}.")
+                    self.log_info(org, msg, next_run_time=next_run_time)
                     return None
 
-                logger.info(
-                    "{}: Starting task for {}.".format(self.__name__, org.name))
+                self.log_info(org, "Starting task.")
+
                 try:
                     result = self.org_task(org)
                 except TembaAPIError as e:
                     if utils.caused_by_bad_api_key(e):
-                        logger.warning(
-                            "{}: API token for {} is invalid.".format(
-                                self.__name__, org.name), exc_info=True)
+                        self.log_warning(org, "API token is invalid.", exc_info=True)
                         return None
                     else:
                         raise
                 else:
                     self.fail_count_reset(org)
-                    logger.info(
-                        "{}: Finished task for {}.".format(
-                            self.__name__, org.name))
+                    self.log_info(org, "Finished task.")
                     return result
 
             except SoftTimeLimitExceeded:
-                logger.debug(
-                    "{}: Caught SoftTimeLimitExceeded exception for {}.".format(
-                        self.__name__, org.name))
+                self.log_debug(org, "Caught SoftTimeLimitExceeded.")
 
                 fail_count = self.fail_count_incr(org)
-                msg = "{}: Time limit exceeded (#{})for {}.".format(
-                    self.__name__, fail_count, org.name)
-                logger.error(msg)
+                msg = self.log_error(org, "Time limit exceeded (#{count}).", count=fail_count)
 
-                # FIXME: Logging is not sending us this error email.
+                # FIXME: Logging is not sending us the above error email.
                 send_mail(
-                    subject="{} {}".format(settings.EMAIL_SUBJECT_PREFIX, msg),
+                    subject="{}{}".format(settings.EMAIL_SUBJECT_PREFIX, msg),
                     message=msg,
                     from_email=settings.DEFAULT_FROM_EMAIL,
                     recipient_list=dict(settings.ADMINS).values(),
                     fail_silently=True)
 
-                logger.debug(
-                    "{}: Finished processing SoftTimeLimitExceeded exception "
-                    "for {}.".format(
-                        self.__name__, org.name))
+                self.log_debug(org, "Finished processing SoftTimeLimitExceeded.")
                 return None
 
             except:
                 fail_count = self.fail_count_incr(org)
-                logger.info(
-                    "{}: Unknown failure (#{}) for {}".format(
-                        self.__name__, fail_count, org.name))
+                self.log_info(org, "Unknown failure (#{count}).", count=fail_count)
                 raise
 
             finally:
-                logger.debug(
-                    "{}: Starting to release lock for {}.".format(
-                        self.__name__, org.name))
                 self.lock_release(org)
-                logger.debug(
-                    "{}: Released lock for {}.".format(
-                        self.__name__, org.name))
-        logger.info(
-            "{}: Skipping task for {} because the task is already "
-            "running for this org.".format(self.__name__, org.name))
+
+        self.log_info(org, "Skipping task because it is already running for this org.")
         return None
