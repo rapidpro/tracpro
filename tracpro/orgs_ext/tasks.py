@@ -38,7 +38,50 @@ RUNS_EXPIRE = datetime.timedelta(days=7).seconds
 MAX_TIME_BETWEEN_RUNS = datetime.timedelta(days=1)
 
 
-class ScheduleTaskForActiveOrgs(PostTransactionTask):
+class WrapCacheMixin(object):
+
+    def cache_add(self, *args, **kwargs):
+        return self.wrap_cache("add", *args, **kwargs)
+
+    def cache_delete(self, *args, **kwargs):
+        return self.wrap_cache("delete", *args, **kwargs)
+
+    def cache_get(self, *args, **kwargs):
+        return self.wrap_cache("get", *args, **kwargs)
+
+    def cache_incr(self, *args, **kwargs):
+        return self.wrap_cache("incr", *args, **kwargs)
+
+    def cache_set(self, *args, **kwargs):
+        return self.wrap_cache("set", *args, **kwargs)
+
+    def wrap_cache(self, method, org, key, *args, **kwargs):
+        cache_key = key.format(task=self.__name__, org=org.pk)
+        return getattr(cache, method)(cache_key, *args, **kwargs)
+
+
+class WrapLoggerMixin(object):
+
+    def log_debug(self, *args, **kwargs):
+        return self.wrap_logger(logging.DEBUG, *args, **kwargs)
+
+    def log_error(self, *args, **kwargs):
+        return self.wrap_logger(logging.ERROR, *args, **kwargs)
+
+    def log_info(self, *args, **kwargs):
+        return self.wrap_logger(logging.INFO, *args, **kwargs)
+
+    def log_warning(self, *args, **kwargs):
+        return self.wrap_logger(logging.WARNING, *args, **kwargs)
+
+    def wrap_logger(self, level, msg, exc_info=False, *args, **kwargs):
+        kwargs.setdefault('task', self.__name__)
+        full_msg = msg.format(*args, **kwargs)
+        logger.log(level, full_msg, exc_info=exc_info)
+        return full_msg
+
+
+class ScheduleTaskForActiveOrgs(WrapLoggerMixin, PostTransactionTask):
 
     def apply_async(self, *args, **kwargs):
         kwargs.setdefault('queue', 'org_scheduler')
@@ -48,34 +91,30 @@ class ScheduleTaskForActiveOrgs(PostTransactionTask):
     def run(self, task_name):
         """Schedule the OrgTask to be run for each active org."""
         if task_name not in celery_app.tasks:
-            logger.error(
-                "{}: No task named '{}' is registered".format(
-                    self.__name__, task_name))
-            return
+            self.log_error(task_name, "No such task is registered.")
+            return None
 
-        logger.info(
-            "{}: Starting to schedule {} for each active org.".format(
-                self.__name__, task_name))
+        self.log_info(task_name, "Scheduling task for each active org.")
         for org in apps.get_model('orgs', 'Org').objects.all():
             if not org.is_active:
-                logger.info(
-                    "{}: Skipping {} for {} because it is not active.".format(
-                        self.__name__, task_name, org.name))
+                msg = "Skipping for {org} because it is inactive."
+                self.log_info(task_name, msg, org=org.name)
             elif not org.api_token:
-                logger.info(
-                    "{}: Skipping {} for {} because it has no API token.".format(
-                        self.__name__, task_name, org.name))
+                msg = "Skipping for {org} because it has no API token."
+                self.log_info(task_name, msg, org=org.name)
             else:
                 signature(task_name, args=[org.pk]).delay()
-                logger.info(
-                    "{}: Scheduled {} for {}.".format(
-                        self.__name__, task_name, org.name))
-        logger.info(
-            "{}: Finished scheduling {} for each active org.".format(
-                self.__name__, task_name))
+                msg = "Scheduled for {org}."
+                self.log_info(task_name, msg, org=org.name)
+        self.log_info(task_name, "Finished scheduling task for each active org.")
+
+    def wrap_logger(self, level, org_task, msg, *args, **kwargs):
+        kwargs.setdefault('org_task', org_task)
+        msg = '{task} for {org_task}: ' + msg
+        return super(ScheduleTaskForActiveOrgs, self).wrap_logger(level, msg, *args, **kwargs)
 
 
-class OrgTask(PostTransactionTask):
+class OrgTask(WrapCacheMixin, WrapLoggerMixin, PostTransactionTask):
     """Scaffolding to CREATE a task that operates on a single org."""
     abstract = True
 
@@ -89,25 +128,6 @@ class OrgTask(PostTransactionTask):
         kwargs.setdefault('soft_time_limit', time_limit)
         kwargs.setdefault('max_retries', 0)
         return super(OrgTask, self).apply_async(*args, **kwargs)
-
-    def _wrap_cache(self, method, org, key, *args, **kwargs):
-        cache_key = key.format(task=self.__name__, org=org.pk)
-        return getattr(cache, method)(cache_key, *args, **kwargs)
-
-    def cache_add(self, *args, **kwargs):
-        return self._wrap_cache("add", *args, **kwargs)
-
-    def cache_delete(self, *args, **kwargs):
-        return self._wrap_cache("delete", *args, **kwargs)
-
-    def cache_get(self, *args, **kwargs):
-        return self._wrap_cache("get", *args, **kwargs)
-
-    def cache_incr(self, *args, **kwargs):
-        return self._wrap_cache("incr", *args, **kwargs)
-
-    def cache_set(self, *args, **kwargs):
-        return self._wrap_cache("set", *args, **kwargs)
 
     def check_rate_limit(self, org):
         """Return the next run time if this task has run too recently."""
@@ -149,25 +169,6 @@ class OrgTask(PostTransactionTask):
         self.log_debug(org, "Starting to release lock.")
         self.cache_delete(org, ORG_TASK_LOCK)
         self.log_debug(org, "Released lock.")
-
-    def _wrap_log(self, level, org, msg, exc_info=False, *args, **kwargs):
-        kwargs.setdefault('org', org.name)
-        kwargs.setdefault('task', self.__name__)
-        full_msg = ('{task} for {org}: ' + msg).format(*args, **kwargs)
-        logger.log(level, full_msg, exc_info=exc_info)
-        return full_msg
-
-    def log_debug(self, *args, **kwargs):
-        return self._wrap_log(logging.DEBUG, *args, **kwargs)
-
-    def log_error(self, *args, **kwargs):
-        return self._wrap_log(logging.ERROR, *args, **kwargs)
-
-    def log_info(self, *args, **kwargs):
-        return self._wrap_log(logging.INFO, *args, **kwargs)
-
-    def log_warning(self, *args, **kwargs):
-        return self._wrap_log(logging.WARNING, *args, **kwargs)
 
     def run(self, org_pk):
         """Run the org_task with locks and logging."""
@@ -219,3 +220,8 @@ class OrgTask(PostTransactionTask):
             recipient_list=dict(settings.ADMINS).values(),
             fail_silently=True)
         self.log_debug(org, "Finished sending error email.")
+
+    def wrap_logger(self, level, org, msg, *args, **kwargs):
+        kwargs.setdefault('org', org.name)
+        msg = "{task} for {org}: " + msg
+        return super(OrgTask, self).wrap_logger(level, msg, *args, **kwargs)
