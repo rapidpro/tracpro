@@ -519,7 +519,7 @@ class Response(models.Model):
         (STATUS_COMPLETE, _("Complete")),
     )
 
-    flow_run_id = models.IntegerField(unique=True, null=True)
+    flow_run_id = models.IntegerField(null=True)
 
     pollrun = models.ForeignKey('polls.PollRun', null=True, related_name='responses')
 
@@ -540,6 +540,11 @@ class Response(models.Model):
         help_text=_("Whether this response is active"))
 
     objects = ResponseQuerySet.as_manager()
+
+    class Meta:
+        unique_together = [
+            ('flow_run_id', 'pollrun'),
+        ]
 
     @classmethod
     def create_empty(cls, org, pollrun, run):
