@@ -12,8 +12,9 @@ v1.4.0 (released 2016-03-28)
 
 Code diff: https://github.com/rapidpro/tracpro/compare/v1.3.3...v1.4.0
 
-* Migration to move uuid unique constraint to unique_together with another
-  attribute item (Response, Contact, Region, and Group models)
+* Migrations to move RapidPro uuid unique constraint to unique_together with
+  another model field (`org` for Contact, Region, and Group models; `pollrun`
+  for Response)
 
 v1.3.3 (released 2016-03-28)
 ----------------------------
