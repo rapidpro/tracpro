@@ -115,19 +115,20 @@ class OrgTask(PostTransactionTask):
     def get_cache_key(self, org, tmpl):
         return tmpl.format(task=self.__name__, org=org.pk)
 
-    def increase_failure_count(self, org):
-        failure_count_key = self.get_cache_key(org, FAILURE_COUNT)
-        cache.add(failure_count_key, 0)
-        return cache.incr(failure_count_key)
+    def fail_count_incr(self, org):
+        """Increment the org's recorded failure count by 1."""
+        key = self.get_cache_key(org, FAILURE_COUNT)
+        cache.add(key, 0)  # Set default value to 0.
+        return cache.incr(key)  # Increment the value by 1.
+
+    def fail_count_reset(self, org):
+        """Reset the org's recorded failure count to 0."""
+        cache.set(self.get_cache_key(org, FAILURE_COUNT), 0)
 
     def release_lock(self, org):
         """Delete cache key that indicates that this task is in progress."""
         key = self.get_cache_key(org, ORG_TASK_LOCK)
         return cache.delete(key)
-
-    def reset_failure_count(self, org):
-        failure_count_key = self.get_cache_key(org, FAILURE_COUNT)
-        cache.set(failure_count_key, 0)
 
     def run(self, org_pk):
         """Run the org_task with locks and logging."""
@@ -155,7 +156,7 @@ class OrgTask(PostTransactionTask):
                     else:
                         raise
                 else:
-                    self.reset_failure_count(org)
+                    self.fail_count_reset(org)
                     logger.info(
                         "{}: Finished task for {}.".format(
                             self.__name__, org.name))
@@ -166,9 +167,9 @@ class OrgTask(PostTransactionTask):
                     "{}: Caught SoftTimeLimitExceeded exception for {}.".format(
                         self.__name__, org.name))
 
-                failure_count = self.increase_failure_count(org)
+                fail_count = self.fail_count_incr(org)
                 msg = "{}: Time limit exceeded (#{})for {}.".format(
-                    self.__name__, failure_count, org.name)
+                    self.__name__, fail_count, org.name)
                 logger.error(msg)
 
                 # FIXME: Logging is not sending us this error email.
@@ -186,10 +187,10 @@ class OrgTask(PostTransactionTask):
                 return None
 
             except:
-                failure_count = self.increase_failure_count(org)
+                fail_count = self.fail_count_incr(org)
                 logger.info(
                     "{}: Unknown failure (#{}) for {}".format(
-                        self.__name__, failure_count, org.name))
+                        self.__name__, fail_count, org.name))
                 raise
 
             finally:
