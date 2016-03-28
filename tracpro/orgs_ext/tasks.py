@@ -115,10 +115,19 @@ class OrgTask(PostTransactionTask):
     def get_cache_key(self, org, tmpl):
         return tmpl.format(task=self.__name__, org=org.pk)
 
+    def increase_failure_count(self, org):
+        failure_count_key = self.get_cache_key(org, FAILURE_COUNT)
+        cache.add(failure_count_key, 0)
+        return cache.incr(failure_count_key)
+
     def release_lock(self, org):
         """Delete cache key that indicates that this task is in progress."""
         key = self.get_cache_key(org, ORG_TASK_LOCK)
         return cache.delete(key)
+
+    def reset_failure_count(self, org):
+        failure_count_key = self.get_cache_key(org, FAILURE_COUNT)
+        cache.set(failure_count_key, 0)
 
     def run(self, org_pk):
         """Run the org_task with locks and logging."""
@@ -128,9 +137,8 @@ class OrgTask(PostTransactionTask):
                 next_run_time = self.check_rate_limit(org)
                 if next_run_time is not None:
                     logger.info(
-                        "{}: Skipping task for {} because rate limit "
-                        "was exceeded; task will not be run again before "
-                        "{}.".format(
+                        "{}: Skipping task for {} because rate limit was "
+                        "exceeded. Task will not be run again before {}.".format(
                             self.__name__, org.name, next_run_time))
                     return None
 
@@ -147,12 +155,9 @@ class OrgTask(PostTransactionTask):
                     else:
                         raise
                 else:
+                    self.reset_failure_count(org)
                     logger.info(
                         "{}: Finished task for {}.".format(self.__name__, org.name))
-
-                    failure_count_key = self.get_cache_key(org, FAILURE_COUNT)
-                    cache.set(failure_count_key, 0)
-
                     return result
 
             except SoftTimeLimitExceeded:
@@ -160,11 +165,9 @@ class OrgTask(PostTransactionTask):
                     "{}: Caught SoftTimeLimitExceeded exception for {}.".format(
                         self.__name__, org.name))
 
+                failure_count = self.increase_failure_count(org)
                 msg = "{}: Time limit exceeded for {}".format(self.__name__, org.name)
                 logger.error(msg)
-
-                failure_count_key = self.get_cache_key(org, FAILURE_COUNT)
-                cache.set(failure_count_key, 1 + cache.get(failure_count_key, 0))
 
                 # FIXME: Logging is not sending us this error email.
                 send_mail(
