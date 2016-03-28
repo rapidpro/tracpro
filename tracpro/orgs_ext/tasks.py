@@ -182,44 +182,40 @@ class OrgTask(PostTransactionTask):
                     return None
 
                 self.log_info(org, "Starting task.")
-
-                try:
-                    result = self.org_task(org)
-                except TembaAPIError as e:
-                    if utils.caused_by_bad_api_key(e):
-                        self.log_warning(org, "API token is invalid.", exc_info=True)
-                        return None
-                    else:
-                        raise
+                result = self.org_task(org)
+            except Exception as e:
+                fail_count = self.fail_count_incr(org)
+                if isinstance(e, TembaAPIError) and utils.caused_by_bad_api_key(e):
+                    msg = "API token is invalid (#{count})."
+                    self.log_warning(org, msg, exc_info=True, count=fail_count)
+                    return None
+                elif isinstance(e, SoftTimeLimitExceeded):
+                    msg = "Time limit exceeded (#{count})."
+                    full_msg = self.log_error(org, msg, count=fail_count)
+                    self.send_error_email(org, full_msg)
+                    return None
                 else:
-                    self.fail_count_reset(org)
-                    self.log_info(org, "Finished task.")
-                    return result
-
-            except SoftTimeLimitExceeded:
-                self.log_debug(org, "Caught SoftTimeLimitExceeded.")
-
-                fail_count = self.fail_count_incr(org)
-                msg = self.log_error(org, "Time limit exceeded (#{count}).", count=fail_count)
-
-                # FIXME: Logging is not sending us the above error email.
-                send_mail(
-                    subject="{}{}".format(settings.EMAIL_SUBJECT_PREFIX, msg),
-                    message=msg,
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=dict(settings.ADMINS).values(),
-                    fail_silently=True)
-
-                self.log_debug(org, "Finished processing SoftTimeLimitExceeded.")
-                return None
-
-            except:
-                fail_count = self.fail_count_incr(org)
-                self.log_info(org, "Unknown failure (#{count}).", count=fail_count)
-                raise
-
+                    msg = "Unknown failure (#{count})."
+                    self.log_info(org, msg, count=fail_count)
+                    raise
+            else:
+                self.fail_count_reset(org)
+                self.log_info(org, "Finished task.")
+                return result
             finally:
                 self.lock_release(org)
+        else:
+            msg = "Skipping task because it is already running for this org."
+            self.log_info(org, msg)
+            return None
 
-        self.log_info(org, "Skipping task because it is already running for this org.")
-        return None
+    def send_error_email(self, org, msg):
+        # FIXME: Logging is not sending us regular logging error emails.
+        self.log_debug(org, "Starting to send error email.")
+        send_mail(
+            subject="{}{}".format(settings.EMAIL_SUBJECT_PREFIX, msg),
+            message=msg,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=dict(settings.ADMINS).values(),
+            fail_silently=True)
+        self.log_debug(org, "Finished sending error email.")
