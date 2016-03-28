@@ -185,6 +185,13 @@ class OrgTask(PostTransactionTask):
                         self.__name__, org.name))
                 return None
 
+            except:
+                failure_count = self.increase_failure_count(org)
+                logger.info(
+                    "{}: Unknown failure (#{}) for {}".format(
+                        self.__name__, failure_count, org.name))
+                raise
+
             finally:
                 logger.debug(
                     "{}: Starting to release lock for {}.".format(
