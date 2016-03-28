@@ -94,16 +94,23 @@ class OrgTask(PostTransactionTask):
         return super(OrgTask, self).apply_async(*args, **kwargs)
 
     def check_rate_limit(self, org):
-        """Return True if the task has been run too recently for this org."""
+        """Return the next run time if this task has run too recently."""
         now = timezone.now()
         last_run_key = self.get_cache_key(org, LAST_RUN_TIME)
+        fail_count_key = self.get_cache_key(org, FAILURE_COUNT)
+
         last_run_time = cache.get(last_run_key)
         if last_run_time is not None:
+            # Calculate how long until the task is eligible to run again.
             last_run_time = parse_iso8601(last_run_time)
-            if now - last_run_time < settings.ORG_TASK_TIMEOUT:
-                return True
+            delta = settings.ORG_TASK_TIMEOUT * 2 ** cache.get(fail_count_key, 0)
+            delta = max(delta, datetime.timedelta(days=1))
+            if now - last_run_time < delta:
+                return last_run_time + delta
+
+        # Set the current time as the last run time and allow the task to run now.
         cache.set(last_run_key, format_iso8601(now))
-        return False
+        return None
 
     def get_cache_key(self, org, tmpl):
         return tmpl.format(task=self.__name__, org=org.pk)
@@ -118,11 +125,13 @@ class OrgTask(PostTransactionTask):
         org = apps.get_model('orgs', 'Org').objects.get(pk=org_pk)
         if self.acquire_lock(org):
             try:
-                if self.check_rate_limit(org):
+                next_run_time = self.check_rate_limit(org)
+                if next_run_time is not None:
                     logger.info(
                         "{}: Skipping task for {} because rate limit "
-                        "was exceeded.".format(
-                            self.__name__, org.name))
+                        "was exceeded; task will not be run again before "
+                        "{}.".format(
+                            self.__name__, org.name, next_run_time))
                     return None
 
                 logger.info(
