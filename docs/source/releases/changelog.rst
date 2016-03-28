@@ -14,6 +14,7 @@ Code diff: https://github.com/rapidpro/tracpro/compare/v1.3.2...v1.3.3
 
 * Implement "backoff" for OrgTasks that fail
 * Ensure that cache key timeout is set properly in OrgTask
+* Do not use @task decorator on class-based task
 
 v1.3.2 (released 2016-03-23)
 ----------------------------
