@@ -31,9 +31,9 @@ LAST_RUN_TIME = 'last_run_time:{task}:{org}'
 
 ORG_TASK_LOCK = 'org_task:{task}:{org}'
 
-LOCK_EXPIRE = (settings.ORG_TASK_TIMEOUT * 12).seconds
+LOCK_TIMEOUT = (settings.ORG_TASK_TIMEOUT * 12).seconds
 
-RUNS_EXPIRE = datetime.timedelta(days=7).seconds
+RUNS_TIMEOUT = datetime.timedelta(days=7).seconds
 
 MAX_TIME_BETWEEN_RUNS = datetime.timedelta(days=1)
 
@@ -149,24 +149,24 @@ class OrgTask(WrapCacheMixin, WrapLoggerMixin, PostTransactionTask):
                         last_run_time, failure_count, next_run_time))
 
         # Set the current time as the last run time.
-        self.cache_set(org, LAST_RUN_TIME, value=format_iso8601(now), timeout=RUNS_EXPIRE)
+        self.cache_set(org, LAST_RUN_TIME, value=format_iso8601(now), timeout=RUNS_TIMEOUT)
 
     def fail_count_incr(self, org):
         """Increment the org's recorded failure count by 1."""
         # Set default value to 0.
-        self.cache_add(org, FAILURE_COUNT, value=0, timeout=RUNS_EXPIRE)
+        self.cache_add(org, FAILURE_COUNT, value=0, timeout=RUNS_TIMEOUT)
         return self.cache_incr(org, FAILURE_COUNT)  # Increment value by 1.
 
     def fail_count_reset(self, org):
         """Reset the org's recorded failure count to 0."""
-        self.cache_set(org, FAILURE_COUNT, value=0, timeout=RUNS_EXPIRE)
+        self.cache_set(org, FAILURE_COUNT, value=0, timeout=RUNS_TIMEOUT)
 
     def lock_acquire(self, org):
         """Set a cache key that indicates the task is currently in progress.
 
         If the key is already set (task in progress), return False.
         """
-        return self.cache_add(org, ORG_TASK_LOCK, value='true', timeout=LOCK_EXPIRE)
+        return self.cache_add(org, ORG_TASK_LOCK, value='true', timeout=LOCK_TIMEOUT)
 
     def lock_release(self, org):
         """Delete cache key that indicates that this task is in progress."""
