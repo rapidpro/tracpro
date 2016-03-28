@@ -10,7 +10,7 @@ from django.apps import apps
 from django.conf import settings
 from django.core.cache import cache
 from django.core.mail import send_mail
-from django.utils.timezone import now as get_now
+from django.utils import timezone
 
 from djcelery_transactions import PostTransactionTask
 
@@ -24,7 +24,7 @@ from . import utils
 
 logger = get_task_logger(__name__)
 
-LAST_RUN_KEY = 'last_run_time:{task}:{org}'
+LAST_RUN_TIME = 'last_run_time:{task}:{org}'
 
 ORG_TASK_LOCK = 'org_task:{task}:{org}'
 
@@ -76,7 +76,11 @@ class OrgTask(PostTransactionTask):
         raise NotImplementedError("Class must define the action to take on the org.")
 
     def acquire_lock(self, org):
-        key = ORG_TASK_LOCK.format(task=self.__name__, org=org.pk)
+        """Set a cache key that indicates the task is currently in progress.
+
+        If the key is already set (task in progress), return False.
+        """
+        key = self.get_cache_key(org, ORG_TASK_LOCK)
         return cache.add(key, 'true', LOCK_EXPIRE)
 
     def apply_async(self, *args, **kwargs):
@@ -89,8 +93,8 @@ class OrgTask(PostTransactionTask):
 
     def check_rate_limit(self, org):
         """Return True if the task has been run too recently for this org."""
-        now = get_now()
-        last_run_key = LAST_RUN_KEY.format(task=self.__name__, org=org.pk)
+        now = timezone.now()
+        last_run_key = self.get_cache_key(org, LAST_RUN_TIME)
         last_run_time = cache.get(last_run_key)
         if last_run_time is not None:
             last_run_time = parse_iso8601(last_run_time)
@@ -99,8 +103,12 @@ class OrgTask(PostTransactionTask):
         cache.set(last_run_key, format_iso8601(now))
         return False
 
+    def get_cache_key(self, org, tmpl):
+        return tmpl.format(task=self.__name__, org=org.pk)
+
     def release_lock(self, org):
-        key = ORG_TASK_LOCK.format(task=self.__name__, org=org.pk)
+        """Delete cache key that indicates that this task is in progress."""
+        key = self.get_cache_key(org, ORG_TASK_LOCK)
         return cache.delete(key)
 
     def run(self, org_pk):
