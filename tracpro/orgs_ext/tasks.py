@@ -77,13 +77,6 @@ class OrgTask(PostTransactionTask):
     def org_task(self, org):
         raise NotImplementedError("Class must define the action to take on the org.")
 
-    def acquire_lock(self, org):
-        """Set a cache key that indicates the task is currently in progress.
-
-        If the key is already set (task in progress), return False.
-        """
-        return self.cache_add(org, ORG_TASK_LOCK, 'true', LOCK_EXPIRE)
-
     def apply_async(self, *args, **kwargs):
         kwargs.setdefault('expires', datetime.datetime.now() + settings.ORG_TASK_TIMEOUT)
         time_limit = settings.ORG_TASK_TIMEOUT.seconds
@@ -91,23 +84,6 @@ class OrgTask(PostTransactionTask):
         kwargs.setdefault('soft_time_limit', time_limit)
         kwargs.setdefault('max_retries', 0)
         return super(OrgTask, self).apply_async(*args, **kwargs)
-
-    def check_rate_limit(self, org):
-        """Return the next run time if this task has run too recently."""
-        now = timezone.now()
-
-        last_run_time = self.cache_get(org, LAST_RUN_TIME)
-        if last_run_time is not None:
-            # Calculate how long until the task is eligible to run again.
-            last_run_time = parse_iso8601(last_run_time)
-            delta = settings.ORG_TASK_TIMEOUT * 2 ** self.cache_get(org, FAILURE_COUNT, 0)
-            delta = max(delta, datetime.timedelta(days=1))
-            if now - last_run_time < delta:
-                return last_run_time + delta
-
-        # Set the current time as the last run time and allow the task to run now.
-        self.cache_set(org, LAST_RUN_TIME, format_iso8601(now))
-        return None
 
     def _wrap_cache(self, method, org, key, *args, **kwargs):
         cache_key = key.format(task=self.__name__, org=org.pk)
@@ -128,6 +104,23 @@ class OrgTask(PostTransactionTask):
     def cache_set(self, *args, **kwargs):
         return self._wrap_cache("set", *args, **kwargs)
 
+    def check_rate_limit(self, org):
+        """Return the next run time if this task has run too recently."""
+        now = timezone.now()
+
+        last_run_time = self.cache_get(org, LAST_RUN_TIME)
+        if last_run_time is not None:
+            # Calculate how long until the task is eligible to run again.
+            last_run_time = parse_iso8601(last_run_time)
+            delta = settings.ORG_TASK_TIMEOUT * 2 ** self.cache_get(org, FAILURE_COUNT, 0)
+            delta = max(delta, datetime.timedelta(days=1))
+            if now - last_run_time < delta:
+                return last_run_time + delta
+
+        # Set the current time as the last run time and allow the task to run now.
+        self.cache_set(org, LAST_RUN_TIME, format_iso8601(now))
+        return None
+
     def fail_count_incr(self, org):
         """Increment the org's recorded failure count by 1."""
         self.cache_add(org, FAILURE_COUNT, 0)  # Set default value to 0.
@@ -137,14 +130,21 @@ class OrgTask(PostTransactionTask):
         """Reset the org's recorded failure count to 0."""
         self.cache_set(org, FAILURE_COUNT, 0)
 
-    def release_lock(self, org):
+    def lock_acquire(self, org):
+        """Set a cache key that indicates the task is currently in progress.
+
+        If the key is already set (task in progress), return False.
+        """
+        return self.cache_add(org, ORG_TASK_LOCK, 'true', LOCK_EXPIRE)
+
+    def lock_release(self, org):
         """Delete cache key that indicates that this task is in progress."""
         self.cache_delete(org, ORG_TASK_LOCK)
 
     def run(self, org_pk):
         """Run the org_task with locks and logging."""
         org = apps.get_model('orgs', 'Org').objects.get(pk=org_pk)
-        if self.acquire_lock(org):
+        if self.lock_acquire(org):
             try:
                 next_run_time = self.check_rate_limit(org)
                 if next_run_time is not None:
@@ -208,7 +208,7 @@ class OrgTask(PostTransactionTask):
                 logger.debug(
                     "{}: Starting to release lock for {}.".format(
                         self.__name__, org.name))
-                self.release_lock(org)
+                self.lock_release(org)
                 logger.debug(
                     "{}: Released lock for {}.".format(
                         self.__name__, org.name))
