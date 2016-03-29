@@ -7,6 +7,11 @@ Tracpro's version is incremented upon each merge to master according to our
 We recommend reviewing the release notes and code diffs before upgrading
 between versions.
 
+In development
+--------------
+
+Code diff: https://github.com/rapidpro/tracpro/compare/v1.4.1...develop
+
 v1.4.1 (released 2016-03-29)
 ----------------------------
 
