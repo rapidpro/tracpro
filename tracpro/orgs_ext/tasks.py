@@ -182,9 +182,8 @@ class OrgTask(WrapCacheMixin, WrapLoggerMixin, PostTransactionTask):
                 self.check_rate_limit(org)
             except ValueError as e:
                 self.log_info(org, e.message)
-                return None
-            finally:
                 self.lock_release(org)
+                return None
 
             try:
                 self.log_info(org, "Starting task.")
