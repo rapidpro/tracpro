@@ -105,7 +105,7 @@ class ScheduleTaskForActiveOrgs(WrapLoggerMixin, PostTransactionTask):
             else:
                 signature(task_name, args=[org.pk]).delay()
                 msg = "Scheduled for {org}."
-                self.log_info(task_name, msg, org=org.name)
+                self.log_debug(task_name, msg, org=org.name)
         self.log_info(task_name, "Finished scheduling task for each active org.")
 
     def wrap_logger(self, level, org_task, msg, *args, **kwargs):
