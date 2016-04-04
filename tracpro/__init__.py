@@ -5,7 +5,7 @@ from __future__ import absolute_import, unicode_literals
 from .celery import app as celery_app  # noqa
 
 
-# NOTE: Version must be updated in docs/source/conf.py as well.
+# NOTE: Version must be updated in docs/conf.py as well.
 VERSION = (1, 4, 3, "dev")
 
 
