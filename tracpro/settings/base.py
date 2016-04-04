@@ -120,10 +120,7 @@ LOGGING = {
     },
     'loggers': {
         'celery': {
-            'level': 'INFO',
-        },
-        'httprouterthread': {
-            'level': 'INFO',
+            'level': 'ERROR'
         },
         'django': {
             'level': 'ERROR',
@@ -137,7 +134,7 @@ LOGGING = {
             'level': 'ERROR',
         },
         'tracpro': {
-            'level': 'DEBUG',
+            'level': 'INFO',
         },
     },
     'root': {
