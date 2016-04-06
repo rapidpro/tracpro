@@ -7,10 +7,15 @@ Tracpro's version is incremented upon each merge to master according to our
 We recommend reviewing the release notes and code diffs before upgrading
 between versions.
 
-In development
---------------
+v1.4.3 (released 2016-04-06)
+----------------------------
 
 Code diff: https://github.com/rapidpro/tracpro/compare/v1.4.2...develop
+
+* Update docs structure.
+* Remove outdated docs.
+* Update deployment process notes.
+* Reduce log level for "Scheduled task" message.
 
 v1.4.2 (released 2016-04-04)
 ----------------------------
