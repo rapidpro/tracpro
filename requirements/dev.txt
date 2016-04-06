@@ -1,5 +1,4 @@
 -r tests.txt
--r docs.txt
 
 django-debug-toolbar==1.4
   sqlparse==0.1.18
