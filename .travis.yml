@@ -26,5 +26,6 @@ script:
   - coverage run manage.py test
   - coverage report --fail-under=75
   - flake8 .
+  - make docs
 notifications:
     hipchat:  259913064a0a577b61d874d51dfbc2@Edutrac
