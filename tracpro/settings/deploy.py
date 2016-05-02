@@ -11,10 +11,6 @@ ENVIRONMENT = from_env('ENVIRONMENT').lower()
 
 WEBSERVER_ROOT = '/var/www/tracpro/'
 
-ADMINS = [
-    ('Caktus EduTrac Team', 'edutrac-team@caktusgroup.com'),
-]
-
 ALLOWED_HOSTS = [".{}".format(DOMAIN)]
 
 CACHES['default']['LOCATION'] = 'localhost:6379:4'
@@ -81,3 +77,8 @@ if ENVIRONMENT.endswith('production'):
 else:
     env_type = ENVIRONMENT.rsplit("_", 1)[-1]  # edutrac_staging -> staging
     EMAIL_SUBJECT_PREFIX = '[Edutrac {}] '.format(env_type.title())
+
+if ENVIRONMENT != 'local':
+    ADMINS = [
+        ('Caktus EduTrac Team', 'edutrac-team@caktusgroup.com'),
+    ]
