@@ -16,6 +16,7 @@ Code diff: https://github.com/rapidpro/tracpro/compare/v1.4.2...develop
 * Remove outdated docs.
 * Update deployment process notes.
 * Reduce log level for "Scheduled task" message.
+* Allow for custom templates and staticfiles directories.
 
 v1.4.2 (released 2016-04-04)
 ----------------------------
