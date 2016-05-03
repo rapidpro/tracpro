@@ -72,6 +72,12 @@ SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
 
 STATIC_ROOT = os.path.join(WEBSERVER_ROOT, 'public', 'static')
 
+if from_env('CUSTOM_STATICFILES_DIR'):
+    STATICFILES_DIRS.insert(0, from_env('CUSTOM_STATICFILES_DIR'))
+
+if from_env('CUSTOM_TEMPLATE_DIR'):
+    TEMPLATE_DIRS.insert(0, from_env('CUSTOM_TEMPLATE_DIR'))
+
 if ENVIRONMENT.endswith('production'):
     EMAIL_SUBJECT_PREFIX = '[Edutrac] '
 else:
