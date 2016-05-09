@@ -59,7 +59,7 @@ pullmessages:
 	tx pull -af
 
 setup:
-	virtualenv -p `which python3.4` $(WORKON_HOME)/tracpro
+	virtualenv -p `which python2.7` $(WORKON_HOME)/tracpro
 	$(WORKON_HOME)/tracpro/bin/pip install -U pip wheel
 	$(WORKON_HOME)/tracpro/bin/pip install -Ur requirements/dev.txt
 	$(WORKON_HOME)/tracpro/bin/pip freeze
