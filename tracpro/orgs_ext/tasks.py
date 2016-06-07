@@ -138,7 +138,7 @@ class OrgTask(WrapCacheMixin, WrapLoggerMixin, PostTransactionTask):
             last_run_time = parse_iso8601(last_run_time) if last_run_time else None
             failure_count = self.cache_get(org, FAILURE_COUNT, default=0)
             delta = settings.ORG_TASK_TIMEOUT * 2 ** failure_count
-            next_run_time = last_run_time + delta
+            next_run_time = last_run_time + min(delta, MAX_TIME_BETWEEN_RUNS)
             if now < next_run_time:
                 # Task has been run too recently.
                 raise ValueError(
