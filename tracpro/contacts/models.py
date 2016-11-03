@@ -90,7 +90,7 @@ class Contact(models.Model):
         related_name='contacts',
         help_text=_("Reporter group to which this contact belongs."))
     groups = models.ManyToManyField(
-        'groups.Group', null=True, verbose_name=_("Groups"),
+        'groups.Group', verbose_name=_("Groups"),
         related_name='all_contacts',
         help_text=_("All groups to which this contact belongs."))
     language = models.CharField(
