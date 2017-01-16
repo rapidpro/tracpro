@@ -1,6 +1,6 @@
 from __future__ import absolute_import, unicode_literals
 
-from collections import Counter, OrderedDict
+from collections import Counter
 from itertools import chain, groupby
 import json
 from operator import itemgetter
