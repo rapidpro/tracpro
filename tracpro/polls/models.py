@@ -45,17 +45,6 @@ class PollManager(models.Manager.from_queryset(PollQuerySet)):
 
         poll.save()
 
-        # Sync related Questions, and maintain question order.
-        temba_questions = temba_poll.rulesets
-        temba_questions = OrderedDict((r.uuid, r) for r in temba_poll.rulesets)
-
-        # Remove Questions that are no longer on RapidPro.
-        poll.questions.exclude(ruleset_uuid__in=temba_questions.keys()).delete()
-
-        # Create new or update existing Questions to match RapidPro data.
-        for order, temba_question in enumerate(temba_questions.values(), 1):
-            Question.objects.from_temba(poll, temba_question, order)
-
         return poll
 
     @transaction.atomic
