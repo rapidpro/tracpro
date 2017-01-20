@@ -194,9 +194,7 @@ class PollCRUDL(smartmin.SmartCRUDL):
 
             # Save the associated Questions for this poll here
             # now that these polls have been activated for the Org
-            selected_polls = []
-            for poll in form.cleaned_data['polls']:
-                selected_polls.append(poll.name)
+            selected_polls = [poll.name for poll in form.cleaned_data['polls']]
 
             org = self.request.org
             temba_polls = org.get_temba_client().get_flows(archived=False)
@@ -206,15 +204,14 @@ class PollCRUDL(smartmin.SmartCRUDL):
             for temba_poll in temba_polls.values():
                 if temba_poll.name in selected_polls:
                     # Sync related Questions, and maintain question order.
-                    temba_questions = temba_poll.rulesets
                     temba_questions = OrderedDict((r.uuid, r) for r in temba_poll.rulesets)
 
                     # Remove Questions that are no longer on RapidPro.
-                    poll.questions.exclude(ruleset_uuid__in=temba_questions.keys()).delete()
+                    temba_poll.questions.exclude(ruleset_uuid__in=temba_questions.keys()).delete()
 
                     # Create new or update existing Questions to match RapidPro data.
                     for order, temba_question in enumerate(temba_questions.values(), 1):
-                        Question.objects.from_temba(poll, temba_question, order)
+                        Question.objects.from_temba(temba_poll, temba_question, order)
 
             return super(PollCRUDL.Select, self).form_valid(form)
 
