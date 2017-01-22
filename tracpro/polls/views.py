@@ -23,6 +23,7 @@ from tracpro.groups.models import Group, Region
 
 from . import charts, forms, maps, tasks
 from .models import Poll, Question, PollRun, Response
+from .tasks import sync_questions_categories
 
 
 class PollCRUDL(smartmin.SmartCRUDL):
@@ -182,7 +183,9 @@ class PollCRUDL(smartmin.SmartCRUDL):
         form_class = forms.ActivePollsForm
         success_url = '@polls.poll_list'
         submit_button_name = _("Update")
-        success_message = _("Updated flows to track as polls")
+        success_message = _(
+            "Updated flows to track as polls." +
+            " Notice: questions and categories have been scheduled to update shortly.")
 
         def get_form_kwargs(self):
             kwargs = super(PollCRUDL.Select, self).get_form_kwargs()
@@ -194,25 +197,36 @@ class PollCRUDL(smartmin.SmartCRUDL):
 
             # Save the associated Questions for this poll here
             # now that these polls have been activated for the Org
-            selected_polls = [poll.name for poll in form.cleaned_data['polls']]
+            selected_poll_names, selected_polls = [], []
+            for poll in form.cleaned_data['polls']:
+                selected_poll_names.append(poll.name)
+                selected_polls.append(Poll.objects.get(id=poll.id))
 
             org = self.request.org
             temba_polls = org.get_temba_client().get_flows(archived=False)
             temba_polls = {p.uuid: p for p in temba_polls}
 
+            # Call a celery task to update the questions and categories
+            # This takes a long time, so let's schedule it to run in the background
+            sync_questions_categories.apply_async(
+                temba_polls, selected_poll_names, selected_polls)
+
+            """
             # Create new or update SELECTED Polls to match RapidPro data.
             for temba_poll in temba_polls.values():
-                if temba_poll.name in selected_polls:
+                if temba_poll.name in selected_poll_names:
+                    poll_index = selected_poll_names.index(temba_poll.name)
+                    poll = selected_polls[poll_index]
                     # Sync related Questions, and maintain question order.
                     temba_questions = OrderedDict((r.uuid, r) for r in temba_poll.rulesets)
 
                     # Remove Questions that are no longer on RapidPro.
-                    temba_poll.questions.exclude(ruleset_uuid__in=temba_questions.keys()).delete()
+                    poll.questions.exclude(ruleset_uuid__in=temba_questions.keys()).delete()
 
                     # Create new or update existing Questions to match RapidPro data.
                     for order, temba_question in enumerate(temba_questions.values(), 1):
-                        Question.objects.from_temba(temba_poll, temba_question, order)
-
+                        Question.objects.from_temba(poll, temba_question, order)
+            """
             return super(PollCRUDL.Select, self).form_valid(form)
 
 
