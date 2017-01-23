@@ -100,4 +100,5 @@ class TestActivePollsForm(TracProTest):
         self.form.save()
 
         self.assertTrue(mock_sync_questions.delay.called)
-        mock_sync_questions.delay.assert_called_with({}, [self.poll_1.name], [self.poll_1])
+        self.assertEqual(mock_sync_questions.delay.call_args_list[0][0][0], self.org)
+        self.assertEqual(list(mock_sync_questions.delay.call_args_list[0][0][1]), [self.poll_1])

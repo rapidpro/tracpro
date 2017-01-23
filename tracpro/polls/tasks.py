@@ -134,13 +134,23 @@ class SyncOrgPolls(OrgTask):
 
 
 @task
-def sync_questions_categories(temba_polls, selected_poll_names, selected_polls):
+def sync_questions_categories(org, polls):
     # Create new or update SELECTED Polls to match RapidPro data.
-    from tracpro.polls.models import Question
+    from tracpro.polls.models import Poll, Question
+
+    # Save the associated Questions for this poll here
+    # now that these polls have been activated for the Org
+    selected_poll_names, selected_polls = [], []
+    for poll in polls:
+        selected_poll_names.append(poll.name)
+        selected_polls.append(Poll.objects.get(id=poll.id))
+
+    temba_polls = org.get_temba_client().get_flows(archived=False)
+    temba_polls = {p.uuid: p for p in temba_polls}
 
     total_polls = len(selected_poll_names)
     logger.info(
-        "Retrieving Questions and Categories for %d Polls that were recently updated via the interface." %
+        "Retrieving Questions and Categories for %d Poll(s) that were recently updated via the interface." %
         (total_polls))
     for temba_poll in temba_polls.values():
         if temba_poll.name in selected_poll_names:
@@ -156,4 +166,4 @@ def sync_questions_categories(temba_polls, selected_poll_names, selected_polls):
             for order, temba_question in enumerate(temba_questions.values(), 1):
                 Question.objects.from_temba(poll, temba_question, order)
 
-    logger.info("Completed retrieving Questions and Categories for %d Polls." % (total_polls))
+    logger.info("Completed retrieving Questions and Categories for %d Poll(s)." % (total_polls))
