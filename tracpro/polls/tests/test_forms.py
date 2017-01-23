@@ -10,6 +10,7 @@ from tracpro.test import factories
 from tracpro.test.cases import TracProTest
 
 from .. import forms
+from .. import models
 
 
 class TestPollChartFilterForm(TracProTest):
@@ -78,3 +79,25 @@ class TestPollChartFilterForm(TracProTest):
             'numeric': ['Select a valid choice. '
                         'invalid is not one of the available choices.'],
         })
+
+
+class TestActivePollsForm(TracProTest):
+
+    @mock.patch.object(models.Poll.objects, 'sync')
+    @mock.patch('tracpro.polls.forms.sync_questions_categories')
+    def test_active_poll_selection_and_question_sync(self, mock_sync_questions, mock_sync_poll):
+        """ Test that the poll questions are being synced after the poll form is saved """
+        self.org = factories.Org()
+        self.poll_1 = factories.Poll(org=self.org)
+        self.poll_2 = factories.Poll(org=self.org)
+
+        # Data to pass to form for testing.
+        self.data = {'polls': [self.poll_1.id]}
+        self.form = forms.ActivePollsForm(org=self.org, data=self.data)
+
+        self.assertTrue(self.form.is_valid())
+        self.mock_temba_client.get_flows.return_value = []
+        self.form.save()
+
+        self.assertTrue(mock_sync_questions.delay.called)
+        mock_sync_questions.delay.assert_called_with({}, [self.poll_1.name], [self.poll_1])

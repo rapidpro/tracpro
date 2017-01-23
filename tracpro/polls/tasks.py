@@ -138,6 +138,10 @@ def sync_questions_categories(temba_polls, selected_poll_names, selected_polls):
     # Create new or update SELECTED Polls to match RapidPro data.
     from tracpro.polls.models import Question
 
+    total_polls = len(selected_poll_names)
+    logger.info(
+        "Retrieving Questions and Categories for %d Polls that were recently updated via the interface." %
+        (total_polls))
     for temba_poll in temba_polls.values():
         if temba_poll.name in selected_poll_names:
             poll_index = selected_poll_names.index(temba_poll.name)
@@ -151,3 +155,5 @@ def sync_questions_categories(temba_polls, selected_poll_names, selected_polls):
             # Create new or update existing Questions to match RapidPro data.
             for order, temba_question in enumerate(temba_questions.values(), 1):
                 Question.objects.from_temba(poll, temba_question, order)
+
+    logger.info("Completed retrieving Questions and Categories for %d Polls." % (total_polls))

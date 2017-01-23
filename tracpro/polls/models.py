@@ -63,7 +63,7 @@ class PollManager(models.Manager.from_queryset(PollQuerySet)):
         org.polls.exclude(flow_uuid__in=uuids).update(is_active=False)
 
     def sync(self, org):
-        """Update the org's Polls and Questions from RapidPro."""
+        """Update the org's Polls from RapidPro."""
         # Retrieve current Polls known to RapidPro.
         temba_polls = org.get_temba_client().get_flows(archived=False)
         temba_polls = {p.uuid: p for p in temba_polls}

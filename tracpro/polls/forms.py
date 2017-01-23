@@ -8,6 +8,7 @@ from dash.utils import get_month_range
 from tracpro.charts import filters
 
 from . import models
+from .tasks import sync_questions_categories
 
 
 class PollForm(forms.ModelForm):
@@ -52,6 +53,21 @@ class ActivePollsForm(forms.Form):
     def save(self):
         uuids = self.cleaned_data['polls'].values_list('flow_uuid', flat=True)
         models.Poll.objects.set_active_for_org(self.org, uuids)
+
+        # Save the associated Questions for this poll here
+        # now that these polls have been activated for the Org
+        selected_poll_names, selected_polls = [], []
+        for poll in self.cleaned_data['polls']:
+            selected_poll_names.append(poll.name)
+            selected_polls.append(models.Poll.objects.get(id=poll.id))
+
+        temba_polls = self.org.get_temba_client().get_flows(archived=False)
+        temba_polls = {p.uuid: p for p in temba_polls}
+
+        # Call a celery task to update the questions and categories
+        # This takes a long time, so let's schedule it to run in the background
+        sync_questions_categories.delay(
+            temba_polls, selected_poll_names, selected_polls)
 
 
 class PollChartFilterForm(filters.DateRangeFilter, filters.DataFieldFilter,
