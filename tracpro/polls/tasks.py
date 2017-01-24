@@ -140,22 +140,18 @@ def sync_questions_categories(org, polls):
 
     # Save the associated Questions for this poll here
     # now that these polls have been activated for the Org
-    selected_poll_names, selected_polls = [], []
-    for poll in polls:
-        selected_poll_names.append(poll.name)
-        selected_polls.append(Poll.objects.get(id=poll.id))
+    selected_poll_names = [poll.name for poll in polls]
 
     temba_polls = org.get_temba_client().get_flows(archived=False)
     temba_polls = {p.uuid: p for p in temba_polls}
 
-    total_polls = len(selected_poll_names)
+    total_polls = len(polls)
     logger.info(
         "Retrieving Questions and Categories for %d Poll(s) that were recently updated via the interface." %
         (total_polls))
     for temba_poll in temba_polls.values():
         if temba_poll.name in selected_poll_names:
-            poll_index = selected_poll_names.index(temba_poll.name)
-            poll = selected_polls[poll_index]
+            poll = polls[selected_poll_names.index(temba_poll.name)]
             # Sync related Questions, and maintain question order.
             temba_questions = OrderedDict((r.uuid, r) for r in temba_poll.rulesets)
 
