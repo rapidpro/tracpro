@@ -96,7 +96,6 @@ class TestActivePollsForm(TracProTest):
         self.form = forms.ActivePollsForm(org=self.org, data=self.data)
 
         self.assertTrue(self.form.is_valid())
-        self.mock_temba_client.get_flows.return_value = []
         self.form.save()
 
         self.assertTrue(mock_sync_questions.delay.called)
