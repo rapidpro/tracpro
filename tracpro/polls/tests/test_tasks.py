@@ -12,7 +12,8 @@ from ..tasks import sync_questions_categories
 class TestPollTask(TracProTest):
 
     @mock.patch.object(models.Poll, 'get_flow_definition')
-    def test_sync_questions_categories(self, mock_poll_get_flow):
+    @mock.patch('tracpro.polls.tasks.logger.info')
+    def test_sync_questions_categories(self, mock_logger, mock_poll_get_flow):
         self.org = factories.Org()
         self.poll_1 = factories.Poll(org=self.org, name='Poll 1')
         self.poll_2 = factories.Poll(org=self.org, name='Poll 2')
@@ -45,12 +46,13 @@ class TestPollTask(TracProTest):
 
         # Assert that the 2 questions exist before we sync when one should be deleted
         self.assertEqual(models.Question.objects.count(), 2)
-        with mock.patch('tracpro.polls.tasks.logger.info') as mock_logger:
-            sync_questions_categories(self.org, self.data)
-            # Two questions exist locallyi, one is new from the RapidPro API mock (flow_1.rulesets)
-            self.assertEqual(models.Question.objects.count(), 2)
-            self.assertEqual(models.Question.objects.first().ruleset_uuid, 'goodquestion')
-            self.assertEqual(models.Question.objects.last().ruleset_uuid, 'newquestion')
-            # Only 1 poll was reflected in the log message as only 1 poll was sent into the form data
-            self.assertEqual(mock_logger.call_count, 2)
-            self.assertIn("1 Poll(s)", mock_logger.call_args[0][0])
+
+        # Call the task to sync questions...
+        sync_questions_categories(self.org, self.data)
+        # Two questions exist locallyi, one is new from the RapidPro API mock (flow_1.rulesets)
+        self.assertEqual(models.Question.objects.count(), 2)
+        self.assertEqual(models.Question.objects.first().ruleset_uuid, 'goodquestion')
+        self.assertEqual(models.Question.objects.last().ruleset_uuid, 'newquestion')
+        # Only 1 poll was reflected in the log message as only 1 poll was sent into the form data
+        self.assertEqual(mock_logger.call_count, 2)
+        self.assertIn("1 Poll(s)", mock_logger.call_args[0][0])
