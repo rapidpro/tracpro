@@ -33,6 +33,8 @@ class TestPollTask(TracProTest):
         flow_1.rulesets = [ruleset]
         self.mock_temba_client.get_flows.return_value = [flow_1]
 
+        # Assert that the 2 questions exist before we sync when one should be deleted
+        self.assertEqual(models.Question.objects.all().count(), 2)
         with mock.patch('tracpro.polls.tasks.logger.info') as mock_logger:
             sync_questions_categories(self.org, self.data)
             self.assertEqual(models.Question.objects.all().count(), 1)  # only one question should remain
