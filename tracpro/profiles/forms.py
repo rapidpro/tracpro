@@ -64,3 +64,15 @@ class UserForm(forms.ModelForm):
             confirm_password = cleaned_data.get('confirm_password', '')
             if password != confirm_password:
                 self.add_error('confirm_password', _("Passwords don't match."))
+
+
+class UserFormWithSuperuser(UserForm):
+    is_superuser = forms.BooleanField(
+        label=_("Is superuser"),
+        required=False,
+        help_text=_("Whether this user has superuser privileges.")
+    )
+
+    class Meta:
+        model = User
+        fields = forms.ALL_FIELDS
