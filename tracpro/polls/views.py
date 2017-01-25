@@ -182,7 +182,9 @@ class PollCRUDL(smartmin.SmartCRUDL):
         form_class = forms.ActivePollsForm
         success_url = '@polls.poll_list'
         submit_button_name = _("Update")
-        success_message = _("Updated flows to track as polls")
+        success_message = _(
+            "Updated flows to track as polls." +
+            " Notice: questions and categories have been scheduled to update shortly.")
 
         def get_form_kwargs(self):
             kwargs = super(PollCRUDL.Select, self).get_form_kwargs()
@@ -191,6 +193,7 @@ class PollCRUDL(smartmin.SmartCRUDL):
 
         def form_valid(self, form):
             form.save()
+
             return super(PollCRUDL.Select, self).form_valid(form)
 
 
