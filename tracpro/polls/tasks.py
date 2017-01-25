@@ -136,7 +136,7 @@ class SyncOrgPolls(OrgTask):
 @task
 def sync_questions_categories(org, polls):
     # Create new or update SELECTED Polls to match RapidPro data.
-    from tracpro.polls.models import Poll, Question
+    from tracpro.polls.models import Question
 
     # Save the associated Questions for this poll here
     # now that these polls have been activated for the Org
