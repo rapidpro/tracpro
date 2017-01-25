@@ -49,7 +49,7 @@ class TestPollTask(TracProTest):
 
         # Call the task to sync questions...
         sync_questions_categories(self.org, self.data)
-        # Two questions exist locallyi, one is new from the RapidPro API mock (flow_1.rulesets)
+        # Two questions exist locally, one is new from the RapidPro API mock (flow_1.rulesets)
         self.assertEqual(models.Question.objects.count(), 2)
         self.assertEqual(models.Question.objects.first().ruleset_uuid, 'goodquestion')
         self.assertEqual(models.Question.objects.last().ruleset_uuid, 'newquestion')
