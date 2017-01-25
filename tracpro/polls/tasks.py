@@ -1,5 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
+from collections import OrderedDict
+
 from django.apps import apps
 from django.utils import timezone
 
@@ -13,7 +15,6 @@ from dash.utils import datetime_to_ms
 
 from tracpro.contacts.models import Contact
 from tracpro.orgs_ext.tasks import OrgTask
-
 
 logger = get_task_logger(__name__)
 
@@ -130,3 +131,35 @@ class SyncOrgPolls(OrgTask):
         are no longer on the remote.
         """
         apps.get_model('polls', 'Poll').objects.sync(org)
+
+
+@task
+def sync_questions_categories(org, polls):
+    # Create new or update SELECTED Polls to match RapidPro data.
+    from tracpro.polls.models import Question
+
+    # Save the associated Questions for this poll here
+    # now that these polls have been activated for the Org
+    selected_poll_names = [poll.name for poll in polls]
+
+    temba_polls = org.get_temba_client().get_flows(archived=False)
+    temba_polls = {p.uuid: p for p in temba_polls}
+
+    total_polls = len(polls)
+    logger.info(
+        "Retrieving Questions and Categories for %d Poll(s) that were recently updated via the interface." %
+        (total_polls))
+    for temba_poll in temba_polls.values():
+        if temba_poll.name in selected_poll_names:
+            poll = polls[selected_poll_names.index(temba_poll.name)]
+            # Sync related Questions, and maintain question order.
+            temba_questions = OrderedDict((r.uuid, r) for r in temba_poll.rulesets)
+
+            # Remove Questions that are no longer on RapidPro.
+            poll.questions.exclude(ruleset_uuid__in=temba_questions.keys()).delete()
+
+            # Create new or update existing Questions to match RapidPro data.
+            for order, temba_question in enumerate(temba_questions.values(), 1):
+                Question.objects.from_temba(poll, temba_question, order)
+
+    logger.info("Completed retrieving Questions and Categories for %d Poll(s)." % (total_polls))

@@ -122,17 +122,6 @@ class TestPollManager(TracProTest):
 
         self.assertEqual(models.Poll.objects.count(), 0)
 
-    def test_sync__delete_non_existant_question(self):
-        org = factories.Org()
-        poll = factories.Poll(org=org)
-        question = factories.Question(poll=poll)  # noqa
-        flow = factories.TembaFlow(uuid=poll.flow_uuid)  # no questions
-        self.mock_temba_client.get_flows.return_value = [flow]
-        models.Poll.objects.sync(org)
-
-        self.assertEqual(models.Poll.objects.count(), 1)
-        self.assertEqual(models.Question.objects.count(), 0)
-
     @mock.patch('tracpro.polls.models.Question.objects.from_temba')
     def test_sync__add_new(self, mock_question_from_temba):
         """Sync should create an inactive poll to track a new flow."""
@@ -149,18 +138,13 @@ class TestPollManager(TracProTest):
         self.assertEqual(poll.rapidpro_name, flow.name)
         self.assertEqual(poll.name, flow.name)
 
-        self.assertEqual(mock_question_from_temba.call_count, 1)
-
     def test_sync__update_existing(self):
         """Sync should update existing objects if they have changed on RapidPro."""
         self.mock_temba_client.get_flow_definition.return_value = factories.TembaFlowDefinition()
 
         org = factories.Org()
         poll = factories.Poll(org=org, is_active=True)
-        question = factories.Question(poll=poll)
         flow = factories.TembaFlow(uuid=poll.flow_uuid)
-        ruleset = factories.TembaRuleSet(uuid=question.ruleset_uuid)
-        flow.rulesets = [ruleset]
         self.mock_temba_client.get_flows.return_value = [flow]
         models.Poll.objects.sync(org)
 
@@ -171,14 +155,6 @@ class TestPollManager(TracProTest):
         self.assertEqual(poll.rapidpro_name, flow.name)
         self.assertEqual(poll.name, flow.name)
         self.assertTrue(poll.is_active)
-
-        self.assertEqual(models.Question.objects.count(), 1)
-        question = models.Question.objects.get()
-        self.assertEqual(question.poll, poll)
-        self.assertEqual(question.ruleset_uuid, ruleset.uuid)
-        self.assertEqual(question.rapidpro_name, ruleset.label)
-        self.assertEqual(question.name, ruleset.label)
-        self.assertEqual(question.order, 1)
 
 
 class TestPoll(TracProTest):

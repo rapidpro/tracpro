@@ -176,9 +176,9 @@ SITE_DATE_FORMAT = r'%b %d, %Y'
 
 SITE_ID = 1
 
-STATICFILES_DIRS = (
+STATICFILES_DIRS = [
     os.path.join(PROJECT_ROOT, 'tracpro', 'static'),
-)
+]
 
 STATIC_ROOT = os.path.join(PROJECT_ROOT, 'public', 'static')
 
@@ -206,9 +206,9 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'tracpro.groups.context_processors.show_subregions_toggle_form',
 )
 
-TEMPLATE_DIRS = (
+TEMPLATE_DIRS = [
     os.path.join(PROJECT_ROOT, 'tracpro', 'templates'),
-)
+]
 
 TEMPLATE_LOADERS = (
     'django.template.loaders.filesystem.Loader',

@@ -1,6 +1,6 @@
 from __future__ import absolute_import, unicode_literals
 
-from collections import Counter, OrderedDict
+from collections import Counter
 from itertools import chain, groupby
 import json
 from operator import itemgetter
@@ -45,17 +45,6 @@ class PollManager(models.Manager.from_queryset(PollQuerySet)):
 
         poll.save()
 
-        # Sync related Questions, and maintain question order.
-        temba_questions = temba_poll.rulesets
-        temba_questions = OrderedDict((r.uuid, r) for r in temba_poll.rulesets)
-
-        # Remove Questions that are no longer on RapidPro.
-        poll.questions.exclude(ruleset_uuid__in=temba_questions.keys()).delete()
-
-        # Create new or update existing Questions to match RapidPro data.
-        for order, temba_question in enumerate(temba_questions.values(), 1):
-            Question.objects.from_temba(poll, temba_question, order)
-
         return poll
 
     @transaction.atomic
@@ -74,7 +63,7 @@ class PollManager(models.Manager.from_queryset(PollQuerySet)):
         org.polls.exclude(flow_uuid__in=uuids).update(is_active=False)
 
     def sync(self, org):
-        """Update the org's Polls and Questions from RapidPro."""
+        """Update the org's Polls from RapidPro."""
         # Retrieve current Polls known to RapidPro.
         temba_polls = org.get_temba_client().get_flows(archived=False)
         temba_polls = {p.uuid: p for p in temba_polls}

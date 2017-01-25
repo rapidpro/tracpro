@@ -11,10 +11,6 @@ ENVIRONMENT = from_env('ENVIRONMENT').lower()
 
 WEBSERVER_ROOT = '/var/www/tracpro/'
 
-ADMINS = [
-    ('Caktus EduTrac Team', 'edutrac-team@caktusgroup.com'),
-]
-
 ALLOWED_HOSTS = [".{}".format(DOMAIN)]
 
 CACHES['default']['LOCATION'] = 'localhost:6379:4'
@@ -76,8 +72,19 @@ SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
 
 STATIC_ROOT = os.path.join(WEBSERVER_ROOT, 'public', 'static')
 
+if from_env('CUSTOM_STATICFILES_DIR'):
+    STATICFILES_DIRS.insert(0, from_env('CUSTOM_STATICFILES_DIR'))
+
+if from_env('CUSTOM_TEMPLATE_DIR'):
+    TEMPLATE_DIRS.insert(0, from_env('CUSTOM_TEMPLATE_DIR'))
+
 if ENVIRONMENT.endswith('production'):
     EMAIL_SUBJECT_PREFIX = '[Edutrac] '
 else:
     env_type = ENVIRONMENT.rsplit("_", 1)[-1]  # edutrac_staging -> staging
     EMAIL_SUBJECT_PREFIX = '[Edutrac {}] '.format(env_type.title())
+
+if ENVIRONMENT != 'local':
+    ADMINS = [
+        ('Caktus EduTrac Team', 'edutrac-team@caktusgroup.com'),
+    ]

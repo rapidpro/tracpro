@@ -15,6 +15,7 @@ TracPro was built for UNICEF by `Nyaruka <http://nyaruka.com/>`_ and is currentl
    users/technical-overview.rst
    users/getting-started.rst
    users/question-types.rst
+   users/designing-flows.rst
 
 .. toctree::
    :maxdepth: 2
@@ -30,12 +31,3 @@ TracPro was built for UNICEF by `Nyaruka <http://nyaruka.com/>`_ and is currentl
 
    releases/changelog.rst
    releases/deployment-process.rst
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Servers and Provisioning
-
-   servers/fabric.rst
-   servers/provisioning.rst
-   servers/server-setup.rst
-   servers/vagrant.rst
