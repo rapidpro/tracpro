@@ -12,7 +12,7 @@ from django.utils.translation import ugettext_lazy as _
 from smartmin.views import (
     SmartCRUDL, SmartCreateView, SmartListView, SmartReadView, SmartUpdateView)
 
-from .forms import UserForm
+from .forms import UserForm, UserFormWithSuperuser
 
 
 class UserFormMixin(object):
@@ -186,7 +186,7 @@ class UserCRUDL(SmartCRUDL):
 
 class ManageUserCRUDL(SmartCRUDL):
     """
-    CRUDL used only by superusers to manage users outside the context of an organization
+    CRUDL used *only by superusers* to manage users outside the context of an organization
     """
     model = User
     model_name = 'Admin'
@@ -194,21 +194,24 @@ class ManageUserCRUDL(SmartCRUDL):
     actions = ('create', 'update', 'list')
 
     class Create(OrgPermsMixin, UserFormMixin, SmartCreateView):
-        fields = ('full_name', 'email', 'password', 'confirm_password', 'change_password')
-        form_class = UserForm
+        fields = ('full_name', 'email', 'password', 'confirm_password', 'change_password', 'is_superuser')
+        form_class = UserFormWithSuperuser
 
         def save(self, obj):
             full_name = self.form.cleaned_data['full_name']
             password = self.form.cleaned_data['password']
             change_password = self.form.cleaned_data['change_password']
-            self.object = User.create(None, full_name, obj.email, password, change_password)
+            is_superuser = self.form.cleaned_data['is_superuser']
+            self.object = User.create(
+                org=None, full_name=full_name, email=obj.email,
+                password=password, change_password=change_password, is_superuser=is_superuser)
 
     class Update(OrgPermsMixin, UserFormMixin, SmartUpdateView):
-        fields = ('full_name', 'email', 'new_password', 'confirm_password', 'is_active')
-        form_class = UserForm
+        fields = ('full_name', 'email', 'new_password', 'confirm_password', 'is_active', 'is_superuser')
+        form_class = UserFormWithSuperuser
 
     class List(UserFieldsMixin, SmartListView):
-        fields = ('full_name', 'email', 'orgs')
+        fields = ('full_name', 'email', 'orgs', 'is_superuser')
         default_order = ('profile__full_name',)
         select_related = ('profile',)
 
