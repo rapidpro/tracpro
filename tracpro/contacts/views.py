@@ -6,7 +6,7 @@ import pycountry
 
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from dash.utils import get_obj_cacheable
-from dash.utils.sync import ChangeType
+#from dash.utils.sync import ChangeType
 
 from django.http import JsonResponse
 from django.utils.translation import ugettext_lazy as _
@@ -87,7 +87,7 @@ class ContactCRUDL(SmartCRUDL):
 
         def post_save(self, obj):
             obj = super(ContactCRUDL.Update, self).post_save(obj)
-            obj.push(ChangeType.updated)
+            #obj.push(ChangeType.updated)
             return obj
 
     class Read(OrgObjPermsMixin, ContactFieldsMixin, ContactBase, SmartReadView):

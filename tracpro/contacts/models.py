@@ -16,7 +16,7 @@ from django.utils.text import force_text
 from django.utils.translation import ugettext_lazy as _
 
 from dash.utils import datetime_to_ms
-from dash.utils.sync import ChangeType, sync_pull_contacts
+#from dash.utils.sync import ChangeType, sync_pull_contacts
 
 from temba_client.types import Contact as TembaContact
 
@@ -52,20 +52,20 @@ class ContactManager(models.Manager.from_queryset(ContactQuerySet)):
         sync_regions = [r.uuid for r in Region.get_all(org)]
         sync_groups = [g.uuid for g in Group.get_all(org)]
 
-        created, updated, deleted, failed = sync_pull_contacts(
-            org=org, contact_class=Contact, fields=(), delete_blocked=True,
-            groups=sync_regions + sync_groups,
-            last_time=most_recent.temba_modified_on if most_recent else None)
+        #created, updated, deleted, failed = sync_pull_contacts(
+        #    org=org, contact_class=Contact, fields=(), delete_blocked=True,
+        #    groups=sync_regions + sync_groups,
+        #    last_time=most_recent.temba_modified_on if most_recent else None)
 
-        org.set_task_result(TaskType.sync_contacts, {
-            'time': datetime_to_ms(timezone.now()),
-            'counts': {
-                'created': len(created),
-                'updated': len(updated),
-                'deleted': len(deleted),
-                'failed': len(failed),
-            },
-        })
+        #org.set_task_result(TaskType.sync_contacts, {
+        #    'time': datetime_to_ms(timezone.now()),
+        #    'counts': {
+        #        'created': len(created),
+        #        'updated': len(updated),
+        #        'deleted': len(deleted),
+        #        'failed': len(failed),
+        #    },
+        #})
 
 
 @python_2_unicode_compatible
@@ -149,7 +149,7 @@ class Contact(models.Model):
         """Deactivate the local copy & delete from RapidPro."""
         self.is_active = False
         self.save()
-        self.push(ChangeType.deleted)
+        #self.push(ChangeType.deleted)
 
     @classmethod
     def get_or_fetch(cls, org, uuid):
@@ -237,7 +237,8 @@ class Contact(models.Model):
         contact = super(Contact, self).save(*args, **kwargs)
 
         if push_created:
-            self.push(ChangeType.created)
+            #self.push(ChangeType.created)
+            print('test')
 
         return contact
 
