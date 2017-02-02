@@ -6,6 +6,7 @@ import logging
 from celery import signature
 from celery.exceptions import SoftTimeLimitExceeded
 from celery.utils.log import get_task_logger
+from dash.orgs.models import Org
 
 from django.apps import apps
 from django.conf import settings
@@ -13,7 +14,7 @@ from django.core.cache import cache
 from django.core.mail import send_mail
 from django.utils import timezone
 
-from djcelery_transactions import PostTransactionTask
+from djcelery_transactions import PostTransactionTask, task
 
 from temba_client.base import TembaAPIError
 from temba_client.utils import parse_iso8601, format_iso8601
@@ -229,3 +230,57 @@ class OrgTask(WrapCacheMixin, WrapLoggerMixin, PostTransactionTask):
         kwargs.setdefault('org', org.name)
         msg = "{task} for {org}: " + msg
         return super(OrgTask, self).wrap_logger(level, msg, *args, **kwargs)
+
+
+@task(ignore_result=True)
+def fetch_runs(org_id, since):
+    """
+    Fetch responses for the org with id=org_id, going back
+    to `since` (datetime).
+
+    Creates or updates Response objects for each run.
+    """
+    from tracpro.polls.models import Poll, Response  # Avoid circular imports
+
+    logger.debug("Running fetch_runs")
+
+    try:
+        org = Org.objects.get(id=org_id)
+    except Org.DoesNotExist:
+        raise ValueError("No such org with id %d" % org_id)
+    #
+    # if not any([days, hours, minutes]):
+    #     raise ValueError("At least one of days, hours, or minutes must be non-zero")
+    #
+    # since = timezone.now() - relativedelta(minutes=minutes, hours=hours, days=days)
+
+    # These will show up on stdout when this is called from the management command
+    logger.info('Fetching responses for org %s since %s...' % (org.name, since.strftime('%b %d, %Y %H:%M')))
+
+    client = org.get_temba_client()
+
+    polls_by_flow_uuids = {p.flow_uuid: p for p in Poll.objects.active().by_org(org)}
+
+    runs = client.get_runs(flows=polls_by_flow_uuids.keys(), after=since)
+
+    logger.info("Fetched %d runs for org %s" % (len(runs), org.id))
+
+    created = 0
+    updated = 0
+    for run in runs:
+        if run.flow not in polls_by_flow_uuids:
+            continue  # Response is for a Poll not tracked for this org.
+
+        poll = polls_by_flow_uuids[run.flow]
+        try:
+            response = Response.from_run(org, run, poll=poll)
+        except ValueError as e:
+            logger.error("Unable to save run #%d due to error: %s" % (run.id, e.message))
+            continue
+
+        if getattr(response, 'is_new', False):
+            created += 1
+        else:
+            updated += 1
+
+    logger.info("Created %d new responses and updated %d existing responses." % (created, updated))

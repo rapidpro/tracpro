@@ -3,8 +3,10 @@ from __future__ import unicode_literals
 import mock
 
 from django.core.exceptions import NON_FIELD_ERRORS
+from django.test import TestCase
 from django.test import override_settings
 
+from tracpro.orgs_ext.forms import FetchRunsForm
 from tracpro.test import factories
 from tracpro.test.cases import TracProTest
 
@@ -153,3 +155,35 @@ class TestOrgExtForm(TracProTest):
         self.assertEqual(form.errors[NON_FIELD_ERRORS],
                          ['Default language must be one of the languages '
                           'available for this organization.'])
+
+
+class FetchRunsFormTest(TestCase):
+    def test_no_input(self):
+        # Should fail to validate
+        form = FetchRunsForm(data={})
+        self.assertFalse(form.is_valid())
+        self.assertIn('__all__', form.errors)
+
+    def test_all_zeroes(self):
+        # Should fail to validate
+        form = FetchRunsForm(data={'days': '0', 'hours': '0', 'minutes': '0'})
+        self.assertFalse(form.is_valid())
+        self.assertIn('__all__', form.errors)
+
+    def test_non_numeric(self):
+        # Should fail to validate
+        form = FetchRunsForm(data={'days': 'zero', 'hours': '0', 'minutes': '0'})
+        self.assertFalse(form.is_valid())
+        self.assertIn('days', form.errors)
+
+    def test_non_integer(self):
+        # should fail to validate
+        form = FetchRunsForm(data={'days': '1.1', 'hours': '12', 'minutes': '33'})
+        self.assertFalse(form.is_valid())
+        self.assertIn('days', form.errors)
+
+    def test_some_numbers(self):
+        # should validate, return integers
+        form = FetchRunsForm(data={'days': '1', 'hours': '12', 'minutes': '33'})
+        self.assertTrue(form.is_valid())
+        self.assertEqual({'days': 1, 'hours': 12, 'minutes': 33}, form.cleaned_data)

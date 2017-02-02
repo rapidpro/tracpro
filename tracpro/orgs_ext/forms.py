@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 from dash.orgs.forms import OrgForm
+from django.core.exceptions import ValidationError
 
 from temba_client.base import TembaAPIError
 
@@ -96,3 +97,15 @@ class OrgExtForm(OrgForm):
             self.instance._visible_data_fields = self.cleaned_data.get('contact_fields')
 
         return super(OrgExtForm, self).save(*args, **kwargs)
+
+
+class FetchRunsForm(forms.Form):
+    days = forms.IntegerField(required=False)
+    hours = forms.IntegerField(required=False)
+    minutes = forms.IntegerField(required=False)
+
+    def clean(self):
+        data = self.cleaned_data
+        if not any(data.get(name, False) for name in ['days', 'hours', 'minutes']):
+            raise ValidationError(_("Specify at least one of days, hours, or minutes"))
+        return data
