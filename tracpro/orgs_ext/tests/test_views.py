@@ -2,7 +2,6 @@ from __future__ import absolute_import, unicode_literals
 
 import datetime
 from django.conf import settings
-from django.contrib.auth.models import Permission, User
 from django.core.urlresolvers import reverse
 import mock
 from django.utils import timezone
@@ -24,23 +23,21 @@ class FetchRunsViewTest(TracProDataTest):
 
     def setUp(self):
         super(FetchRunsViewTest, self).setUp()
-        self.edit_perm = Permission.objects.get(codename='org_edit')
-        self.admin.user_permissions.add(self.edit_perm)
-        self.assertTrue(self.admin.has_perm('orgs.org_edit'))
-        self.login(self.admin)
+        self.login(self.superuser)
 
     def test_get(self):
         response = self.url_get('unicef', reverse(self.url_name))
         self.assertEqual(response.status_code, 200)
 
-    def test_get_without_permission(self):
-        self.admin.user_permissions.remove(self.edit_perm)
-        # Perms are cached after we've called has_perm once, so refresh
-        # our copy of self.admin so we can double-check the permission is
-        # gone again:
-        self.admin = User.objects.get(pk=self.admin.pk)
-        self.assertFalse(self.admin.has_perm('orgs.org_edit'))
+    def test_get_not_logged_in(self):
+        self.client.logout()
+        response = self.url_get('unicef', reverse(self.url_name))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(settings.LOGIN_URL + "?next", response['Location'])
 
+    def test_get_not_superuser(self):
+        self.client.logout()
+        self.login(self.admin)
         response = self.url_get('unicef', reverse(self.url_name))
         self.assertEqual(response.status_code, 302)
         self.assertIn(settings.LOGIN_URL + "?next", response['Location'])
