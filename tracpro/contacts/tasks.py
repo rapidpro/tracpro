@@ -5,9 +5,8 @@ from django.apps import apps
 from celery.utils.log import get_task_logger
 from djcelery_transactions import task
 
-#from dash.utils.sync import sync_push_contact
-
 from tracpro.orgs_ext.tasks import OrgTask
+from tracpro.contacts.utils import sync_push_contact
 
 
 logger = get_task_logger(__name__)
@@ -29,7 +28,7 @@ def push_contact_change(contact_id, change_type):
     region_uuids = set([r.uuid for r in Region.get_all(org)])
     group_uuids = set([r.uuid for r in Group.get_all(org)])
 
-    #sync_push_contact(org, contact, change_type, [region_uuids, group_uuids])
+    sync_push_contact(org, contact, change_type, [region_uuids, group_uuids])
 
 
 class SyncOrgContacts(OrgTask):

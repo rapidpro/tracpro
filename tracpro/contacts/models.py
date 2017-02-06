@@ -156,7 +156,7 @@ class Contact(models.Model):
         """Deactivate the local copy & delete from RapidPro."""
         self.is_active = False
         self.save()
-        #self.push(ChangeType.deleted)
+        self.push(ChangeType.deleted)
 
     @classmethod
     def get_or_fetch(cls, org, uuid):
@@ -196,13 +196,10 @@ class Contact(models.Model):
         # Use the first Temba group that matches one of the org's Regions.
         region = _get_first(Region, temba_contact.groups)
         if not region:
-            import ipdb; ipdb.set_trace()
             raise ValueError(
                 "Unable to save contact {c.uuid} ({c.name}) because none of "
-                "their groups match an active Region for this org: "
-                "{groups}".format(
-                    c=temba_contact,
-                    groups=', '.join(temba_contact.groups)))
+                "their groups match an active Region for this org.".format(
+                    c=temba_contact))
 
         # Use the first Temba group that matches one of the org's Groups.
         group = _get_first(Group, temba_contact.groups)
@@ -245,8 +242,7 @@ class Contact(models.Model):
         contact = super(Contact, self).save(*args, **kwargs)
 
         if push_created:
-            #self.push(ChangeType.created)
-            print('test')
+            self.push(ChangeType.created)
 
         return contact
 
