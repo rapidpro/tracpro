@@ -27,6 +27,12 @@ class Contact(factory_utils.SmartModelFactory):
         from tracpro.test.factories import Region
         return Region(org=self.org)
 
+    @factory.post_generation
+    def groups(self, create, extracted, **kwargs):
+        if create and extracted:
+            # A list of groups were passed in, use them
+            self.groups.add(*extracted)
+
 
 class TwitterContact(Contact):
     urn = factory.Sequence(lambda n: "twitter:contact" + str(n))
