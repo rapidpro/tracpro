@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 
 from dash.orgs.forms import OrgForm
-from django.core.exceptions import ValidationError
 
 from temba_client.base import TembaAPIError
 

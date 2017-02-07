@@ -289,11 +289,13 @@ def fetch_runs(org_id, since, email=None):
         else:
             updated += 1
 
-    log(_("Created {created} new responses and updated {updated} existing responses.").format(created=created, updated=updated))
+    log(_("Created {created} new responses and updated {updated} existing responses.")
+        .format(created=created, updated=updated))
 
     if email:
         send_mail(
-            subject=_("Results from fetching runs for organization {org_name} since {time}").format(org_name=org.name, time=since.strftime('%b %d, %Y %H:%M')),
+            subject=(_("Results from fetching runs for organization {org_name} since {time}")
+                     .format(org_name=org.name, time=since.strftime('%b %d, %Y %H:%M'))),
             message="\n".join(messages) + "\n",
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[email],
