@@ -37,20 +37,13 @@ There won't be much to see until you tell TracPro about which flows and groups t
 Fetching old runs
 ------------------
 
-If a new poll is added, TracPro will only track runs made after the poll has been added. If you need to fetch older runs, then there is a management task which allows you to do this. The command takes two parameters:
+If a new poll is added, TracPro will only track runs made after the poll has been added.
+If you need to fetch older runs, then there is a button which allows you to do this.
 
-#. The database id of the organization
-#. A number of minutes, hours or days::
-
-    # fetches all runs for org #1 made in the last 45 minutes
-    $ ./manage.py fetchruns 1 --minutes=45
-
-    # fetches all runs for org #2 made in the last 6 hours
-    $ ./manage.py fetchruns 2 --hours=6
-
-    # fetches all runs for org #3 made in the last 2 days (48 hours)
-    $ ./manage.py fetchruns 3 --days=2
-
+ * Navigate to `http://SUBDOMAIN.yourtracprodomain/`.
+ * Navigate to **Administration** > **Organization** and click **Fetch runs** (on the right side near the top).
+ * Enter how many days in the past the fetch should go. For example, to fetch runs from the last two weeks, enter 14.
+ * Click **Submit**.
 
 **One should use this command with caution as it could potentially try to download a very high number of runs**
 

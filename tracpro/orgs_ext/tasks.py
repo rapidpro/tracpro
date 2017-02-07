@@ -13,6 +13,7 @@ from django.conf import settings
 from django.core.cache import cache
 from django.core.mail import send_mail
 from django.utils import timezone
+from django.utils.translation import ugettext_lazy as _
 
 from djcelery_transactions import PostTransactionTask, task
 
@@ -233,29 +234,34 @@ class OrgTask(WrapCacheMixin, WrapLoggerMixin, PostTransactionTask):
 
 
 @task(ignore_result=True)
-def fetch_runs(org_id, since):
+def fetch_runs(org_id, since, email=None):
     """
     Fetch responses for the org with id=org_id, going back
     to `since` (datetime).
 
     Creates or updates Response objects for each run.
+
+    If `email` is provided, an email is sent to that address at the end to
+    report the results.
     """
     from tracpro.polls.models import Poll, Response  # Avoid circular imports
-
-    logger.debug("Running fetch_runs")
 
     try:
         org = Org.objects.get(id=org_id)
     except Org.DoesNotExist:
         raise ValueError("No such org with id %d" % org_id)
-    #
-    # if not any([days, hours, minutes]):
-    #     raise ValueError("At least one of days, hours, or minutes must be non-zero")
-    #
-    # since = timezone.now() - relativedelta(minutes=minutes, hours=hours, days=days)
+
+    # Collect our log messages so we can email them at the end if we want to.
+    messages = []
+
+    def log(s):
+        messages.append(s)
+        logger.info(s)
 
     # These will show up on stdout when this is called from the management command
-    logger.info('Fetching responses for org %s since %s...' % (org.name, since.strftime('%b %d, %Y %H:%M')))
+    # (without an `email`).
+    log(_('Fetching responses for org {org_name} since {time}.')
+        .format(org_name=org.name, time=since.strftime('%b %d, %Y %H:%M')))
 
     client = org.get_temba_client()
 
@@ -263,7 +269,7 @@ def fetch_runs(org_id, since):
 
     runs = client.get_runs(flows=polls_by_flow_uuids.keys(), after=since)
 
-    logger.info("Fetched %d runs for org %s" % (len(runs), org.id))
+    log(_("Fetched {num} runs for org {org_name}.").format(num=len(runs), org_name=org.name))
 
     created = 0
     updated = 0
@@ -275,7 +281,7 @@ def fetch_runs(org_id, since):
         try:
             response = Response.from_run(org, run, poll=poll)
         except ValueError as e:
-            logger.error("Unable to save run #%d due to error: %s" % (run.id, e.message))
+            log(_("Unable to save run #{num} due to error: {message}.").format(num=run.id, message=e.message))
             continue
 
         if getattr(response, 'is_new', False):
@@ -283,4 +289,12 @@ def fetch_runs(org_id, since):
         else:
             updated += 1
 
-    logger.info("Created %d new responses and updated %d existing responses." % (created, updated))
+    log(_("Created {created} new responses and updated {updated} existing responses.").format(created=created, updated=updated))
+
+    if email:
+        send_mail(
+            subject=_("Results from fetching runs for organization {org_name} since {time}").format(org_name=org.name, time=since.strftime('%b %d, %Y %H:%M')),
+            message="\n".join(messages) + "\n",
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[email],
+            fail_silently=True)

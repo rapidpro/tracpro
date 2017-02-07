@@ -49,18 +49,18 @@ class FetchRunsViewTest(TracProDataTest):
             data={}
         )
         self.assertEqual(response.status_code, 200)
-        self.assertFormError(response, 'form', None, [u'Specify at least one of days, hours, or minutes'])
+        self.assertFormError(response, 'form', 'days', [u'This field is required.'])
 
     def test_post_bad_data(self):
         response = self.url_post(
             'unicef',
             reverse(self.url_name),
             data={
-                'hours': 'three'
+                'days': 'three'
             }
         )
         self.assertEqual(response.status_code, 200)
-        self.assertFormError(response, 'form', 'hours', [u'Enter a whole number.'])
+        self.assertFormError(response, 'form', 'days', [u'Enter a whole number.'])
 
     @mock.patch('tracpro.orgs_ext.views.tasks.fetch_runs.delay')
     def test_post_good_data(self, mock_fetchruns):
@@ -75,7 +75,7 @@ class FetchRunsViewTest(TracProDataTest):
         if response.status_code != 302:
             self.assertFalse(response.context['form'].errors)
         self.assertEqual(response.status_code, 302)
-        mock_fetchruns.assert_called_with(self.unicef.id, mock.ANY)
+        mock_fetchruns.assert_called_with(self.unicef.id, mock.ANY, self.superuser.email)
         args, kwargs = mock_fetchruns.call_args
         since_arg = args[1]
         self.assertEqual(

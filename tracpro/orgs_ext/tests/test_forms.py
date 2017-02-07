@@ -162,28 +162,28 @@ class FetchRunsFormTest(TestCase):
         # Should fail to validate
         form = FetchRunsForm(data={})
         self.assertFalse(form.is_valid())
-        self.assertIn('__all__', form.errors)
+        self.assertIn('days', form.errors)
 
     def test_all_zeroes(self):
         # Should fail to validate
-        form = FetchRunsForm(data={'days': '0', 'hours': '0', 'minutes': '0'})
+        form = FetchRunsForm(data={'days': '0'})
         self.assertFalse(form.is_valid())
-        self.assertIn('__all__', form.errors)
+        self.assertIn('days', form.errors)
 
     def test_non_numeric(self):
         # Should fail to validate
-        form = FetchRunsForm(data={'days': 'zero', 'hours': '0', 'minutes': '0'})
+        form = FetchRunsForm(data={'days': 'zero'})
         self.assertFalse(form.is_valid())
         self.assertIn('days', form.errors)
 
     def test_non_integer(self):
         # should fail to validate
-        form = FetchRunsForm(data={'days': '1.1', 'hours': '12', 'minutes': '33'})
+        form = FetchRunsForm(data={'days': '1.1'})
         self.assertFalse(form.is_valid())
         self.assertIn('days', form.errors)
 
     def test_some_numbers(self):
         # should validate, return integers
-        form = FetchRunsForm(data={'days': '1', 'hours': '12', 'minutes': '33'})
+        form = FetchRunsForm(data={'days': '1'})
         self.assertTrue(form.is_valid())
-        self.assertEqual({'days': 1, 'hours': 12, 'minutes': 33}, form.cleaned_data)
+        self.assertEqual({'days': 1}, form.cleaned_data)

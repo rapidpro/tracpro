@@ -82,16 +82,16 @@ class OrgExtCRUDL(OrgCRUDL):
         # isn't a valid permission name, it'll always be false for non superuser.
         # If there's a real way to require superuser in SmartView, I'm all ears.
         permission = 'must be superuser'
-        success_message = _("Scheduled a fetch in the background")
+        success_url = '@orgs_ext.org_home'
         title = _("Fetch past runs for my organization")
 
         def form_valid(self, form):
             org = self.get_object()
-            howfarback = relativedelta(
-                minutes=form.cleaned_data.get('minutes') or 0,
-                hours=form.cleaned_data.get('hours') or 0,
-                days=form.cleaned_data.get('days') or 0)
+            howfarback = relativedelta(days=form.cleaned_data['days'])
             since = timezone.now() - howfarback
-            tasks.fetch_runs.delay(org.id, since)
-            messages.success(self.request, self.derive_success_message())
+            email = self.request.user.email
+            tasks.fetch_runs.delay(org.id, since, email)
+            success_message = _("We have scheduled a fetch in the background. An email will be "
+                                "sent to {email} when the fetch has completed.").format(email=email)
+            messages.success(self.request, success_message)
             return super(SmartFormView, self).form_valid(form)
