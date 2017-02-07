@@ -65,7 +65,7 @@ class PollManager(models.Manager.from_queryset(PollQuerySet)):
     def sync(self, org):
         """Update the org's Polls from RapidPro."""
         # Retrieve current Polls known to RapidPro.
-        temba_polls = org.get_temba_client(api_version=2).get_flows().all() # archived=False
+        temba_polls = org.get_temba_client(api_version=2).get_flows().all()
         temba_polls = {p.uuid: p for p in temba_polls}
 
         # Remove Polls that are no longer on RapidPro.

@@ -90,6 +90,7 @@ def sync_pull_contacts(org, contact_class, fields=None, groups=None,
 
     return created_uuids, updated_uuids, deleted_uuids, failed_uuids
 
+
 def temba_compare_contacts(first, second, fields=None, groups=None):
     """
     Compares two Temba contacts to determine if there are differences. Returns
@@ -118,6 +119,7 @@ def temba_compare_contacts(first, second, fields=None, groups=None):
         return 'fields'
 
     return None
+
 
 def sync_push_contact(org, contact, change_type, mutex_group_sets):
     """
@@ -164,16 +166,17 @@ def sync_push_contact(org, contact, change_type, mutex_group_sets):
 
             try:
                 client.update_contact(contact=merged_contact.uuid,
-                                  name=merged_contact.name,
-                                  language=merged_contact.language,
-                                  urns=merged_contact.urns,
-                                  fields=merged_contact.fields,
-                                  groups=merged_contact.groups)
+                                      name=merged_contact.name,
+                                      language=merged_contact.language,
+                                      urns=merged_contact.urns,
+                                      fields=merged_contact.fields,
+                                      groups=merged_contact.groups)
             except TembaBadRequestError as e:
                 temba_err_msg = ''
                 for key, value in e.errors.iteritems():
                     temba_err_msg += key + ': ' + value[0]
-                logger.warning("Unable to update contact %s on RapidPro. Error: %s" % (merged_contact.name, temba_err_msg))
+                logger.warning("Unable to update contact %s on RapidPro. Error: %s" %
+                               (merged_contact.name, temba_err_msg))
 
     elif change_type == ChangeType.deleted:
         try:
@@ -227,6 +230,7 @@ def temba_merge_contacts(first, second, mutex_group_sets):
     return TembaContact.create(uuid=first.uuid, name=first.name,
                                urns=merged_urns, fields=merged_fields, groups=merged_groups)
 
+
 def intersection(*args):
     """
     Return the intersection of lists, using the first list to determine item order
@@ -243,11 +247,13 @@ def intersection(*args):
         others = set(args[1]).intersection(*args[2:])
         return [e for e in base if e in others]
 
+
 def filter_dict(d, keys):
     """
     Creates a new dict from an existing dict that only has the given keys
     """
     return {k: v for k, v in six.iteritems(d) if k in keys}
+
 
 def union(*args):
     """
