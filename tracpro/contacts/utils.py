@@ -119,22 +119,6 @@ def temba_compare_contacts(first, second, fields=None, groups=None):
 
     return None
 
-def intersection(*args):
-    """
-    Return the intersection of lists, using the first list to determine item order
-    """
-    if not args:
-        return []
-
-    # remove duplicates from first list whilst preserving order
-    base = list(OrderedDict.fromkeys(args[0]))
-
-    if len(args) == 1:
-        return base
-    else:
-        others = set(args[1]).intersection(*args[2:])
-        return [e for e in base if e in others]
-
 def sync_push_contact(org, contact, change_type, mutex_group_sets):
     """
     Pushes a local change to a contact. mutex_group_sets is a list of UUID sets
@@ -242,6 +226,28 @@ def temba_merge_contacts(first, second, mutex_group_sets):
 
     return TembaContact.create(uuid=first.uuid, name=first.name,
                                urns=merged_urns, fields=merged_fields, groups=merged_groups)
+
+def intersection(*args):
+    """
+    Return the intersection of lists, using the first list to determine item order
+    """
+    if not args:
+        return []
+
+    # remove duplicates from first list whilst preserving order
+    base = list(OrderedDict.fromkeys(args[0]))
+
+    if len(args) == 1:
+        return base
+    else:
+        others = set(args[1]).intersection(*args[2:])
+        return [e for e in base if e in others]
+
+def filter_dict(d, keys):
+    """
+    Creates a new dict from an existing dict that only has the given keys
+    """
+    return {k: v for k, v in six.iteritems(d) if k in keys}
 
 def union(*args):
     """
