@@ -19,7 +19,7 @@ def send_message(message_id):
 
     message = Message.objects.select_related('org').get(pk=message_id)
 
-    client = message.org.get_temba_client()
+    client = message.org.get_temba_client(api_version=2)
 
     try:
         client.create_broadcast(message.text, contacts=[c.uuid for c in message.recipients.all()])
@@ -38,7 +38,7 @@ def send_message(message_id):
 @task
 def send_unsolicited_message(org, text, contact):
 
-    client = org.get_temba_client()
+    client = org.get_temba_client(api_version=2)
 
     try:
         client.create_broadcast(text, contacts=[contact.uuid])
@@ -55,15 +55,15 @@ class FetchOrgInboxMessages(OrgTask):
         from .models import InboxMessage
         from tracpro.contacts.models import Contact
 
-        client = org.get_temba_client()
+        client = org.get_temba_client(api_version=2)
 
         # Get non-archived, incoming inbox messages from the past week only
         # because getting all messages was taking too long
         last_week = timezone.now() - relativedelta(days=7)
-        inbox_messages = client.get_messages(_types="I", archived="N", after=last_week)
+        inbox_messages = client.get_messages(folder='inbox', after=last_week)
 
         for inbox_message in inbox_messages:
-            contact = Contact.objects.filter(uuid=inbox_message.contact).first()
+            contact = Contact.objects.filter(uuid=inbox_message.contact.uuid).first()
             # If the contact sync task hasn't gotten this contact yet,
             # don't get the message yet
             if contact:
@@ -74,9 +74,8 @@ class FetchOrgInboxMessages(OrgTask):
                         org=org,
                         contact=contact,
                         text=inbox_message.text,
-                        archived=inbox_message.archived,
+                        archived=False,
                         created_on=inbox_message.created_on,
-                        delivered_on=inbox_message.delivered_on,
                         sent_on=inbox_message.sent_on,
                         direction=inbox_message.direction,
                     )
@@ -86,9 +85,8 @@ class FetchOrgInboxMessages(OrgTask):
                         rapidpro_message_id=inbox_message.id,
                         contact=contact,
                         text=inbox_message.text,
-                        archived=inbox_message.archived,
+                        archived=False,
                         created_on=inbox_message.created_on,
-                        delivered_on=inbox_message.delivered_on,
                         sent_on=inbox_message.sent_on,
                         direction=inbox_message.direction,
                     )

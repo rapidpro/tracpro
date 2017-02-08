@@ -54,7 +54,7 @@ class AbstractGroup(models.Model):
             group.deactivate()
 
         # Fetch group details at once.
-        temba_groups = org.get_temba_client().get_groups()
+        temba_groups = org.get_temba_client(api_version=2).get_groups()
         temba_groups = {g.uuid: g.name for g in temba_groups}
 
         for uuid in uuids:
@@ -173,7 +173,7 @@ class BoundaryManager(models.Manager.from_queryset(BoundaryQuerySet)):
 
         Assumes that the boundary's parent, if any, has already been created.
         """
-        boundary, _ = self.get_or_create(org=org, rapidpro_uuid=temba_boundary.boundary)
+        boundary, _ = self.get_or_create(org=org, rapidpro_uuid=temba_boundary.osm_id)
         boundary.name = temba_boundary.name
         boundary.level = temba_boundary.level
         boundary.geometry = json.dumps(temba_boundary.geometry.serialize())
@@ -184,10 +184,10 @@ class BoundaryManager(models.Manager.from_queryset(BoundaryQuerySet)):
     def sync(self, org):
         """Update org Boundaries from RapidPro and delete ones that were removed."""
         # Retrieve current Boundaries known to RapidPro.
-        temba_boundaries = org.get_temba_client().get_boundaries()
+        temba_boundaries = org.get_temba_client(api_version=2).get_boundaries()
 
         # Remove Boundaries that are no longer on RapidPro.
-        uuids = [b.boundary for b in temba_boundaries]
+        uuids = [b.osm_id for b in temba_boundaries]
         Boundary.objects.by_org(org).exclude(rapidpro_uuid__in=uuids).delete()
 
         # Order boundaries from the highest level (country) to the lowest

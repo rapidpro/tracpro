@@ -16,8 +16,8 @@ class ContactGroupsForm(forms.Form):
         super(ContactGroupsForm, self).__init__(*args, **kwargs)
 
         # Retrieve Contact Group choices from RapidPro.
-        choices = [(group.uuid, "%s (%d)" % (group.name, group.size))
-                   for group in self.org.get_temba_client().get_groups()]
+        choices = [(group.uuid, "%s (%d)" % (group.name, group.count))
+                   for group in self.org.get_temba_client(api_version=2).get_groups()]
         self.fields['groups'].choices = choices
 
         # Set initial group values from the org.
