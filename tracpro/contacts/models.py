@@ -268,7 +268,7 @@ class DataFieldManager(models.Manager.from_queryset(DataFieldQuerySet)):
     def sync(self, org):
         """Update the org's DataFields from RapidPro."""
         # Retrieve current DataFields known to RapidPro.
-        temba_fields = {t.key: t for t in org.get_temba_client().get_fields()}
+        temba_fields = {t.key: t for t in org.get_temba_client(api_version=2).get_fields().all()}
 
         # Remove DataFields (and corresponding values per contact) that are no
         # longer on RapidPro.
