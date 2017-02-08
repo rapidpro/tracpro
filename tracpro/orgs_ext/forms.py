@@ -96,3 +96,7 @@ class OrgExtForm(OrgForm):
             self.instance._visible_data_fields = self.cleaned_data.get('contact_fields')
 
         return super(OrgExtForm, self).save(*args, **kwargs)
+
+
+class FetchRunsForm(forms.Form):
+    days = forms.IntegerField(initial=1, min_value=1)
