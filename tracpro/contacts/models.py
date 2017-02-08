@@ -168,7 +168,8 @@ class Contact(models.Model):
         try:
             return contacts.get(uuid=uuid)
         except cls.DoesNotExist:
-            temba_contact = org.get_temba_client().get_contact(uuid)
+            # If this contact does not exist locally, we need to call the RapidPro API to get it
+            temba_contact = org.get_temba_client(api_version=2).get_contacts(uuid=uuid).first()
             return cls.objects.create(**cls.kwargs_from_temba(org, temba_contact))
 
     def get_responses(self, include_empty=True):
@@ -192,7 +193,6 @@ class Contact(models.Model):
             tracpro_uuids = queryset.values_list('uuid', flat=True)
             uuid = next((uuid for uuid in temba_uuids if uuid in tracpro_uuids), None)
             return queryset.get(uuid=uuid) if uuid else None
-
         # Use the first Temba group that matches one of the org's Regions.
         region = _get_first(Region, temba_contact.groups)
         if not region:
