@@ -9,8 +9,8 @@ from temba_client.types import Contact as TembaContact
 
 from django.test.utils import override_settings
 from django.utils import timezone
-from dash.utils.sync import ChangeType
 
+from tracpro.contacts.models import ChangeType
 from tracpro.polls.models import Response
 from tracpro.test import factories
 from tracpro.test.cases import TracProDataTest, TracProTest
