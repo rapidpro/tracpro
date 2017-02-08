@@ -13,12 +13,13 @@ from django.db.models import Count, Q
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
+from temba_client.base import TembaObject, SimpleField, IntegerField
 
 from tracpro.contacts.models import Contact
 
 from . import rules
 from .tasks import pollrun_start
-from .utils import extract_words, natural_sort_key
+from .utils import extract_words, natural_sort_key, get_flow_definition
 
 
 class PollQuerySet(models.QuerySet):
@@ -116,11 +117,8 @@ class Poll(models.Model):
     def get_flow_definition(self):
         """Retrieve extra metadata about the RapidPro flow."""
         if not hasattr(self, '_flow_definition'):
-            # NOTE: Flow definition endpoint is not documented in the
-            # RapidPro API docs.
-            client = self.org.get_temba_client()
-            definition = client.get_flow_definition(self.flow_uuid)
-            self._flow_definition = definition
+            client = self.org.get_temba_client(api_version=2)
+            self._flow_definition = get_flow_definition(client, self.flow_uuid)
         return self._flow_definition
 
     def save(self, *args, **kwargs):
@@ -343,7 +341,10 @@ class PollRunManager(models.Manager.from_queryset(PollRunQuerySet)):
         """Create a poll run that is for all regions."""
         # Get the requested date in the org timezone
         for_date = for_date or timezone.now()
-        org_timezone = pytz.timezone(poll.org.timezone)
+        if isinstance(poll.org.timezone, basestring):
+            org_timezone = pytz.timezone(poll.org.timezone)
+        else:
+            org_timezone = poll.org.timezone
         for_local_date = for_date.astimezone(org_timezone).date()
 
         # look for a non-regional pollrun on that date
@@ -693,3 +694,21 @@ class Answer(models.Model):
         help_text=_("When this answer was submitted"))
 
     objects = AnswerManager()
+
+
+class FlowDefinition(TembaObject):
+    """This was removed from the v2 API Python library, but it's still useful."""
+    metadata = SimpleField()
+    version = IntegerField()
+    base_language = SimpleField()
+    flow_type = SimpleField()
+    action_sets = SimpleField()
+    rule_sets = SimpleField()
+    entry = SimpleField()
+
+
+class RuleSet(TembaObject):
+    """This was removed from the v2 API Python library, but it's still useful."""
+    uuid = SimpleField(src='node')
+    label = SimpleField()
+    response_type = SimpleField()

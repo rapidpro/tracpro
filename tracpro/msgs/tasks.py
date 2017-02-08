@@ -18,21 +18,25 @@ def send_message(message_id):
     from .models import Message, STATUS_SENT, STATUS_FAILED
 
     message = Message.objects.select_related('org').get(pk=message_id)
+    contacts = [c.uuid for c in message.recipients.all()]
 
     client = message.org.get_temba_client(api_version=2)
 
-    try:
-        client.create_broadcast(message.text, contacts=[c.uuid for c in message.recipients.all()])
+    # Can only send up to 100 messages at a time
+    while contacts:
+        try:
+            client.create_broadcast(message.text, contacts=contacts[:100])
+        except Exception:
+            message.status = STATUS_FAILED
+            message.save(update_fields=('status',))
 
-        message.status = STATUS_SENT
-        message.save(update_fields=('status',))
+            logger.error("Sending message %d failed" % message.pk, exc_info=1)
+            return
+        contacts = contacts[100:]
 
-        logger.info("Sent message %d from user #%d" % (message.pk, message.sent_by.pk))
-    except Exception:
-        message.status = STATUS_FAILED
-        message.save(update_fields=('status',))
-
-        logger.error("Sending message %d failed" % message.pk, exc_info=1)
+    logger.info("Sent message %d from user #%d" % (message.pk, message.sent_by.pk))
+    message.status = STATUS_SENT
+    message.save(update_fields=('status',))
 
 
 @task

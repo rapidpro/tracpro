@@ -31,7 +31,7 @@ class FetchOrgRuns(OrgTask):
         from tracpro.orgs_ext.constants import TaskType
         from tracpro.polls.models import Poll, PollRun, Response
 
-        client = org.get_temba_client()
+        client = org.get_temba_client(api_version=2)
         redis_connection = get_redis_connection()
         last_time_key = LAST_FETCHED_RUN_TIME_KEY % org.pk
         last_time = redis_connection.get(last_time_key)
@@ -81,7 +81,7 @@ def pollrun_start(pollrun_id):
         raise ValueError("Can't start non-regional poll")
 
     org = pollrun.poll.org
-    client = org.get_temba_client()
+    client = org.get_temba_client(api_version=2)
 
     contacts = Contact.objects.active()
     if pollrun.pollrun_type == PollRun.TYPE_PROPAGATED:
@@ -91,7 +91,9 @@ def pollrun_start(pollrun_id):
         contacts = contacts.filter(region=pollrun.region)
     contact_uuids = list(contacts.values_list('uuid', flat=True))
 
-    runs = client.create_runs(pollrun.poll.flow_uuid, contact_uuids, restart_participants=True)
+    runs = client.create_flow_start(
+        flow=pollrun.poll.flow_uuid, urns=None, contacts=contact_uuids, restart_participants=True)
+
     for run in runs:
         Response.create_empty(org, pollrun, run)
 
@@ -114,9 +116,10 @@ def pollrun_restart_participants(pollrun_id, contact_uuids):
         raise ValueError("Can only restart last pollrun of poll for a region")
 
     org = pollrun.poll.org
-    client = org.get_temba_client()
+    client = org.get_temba_client(api_version=2)
 
-    runs = client.create_runs(pollrun.poll.flow_uuid, contact_uuids, restart_participants=True)
+    runs = client.create_flow_start(
+        flow=pollrun.poll.flow_uuid, contacts=contact_uuids, restart_participants=True)
     for run in runs:
         Response.create_empty(org, pollrun, run)
 
@@ -142,7 +145,7 @@ def sync_questions_categories(org, polls):
     # now that these polls have been activated for the Org
     selected_poll_names = [poll.name for poll in polls]
 
-    temba_polls = org.get_temba_client().get_flows(archived=False)
+    temba_polls = org.get_temba_client(api_version=2).get_flows().all()
     temba_polls = {p.uuid: p for p in temba_polls}
 
     total_polls = len(polls)

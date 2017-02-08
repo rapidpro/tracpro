@@ -40,7 +40,7 @@ class TestPollTask(TracProTest):
         flow_1.rulesets = [ruleset_existing, ruleset_new]
 
         # Mock the call to the API to send back a single flow matching our first poll
-        self.mock_temba_client.get_flows.return_value = [flow_1]
+        self.mock_temba_client.get_flows.return_value.all.return_value = [flow_1]
         # Mock this call to return an empty rule set so that RapidPro API is not called
         mock_poll_get_flow.return_value.rulesets = []
 

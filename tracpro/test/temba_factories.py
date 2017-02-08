@@ -7,10 +7,11 @@ import factory.fuzzy
 
 from temba_client.v2 import types
 
+from tracpro.polls.models import FlowDefinition, RuleSet
 from .factory_utils import FuzzyUUID
 
 
-__all__ = ['TembaFlow', 'TembaBoundary']
+__all__ = ['TembaFlow', 'TembaFlowDefinition', 'TembaRuleSet', 'TembaBoundary', 'TembaExport']
 
 
 class TembaObjectFactory(factory.Factory):
@@ -27,14 +28,30 @@ class TembaFlow(TembaObjectFactory):
     uuid = FuzzyUUID()
     name = factory.fuzzy.FuzzyText()
     archived = False
-    participants = 0
+    # participants = 0  # Removed in API v2
     runs = 0
-    completed_runs = 0
-    rulesets = []
+    # completed_runs = 0  # Removed in API v2
+    # rulesets = []  # Removed in API v2
     created_on = factory.LazyAttribute(lambda o: datetime.datetime.now())
 
     class Meta:
         model = types.Flow
+
+
+class TembaFlowDefinition(TembaObjectFactory):
+    rule_sets = []
+
+    class Meta:
+        model = FlowDefinition
+
+
+class TembaRuleSet(TembaObjectFactory):
+    uuid = FuzzyUUID()
+    label = factory.fuzzy.FuzzyText()
+    response_type = factory.fuzzy.FuzzyChoice(['C', 'O', 'N'])
+
+    class Meta:
+        model = RuleSet
 
 
 class TembaGeometry(TembaObjectFactory):
@@ -54,3 +71,13 @@ class TembaBoundary(TembaObjectFactory):
 
     class Meta:
         model = types.Boundary
+
+
+class TembaExport(TembaObjectFactory):
+    version = 7
+    flows = []
+    campaigns = []
+    triggers = []
+
+    class Meta:
+        model = types.Export

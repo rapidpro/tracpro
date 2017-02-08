@@ -108,3 +108,10 @@ def overall_stdev(pollruns, data, default=0, round_to=1):
     """Return the standard deviation of data values for each pollrun."""
     padded_data = [data.get(pollrun.pk, default) for pollrun in pollruns]
     return round(numpy.std(padded_data), round_to)
+
+
+def get_flow_definition(client, flow_uuid):
+    # Replacement for the v1 API's `get_flow_definition`
+    export = client.get_definitions(flows=[flow_uuid])
+    if export.flows:
+        return export.flows[0]

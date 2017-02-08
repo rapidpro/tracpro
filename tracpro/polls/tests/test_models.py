@@ -117,7 +117,7 @@ class TestPollManager(TracProTest):
         """Sync should delete Polls that track a flow that does not exist."""
         org = factories.Org()
         poll = factories.Poll(org=org)  # noqa
-        self.mock_temba_client.get_flows.return_value = []
+        self.mock_temba_client.get_flows.return_value.all.return_value = []
         models.Poll.objects.sync(org)
 
         self.assertEqual(models.Poll.objects.count(), 0)
@@ -129,7 +129,7 @@ class TestPollManager(TracProTest):
         flow = factories.TembaFlow()
         ruleset = factories.TembaRuleSet()
         flow.rulesets = [ruleset]
-        self.mock_temba_client.get_flows.return_value = [flow]
+        self.mock_temba_client.get_flows.return_value.all.return_value = [flow]
         models.Poll.objects.sync(org)
 
         self.assertEqual(models.Poll.objects.count(), 1)
@@ -140,12 +140,13 @@ class TestPollManager(TracProTest):
 
     def test_sync__update_existing(self):
         """Sync should update existing objects if they have changed on RapidPro."""
-        self.mock_temba_client.get_flow_definition.return_value = factories.TembaFlowDefinition()
+        self.mock_temba_client.get_definitions.return_value = \
+            factories.TembaExport(flows=[factories.TembaFlowDefinition()])
 
         org = factories.Org()
         poll = factories.Poll(org=org, is_active=True)
         flow = factories.TembaFlow(uuid=poll.flow_uuid)
-        self.mock_temba_client.get_flows.return_value = [flow]
+        self.mock_temba_client.get_flows.return_value.all.return_value = [flow]
         models.Poll.objects.sync(org)
 
         self.assertEqual(models.Poll.objects.count(), 1)
@@ -179,7 +180,7 @@ class TestPoll(TracProTest):
     def test_get_flow_definition(self):
         """Flow definition should be retrieved from the API and cached on the poll."""
         definition = factories.TembaFlowDefinition()
-        self.mock_temba_client.get_flow_definition.return_value = definition
+        self.mock_temba_client.get_definitions.return_value = factories.TembaExport(flows=[definition])
         poll = factories.Poll()
         self.assertFalse(hasattr(poll, '_flow_definition'))
         for i in range(2):
@@ -188,7 +189,7 @@ class TestPoll(TracProTest):
             self.assertEqual(poll._flow_definition, definition)
 
             # API call count should not go up.
-            self.assertEqual(self.mock_temba_client.get_flow_definition.call_count, 1)
+            self.assertEqual(self.mock_temba_client.get_definitions.call_count, 1)
 
 
 class TestQuestionQueryset(TracProTest):
@@ -204,7 +205,8 @@ class TestQuestionManager(TracProTest):
 
     def setUp(self):
         super(TestQuestionManager, self).setUp()
-        self.mock_temba_client.get_flow_definition.return_value = factories.TembaFlowDefinition()
+        self.mock_temba_client.get_definitions.return_value = \
+            factories.TembaExport(flows=[factories.TembaFlowDefinition()])
 
     def test_from_temba__new(self):
         """Should create a new Question to match the Poll and uuid."""
