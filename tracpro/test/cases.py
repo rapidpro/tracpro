@@ -5,7 +5,7 @@ import redis
 
 from dash.orgs.models import Org
 
-from temba_client.client import TembaClient
+from temba_client.v2 import TembaClient
 
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse

@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 from django.contrib.auth.models import User
 from django.test.utils import override_settings
 
-from temba_client.types import Group as TembaGroup
+from temba_client.v2.types import Group as TembaGroup
 
 from tracpro.test import factories
 from tracpro.test.cases import TracProDataTest, TracProTest
@@ -42,7 +42,7 @@ class TestRegion(TracProTest):
             org=self.org, uuid='5', name="inactive", parent=self.kampala,
             is_active=False)
 
-        self.mock_temba_client.get_contacts.return_value = []
+        self.mock_temba_client.get_contacts.return_value.all.return_value = []
 
     def refresh_regions(self):
         """Refresh all regions from the database."""
@@ -239,7 +239,7 @@ class TestBoundaryManager(TracProTest):
             level=models.Boundary.LEVEL_STATE,
         )
         self.temba = factories.TembaBoundary(
-            boundary=self.boundary.rapidpro_uuid,
+            osm_id=self.boundary.rapidpro_uuid,
             name=self.boundary.name,
             parent=None,
             level=models.Boundary.LEVEL_STATE,
@@ -277,7 +277,7 @@ class TestBoundaryManager(TracProTest):
 
     def test_from_temba__new(self):
         """Create a new Boundary if UUID does not exist for org."""
-        new_temba = factories.TembaBoundary(boundary="12345", name="hello")
+        new_temba = factories.TembaBoundary(osm_id="12345", name="hello")
         result = models.Boundary.objects.from_temba(self.org, new_temba)
         self.assertNotEqual(result, self.boundary)
         self.assertEqual(result.org, self.org)
@@ -311,7 +311,7 @@ class TestBoundaryManager(TracProTest):
         models.Boundary.objects.sync(self.org)
         self.assertEqual(models.Boundary.objects.count(), 2)
         new_boundary = models.Boundary.objects.get(
-            org=self.org, rapidpro_uuid=new_temba.boundary)
+            org=self.org, rapidpro_uuid=new_temba.osm_id)
         self.assertEqual(new_boundary.name, new_temba.name)
 
     def test_sync__update_existing(self):
@@ -325,7 +325,7 @@ class TestBoundaryManager(TracProTest):
     def test_sync__create_in_order(self):
         """Parent should be created/updated before child."""
         parent_temba = factories.TembaBoundary(level=models.Boundary.LEVEL_COUNTRY)
-        self.temba.parent = parent_temba.boundary
+        self.temba.parent = parent_temba.osm_id
         self.mock_temba_client.get_boundaries.return_value = [
             self.temba,
             parent_temba,
@@ -334,9 +334,9 @@ class TestBoundaryManager(TracProTest):
         self.boundary.refresh_from_db()
         self.assertEqual(models.Boundary.objects.count(), 2)
         parent = models.Boundary.objects.get(
-            org=self.org, rapidpro_uuid=parent_temba.boundary)
+            org=self.org, rapidpro_uuid=parent_temba.osm_id)
         self.assertEqual(parent.name, parent_temba.name)
-        self.assertEqual(self.boundary.parent.rapidpro_uuid, parent_temba.boundary)
+        self.assertEqual(self.boundary.parent.rapidpro_uuid, parent_temba.osm_id)
 
 
 class TestBoundary(TracProTest):
