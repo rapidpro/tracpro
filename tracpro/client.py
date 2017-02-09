@@ -41,6 +41,5 @@ class TracProCursorQuery(CursorQuery):
         return super(TracProCursorQuery, self).all(True).__iter__()
 
     def all(self, retry_on_rate_exceed=False):
-        raise RuntimeError("You do not have to call .all() on the response from this client")
         # If code calls .all() on this, behave like the old one
         return self.__iter__()
