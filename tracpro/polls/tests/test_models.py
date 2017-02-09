@@ -117,7 +117,7 @@ class TestPollManager(TracProTest):
         """Sync should delete Polls that track a flow that does not exist."""
         org = factories.Org()
         poll = factories.Poll(org=org)  # noqa
-        self.mock_temba_client.get_flows.return_value.all.return_value = []
+        self.mock_temba_client.get_flows.return_value = []
         models.Poll.objects.sync(org)
 
         self.assertEqual(models.Poll.objects.count(), 0)
@@ -129,7 +129,7 @@ class TestPollManager(TracProTest):
         flow = factories.TembaFlow()
         ruleset = factories.TembaRuleSet()
         flow.rulesets = [ruleset]
-        self.mock_temba_client.get_flows.return_value.all.return_value = [flow]
+        self.mock_temba_client.get_flows.return_value = [flow]
         models.Poll.objects.sync(org)
 
         self.assertEqual(models.Poll.objects.count(), 1)
@@ -146,7 +146,7 @@ class TestPollManager(TracProTest):
         org = factories.Org()
         poll = factories.Poll(org=org, is_active=True)
         flow = factories.TembaFlow(uuid=poll.flow_uuid)
-        self.mock_temba_client.get_flows.return_value.all.return_value = [flow]
+        self.mock_temba_client.get_flows.return_value = [flow]
         models.Poll.objects.sync(org)
 
         self.assertEqual(models.Poll.objects.count(), 1)

@@ -14,6 +14,7 @@ from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 
+from tracpro.client import get_client
 from tracpro.contacts.tasks import SyncOrgContacts
 
 
@@ -54,7 +55,7 @@ class AbstractGroup(models.Model):
             group.deactivate()
 
         # Fetch group details at once.
-        temba_groups = org.get_temba_client(api_version=2).get_groups()
+        temba_groups = get_client(org).get_groups()
         temba_groups = {g.uuid: g.name for g in temba_groups}
 
         for uuid in uuids:
@@ -184,7 +185,7 @@ class BoundaryManager(models.Manager.from_queryset(BoundaryQuerySet)):
     def sync(self, org):
         """Update org Boundaries from RapidPro and delete ones that were removed."""
         # Retrieve current Boundaries known to RapidPro.
-        temba_boundaries = org.get_temba_client(api_version=2).get_boundaries()
+        temba_boundaries = get_client(org).get_boundaries()
 
         # Remove Boundaries that are no longer on RapidPro.
         uuids = [b.osm_id for b in temba_boundaries]

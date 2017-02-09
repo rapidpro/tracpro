@@ -7,6 +7,7 @@ from django.utils import timezone
 from celery.utils.log import get_task_logger
 from djcelery_transactions import task
 
+from tracpro.client import get_client
 from tracpro.orgs_ext.tasks import OrgTask
 
 
@@ -20,7 +21,7 @@ def send_message(message_id):
     message = Message.objects.select_related('org').get(pk=message_id)
     contacts = [c.uuid for c in message.recipients.all()]
 
-    client = message.org.get_temba_client(api_version=2)
+    client = get_client(message.org)
 
     # Can only send up to 100 messages at a time
     while contacts:
@@ -42,7 +43,7 @@ def send_message(message_id):
 @task
 def send_unsolicited_message(org, text, contact):
 
-    client = org.get_temba_client(api_version=2)
+    client = get_client(org)
 
     try:
         client.create_broadcast(text, contacts=[contact.uuid])
@@ -59,7 +60,7 @@ class FetchOrgInboxMessages(OrgTask):
         from .models import InboxMessage
         from tracpro.contacts.models import Contact
 
-        client = org.get_temba_client(api_version=2)
+        client = get_client(org)
 
         # Get non-archived, incoming inbox messages from the past week only
         # because getting all messages was taking too long

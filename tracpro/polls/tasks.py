@@ -13,6 +13,7 @@ from temba_client.utils import parse_iso8601, format_iso8601
 
 from dash.utils import datetime_to_ms
 
+from tracpro.client import get_client
 from tracpro.contacts.models import Contact
 from tracpro.orgs_ext.tasks import OrgTask
 
@@ -31,7 +32,7 @@ class FetchOrgRuns(OrgTask):
         from tracpro.orgs_ext.constants import TaskType
         from tracpro.polls.models import Poll, PollRun, Response
 
-        client = org.get_temba_client(api_version=2)
+        client = get_client(org)
         redis_connection = get_redis_connection()
         last_time_key = LAST_FETCHED_RUN_TIME_KEY % org.pk
         last_time = redis_connection.get(last_time_key)
@@ -81,7 +82,7 @@ def pollrun_start(pollrun_id):
         raise ValueError("Can't start non-regional poll")
 
     org = pollrun.poll.org
-    client = org.get_temba_client(api_version=2)
+    client = get_client(org)
 
     contacts = Contact.objects.active()
     if pollrun.pollrun_type == PollRun.TYPE_PROPAGATED:
@@ -116,7 +117,7 @@ def pollrun_restart_participants(pollrun_id, contact_uuids):
         raise ValueError("Can only restart last pollrun of poll for a region")
 
     org = pollrun.poll.org
-    client = org.get_temba_client(api_version=2)
+    client = get_client(org)
 
     runs = client.create_flow_start(
         flow=pollrun.poll.flow_uuid, contacts=contact_uuids, restart_participants=True)
@@ -145,7 +146,7 @@ def sync_questions_categories(org, polls):
     # now that these polls have been activated for the Org
     selected_poll_names = [poll.name for poll in polls]
 
-    temba_polls = org.get_temba_client(api_version=2).get_flows().all()
+    temba_polls = get_client(org).get_flows().all()
     temba_polls = {p.uuid: p for p in temba_polls}
 
     total_polls = len(polls)

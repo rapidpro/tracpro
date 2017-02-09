@@ -20,6 +20,7 @@ from dash.utils import datetime_to_ms
 
 from temba_client.types import Contact as TembaContact
 
+from tracpro.client import get_client
 from tracpro.groups.models import Region, Group
 from tracpro.orgs_ext.constants import TaskType
 
@@ -169,7 +170,7 @@ class Contact(models.Model):
             return contacts.get(uuid=uuid)
         except cls.DoesNotExist:
             # If this contact does not exist locally, we need to call the RapidPro API to get it
-            temba_contact = org.get_temba_client(api_version=2).get_contacts(uuid=uuid).first()
+            temba_contact = get_client(org).get_contacts(uuid=uuid).first()
             return cls.objects.create(**cls.kwargs_from_temba(org, temba_contact))
 
     def get_responses(self, include_empty=True):
@@ -268,7 +269,7 @@ class DataFieldManager(models.Manager.from_queryset(DataFieldQuerySet)):
     def sync(self, org):
         """Update the org's DataFields from RapidPro."""
         # Retrieve current DataFields known to RapidPro.
-        temba_fields = {t.key: t for t in org.get_temba_client(api_version=2).get_fields().all()}
+        temba_fields = {t.key: t for t in get_client(org).get_fields()}
 
         # Remove DataFields (and corresponding values per contact) that are no
         # longer on RapidPro.
