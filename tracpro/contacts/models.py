@@ -261,7 +261,7 @@ class DataFieldManager(models.Manager.from_queryset(DataFieldQuerySet)):
     def from_temba(self, org, temba_field):
         field, _ = DataField.objects.get_or_create(org=org, key=temba_field.key)
         field.label = temba_field.label
-        field.value_type = temba_field.value_type
+        field.value_type = DataField.MAP_V2_TYPE_VALUE_TO_DB_VALUE[temba_field.value_type]
         field.save()
         return field
 
@@ -294,13 +294,30 @@ class DataField(models.Model):
     TYPE_DATETIME = "D"
     TYPE_STATE = "S"
     TYPE_DISTRICT = "I"
+    TYPE_DECIMAL = 'N'  # New in v2 API
+    TYPE_WARD = 'W'  # New in v2 API
     TYPE_CHOICES = (
         (TYPE_TEXT, _("Text")),
         (TYPE_NUMERIC, _("Numeric")),
         (TYPE_DATETIME, _("Datetime")),
         (TYPE_STATE, _("State")),
         (TYPE_DISTRICT, _("District")),
+        (TYPE_DECIMAL, _("Numeric")),
+        (TYPE_WARD, _("Ward")),
     )
+
+    # This is copied from the rapidpro source
+    # The v1 API sent us the single-characters above.
+    # The v2 API sends us the 3rd element from each tuple here.
+    API_V2_TYPE_CONFIG = ((TYPE_TEXT, _("Text"), 'text'),
+                          (TYPE_DECIMAL, _("Numeric"), 'numeric'),
+                          (TYPE_DATETIME, _("Date & Time"), 'datetime'),
+                          (TYPE_STATE, _("State"), 'state'),
+                          (TYPE_DISTRICT, _("District"), 'district'),
+                          (TYPE_WARD, _("Ward"), 'ward'))
+
+    # v2 value: v1 value
+    MAP_V2_TYPE_VALUE_TO_DB_VALUE = {tup[2]: tup[0] for tup in API_V2_TYPE_CONFIG}
 
     org = models.ForeignKey(
         "orgs.Org", verbose_name=_("org"))
