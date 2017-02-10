@@ -42,7 +42,7 @@ class TestRegion(TracProTest):
             org=self.org, uuid='5', name="inactive", parent=self.kampala,
             is_active=False)
 
-        self.mock_temba_client.get_contacts.return_value.all.return_value = []
+        self.mock_temba_client.get_contacts.return_value = []
 
     def refresh_regions(self):
         """Refresh all regions from the database."""

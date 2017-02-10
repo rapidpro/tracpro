@@ -3,6 +3,7 @@ from __future__ import absolute_import, unicode_literals
 from dash.orgs.models import Org
 from django.core.management.base import BaseCommand
 
+from tracpro.client import get_client
 from tracpro.polls.models import FlowDefinition
 
 
@@ -15,7 +16,7 @@ class Command(BaseCommand):
 
         org = Org.objects.get(id=org_id)
 
-        client = org.get_temba_client(api_version=2)
+        client = get_client(org)
         flow_query = client.get_flows()  # temba_client.clients.CursorQuery
         flows = flow_query.all()
         flow = flows[0]

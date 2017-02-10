@@ -8,6 +8,8 @@ from celery.utils.log import get_task_logger
 from temba_client.clients import TembaBadRequestError
 from temba_client.v2.types import Contact as TembaContact
 
+from tracpro.client import get_client
+
 
 logger = get_task_logger(__name__)
 
@@ -27,12 +29,12 @@ def sync_pull_contacts(org, contact_class, fields=None, groups=None,
     :return: tuple containing list of UUIDs for created, updated, deleted and failed contacts
     """
     # get all remote contacts
-    client = org.get_temba_client(api_version=2)
+    client = get_client(org)
     updated_incoming_contacts = []
     if last_time:
-        updated_incoming_contacts = client.get_contacts(after=last_time).all()
+        updated_incoming_contacts = client.get_contacts(after=last_time)
     else:
-        updated_incoming_contacts = client.get_contacts().all()
+        updated_incoming_contacts = client.get_contacts()
 
     # get all existing contacts and organize by their UUID
     existing_contacts = contact_class.objects.filter(org=org)
@@ -81,9 +83,9 @@ def sync_pull_contacts(org, contact_class, fields=None, groups=None,
     # should also be deleted from dash
     # if last_time was passed in, just get contacts deleted after the last time we synced
     if last_time:
-        deleted_incoming_contacts = client.get_contacts(deleted=True, after=last_time).all()
+        deleted_incoming_contacts = client.get_contacts(deleted=True, after=last_time)
     else:
-        deleted_incoming_contacts = client.get_contacts(deleted=True).all()
+        deleted_incoming_contacts = client.get_contacts(deleted=True)
     for deleted_incoming in deleted_incoming_contacts:
         deleted_uuids.append(deleted_incoming.uuid)
     existing_contacts.filter(uuid__in=deleted_uuids).update(is_active=False)
@@ -128,7 +130,7 @@ def sync_push_contact(org, contact, change_type, mutex_group_sets):
     an as_temba instance method.
     """
     from tracpro.contacts.models import ChangeType
-    client = org.get_temba_client(api_version=2)
+    client = get_client(org)
 
     if change_type == ChangeType.created:
         temba_contact = contact.as_temba()
@@ -151,7 +153,7 @@ def sync_push_contact(org, contact, change_type, mutex_group_sets):
 
     elif change_type == ChangeType.updated:
         # fetch contact so that we can merge with its URNs, fields and groups
-        remote_contact = client.get_contacts(uuid=contact.uuid).all()[0]
+        remote_contact = client.get_contacts(uuid=contact.uuid)[0]
         local_contact = contact.as_temba()
 
         if temba_compare_contacts(remote_contact, local_contact):

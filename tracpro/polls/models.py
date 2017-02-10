@@ -15,6 +15,7 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from temba_client.base import TembaObject, SimpleField, IntegerField
 
+from tracpro.client import get_client
 from tracpro.contacts.models import Contact
 
 from . import rules
@@ -66,7 +67,7 @@ class PollManager(models.Manager.from_queryset(PollQuerySet)):
     def sync(self, org):
         """Update the org's Polls from RapidPro."""
         # Retrieve current Polls known to RapidPro.
-        temba_polls = org.get_temba_client(api_version=2).get_flows().all()
+        temba_polls = get_client(org).get_flows()
         temba_polls = {p.uuid: p for p in temba_polls}
 
         # Remove Polls that are no longer on RapidPro.
@@ -117,7 +118,7 @@ class Poll(models.Model):
     def get_flow_definition(self):
         """Retrieve extra metadata about the RapidPro flow."""
         if not hasattr(self, '_flow_definition'):
-            client = self.org.get_temba_client(api_version=2)
+            client = get_client(self.org)
             self._flow_definition = get_flow_definition(client, self.flow_uuid)
         return self._flow_definition
 
