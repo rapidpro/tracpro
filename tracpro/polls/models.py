@@ -556,12 +556,18 @@ class Response(models.Model):
     @classmethod
     def from_run(cls, org, run, poll=None):
         """
-        Gets or creates a response from a flow run. If response is not
-        up-to-date with provided run, then it is updated. If the run doesn't
-        match with an existing poll pollrun, it's assumed to be non-regional.
+        Gets or creates a response from a flow run and returns the response.
+
+        If response is not up-to-date with provided run, then it is updated.
+
+        If the run doesn't match with an existing poll pollrun, it's assumed
+        to be non-regional.
+
+        If a new response has been created, the returned response will have
+        attribute `is_new` = True.
         """
-        response = Response.objects.filter(pollrun__poll__org=org, flow_run_id=run.id)
-        response = response.select_related('pollrun').first()
+        responses = Response.objects.filter(pollrun__poll__org=org, flow_run_id=run.id)
+        response = responses.select_related('pollrun').first()
         run_updated_on = cls.get_run_updated_on(run)
 
         # if there is an up-to-date existing response for this run, return it

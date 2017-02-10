@@ -6,14 +6,16 @@ import logging
 from celery import signature
 from celery.exceptions import SoftTimeLimitExceeded
 from celery.utils.log import get_task_logger
+from dash.orgs.models import Org
 
 from django.apps import apps
 from django.conf import settings
 from django.core.cache import cache
 from django.core.mail import send_mail
 from django.utils import timezone
+from django.utils.translation import ugettext_lazy as _
 
-from djcelery_transactions import PostTransactionTask
+from djcelery_transactions import PostTransactionTask, task
 
 from temba_client.base import TembaAPIError
 from temba_client.utils import parse_iso8601, format_iso8601
@@ -229,3 +231,72 @@ class OrgTask(WrapCacheMixin, WrapLoggerMixin, PostTransactionTask):
         kwargs.setdefault('org', org.name)
         msg = "{task} for {org}: " + msg
         return super(OrgTask, self).wrap_logger(level, msg, *args, **kwargs)
+
+
+@task(ignore_result=True)
+def fetch_runs(org_id, since, email=None):
+    """
+    Fetch responses for the org with id=org_id, going back
+    to `since` (datetime).
+
+    Creates or updates Response objects for each run.
+
+    If `email` is provided, an email is sent to that address at the end to
+    report the results.
+    """
+    from tracpro.polls.models import Poll, Response  # Avoid circular imports
+
+    try:
+        org = Org.objects.get(id=org_id)
+    except Org.DoesNotExist:
+        raise ValueError("No such org with id %d" % org_id)
+
+    # Collect our log messages so we can email them at the end if we want to.
+    messages = []
+
+    def log(s):
+        messages.append(s)
+        logger.info(s)
+
+    # These will show up on stdout when this is called from the management command
+    # (without an `email`).
+    log(_('Fetching responses for org {org_name} since {time}.')
+        .format(org_name=org.name, time=since.strftime('%b %d, %Y %H:%M')))
+
+    client = org.get_temba_client()
+
+    polls_by_flow_uuids = {p.flow_uuid: p for p in Poll.objects.active().by_org(org)}
+
+    runs = client.get_runs(flows=polls_by_flow_uuids.keys(), after=since)
+
+    log(_("Fetched {num} runs for org {org_name}.").format(num=len(runs), org_name=org.name))
+
+    created = 0
+    updated = 0
+    for run in runs:
+        if run.flow not in polls_by_flow_uuids:
+            continue  # Response is for a Poll not tracked for this org.
+
+        poll = polls_by_flow_uuids[run.flow]
+        try:
+            response = Response.from_run(org, run, poll=poll)
+        except ValueError as e:
+            log(_("Unable to save run #{num} due to error: {message}.").format(num=run.id, message=e.message))
+            continue
+
+        if getattr(response, 'is_new', False):
+            created += 1
+        else:
+            updated += 1
+
+    log(_("Created {created} new responses and updated {updated} existing responses.")
+        .format(created=created, updated=updated))
+
+    if email:
+        send_mail(
+            subject=(_("Results from fetching runs for organization {org_name} since {time}")
+                     .format(org_name=org.name, time=since.strftime('%b %d, %Y %H:%M'))),
+            message="\n".join(messages) + "\n",
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[email],
+            fail_silently=True)

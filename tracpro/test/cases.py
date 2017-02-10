@@ -3,6 +3,8 @@ from __future__ import unicode_literals
 import mock
 import redis
 
+from temba_client.types import Contact as TembaContact
+
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.test import TestCase
@@ -25,6 +27,8 @@ class TracProTest(TestCase):
         self.patcher = mock.patch('tracpro.client.make_client')
         self.mock_get_temba_client = self.patcher.start()
         self.mock_get_temba_client.return_value = self.mock_temba_client
+        # Mock get_contact method of temba_client for "set_groups_to_new_contact" Contact signal
+        self.mock_temba_client.get_contact.return_value = TembaContact.create(groups=[])
 
         super(TracProTest, self).setUp()
 
@@ -118,11 +122,12 @@ class TracProDataTest(TracProTest):
         self.group2 = factories.Group(org=self.unicef, name="Teachers", uuid='G-006')
         self.group3 = factories.Group(org=self.unicef, name="Doctors", uuid='G-007')
         self.group4 = factories.Group(org=self.nyaruka, name="Programmers", uuid='G-008')
+        self.group5 = factories.Group(org=self.unicef, name="Kandahar", uuid='G-001')
 
         # some contacts
-        self.contact1 = factories.Contact(
+        self.contact1 = factories.Contact.create(
             org=self.unicef, name="Ann", urn='tel:1234', uuid='C-001',
-            region=self.region1, group=self.group1)
+            region=self.region1, group=self.group1, groups=(self.group1, self.group5))
         self.contact2 = factories.Contact(
             org=self.unicef, name="Bob", urn='tel:2345', uuid='C-002',
             region=self.region1, group=self.group1)
