@@ -67,7 +67,7 @@ class ContactTest(TracProDataTest):
         self.assertEqual(self.mock_temba_client.create_contact.call_count, 1)
 
     @mock.patch('tracpro.contacts.models.Contact.kwargs_from_temba')
-    def test_get_or_fetch(self, mock_kwargs_from_temba):
+    def test_get_or_fetch_existing_local_contact(self, mock_kwargs_from_temba):
         self.mock_temba_client.get_contacts.return_value = TembaContact.create(
             uuid='C-007', name="Mo Polls",
             urns=['tel:078123'], groups=['G-001', 'G-005'],
@@ -77,11 +77,21 @@ class ContactTest(TracProDataTest):
         contact = models.Contact.get_or_fetch(org=self.unicef, uuid='C-001')
         self.assertEqual(contact.name, "Ann")
 
-        # TODO: Fix this check. We need to either mock kwargs_from_temba
-        # or somehow mock get_client.get_contacts.first() in get_or_fetch
-        # fetch remotely, contact does not exist locally
-        # contact = models.Contact.get_or_fetch(org=self.unicef, uuid='C-009')
-        # self.assertEqual(contact.name, "Mo Polls")
+    def test_get_or_fetch_non_existing_local_contact(self):
+        mock_contact = TembaContact.create(
+            name='Mo Polls',
+            uuid='C-009',
+            urns=['tel:123'],
+            groups=['G-001', 'G-007'],
+            fields={
+                'gender': 'M',
+            },
+            language='eng',
+            modified_on=timezone.now(),
+        )
+        self.mock_temba_client.get_contacts.return_value.first.return_value = mock_contact
+        contact = models.Contact.get_or_fetch(org=self.unicef, uuid='C-009')
+        self.assertEqual(contact.name, "Mo Polls")
 
     def test_kwargs_from_temba(self):
         modified_date = timezone.now()
