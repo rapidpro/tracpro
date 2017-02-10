@@ -29,7 +29,7 @@ pycountry==1.10
 python-dateutil==2.5.1
 pytz==2016.2
 rapidpro-dash==1.1
-rapidpro-python==2.1.0
+rapidpro-python==2.1.5
 requests==2.9.1
 six==1.10.0
 smartmin==1.10.5

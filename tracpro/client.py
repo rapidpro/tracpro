@@ -38,5 +38,13 @@ class TracProCursorQuery(CursorQuery):
     FYI: Always acts as if `retry_on_rate_exceed` is True. If more control
     is needed, use the underlying client directly.
     """
+    def _get_result(self):
+        if not hasattr(self, '_result'):
+            self._result = self.all(True)
+        return self._result
+
     def __iter__(self):
-        return self.all(True).__iter__()
+        return self._get_result().__iter__()
+
+    def __getitem__(self, index):
+        return self._get_result()[index]

@@ -89,7 +89,7 @@ class ContactTest(TracProDataTest):
             language='eng',
             modified_on=timezone.now(),
         )
-        self.mock_temba_client.get_contacts.return_value.first.return_value = mock_contact
+        self.mock_temba_client.get_contacts.return_value = [mock_contact]
         contact = models.Contact.get_or_fetch(org=self.unicef, uuid='C-009')
         self.assertEqual(contact.name, "Mo Polls")
 

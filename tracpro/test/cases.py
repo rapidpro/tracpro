@@ -28,7 +28,7 @@ class TracProTest(TestCase):
         self.mock_get_temba_client = self.patcher.start()
         self.mock_get_temba_client.return_value = self.mock_temba_client
         # Mock get_contact method of temba_client for "set_groups_to_new_contact" Contact signal
-        self.mock_temba_client.get_contact.return_value = TembaContact.create(groups=[])
+        self.mock_temba_client.get_contacts.return_value = [TembaContact.create(groups=[])]
 
         super(TracProTest, self).setUp()
 

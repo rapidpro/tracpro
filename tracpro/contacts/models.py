@@ -147,7 +147,7 @@ class Contact(models.Model):
         temba_contact.name = self.name
         temba_contact.urns = [self.urn]
         temba_contact.fields = fields
-        temba_contact.groups = list(self.groups.all().values_list('uuid', flat=True))
+        temba_contact.groups = list(self.groups.values_list('uuid', flat=True))
         temba_contact.language = self.language
         temba_contact.uuid = self.uuid
 
@@ -170,8 +170,11 @@ class Contact(models.Model):
             return contacts.get(uuid=uuid)
         except cls.DoesNotExist:
             # If this contact does not exist locally, we need to call the RapidPro API to get it
-            temba_contact = get_client(org).get_contacts(uuid=uuid).first()
-            return cls.objects.create(**cls.kwargs_from_temba(org, temba_contact))
+            try:
+                temba_contact = get_client(org).get_contacts(uuid=uuid)[0]
+                return cls.objects.create(**cls.kwargs_from_temba(org, temba_contact))
+            except IndexError:
+                return None
 
     def get_responses(self, include_empty=True):
         from tracpro.polls.models import Response
@@ -216,7 +219,7 @@ class Contact(models.Model):
             '_data_field_values': temba_contact.fields,  # managed by post-save signal
         }
         if cls.objects.filter(org=org, uuid=temba_contact.uuid).exists():
-            kwargs['groups'] = [Group.objects.get(uuid=group_uuid) for group_uuid in temba_contact.groups]
+            kwargs['groups'] = list(Group.objects.filter(uuid__in=temba_contact.groups))
         return kwargs
 
     def push(self, change_type):

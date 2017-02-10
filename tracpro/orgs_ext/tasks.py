@@ -21,6 +21,7 @@ from temba_client.base import TembaAPIError
 from temba_client.utils import parse_iso8601, format_iso8601
 
 from tracpro.celery import app as celery_app
+from tracpro.client import get_client
 
 from . import utils
 
@@ -263,7 +264,7 @@ def fetch_runs(org_id, since, email=None):
     log(_('Fetching responses for org {org_name} since {time}.')
         .format(org_name=org.name, time=since.strftime('%b %d, %Y %H:%M')))
 
-    client = org.get_temba_client()
+    client = get_client(org)
 
     polls_by_flow_uuids = {p.flow_uuid: p for p in Poll.objects.active().by_org(org)}
 
