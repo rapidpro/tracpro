@@ -34,12 +34,9 @@ class TracProCursorQuery(CursorQuery):
     """
     Customized CursorQuery that allows iterating over it without having
     to call `.all()` on it. More Pythonic.
+
+    FYI: Always acts as if `retry_on_rate_exceed` is True. If more control
+    is needed, use the underlying client directly.
     """
     def __iter__(self):
-        # Call the superclass's .all() because we've overridden the one on this
-        # class to still act the same as the one on the parent class.
-        return super(TracProCursorQuery, self).all(True).__iter__()
-
-    def all(self, retry_on_rate_exceed=False):
-        # If code calls .all() on this, behave like the old one
-        return self.__iter__()
+        return self.all(True).__iter__()
