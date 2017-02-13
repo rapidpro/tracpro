@@ -77,7 +77,8 @@ class ContactTest(TracProDataTest):
         contact = models.Contact.get_or_fetch(org=self.unicef, uuid='C-001')
         self.assertEqual(contact.name, "Ann")
 
-    def test_get_or_fetch_non_existing_local_contact(self):
+    @mock.patch('tracpro.contacts.models.Contact.kwargs_from_temba')
+    def test_get_or_fetch_non_existing_local_contact(self, mock_kwargs_from_temba):
         mock_contact = TembaContact.create(
             name='Mo Polls',
             uuid='C-009',
@@ -89,6 +90,7 @@ class ContactTest(TracProDataTest):
             language='eng',
             modified_on=timezone.now(),
         )
+        mock_kwargs_from_temba._get_first.return_value = self.group1
         self.mock_temba_client.get_contacts.return_value = [mock_contact]
         contact = models.Contact.get_or_fetch(org=self.unicef, uuid='C-009')
         self.assertEqual(contact.name, "Mo Polls")

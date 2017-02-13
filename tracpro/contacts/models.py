@@ -190,11 +190,11 @@ class Contact(models.Model):
     @classmethod
     def kwargs_from_temba(cls, org, temba_contact):
         """Get data to create a Contact instance from a Temba object."""
-
         def _get_first(model_class, temba_uuids):
             """Return first obj from this org that matches one of the given uuids."""
             queryset = model_class.get_all(org)
             tracpro_uuids = queryset.values_list('uuid', flat=True)
+            temba_uuids = [temba_uuid.uuid for temba_uuid in temba_uuids]
             uuid = next((uuid for uuid in temba_uuids if uuid in tracpro_uuids), None)
             return queryset.get(uuid=uuid) if uuid else None
         # Use the first Temba group that matches one of the org's Regions.
