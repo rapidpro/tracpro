@@ -577,10 +577,10 @@ class Response(models.Model):
         if not poll:
             poll = Poll.objects.active().by_org(org).get(flow_uuid=run.flow)
 
-        contact = Contact.get_or_fetch(poll.org, uuid=run.contact)
+        contact = Contact.get_or_fetch(poll.org, uuid=run.contact.uuid)
 
         # categorize completeness
-        if run.completed:
+        if run.exit_type == u'completed':
             status = Response.STATUS_COMPLETE
         elif run.values:
             status = Response.STATUS_PARTIAL
@@ -613,7 +613,7 @@ class Response(models.Model):
 
         # organize values by ruleset UUID
         questions = poll.questions.active()
-        valuesets_by_ruleset = {valueset.node: valueset for valueset in run.values}
+        valuesets_by_ruleset = {value.node: value for key, value in run.values}
         valuesets_by_question = {q: valuesets_by_ruleset.get(q.ruleset_uuid, None)
                                  for q in questions}
 
@@ -632,11 +632,11 @@ class Response(models.Model):
 
     @classmethod
     def get_run_updated_on(cls, run):
-        # find the valueset with the latest time
+        # find the result with the latest time
         last_value_on = None
-        for valueset in run.values:
-            if not last_value_on or valueset.time > last_value_on:
-                last_value_on = valueset.time
+        for key, value in run.values.iteritems():
+            if not last_value_on or value.time > last_value_on:
+                last_value_on = value.time
 
         return last_value_on if last_value_on else run.created_on
 

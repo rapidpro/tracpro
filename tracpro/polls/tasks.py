@@ -49,7 +49,7 @@ class FetchOrgRuns(OrgTask):
 
         total_runs = 0
         for poll in Poll.objects.active().by_org(org):
-            poll_runs = client.get_runs(flows=[poll.flow_uuid], after=last_time, before=until)
+            poll_runs = client.get_runs(flow=poll.flow_uuid, after=last_time, before=until)
             total_runs += len(poll_runs)
 
             # convert flow runs into poll responses

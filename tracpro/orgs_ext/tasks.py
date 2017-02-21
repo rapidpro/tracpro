@@ -268,30 +268,31 @@ def fetch_runs(org_id, since, email=None):
 
     polls_by_flow_uuids = {p.flow_uuid: p for p in Poll.objects.active().by_org(org)}
 
-    runs = client.get_runs(flows=polls_by_flow_uuids.keys(), after=since)
+    for flow_uuid in polls_by_flow_uuids.keys():
+        runs = client.get_runs(flow=flow_uuid, after=since).all()
 
-    log(_("Fetched {num} runs for org {org_name}.").format(num=len(runs), org_name=org.name))
+        log(_("Fetched {num} runs for poll {flow_uuid}.").format(num=len(runs), flow_uuid=flow_uuid))
 
-    created = 0
-    updated = 0
-    for run in runs:
-        if run.flow not in polls_by_flow_uuids:
-            continue  # Response is for a Poll not tracked for this org.
+        created = 0
+        updated = 0
+        for run in runs:
+            if run.flow.uuid not in polls_by_flow_uuids:
+                continue  # Response is for a Poll not tracked for this org.
 
-        poll = polls_by_flow_uuids[run.flow]
-        try:
-            response = Response.from_run(org, run, poll=poll)
-        except ValueError as e:
-            log(_("Unable to save run #{num} due to error: {message}.").format(num=run.id, message=e.message))
-            continue
+            poll = polls_by_flow_uuids[run.flow.uuid]
+            try:
+                response = Response.from_run(org, run, poll=poll)
+            except ValueError as e:
+                log(_("Unable to save run #{num} due to error: {message}.").format(num=run.id, message=e.message))
+                continue
 
-        if getattr(response, 'is_new', False):
-            created += 1
-        else:
-            updated += 1
+            if getattr(response, 'is_new', False):
+                created += 1
+            else:
+                updated += 1
 
-    log(_("Created {created} new responses and updated {updated} existing responses.")
-        .format(created=created, updated=updated))
+        log(_("Created {created} new responses and updated {updated} existing responses.")
+            .format(created=created, updated=updated))
 
     if email:
         send_mail(
