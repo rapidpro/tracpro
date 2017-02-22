@@ -142,25 +142,22 @@ class QuestionManager(models.Manager.from_queryset(QuestionQuerySet)):
 
     def from_temba(self, poll, temba_question, order):
         """Create new or update existing Question from RapidPro data."""
-        question, _ = self.get_or_create(poll=poll, ruleset_uuid=temba_question.uuid)
+        question, _ = self.get_or_create(poll=poll, ruleset_uuid=temba_question['uuid'])
 
         if question.name == question.rapidpro_name:
             # Name is tracking RapidPro name so we must update both.
-            question.name = question.rapidpro_name = temba_question.label
+            question.name = question.rapidpro_name = temba_question['label']
         else:
             # Custom name will be maintained despite update of RapidPro name.
-            question.rapidpro_name = temba_question.label
+            question.rapidpro_name = temba_question['label']
 
         # Save the rules used to categorize answers to this question.
         rules = []
-        for rule_set in question.poll.get_flow_definition().rule_sets:
-            if rule_set['uuid'] == question.ruleset_uuid:  # Find the first matching rule set.
-                for rule in rule_set['rules'][:-1]:  # The last rule is always "Other".
-                    rules.append({
-                        'category': rule['category'],
-                        'test': rule['test'],
-                    })
-                break
+        for rule in temba_question['rules'][:-1]:  # The last rule is always "Other".
+            rules.append({
+                'category': rule['category'],
+                'test': rule['test'],
+            })
         question.json_rules = json.dumps(rules)
 
         # The user can alter or correct the question's type after it is

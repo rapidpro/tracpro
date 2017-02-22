@@ -1,7 +1,5 @@
 from __future__ import absolute_import, unicode_literals
 
-from collections import OrderedDict
-
 from django.apps import apps
 from django.utils import timezone
 
@@ -144,26 +142,28 @@ def sync_questions_categories(org, polls):
 
     # Save the associated Questions for this poll here
     # now that these polls have been activated for the Org
-    selected_poll_names = [poll.name for poll in polls]
+    flow_uuids = [poll.flow_uuid for poll in polls]
+    total_polls = len(flow_uuids)
 
-    temba_polls = get_client(org).get_flows().all()
-    temba_polls = {p.uuid: p for p in temba_polls}
-
-    total_polls = len(polls)
     logger.info(
         "Retrieving Questions and Categories for %d Poll(s) that were recently updated via the interface." %
         (total_polls))
-    for temba_poll in temba_polls.values():
-        if temba_poll.name in selected_poll_names:
-            poll = polls[selected_poll_names.index(temba_poll.name)]
-            # Sync related Questions, and maintain question order.
-            temba_questions = OrderedDict((r.uuid, r) for r in temba_poll.rulesets)
 
-            # Remove Questions that are no longer on RapidPro.
-            poll.questions.exclude(ruleset_uuid__in=temba_questions.keys()).delete()
+    result = get_client(org).get_definitions(flows=flow_uuids)
+    flows = result.flows
 
-            # Create new or update existing Questions to match RapidPro data.
-            for order, temba_question in enumerate(temba_questions.values(), 1):
-                Question.objects.from_temba(poll, temba_question, order)
+    for flow in flows:
+        poll = polls[flow_uuids.index(flow['metadata']['uuid'])]
+
+        # Sync related Questions, and maintain question order.
+        rule_sets = flow['rule_sets']
+
+        # Remove Questions that are no longer on RapidPro.
+        rule_uuids = [rset['uuid'] for rset in rule_sets]
+        poll.questions.exclude(ruleset_uuid__in=rule_uuids).delete()
+
+        # Create new or update existing Questions to match RapidPro data.
+        for order, rule_set in enumerate(rule_sets, 1):
+            Question.objects.from_temba(poll=poll, temba_question=rule_set, order=order)
 
     logger.info("Completed retrieving Questions and Categories for %d Poll(s)." % (total_polls))
