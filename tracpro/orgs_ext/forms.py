@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 from dash.orgs.forms import OrgForm
+from django.contrib.auth.models import User
 
 from temba_client.base import TembaAPIError
 
@@ -13,6 +14,25 @@ from tracpro.contacts.models import DataField
 from . import utils
 
 
+class UserMultipleChoiceField(forms.ModelMultipleChoiceField):
+    def label_from_instance(self, user):
+        """
+        Display a user as their full name from their profile,
+        if they have one, else "No profile", and then add on
+        their email to distinguish multiple accounts under the
+        same full name (or no profile).
+        """
+        try:
+            full_name = user.profile.full_name
+        except User.profile.RelatedObjectDoesNotExist:
+            full_name = "No profile"
+
+        return "{full_name} ({email})".format(
+            full_name=full_name,
+            email=user.email
+        )
+
+
 class OrgExtForm(OrgForm):
     """Also configure available languages for this organization.
 
@@ -23,14 +43,22 @@ class OrgExtForm(OrgForm):
 
     available_languages = forms.MultipleChoiceField(
         choices=settings.LANGUAGES,
-        help_text=_("The languages used by administrators in your organization"))
+        help_text=_("The languages used by administrators in your organization"),
+        widget=forms.widgets.SelectMultiple(attrs={'size': str(len(settings.LANGUAGES))}),
+    )
     show_spoof_data = forms.BooleanField(
         required=False,
         help_text=_("Whether to show spoof data for this organization."))
     contact_fields = forms.ModelMultipleChoiceField(
         queryset=None, required=False,
         help_text=_("Custom contact data fields that should be visible "
-                    "and editable in TracPro."))
+                    "and editable in TracPro."),
+        widget=forms.widgets.SelectMultiple(attrs={'size': '20'}),
+    )
+    administrators = UserMultipleChoiceField(
+        queryset=None,  # OrgForm.__init__ will set this
+        widget=forms.widgets.SelectMultiple(attrs={'size': '20'}),
+    )
 
     def __init__(self, *args, **kwargs):
         super(OrgExtForm, self).__init__(*args, **kwargs)
@@ -47,6 +75,10 @@ class OrgExtForm(OrgForm):
         # Config field values are not set automatically.
         self.fields['available_languages'].initial = self.instance.available_languages or []
         self.fields['show_spoof_data'].initial = self.instance.show_spoof_data or False
+
+        # Sort the administrators
+        self.fields['administrators'].queryset \
+            = self.fields['administrators'].queryset.order_by('profile__full_name')
 
         if not self.instance.pk:
             # We don't have this org's API key yet,

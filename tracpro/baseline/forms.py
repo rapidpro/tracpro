@@ -62,8 +62,10 @@ class QuestionModelChoiceField(forms.ModelChoiceField):
 class SpoofDataForm(forms.Form):
     """ Form to create spoofed poll data """
     contacts = forms.ModelMultipleChoiceField(
-        queryset=Contact.objects.all(),
-        help_text=_("Select contacts for this set of spoofed data."))
+        queryset=Contact.objects.order_by('name'),
+        help_text=_("Select contacts for this set of spoofed data."),
+        widget=forms.widgets.SelectMultiple(attrs={'size': '20'}),
+    )
     start_date = forms.DateField(
         help_text=_("Baseline poll data will be submitted on this date. "
                     "Follow up data will start on this date."))

@@ -36,7 +36,9 @@ class ActivePollsForm(forms.Form):
     """Set which polls should be synced with RapidPro."""
     polls = forms.ModelMultipleChoiceField(
         queryset=None, required=False, label=_("Active flows"),
-        help_text=_("Flows to track as polls."))
+        help_text=_("Flows to track as polls."),
+        widget=forms.widgets.SelectMultiple(attrs={'size': '20'}),
+    )
 
     def __init__(self, org, *args, **kwargs):
         self.org = org
@@ -46,7 +48,7 @@ class ActivePollsForm(forms.Form):
         # NOTE: This makes an in-band request to an external API.
         models.Poll.objects.sync(self.org)
 
-        polls = models.Poll.objects.by_org(self.org)
+        polls = models.Poll.objects.by_org(self.org).order_by('rapidpro_name')
         self.fields['polls'].queryset = polls
         self.fields['polls'].initial = polls.active()
 
