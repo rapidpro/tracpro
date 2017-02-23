@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 import mock
 import redis
 
-from temba_client.types import Contact as TembaContact
+from temba_client.v2.types import Contact as TembaContact
 
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse

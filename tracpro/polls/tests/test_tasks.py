@@ -28,19 +28,32 @@ class TestPollTask(TracProTest):
         # Data to pass to form for testing. Only select one poll
         self.data = [self.poll_1]
         # Patch the call to the API
-        flow_1 = mock.Mock()
-        flow_1.uuid = 'abcdefg123'
-        flow_1.name = self.poll_1.name
-        ruleset_existing = mock.Mock()
-        ruleset_existing.uuid = 'goodquestion'
-        ruleset_existing.label = 'good question'
-        ruleset_new = mock.Mock()
-        ruleset_new.uuid = 'newquestion'
-        ruleset_new.label = 'new question'
-        flow_1.rulesets = [ruleset_existing, ruleset_new]
+        ruleset_existing = {
+            'uuid': 'goodquestion',
+            'label': 'good question',
+            'rules': [],
+        }
+        ruleset_new = {
+            'uuid': 'newquestion',
+            'label': 'new question',
+            'rules': [],
+        }
+        # An item in the .flows part of the get_definitions response
+        flow_1 = {
+            'metadata': {
+                'uuid': self.poll_1.flow_uuid,
+                'name': self.poll_1.name,
+            },
+            'rule_sets': [
+                ruleset_existing,
+                ruleset_new,
+            ]
+        }
 
-        # Mock the call to the API to send back a single flow matching our first poll
-        self.mock_temba_client.get_flows.return_value.all.return_value = [flow_1]
+        # Mock the call to the API to send back an Export object containing a
+        # single flow matching our first poll
+        export_object = factories.TembaExport(flows=[flow_1])
+        self.mock_temba_client.get_definitions.return_value = export_object
         # Mock this call to return an empty rule set so that RapidPro API is not called
         mock_poll_get_flow.return_value.rulesets = []
 

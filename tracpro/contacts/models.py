@@ -18,7 +18,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from dash.utils import datetime_to_ms
 
-from temba_client.types import Contact as TembaContact
+from temba_client.v2.types import Contact as TembaContact
 
 from tracpro.client import get_client
 from tracpro.groups.models import Region, Group
@@ -194,7 +194,6 @@ class Contact(models.Model):
             """Return first obj from this org that matches one of the given uuids."""
             queryset = model_class.get_all(org)
             tracpro_uuids = queryset.values_list('uuid', flat=True)
-            temba_uuids = [temba_uuid.uuid for temba_uuid in temba_uuids]
             uuid = next((uuid for uuid in temba_uuids if uuid in tracpro_uuids), None)
             return queryset.get(uuid=uuid) if uuid else None
         # Use the first Temba group that matches one of the org's Regions.

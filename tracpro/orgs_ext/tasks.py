@@ -269,17 +269,17 @@ def fetch_runs(org_id, since, email=None):
     polls_by_flow_uuids = {p.flow_uuid: p for p in Poll.objects.active().by_org(org)}
 
     for flow_uuid in polls_by_flow_uuids.keys():
-        runs = client.get_runs(flow=flow_uuid, after=since).all()
+        runs = client.get_runs(flow=flow_uuid, after=since)
 
         log(_("Fetched {num} runs for poll {flow_uuid}.").format(num=len(runs), flow_uuid=flow_uuid))
 
         created = 0
         updated = 0
         for run in runs:
-            if run.flow.uuid not in polls_by_flow_uuids:
+            if run.flow not in polls_by_flow_uuids:
                 continue  # Response is for a Poll not tracked for this org.
 
-            poll = polls_by_flow_uuids[run.flow.uuid]
+            poll = polls_by_flow_uuids[run.flow]
             try:
                 response = Response.from_run(org, run, poll=poll)
             except ValueError as e:

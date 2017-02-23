@@ -6,9 +6,6 @@ from temba_client.v2 import TembaClient
 from django.conf import settings
 from django.db import migrations
 
-from tracpro.polls.utils import get_flow_definition
-
-
 NUMERIC_TESTS = ('number', 'lt', 'eq', 'gt', 'between')
 
 
@@ -23,7 +20,8 @@ def guess_question_type_from_rules(apps, schema_editor):
     for org in apps.get_model('orgs', 'Org').objects.all():
         client = get_temba_client(org)
         for poll in org.polls.all():
-            rulesets = get_flow_definition(client, poll.flow_uuid).rule_sets
+            exports = client.get_definitions(flows=[poll.flow_uuid])
+            rulesets = exports.flows[0].rule_sets
             rules_by_ruleset_uuid = {r['uuid']: r['rules'] for r in rulesets}
             for question in poll.questions.all():
                 rules = rules_by_ruleset_uuid.get(question.ruleset_uuid)

@@ -13,14 +13,13 @@ from django.db.models import Count, Q
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
-from temba_client.base import TembaObject, SimpleField, IntegerField
 
 from tracpro.client import get_client
 from tracpro.contacts.models import Contact
 
 from . import rules
 from .tasks import pollrun_start
-from .utils import extract_words, natural_sort_key, get_flow_definition
+from .utils import extract_words, natural_sort_key
 
 
 class PollQuerySet(models.QuerySet):
@@ -35,7 +34,11 @@ class PollQuerySet(models.QuerySet):
 class PollManager(models.Manager.from_queryset(PollQuerySet)):
 
     def from_temba(self, org, temba_poll):
-        """Create new or update existing Poll from RapidPro data."""
+        """
+        Create new or update existing Poll from RapidPro data.
+
+        :param TembaFlow temba_poll:
+        """
         poll, _ = self.get_or_create(org=org, flow_uuid=temba_poll.uuid)
 
         if poll.name == poll.rapidpro_name:
@@ -119,7 +122,11 @@ class Poll(models.Model):
         """Retrieve extra metadata about the RapidPro flow."""
         if not hasattr(self, '_flow_definition'):
             client = get_client(self.org)
-            self._flow_definition = get_flow_definition(client, self.flow_uuid)
+            export = client.get_definitions(flows=[self.flow_uuid])
+            if export.flows:
+                self._flow_definition = export.flows[0]
+            else:
+                self._flow_definition = None
         return self._flow_definition
 
     def save(self, *args, **kwargs):
@@ -574,7 +581,7 @@ class Response(models.Model):
         if not poll:
             poll = Poll.objects.active().by_org(org).get(flow_uuid=run.flow)
 
-        contact = Contact.get_or_fetch(poll.org, uuid=run.contact.uuid)
+        contact = Contact.get_or_fetch(poll.org, uuid=run.contact)
 
         # categorize completeness
         if run.exit_type == u'completed':
@@ -610,7 +617,7 @@ class Response(models.Model):
 
         # organize values by ruleset UUID
         questions = poll.questions.active()
-        valuesets_by_ruleset = {value.node: value for key, value in run.values}
+        valuesets_by_ruleset = {value.node: value for value in run.values}
         valuesets_by_question = {q: valuesets_by_ruleset.get(q.ruleset_uuid, None)
                                  for q in questions}
 
@@ -631,7 +638,7 @@ class Response(models.Model):
     def get_run_updated_on(cls, run):
         # find the result with the latest time
         last_value_on = None
-        for key, value in run.values.iteritems():
+        for value in run.values:
             if not last_value_on or value.time > last_value_on:
                 last_value_on = value.time
 
@@ -698,21 +705,3 @@ class Answer(models.Model):
         help_text=_("When this answer was submitted"))
 
     objects = AnswerManager()
-
-
-class FlowDefinition(TembaObject):
-    """This was removed from the v2 API Python library, but it's still useful."""
-    metadata = SimpleField()
-    version = IntegerField()
-    base_language = SimpleField()
-    flow_type = SimpleField()
-    action_sets = SimpleField()
-    rule_sets = SimpleField()
-    entry = SimpleField()
-
-
-class RuleSet(TembaObject):
-    """This was removed from the v2 API Python library, but it's still useful."""
-    uuid = SimpleField(src='node')
-    label = SimpleField()
-    response_type = SimpleField()

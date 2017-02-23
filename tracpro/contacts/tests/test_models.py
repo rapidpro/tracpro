@@ -7,7 +7,7 @@ import mock
 
 import pytz
 
-from temba_client.types import Contact as TembaContact
+from temba_client.v2.types import Contact as TembaContact
 
 from django.test.utils import override_settings
 from django.utils import timezone
@@ -77,20 +77,18 @@ class ContactTest(TracProDataTest):
         contact = models.Contact.get_or_fetch(org=self.unicef, uuid='C-001')
         self.assertEqual(contact.name, "Ann")
 
-    @mock.patch('tracpro.contacts.models.Contact.kwargs_from_temba')
-    def test_get_or_fetch_non_existing_local_contact(self, mock_kwargs_from_temba):
+    def test_get_or_fetch_non_existing_local_contact(self):
         mock_contact = TembaContact.create(
             name='Mo Polls',
             uuid='C-009',
             urns=['tel:123'],
-            groups=['G-001', 'G-007'],
+            groups=[self.region1.uuid, self.group1.uuid],
             fields={
                 'gender': 'M',
             },
             language='eng',
             modified_on=timezone.now(),
         )
-        mock_kwargs_from_temba._get_first.return_value = self.group1
         self.mock_temba_client.get_contacts.return_value = [mock_contact]
         contact = models.Contact.get_or_fetch(org=self.unicef, uuid='C-009')
         self.assertEqual(contact.name, "Mo Polls")
@@ -132,7 +130,7 @@ class ContactTest(TracProDataTest):
         self.assertEqual(temba_contact.name, "Ann")
         self.assertEqual(temba_contact.urns, ['tel:1234'])
         self.assertEqual(temba_contact.fields, {})
-        self.assertEqual(temba_contact.groups, ['G-005', 'G-001'])
+        self.assertEqual(set(temba_contact.groups), set(['G-005', 'G-001']))
         self.assertEqual(temba_contact.uuid, 'C-001')
 
     def test_by_org(self):

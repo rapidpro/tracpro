@@ -8,7 +8,7 @@ import mock
 
 import pytz
 
-from temba_client.types import Run, RunValueSet
+from temba_client.v2.types import Run
 
 from django.db import IntegrityError
 from django.utils import timezone
@@ -127,8 +127,6 @@ class TestPollManager(TracProTest):
         """Sync should create an inactive poll to track a new flow."""
         org = factories.Org()
         flow = factories.TembaFlow()
-        ruleset = factories.TembaRuleSet()
-        flow.rulesets = [ruleset]
         self.mock_temba_client.get_flows.return_value = [flow]
         models.Poll.objects.sync(org)
 
@@ -140,11 +138,15 @@ class TestPollManager(TracProTest):
 
     def test_sync__update_existing(self):
         """Sync should update existing objects if they have changed on RapidPro."""
-        self.mock_temba_client.get_definitions.return_value = \
-            factories.TembaExport(flows=[factories.TembaFlowDefinition()])
-
         org = factories.Org()
         poll = factories.Poll(org=org, is_active=True)
+        self.mock_temba_client.get_definitions.return_value = \
+            factories.TembaExport(flows=[{
+                'metadata': {
+                    'uuid': poll.flow_uuid,
+                }
+            }])
+
         flow = factories.TembaFlow(uuid=poll.flow_uuid)
         self.mock_temba_client.get_flows.return_value = [flow]
         models.Poll.objects.sync(org)
@@ -179,14 +181,18 @@ class TestPoll(TracProTest):
 
     def test_get_flow_definition(self):
         """Flow definition should be retrieved from the API and cached on the poll."""
-        definition = factories.TembaFlowDefinition()
-        self.mock_temba_client.get_definitions.return_value = factories.TembaExport(flows=[definition])
+        flow = {
+            'metadata': {
+                'uuid': 'abc',
+            },
+        }
+        self.mock_temba_client.get_definitions.return_value = factories.TembaExport(flows=[flow])
         poll = factories.Poll()
         self.assertFalse(hasattr(poll, '_flow_definition'))
         for i in range(2):
             # The result of the method should be cached on the poll.
-            self.assertEqual(poll.get_flow_definition(), definition)
-            self.assertEqual(poll._flow_definition, definition)
+            self.assertEqual(poll.get_flow_definition(), flow)
+            self.assertEqual(poll._flow_definition, flow)
 
             # API call count should not go up.
             self.assertEqual(self.mock_temba_client.get_definitions.call_count, 1)
@@ -205,20 +211,29 @@ class TestQuestionManager(TracProTest):
 
     def setUp(self):
         super(TestQuestionManager, self).setUp()
+        flow = {
+            'metadata': {
+                'uuid': 'abc123',
+            }
+        }
         self.mock_temba_client.get_definitions.return_value = \
-            factories.TembaExport(flows=[factories.TembaFlowDefinition()])
+            factories.TembaExport(flows=[flow])
 
     def test_from_temba__new(self):
         """Should create a new Question to match the Poll and uuid."""
         poll = factories.Poll()
-        ruleset = factories.TembaRuleSet()
+        ruleset = {
+            'uuid': '113423a',
+            'label': 'my ruleset',
+            'rules': [],
+        }
 
         # Should create a new Question object that matches the incoming data.
         question = models.Question.objects.from_temba(poll, ruleset, order=100)
         self.assertEqual(models.Question.objects.count(), 1)
-        self.assertEqual(question.ruleset_uuid, ruleset.uuid)
+        self.assertEqual(question.ruleset_uuid, ruleset['uuid'])
         self.assertEqual(question.poll, poll)
-        self.assertEqual(question.rapidpro_name, ruleset.label)
+        self.assertEqual(question.rapidpro_name, ruleset['label'])
         self.assertEqual(question.question_type, models.Question.TYPE_OPEN)
         self.assertEqual(question.order, 100)
 
@@ -227,9 +242,12 @@ class TestQuestionManager(TracProTest):
         poll = factories.Poll()
         question = factories.Question(
             poll=poll, question_type=models.Question.TYPE_OPEN)
-        ruleset = factories.TembaRuleSet(
+        ruleset = dict(
             uuid=question.ruleset_uuid,
-            response_type=models.Question.TYPE_MULTIPLE_CHOICE)
+            response_type=models.Question.TYPE_MULTIPLE_CHOICE,
+            label='My very own ruleset',
+            rules=[],
+        )
 
         # Should return the existing Question object.
         ret_val = models.Question.objects.from_temba(poll, ruleset, order=100)
@@ -239,9 +257,9 @@ class TestQuestionManager(TracProTest):
 
         # Existing Question should be updated to match the incoming data.
         question.refresh_from_db()
-        self.assertEqual(question.ruleset_uuid, ruleset.uuid)
+        self.assertEqual(question.ruleset_uuid, ruleset['uuid'])
         self.assertEqual(question.poll, poll)
-        self.assertEqual(question.rapidpro_name, ruleset.label)
+        self.assertEqual(question.rapidpro_name, ruleset['label'])
         self.assertEqual(question.order, 100)
 
         # Question type should not be updated.
@@ -252,7 +270,7 @@ class TestQuestionManager(TracProTest):
         poll = factories.Poll()
         other_poll = factories.Poll()
         other_question = factories.Question(poll=other_poll)
-        ruleset = factories.TembaRuleSet(uuid=other_question.ruleset_uuid)
+        ruleset = dict(uuid=other_question.ruleset_uuid, rules=[], label='A ruleset')
 
         # Should return a Question that is distinct from the existing
         # Question for another poll.
@@ -522,26 +540,21 @@ class TestResponse(TracProDataTest):
             id=1234,
             flow='F-001',  # flow UUID for poll #1
             contact='C-001',
-            completed=True,
+            exit_type=u'completed',
             values=[
-                RunValueSet.create(
+                Run.Value.create(
                     category="1 - 50",
                     node='RS-001',
-                    text="6",
                     value="6.00000000",
-                    label="Number of sheep",
                     time=datetime.datetime(2014, 1, 2, 3, 4, 5, 6, pytz.UTC)
                 ),
-                RunValueSet.create(
+                Run.Value.create(
                     category="1 - 25",
                     node='RS-002',
-                    text="4",
                     value="4.00000000",
-                    label="Number of goats",
                     time=datetime.datetime(2015, 1, 2, 3, 4, 5, 6, pytz.UTC),
                 ),
             ],
-            steps=[],  # not used
             created_on=datetime.datetime(2013, 1, 2, 3, 4, 5, 6, pytz.UTC),
         )
 
@@ -575,18 +588,15 @@ class TestResponse(TracProDataTest):
             id=2345,
             flow='F-001',  # flow UUID for poll #1
             contact='C-002',
-            completed=False,
+            exit_type='foo',  # anything but 'completed'
             values=[
-                RunValueSet.create(
+                Run.Value.create(
                     category="1 - 50",
                     node='RS-001',
-                    text="6",
                     value="6.00000000",
-                    label="Number of sheep",
                     time=datetime.datetime(2014, 1, 2, 3, 4, 5, 6, pytz.UTC),
                 ),
             ],
-            steps=[],  # not used
             created_on=datetime.datetime(2013, 1, 2, 3, 4, 5, 6, pytz.UTC),
         )
 
@@ -606,26 +616,21 @@ class TestResponse(TracProDataTest):
             id=2345,
             flow='F-001',  # flow UUID for poll #1
             contact='C-002',
-            completed=True,
+            exit_type='completed',
             values=[
-                RunValueSet.create(
+                Run.Value.create(
                     category="1 - 50",
                     node='RS-001',
-                    text="6",
                     value="6.00000000",
-                    label="Number of sheep",
                     time=datetime.datetime(2014, 1, 2, 3, 4, 5, 6, pytz.UTC),
                 ),
-                RunValueSet.create(
+                Run.Value.create(
                     category="1 - 25",
                     node='RS-002',
-                    text="4",
                     value="4.00000000",
-                    label="Number of goats",
                     time=datetime.datetime(2015, 1, 2, 3, 4, 5, 6, pytz.UTC),
                 ),
             ],
-            steps=[],  # not used
             created_on=datetime.datetime(2013, 1, 2, 3, 4, 5, 6, pytz.UTC),
         )
 
@@ -645,9 +650,8 @@ class TestResponse(TracProDataTest):
             id=3456,
             flow='F-001',  # flow UUID for poll #1
             contact='C-003',
-            completed=False,
+            exit_type='',
             values=[],
-            steps=[],  # not used
             created_on=datetime.datetime(2013, 1, 2, 3, 4, 5, 6, pytz.UTC),
         )
 
@@ -667,9 +671,8 @@ class TestResponse(TracProDataTest):
             id=4567,
             flow='F-001',  # flow UUID for poll #1
             contact='C-003',
-            completed=False,
+            exit_type='',
             values=[],
-            steps=[],  # not used
             created_on=datetime.datetime(2013, 1, 2, 3, 0, 0, 0, pytz.UTC),
         )
 
