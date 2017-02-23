@@ -78,7 +78,7 @@ class PollChartFilterForm(filters.DateRangeFilter, filters.DataFieldFilter,
         choices=NUMERIC_DATA_CHOICES)
     split_regions = forms.BooleanField(
         required=False,
-        help_text=_("Split out regional data for numeric charts."))
+        help_text=_("Split out panel-specific data for numeric charts."))
 
     def __init__(self, *args, **kwargs):
         if not kwargs.get('data'):

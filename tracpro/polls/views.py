@@ -600,7 +600,10 @@ class ResponseCRUDL(smartmin.SmartCRUDL):
                 questions = self.derive_questions().values()
 
                 resp_headers = ['Date']
-                contact_headers = ['Name', 'URN', 'Region', 'Group']
+                # FIXME: Should we change the column name "Region" to "Panel" and possibly break
+                # existing integrations that work by exporting .CSVs?
+                # Or leave it as "Region", and confuse people trying to create new integrations?
+                contact_headers = ['Name', 'URN', 'Region', 'Cohort']
                 question_headers = [q.name for q in questions]
                 writer.writerow(resp_headers + contact_headers + question_headers)
 

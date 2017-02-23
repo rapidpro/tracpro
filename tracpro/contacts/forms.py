@@ -14,7 +14,7 @@ from . import models
 class ContactForm(forms.ModelForm):
     urn = URNField(label=_("Phone/Twitter"))
     region = ModifiedLevelTreeNodeChoiceField(
-        label=_("Region"), empty_label="", queryset=Region.objects.none())
+        label=_("Panel"), empty_label="", queryset=Region.objects.none())
 
     class Meta:
         model = models.Contact

@@ -15,10 +15,10 @@
         <label class='control-label' for='region-select'>{% trans "Group By" %}</label>
         <select id='group-by' class='form-control' onchange='onGroupByChange(this)' name='group-by'>
           <option value='reporter' {% if group_by_reporter_group %}selected{% endif %}>
-            {% trans "Reporter Group" %}
+            {% trans "Cohort" %}
           </option>
           <option value='region' {% if not group_by_reporter_group %}selected{% endif %}>
-            {% trans "Region" %}
+            {% trans "Panel" %}
           </option>
         </select>
       </form>
@@ -170,7 +170,7 @@
           <tr>
             <th>
               {% if group_by_reporter_group %}
-                {% trans "Reporter Group" %}
+                {% trans "Cohort" %}
               {% else %}
                 {% trans "Region" %}
               {% endif %}
@@ -213,9 +213,9 @@
             <td>
               <i>
                 {% if group_by_reporter_group %}
-                  {% trans "No group" %}
+                  {% trans "No cohort" %}
                 {% else %}
-                  {% trans "No region" %}
+                  {% trans "No panel" %}
                 {% endif %}
               </i>
             </td>

@@ -288,7 +288,7 @@ class TestRegionUpdateAll(TracProTest):
         self.assertEqual(content['status'], 200)
         self.assertEqual(
             content['message'],
-            "Test regions have been updated.")
+            "Test panels have been updated.")
 
         new_structure = self.get_structure(models.Region.get_all(self.org))
         self.assertDictEqual(expected_structure, new_structure)
@@ -391,7 +391,7 @@ class TestRegionUpdateAll(TracProTest):
         """View requires a JSON-encoded dictionary in the `data` parameter."""
         self.assertErrorResponse(
             data={'data': json.dumps("Wrong type")},
-            message="Data must be a dict that maps region id to "
+            message="Data must be a dict that maps panel id to "
                     "(parent id, boundary id).")
 
     def test_post_wrong_value_type(self):
@@ -412,7 +412,7 @@ class TestRegionUpdateAll(TracProTest):
         structure[other_region.pk] = [None, None]
         self.assertErrorResponse(
             data={'data': json.dumps(structure)},
-            message="Data must map region id to parent id for every region "
+            message="Data must map panel id to parent id for every panel "
                     "in this org.")
 
     def test_post_missing_regions(self):
@@ -422,7 +422,7 @@ class TestRegionUpdateAll(TracProTest):
         structure.pop(regions.first().pk)
         self.assertErrorResponse(
             data={'data': json.dumps(structure)},
-            message="Data must map region id to parent id for every region "
+            message="Data must map panel id to parent id for every panel "
                     "in this org.")
 
     def test_post_inactive_regions(self):
@@ -432,7 +432,7 @@ class TestRegionUpdateAll(TracProTest):
         structure[self.region_inactive.pk] = [None, None]
         self.assertErrorResponse(
             data={'data': json.dumps(structure)},
-            message="Data must map region id to parent id for every region "
+            message="Data must map panel id to parent id for every panel "
                     "in this org.")
 
     def test_post_invalid_region(self):
@@ -443,7 +443,7 @@ class TestRegionUpdateAll(TracProTest):
         structure[12345] = [None, None]
         self.assertErrorResponse(
             data={'data': json.dumps(structure)},
-            message="Data must map region id to parent id for every region "
+            message="Data must map panel id to parent id for every panel "
                     "in this org.")
 
     def test_post_invalid_parent(self):
@@ -454,7 +454,7 @@ class TestRegionUpdateAll(TracProTest):
         structure[regions.last().pk] = ["asdf", None]
         self.assertErrorResponse(
             data={'data': json.dumps(structure)},
-            message="Region parent must be a region from the same org, or "
+            message="Panel parent must be a panel from the same org, or "
                     "null.")
 
     def test_post_inactive_parent(self):
@@ -464,7 +464,7 @@ class TestRegionUpdateAll(TracProTest):
         structure[regions.first().pk] = [self.region_inactive.pk, None]
         self.assertErrorResponse(
             data={'data': json.dumps(structure)},
-            message="Region parent must be a region from the same org, or "
+            message="Panel parent must be a panel from the same org, or "
                     "null.")
 
     def test_post_other_org_parent(self):
@@ -475,7 +475,7 @@ class TestRegionUpdateAll(TracProTest):
         structure[regions.first().pk] = [other_region.pk, None]
         self.assertErrorResponse(
             data={'data': json.dumps(structure)},
-            message="Region parent must be a region from the same org, or "
+            message="Panel parent must be a panel from the same org, or "
                     "null.")
 
     def test_post_invalid_boundaries(self):
@@ -486,7 +486,7 @@ class TestRegionUpdateAll(TracProTest):
         structure[regions.last().pk] = [None, "asdf"]
         self.assertErrorResponse(
             data={'data': json.dumps(structure)},
-            message="Region boundary must be a boundary from the same org, "
+            message="Panel boundary must be a boundary from the same org, "
                     "or null.")
 
     def test_post_other_org_boundary(self):
@@ -497,7 +497,7 @@ class TestRegionUpdateAll(TracProTest):
         structure[regions.first().pk] = [None, other_boundary.pk]
         self.assertErrorResponse(
             data={'data': json.dumps(structure)},
-            message="Region boundary must be a boundary from the same org, "
+            message="Panel boundary must be a boundary from the same org, "
                     "or null.")
 
     def test_post_same(self):
