@@ -42,7 +42,7 @@ class OrgExtForm(OrgForm):
     """
 
     available_languages = forms.MultipleChoiceField(
-        choices=settings.LANGUAGES,
+        choices=settings.LANGUAGES,  # Rely on settings to be in a useful order.
         help_text=_("The languages used by administrators in your organization"),
         widget=forms.widgets.SelectMultiple(attrs={'size': str(len(settings.LANGUAGES))}),
     )
@@ -58,6 +58,7 @@ class OrgExtForm(OrgForm):
     administrators = UserMultipleChoiceField(
         queryset=None,  # OrgForm.__init__ will set this
         widget=forms.widgets.SelectMultiple(attrs={'size': '20'}),
+        help_text=_("The administrators for this organization")
     )
 
     def __init__(self, *args, **kwargs):
@@ -98,7 +99,7 @@ class OrgExtForm(OrgForm):
                     raise
 
             data_fields = self.instance.datafield_set.all()
-            self.fields['contact_fields'].queryset = data_fields
+            self.fields['contact_fields'].queryset = data_fields.order_by('label')
             self.fields['contact_fields'].initial = data_fields.visible()
 
     def clean(self):
