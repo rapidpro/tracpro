@@ -579,9 +579,9 @@ class Response(models.Model):
             return response
 
         if not poll:
-            poll = Poll.objects.active().by_org(org).get(flow_uuid=run.flow)
+            poll = Poll.objects.active().by_org(org).get(flow_uuid=run.flow.uuid)
 
-        contact = Contact.get_or_fetch(poll.org, uuid=run.contact)
+        contact = Contact.get_or_fetch(poll.org, uuid=run.contact.uuid)
 
         # categorize completeness
         if run.exit_type == u'completed':
@@ -608,7 +608,6 @@ class Response(models.Model):
 
             # if contact has an older response for this pollrun, retire it
             Response.objects.filter(pollrun=pollrun, contact=contact).update(is_active=False)
-
             response = Response.objects.create(
                 flow_run_id=run.id, pollrun=pollrun, contact=contact,
                 created_on=run.created_on, updated_on=run_updated_on,
@@ -617,7 +616,7 @@ class Response(models.Model):
 
         # organize values by ruleset UUID
         questions = poll.questions.active()
-        valuesets_by_ruleset = {value.node: value for value in run.values}
+        valuesets_by_ruleset = {value.node: value for key, value in run.values.iteritems()}
         valuesets_by_question = {q: valuesets_by_ruleset.get(q.ruleset_uuid, None)
                                  for q in questions}
 
@@ -638,7 +637,8 @@ class Response(models.Model):
     def get_run_updated_on(cls, run):
         # find the result with the latest time
         last_value_on = None
-        for value in run.values:
+
+        for key, value in run.values.iteritems():
             if not last_value_on or value.time > last_value_on:
                 last_value_on = value.time
 
