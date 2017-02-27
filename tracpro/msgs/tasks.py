@@ -46,7 +46,7 @@ def send_unsolicited_message(org, text, contact):
     client = get_client(org)
 
     try:
-        client.create_broadcast(text, contacts=[contact.uuid])
+        client.create_broadcast(text=text, contacts=[contact.uuid])
 
         logger.info("Sent unsolicited message response to %s" % (contact.name))
     except Exception:
@@ -60,38 +60,39 @@ class FetchOrgInboxMessages(OrgTask):
         from .models import InboxMessage
         from tracpro.contacts.models import Contact
 
+        def get_or_create_message(message, org):
+            contact = Contact.objects.filter(uuid=message.contact.uuid).first()
+            # If the contact sync task hasn't gotten this contact yet,
+            # don't get the message yet
+            if contact:
+                InboxMessage.objects.get_or_create(
+                    rapidpro_message_id=message.id,
+                    org=org,
+                    contact=contact,
+                    text=message.text,
+                    archived=False,
+                    created_on=message.created_on,
+                    sent_on=message.sent_on,
+                    direction=message.direction[0],
+                )
+
         client = get_client(org)
 
         # Get non-archived, incoming inbox messages from the past week only
         # because getting all messages was taking too long
         last_week = timezone.now() - relativedelta(days=7)
+        # When this is called by the form, we also want to get the very recent sent messages
+        one_minute_ago = timezone.now() - relativedelta(minutes=1)
         inbox_messages = client.get_messages(folder='inbox', after=last_week)
+        sent_messages = client.get_messages(folder='sent', after=one_minute_ago)
 
         for inbox_message in inbox_messages:
-            contact = Contact.objects.filter(uuid=inbox_message.contact.uuid).first()
-            # If the contact sync task hasn't gotten this contact yet,
-            # don't get the message yet
-            if contact:
-                inbox_message_record = InboxMessage.objects.filter(
-                    rapidpro_message_id=inbox_message.id)
-                if inbox_message_record:
-                    inbox_message_record.update(
-                        org=org,
-                        contact=contact,
-                        text=inbox_message.text,
-                        archived=False,
-                        created_on=inbox_message.created_on,
-                        sent_on=inbox_message.sent_on,
-                        direction=inbox_message.direction,
-                    )
-                else:
-                    InboxMessage.objects.create(
-                        org=org,
-                        rapidpro_message_id=inbox_message.id,
-                        contact=contact,
-                        text=inbox_message.text,
-                        archived=False,
-                        created_on=inbox_message.created_on,
-                        sent_on=inbox_message.sent_on,
-                        direction=inbox_message.direction,
-                    )
+            get_or_create_message(
+                message=inbox_message,
+                org=org,
+                )
+        for sent_message in sent_messages:
+            get_or_create_message(
+                message=sent_message,
+                org=org,
+                )
