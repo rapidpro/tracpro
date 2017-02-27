@@ -185,7 +185,7 @@ class BoundaryManager(models.Manager.from_queryset(BoundaryQuerySet)):
     def sync(self, org):
         """Update org Boundaries from RapidPro and delete ones that were removed."""
         # Retrieve current Boundaries known to RapidPro.
-        temba_boundaries = get_client(org).get_boundaries()
+        temba_boundaries = list(get_client(org).get_boundaries())
 
         # Remove Boundaries that are no longer on RapidPro.
         uuids = [b.osm_id for b in temba_boundaries]

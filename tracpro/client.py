@@ -1,6 +1,6 @@
 from django.conf import settings
 from temba_client.clients import CursorQuery
-from temba_client.v2 import TembaClient
+from temba_client.v2 import Boundary, TembaClient
 
 
 def get_client(org):
@@ -28,6 +28,9 @@ class TracProClient(TembaClient):
         GETs a result query for the given endpoint
         """
         return TracProCursorQuery(self, '%s/%s.json' % (self.root_url, endpoint), params, clazz)
+
+    def get_boundaries(self):
+        return self._get_query('boundaries', {'geometry': 'true'}, Boundary)
 
 
 class TracProCursorQuery(CursorQuery):
