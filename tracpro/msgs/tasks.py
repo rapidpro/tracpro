@@ -60,12 +60,12 @@ class FetchOrgInboxMessages(OrgTask):
         from .models import InboxMessage
         from tracpro.contacts.models import Contact
 
-        def get_or_create_message(message, org):
+        def update_or_create_message(message, org):
             contact = Contact.objects.filter(uuid=message.contact.uuid).first()
             # If the contact sync task hasn't gotten this contact yet,
             # don't get the message yet
             if contact:
-                InboxMessage.objects.get_or_create(
+                InboxMessage.objects.update_or_create(
                     rapidpro_message_id=message.id,
                     org=org,
                     contact=contact,
@@ -87,12 +87,12 @@ class FetchOrgInboxMessages(OrgTask):
         sent_messages = client.get_messages(folder='sent', after=one_minute_ago)
 
         for inbox_message in inbox_messages:
-            get_or_create_message(
+            update_or_create_message(
                 message=inbox_message,
                 org=org,
                 )
         for sent_message in sent_messages:
-            get_or_create_message(
+            update_or_create_message(
                 message=sent_message,
                 org=org,
                 )
