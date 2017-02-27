@@ -1,9 +1,132 @@
 from __future__ import absolute_import, unicode_literals
 
+from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 
 from tracpro.test.cases import TracProDataTest
+
+
+class ManageUserCreateTest(TracProDataTest):
+    def test_create_as_non_superuser(self):
+        # Non-superuser cannot use this view
+        url = reverse('profiles.admin_create')
+        self.login(self.admin)  # Not a superuser
+        # Post something that would be an error (empty form) and would be a 200
+        # status if we had access.
+        response = self.url_post('unicef', url, dict())
+        # We get redirected to login
+        self.assertEqual(response.status_code, 302, response)
+        self.assertIn('login', response['Location'])
+
+    def test_create_with_fields_missing(self):
+        # An error case
+        url = reverse('profiles.admin_create')
+        self.login(self.superuser)
+        # submit with no fields entered
+        response = self.url_post('unicef', url, dict())
+        self.assertEqual(response.status_code, 200, response)
+        error_dict = response.context['form'].errors
+        self.assertEqual(4, len(error_dict), repr(error_dict))
+        self.assertFormError(
+            response, 'form', 'full_name',
+            'This field is required.')
+        self.assertFormError(
+            response, 'form', 'email',
+            'This field is required.')
+        self.assertFormError(
+            response, 'form', 'password',
+            'This field is required.')
+        self.assertFormError(
+            response, 'form', '__all__',
+            'Email address already taken.'  # FIXME: this error makes no sense in this context
+        )
+
+    def test_create_successfully(self):
+        # create non-superuser
+        url = reverse('profiles.admin_create')
+        self.login(self.superuser)
+        data = {
+            'full_name': "Mo Polls",
+            'email': "mo@trac.com",
+            'password': "abc123xy",
+            'confirm_password': "abc123xy",
+            'is_active': True,
+            'is_superuser': False,
+        }
+        response = self.url_post('unicef', url, data)
+        self.assertEqual(response.status_code, 302, response)
+        user = User.objects.get(email='mo@trac.com')
+        self.assertEqual(user.profile.full_name, 'Mo Polls')
+        self.assertTrue(user.is_active)
+        self.assertFalse(user.is_superuser)
+        self.assertEqual(user, authenticate(username=user.username, password="abc123xy"))
+
+    def test_create_superuser(self):
+        # create superuser
+        url = reverse('profiles.admin_create')
+        self.login(self.superuser)
+        data = {
+            'full_name': "Mo Polls",
+            'email': "mo@trac.com",
+            'password': "abc123xy",
+            'confirm_password': "abc123xy",
+            'is_active': True,
+            'is_superuser': True,
+        }
+        response = self.url_post('unicef', url, data)
+        self.assertEqual(response.status_code, 302, response)
+        user = User.objects.get(email='mo@trac.com')
+        self.assertEqual(user.profile.full_name, 'Mo Polls')
+        self.assertTrue(user.is_active)
+        self.assertTrue(user.is_superuser)
+
+
+class ManageUserUpdateTest(TracProDataTest):
+    def test_update_as_non_superuser(self):
+        # Non-superuser cannot use this view
+        self.login(self.admin)
+        url = reverse('profiles.admin_update', args=[self.user1.pk])
+        response = self.url_post('unicef', url, dict())
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('login', response['Location'])
+
+    def test_update(self):
+        # Change non-superuser to superuser, change their password, etc etc.
+        self.login(self.superuser)
+        url = reverse('profiles.admin_update', args=[self.user1.pk])
+        data = {
+            'full_name': "Mo Polls",
+            'email': "mo@trac.com",
+            'new_password': "abc123xy",
+            'confirm_password': "abc123xy",
+            'is_active': False,
+            'is_superuser': True,
+        }
+        response = self.url_post('unicef', url, data)
+        self.assertEqual(response.status_code, 302)
+        user = User.objects.get(email='mo@trac.com')
+        self.assertEqual(user.profile.full_name, "Mo Polls")
+        self.assertFalse(user.is_active)
+        self.assertTrue(user.is_superuser)
+        self.assertEqual(user, authenticate(username=user.username, password="abc123xy"))
+
+        # and back.  changing password optional.
+        data = {
+            'full_name': "Mo Polls",
+            'email': "mo@trac.com",
+            # 'password': "abc123xy",
+            # 'confirm_password': "abc123xy",
+            'is_active': True,
+            'is_superuser': False,
+        }
+        response = self.url_post('unicef', url, data)
+        self.assertEqual(response.status_code, 302)
+        user = User.objects.get(email='mo@trac.com')
+        self.assertEqual(user.profile.full_name, "Mo Polls")
+        self.assertTrue(user.is_active)
+        self.assertFalse(user.is_superuser)
+        self.assertEqual(user, authenticate(username=user.username, password="abc123xy"))
 
 
 class UserCRUDLTest(TracProDataTest):

@@ -12,14 +12,14 @@ from tracpro.groups.models import Region
 # === Monkey patching for the User class === #
 
 def _user_create(cls, org, full_name, email, password, change_password=False,
-                 regions=None):
+                 regions=None, **kwargs):
     """
     Creates a regular user with specific region access
     """
     from .models import Profile
 
     # create auth user
-    user = cls.objects.create(is_active=True, username=email, email=email)
+    user = cls.objects.create(is_active=True, username=email, email=email, **kwargs)
     user.set_password(password)
     user.save()
 

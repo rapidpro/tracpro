@@ -7,6 +7,15 @@ Tracpro's version is incremented upon each merge to master according to our
 We recommend reviewing the release notes and code diffs before upgrading
 between versions.
 
+v1.5.0 (released 2017-02-27)
+----------------------------
+
+Code diff: https://github.com/rapidpro/tracpro/compare/v1.5.0...develop
+
+* Many-to-many contact to group relation update in the back-end
+* Allow admins to set super user status on the front end
+* Web interface to manage fetch runs
+
 v1.4.3 (released 2016-04-06)
 ----------------------------
 

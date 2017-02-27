@@ -1,20 +1,24 @@
 from __future__ import absolute_import, unicode_literals
 
+from django.contrib import messages
+from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 
 from dash.orgs.views import OrgCRUDL, InferOrgMixin, OrgPermsMixin
 from dash.utils import ms_to_datetime
+from dateutil.relativedelta import relativedelta
 
 from smartmin.templatetags.smartmin import format_datetime
-from smartmin.views import SmartUpdateView
+from smartmin.views import SmartUpdateView, SmartFormView
 
 from . import constants
 from . import forms
+from . import tasks
 
 
 class OrgExtCRUDL(OrgCRUDL):
     actions = ('create', 'update', 'list', 'home', 'edit', 'chooser',
-               'choose')
+               'choose', 'fetchruns')
 
     class Create(OrgCRUDL.Create):
         form_class = forms.OrgExtForm
@@ -71,3 +75,23 @@ class OrgExtCRUDL(OrgCRUDL):
         permission = 'orgs.org_edit'
         success_url = '@orgs_ext.org_home'
         title = _("Edit My Organization")
+
+    class Fetchruns(InferOrgMixin, SmartFormView):
+        form_class = forms.FetchRunsForm
+        # Hack: has_perm always returns true for a superuser.  Since this
+        # isn't a valid permission name, it'll always be false for non superuser.
+        # If there's a real way to require superuser in SmartView, I'm all ears.
+        permission = 'must be superuser'
+        success_url = '@orgs_ext.org_home'
+        title = _("Fetch past runs for my organization")
+
+        def form_valid(self, form):
+            org = self.get_object()
+            howfarback = relativedelta(days=form.cleaned_data['days'])
+            since = timezone.now() - howfarback
+            email = self.request.user.email
+            tasks.fetch_runs.delay(org.id, since, email)
+            success_message = _("We have scheduled a fetch in the background. An email will be "
+                                "sent to {email} when the fetch has completed.").format(email=email)
+            messages.success(self.request, success_message)
+            return super(SmartFormView, self).form_valid(form)
