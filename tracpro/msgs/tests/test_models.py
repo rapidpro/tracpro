@@ -3,7 +3,7 @@ from __future__ import absolute_import, unicode_literals
 from django.test.utils import override_settings
 from django.utils import timezone
 
-from temba_client.types import Broadcast
+from temba_client.v2.types import Broadcast
 
 from tracpro.msgs.models import (
     Message, COHORT_ALL, COHORT_RESPONDENTS, COHORT_NONRESPONDENTS)
