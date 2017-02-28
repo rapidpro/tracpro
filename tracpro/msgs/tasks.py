@@ -69,13 +69,14 @@ class FetchOrgInboxMessages(OrgTask):
                     rapidpro_message_id=message.id,
                     org=org,
                     contact=contact,
-                    text=message.text,
-                    archived=False,
-                    created_on=message.created_on,
-                    sent_on=message.sent_on,
-                    direction=message.direction[0],
+                    defaults={
+                        'text': message.text,
+                        'archived': False,
+                        'created_on': message.created_on,
+                        'sent_on': message.sent_on,
+                        'direction': message.direction[0]
+                        },
                 )
-
         client = get_client(org)
 
         # Get non-archived, incoming inbox messages from the past week only
