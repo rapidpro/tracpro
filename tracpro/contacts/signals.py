@@ -42,6 +42,7 @@ def set_groups_to_new_contact(sender, instance, created, **kwargs):
     if created:
         try:
             temba_contact = get_client(instance.org).get_contacts(uuid=instance.uuid)[0]
+            # This will omit the contact's groups that are not selected to sync, but that's intentional.
             groups = Group.objects.filter(uuid__in=temba_contact.groups)
             instance.groups.add(*groups)
         except IndexError:
