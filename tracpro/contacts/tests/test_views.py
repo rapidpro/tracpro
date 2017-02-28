@@ -4,7 +4,7 @@ import datetime
 import json
 import pytz
 
-from temba_client.types import Contact as TembaContact, Run
+from temba_client.v2.types import Contact as TembaContact, Run
 
 from django.core.urlresolvers import reverse
 from django.utils import timezone

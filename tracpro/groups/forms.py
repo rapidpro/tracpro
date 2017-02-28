@@ -3,6 +3,8 @@ from __future__ import unicode_literals
 from django import forms
 from django.utils.translation import ugettext_lazy as _
 
+from tracpro.client import get_client
+
 
 class ContactGroupsForm(forms.Form):
     groups = forms.MultipleChoiceField(
@@ -16,8 +18,8 @@ class ContactGroupsForm(forms.Form):
         super(ContactGroupsForm, self).__init__(*args, **kwargs)
 
         # Retrieve Contact Group choices from RapidPro.
-        choices = [(group.uuid, "%s (%d)" % (group.name, group.size))
-                   for group in self.org.get_temba_client().get_groups()]
+        choices = [(group.uuid, "%s (%d)" % (group.name, group.count))
+                   for group in get_client(org).get_groups()]
         self.fields['groups'].choices = choices
 
         # Set initial group values from the org.

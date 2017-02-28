@@ -6,7 +6,6 @@ import pycountry
 
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from dash.utils import get_obj_cacheable
-from dash.utils.sync import ChangeType
 
 from django.http import JsonResponse
 from django.utils.translation import ugettext_lazy as _
@@ -19,7 +18,7 @@ from tracpro.polls.models import PollRun, Response
 
 from .fields import URN_SCHEME_CHOICES
 from .forms import ContactForm
-from .models import Contact
+from .models import Contact, ChangeType
 
 
 class ContactCRUDL(SmartCRUDL):
