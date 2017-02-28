@@ -18,6 +18,8 @@ Production deployment
    * Confirm that changes are behaving as expected, and troubleshoot the
      deploy process until you are confident.
 
+#. Check out the ``develop`` branch.
+
 #. Update the :doc:`release notes <changelog>` (including notes about
    one-off deployment requirements, if needed) and add the current date as
    the release date. Commit these changes and push to GitHub.
@@ -43,7 +45,11 @@ Production deployment
 
 #. Copy the release notes to the GitHub releases interface.
 
-#. Deploy the master branch to production.
+#. Deploy the master branch to production::
+
+    cd ../hosted-tracpro
+    git checkout master && git pull
+    fab hosted_production deploy
 
 #. Merge the ``master`` branch into ``develop``::
 
