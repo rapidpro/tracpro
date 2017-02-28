@@ -20,6 +20,10 @@ def guess_question_type_from_rules(apps, schema_editor):
     for org in apps.get_model('orgs', 'Org').objects.all():
         client = get_temba_client(org)
         for poll in org.polls.all():
+            # FIXME: We can make this API call on all the flows once here
+            # rather than looping with the new APIv2 changes
+            # This is functional in the meantime but calls the API
+            # more often than necessary
             exports = client.get_definitions(flows=[poll.flow_uuid])
             rulesets = exports.flows[0].rule_sets
             rules_by_ruleset_uuid = {r['uuid']: r['rules'] for r in rulesets}
