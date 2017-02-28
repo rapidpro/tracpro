@@ -166,7 +166,6 @@ class InboxMessageCRUDL(SmartCRUDL):
                 # Send the new inbox message through the temba task
                 send_unsolicited_message(self.request.org, request.POST.get('text'), self.contact)
                 logger.info("Sending a message to %s" % (self.contact))
-                # Wait 1 second to allow message to reach server then run the task
                 # to pull all inbox messages for this org into the
                 # local InboxMessage table
                 fetch_org_inbox = FetchOrgInboxMessages()
