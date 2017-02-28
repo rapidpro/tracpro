@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 from dash.orgs.forms import OrgForm
 from django.contrib.auth.models import User
+from django.db.models.functions import Lower
 
 from temba_client.base import TembaAPIError
 
@@ -79,7 +80,8 @@ class OrgExtForm(OrgForm):
 
         # Sort the administrators
         self.fields['administrators'].queryset \
-            = self.fields['administrators'].queryset.order_by('profile__full_name')
+            = self.fields['administrators'].queryset\
+            .annotate(lcase_full_name=Lower('profile__full_name')).order_by('lcase_full_name')
 
         if not self.instance.pk:
             # We don't have this org's API key yet,
@@ -99,7 +101,8 @@ class OrgExtForm(OrgForm):
                     raise
 
             data_fields = self.instance.datafield_set.all()
-            self.fields['contact_fields'].queryset = data_fields.order_by('label')
+            self.fields['contact_fields'].queryset = data_fields\
+                .annotate(lcase_label=Lower('label')).order_by('lcase_label')
             self.fields['contact_fields'].initial = data_fields.visible()
 
     def clean(self):

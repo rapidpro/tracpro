@@ -1,7 +1,5 @@
 from __future__ import unicode_literals
 
-from operator import itemgetter
-
 from django import forms
 from django.utils.translation import ugettext_lazy as _
 
@@ -22,8 +20,8 @@ class ContactGroupsForm(forms.Form):
         # Retrieve Contact Group choices from RapidPro.
         choices = [(group.uuid, "%s (%d)" % (group.name, group.size))
                    for group in self.org.get_temba_client().get_groups()]
-        # Sort choices by the labels
-        choices.sort(key=itemgetter(1))
+        # Sort choices by the labels, case-insensitively
+        choices.sort(key=lambda item: item[1].lower())
         self.fields['groups'].choices = choices
 
         # Set initial group values from the org.

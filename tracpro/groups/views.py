@@ -10,6 +10,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.urlresolvers import reverse
 from django.db import transaction
 from django.db.models import Prefetch
+from django.db.models.functions import Lower
 from django.http import (
     HttpResponseBadRequest, HttpResponseRedirect, JsonResponse)
 from django.shortcuts import redirect
@@ -130,7 +131,8 @@ class RegionCRUDL(SmartCRUDL):
             return regions
 
         def get_context_data(self, **kwargs):
-            org_boundaries = Boundary.objects.by_org(self.request.org).order_by('name')
+            org_boundaries = Boundary.objects.by_org(self.request.org)\
+                .annotate(lcase_name=Lower('name')).order_by('lcase_name')
             kwargs.setdefault('org_boundaries', org_boundaries)
             return super(RegionCRUDL.List, self).get_context_data(**kwargs)
 

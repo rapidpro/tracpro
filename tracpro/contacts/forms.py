@@ -1,6 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
 from django import forms
+from django.db.models.functions import Lower
 from django.utils.translation import ugettext_lazy as _
 
 from tracpro.groups.models import Group, Region
@@ -35,9 +36,11 @@ class ContactForm(forms.ModelForm):
         self.fields['name'].required = True
         self.fields['group'].required = True
 
-        self.fields['region'].queryset = self.user.get_all_regions(org).order_by('name')
+        regions = self.user.get_all_regions(org)\
+            .annotate(lcase_name=Lower('name')).order_by('lcase_name')
+        self.fields['region'].queryset = regions
         self.fields['group'].empty_label = ""
-        self.fields['group'].queryset = Group.get_all(org).order_by('name')
+        self.fields['group'].queryset = Group.get_all(org).annotate(lcase_name=Lower('name')).order_by('lcase_name')
 
         # Add form fields to update contact's DataField values.
         self.data_field_keys = []

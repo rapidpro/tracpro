@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 from django import forms
+from django.db.models.functions import Lower
 from django.utils.translation import ugettext_lazy as _
 
 from dash.utils import get_month_range
@@ -48,7 +49,8 @@ class ActivePollsForm(forms.Form):
         # NOTE: This makes an in-band request to an external API.
         models.Poll.objects.sync(self.org)
 
-        polls = models.Poll.objects.by_org(self.org).order_by('rapidpro_name')
+        polls = models.Poll.objects.by_org(self.org)\
+            .annotate(lcase_rapidpro_name=Lower('rapidpro_name')).order_by('lcase_rapidpro_name')
         self.fields['polls'].queryset = polls
         self.fields['polls'].initial = polls.active()
 
