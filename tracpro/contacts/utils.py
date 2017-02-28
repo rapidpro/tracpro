@@ -95,8 +95,16 @@ def sync_pull_contacts(org, contact_class, fields=None, groups=None,
 
 def temba_compare_contacts(first, second, fields=None, groups=None):
     """
-    Compares two Temba contacts to determine if there are differences. Returns
-    first difference found.
+    Compares two Temba contacts to determine if there are differences.
+    These two contacts are presumably referencing the same contact,
+    but we need to see if there are any differences between them.
+    fields: if this is passed in, we should check that these specific
+            fields exist on both contacts, and
+            ignore all other non-matching fields from the contacts
+    groups: if this is passed in, we can check that the two contacts
+            belong to the same groups
+
+    Returns first difference found.
     """
     if first.uuid != second.uuid:  # pragma: no cover
         raise ValueError("Can't compare contacts with different UUIDs")
