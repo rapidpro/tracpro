@@ -271,6 +271,7 @@ GROUP_PERMISSIONS = {
     "Administrators": (
         'orgs.org_home',
         'orgs.org_edit',
+        'orgs.fetch_runs',
         'baseline.baselineterm.*',
         'contacts.contact.*',
         'groups.boundary.*',
