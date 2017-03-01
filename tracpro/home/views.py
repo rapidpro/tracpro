@@ -23,8 +23,7 @@ class HomeView(OrgPermsMixin, SmartTemplateView):
         return request.user.is_authenticated()
 
     def get_context_data(self, **kwargs):
-        polls = Poll.objects.active().by_org(self.request.org)
-        polls = polls.annotate(lcase_name=Lower('name')).order_by('lcase_name')
+        polls = Poll.objects.active().by_org(self.request.org).order_by(Lower('name'))
 
         indicators = BaselineTerm.objects.by_org(self.request.org)
         indicators = indicators.order_by('-end_date')

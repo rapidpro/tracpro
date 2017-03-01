@@ -33,8 +33,7 @@ class BaselineTermForm(forms.ModelForm):
         super(BaselineTermForm, self).__init__(*args, **kwargs)
 
         if org:
-            polls = Poll.objects.active().by_org(org)\
-                .annotate(lcase_name=Lower('name')).order_by('lcase_name')
+            polls = Poll.objects.active().by_org(org).order_by(Lower('name'))
             self.fields['baseline_poll'].queryset = polls
             self.fields['follow_up_poll'].queryset = polls
 
@@ -64,7 +63,7 @@ class QuestionModelChoiceField(forms.ModelChoiceField):
 class SpoofDataForm(forms.Form):
     """ Form to create spoofed poll data """
     contacts = forms.ModelMultipleChoiceField(
-        queryset=Contact.objects.annotate(lcase_name=Lower('name')).order_by('lcase_name'),
+        queryset=Contact.objects.order_by(Lower('name')),
         help_text=_("Select contacts for this set of spoofed data."),
         widget=forms.widgets.SelectMultiple(attrs={'size': '20'}),
     )
@@ -74,12 +73,12 @@ class SpoofDataForm(forms.Form):
     end_date = forms.DateField(
         help_text=_("Follow up data will end on this date. "))
     baseline_question = QuestionModelChoiceField(
-        queryset=Question.objects.annotate(lcase_poll__name=Lower('poll__name')).order_by('lcase_poll__name', 'text'),
+        queryset=Question.objects.order_by(Lower('poll__name'), 'text'),
         help_text=_("Select a baseline question which will have numeric "
                     "answers only."))
     follow_up_question = QuestionModelChoiceField(
         label=_("Follow Up Question"),
-        queryset=Question.objects.annotate(lcase_poll__name=Lower('poll__name')).order_by('lcase_poll__name', 'text'),
+        queryset=Question.objects.order_by(Lower('poll__name'), 'text'),
         help_text=_("Select a follow up question which will have "
                     "numeric answers only."))
     baseline_minimum = forms.IntegerField(
@@ -103,7 +102,7 @@ class SpoofDataForm(forms.Form):
         super(SpoofDataForm, self).__init__(*args, **kwargs)
 
         if org:
-            contacts = Contact.objects.active().by_org(org).annotate(lcase_name=Lower('name')).order_by('lcase_name')
+            contacts = Contact.objects.active().by_org(org).order_by(Lower('name'))
             self.fields['contacts'].queryset = contacts
             questions = Question.objects.filter(poll__in=Poll.objects.active().by_org(org))
             self.fields['baseline_question'].queryset = questions
@@ -172,8 +171,7 @@ class BaselineTermFilterForm(filters.DateRangeFilter, filters.DataFieldFilter,
             queryset = self.org.regions.filter(is_active=True)
         else:
             queryset = data_regions
-        queryset = queryset.filter(pk__in=baseline_term.get_regions())
-        queryset = queryset.annotate(lcase_name=Lower('name')).order_by('lcase_name')
+        queryset = queryset.filter(pk__in=baseline_term.get_regions()).order_by(Lower('name'))
         self.fields['region'].queryset = queryset
 
     def filter_contacts(self, queryset=None):

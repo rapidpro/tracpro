@@ -42,7 +42,7 @@ class UserForm(forms.ModelForm):
         help_text=_("Whether user must change password on next login."))
     regions = ModifiedLevelTreeNodeMultipleChoiceField(
         label=_("Regions"),
-        queryset=Region.objects.annotate(lcase_name=Lower('name')).order_by('lcase_name'),
+        queryset=Region.objects.order_by(Lower('name')),
         required=False,
         help_text=_("Region(s) which this user can access. User will "
                     "automatically be granted access to sub-regions."),

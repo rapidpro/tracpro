@@ -169,8 +169,7 @@ def multiple_pollruns_numeric_split(pollruns, answers, responses, question, cont
     sum_data = []
     avg_data = []
     rate_data = []
-    regions = (Region.objects.filter(pk__in=data.keys())
-               .annotate(lcase_name=Lower('name')).order_by('lcase_name'))
+    regions = (Region.objects.filter(pk__in=data.keys()).order_by(Lower('name')))
     for region in regions:
         answer_sums, answer_avgs, answer_stdevs, response_rates = data.get(region.pk)
         region_answer_sums = []
