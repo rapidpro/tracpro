@@ -21,6 +21,7 @@ from temba_client.base import TembaAPIError
 from temba_client.utils import parse_iso8601, format_iso8601
 
 from tracpro.celery import app as celery_app
+from tracpro.client import get_client
 
 from . import utils
 
@@ -199,7 +200,7 @@ class OrgTask(WrapCacheMixin, WrapLoggerMixin, PostTransactionTask):
                 elif isinstance(e, SoftTimeLimitExceeded):
                     msg = "Time limit exceeded (#{count})."
                     full_msg = self.log_error(org, msg, count=fail_count)
-                    self.send_error_email(org, full_msg)
+                    self.send_org_error_email(org, full_msg)
                     return None
                 else:
                     msg = "Unknown failure (#{count})."
@@ -216,16 +217,16 @@ class OrgTask(WrapCacheMixin, WrapLoggerMixin, PostTransactionTask):
             self.log_info(org, msg)
             return None
 
-    def send_error_email(self, org, msg):
+    def send_org_error_email(self, org, msg):
         # FIXME: Logging is not sending us regular logging error emails.
-        self.log_debug(org, "Starting to send error email.")
+        self.log_debug(org, "Starting to send org error email.")
         send_mail(
             subject="{}{}".format(settings.EMAIL_SUBJECT_PREFIX, msg),
             message=msg,
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=dict(settings.ADMINS).values(),
-            fail_silently=True)
-        self.log_debug(org, "Finished sending error email.")
+            fail_silently=False)
+        self.log_debug(org, "Finished sending org error email.")
 
     def wrap_logger(self, level, org, msg, *args, **kwargs):
         kwargs.setdefault('org', org.name)
@@ -263,34 +264,35 @@ def fetch_runs(org_id, since, email=None):
     log(_('Fetching responses for org {org_name} since {time}.')
         .format(org_name=org.name, time=since.strftime('%b %d, %Y %H:%M')))
 
-    client = org.get_temba_client()
+    client = get_client(org)
 
     polls_by_flow_uuids = {p.flow_uuid: p for p in Poll.objects.active().by_org(org)}
 
-    runs = client.get_runs(flows=polls_by_flow_uuids.keys(), after=since)
+    for flow_uuid in polls_by_flow_uuids.keys():
+        runs = client.get_runs(flow=flow_uuid, after=since).all()
 
-    log(_("Fetched {num} runs for org {org_name}.").format(num=len(runs), org_name=org.name))
+        log(_("Fetched {num} runs for poll {flow_uuid}.").format(num=len(runs), flow_uuid=flow_uuid))
 
-    created = 0
-    updated = 0
-    for run in runs:
-        if run.flow not in polls_by_flow_uuids:
-            continue  # Response is for a Poll not tracked for this org.
+        created = 0
+        updated = 0
+        for run in runs:
+            if run.flow.uuid not in polls_by_flow_uuids:
+                continue  # Response is for a Poll not tracked for this org.
 
-        poll = polls_by_flow_uuids[run.flow]
-        try:
-            response = Response.from_run(org, run, poll=poll)
-        except ValueError as e:
-            log(_("Unable to save run #{num} due to error: {message}.").format(num=run.id, message=e.message))
-            continue
+            poll = polls_by_flow_uuids[run.flow.uuid]
+            try:
+                response = Response.from_run(org, run, poll=poll)
+            except ValueError as e:
+                log(_("Unable to save run #{num} due to error: {message}.").format(num=run.id, message=e.message))
+                continue
 
-        if getattr(response, 'is_new', False):
-            created += 1
-        else:
-            updated += 1
+            if getattr(response, 'is_new', False):
+                created += 1
+            else:
+                updated += 1
 
-    log(_("Created {created} new responses and updated {updated} existing responses.")
-        .format(created=created, updated=updated))
+        log(_("Created {created} new responses and updated {updated} existing responses.")
+            .format(created=created, updated=updated))
 
     if email:
         send_mail(
@@ -299,4 +301,4 @@ def fetch_runs(org_id, since, email=None):
             message="\n".join(messages) + "\n",
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[email],
-            fail_silently=True)
+            fail_silently=False)
