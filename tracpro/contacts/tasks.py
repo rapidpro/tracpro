@@ -5,9 +5,8 @@ from django.apps import apps
 from celery.utils.log import get_task_logger
 from djcelery_transactions import task
 
-from dash.utils.sync import sync_push_contact
-
 from tracpro.orgs_ext.tasks import OrgTask
+from tracpro.contacts.utils import sync_push_contact
 
 
 logger = get_task_logger(__name__)

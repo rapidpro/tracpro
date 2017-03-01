@@ -4,6 +4,7 @@ import datetime
 from decimal import Decimal, InvalidOperation
 import logging
 from uuid import uuid4
+from enum import Enum
 
 from django import forms
 from django.conf import settings
@@ -16,17 +17,24 @@ from django.utils.text import force_text
 from django.utils.translation import ugettext_lazy as _
 
 from dash.utils import datetime_to_ms
-from dash.utils.sync import ChangeType, sync_pull_contacts
 
-from temba_client.types import Contact as TembaContact
+from temba_client.v2.types import Contact as TembaContact
 
+from tracpro.client import get_client
 from tracpro.groups.models import Region, Group
 from tracpro.orgs_ext.constants import TaskType
 
 from .tasks import push_contact_change
+from .utils import sync_pull_contacts
 
 
 logger = logging.getLogger(__name__)
+
+
+class ChangeType(Enum):
+    created = 1
+    updated = 2
+    deleted = 3
 
 
 class ContactQuerySet(models.QuerySet):
@@ -139,7 +147,7 @@ class Contact(models.Model):
         temba_contact.name = self.name
         temba_contact.urns = [self.urn]
         temba_contact.fields = fields
-        temba_contact.groups = list(self.groups.all().values_list('uuid', flat=True))
+        temba_contact.groups = list(self.groups.values_list('uuid', flat=True))
         temba_contact.language = self.language
         temba_contact.uuid = self.uuid
 
@@ -161,8 +169,12 @@ class Contact(models.Model):
         try:
             return contacts.get(uuid=uuid)
         except cls.DoesNotExist:
-            temba_contact = org.get_temba_client().get_contact(uuid)
-            return cls.objects.create(**cls.kwargs_from_temba(org, temba_contact))
+            # If this contact does not exist locally, we need to call the RapidPro API to get it
+            try:
+                temba_contact = get_client(org).get_contacts(uuid=uuid)[0]
+                return cls.objects.create(**cls.kwargs_from_temba(org, temba_contact))
+            except IndexError:
+                return None
 
     def get_responses(self, include_empty=True):
         from tracpro.polls.models import Response
@@ -178,23 +190,20 @@ class Contact(models.Model):
     @classmethod
     def kwargs_from_temba(cls, org, temba_contact):
         """Get data to create a Contact instance from a Temba object."""
-
-        def _get_first(model_class, temba_uuids):
+        def _get_first(model_class, temba_objects):
             """Return first obj from this org that matches one of the given uuids."""
             queryset = model_class.get_all(org)
             tracpro_uuids = queryset.values_list('uuid', flat=True)
+            temba_uuids = [temba_object.uuid for temba_object in temba_objects]
             uuid = next((uuid for uuid in temba_uuids if uuid in tracpro_uuids), None)
             return queryset.get(uuid=uuid) if uuid else None
-
         # Use the first Temba group that matches one of the org's Regions.
         region = _get_first(Region, temba_contact.groups)
         if not region:
             raise ValueError(
                 "Unable to save contact {c.uuid} ({c.name}) because none of "
-                "their groups match an active Region for this org: "
-                "{groups}".format(
-                    c=temba_contact,
-                    groups=', '.join(temba_contact.groups)))
+                "their groups match an active Region for this org.".format(
+                    c=temba_contact))
 
         # Use the first Temba group that matches one of the org's Groups.
         group = _get_first(Group, temba_contact.groups)
@@ -210,7 +219,7 @@ class Contact(models.Model):
             '_data_field_values': temba_contact.fields,  # managed by post-save signal
         }
         if cls.objects.filter(org=org, uuid=temba_contact.uuid).exists():
-            kwargs['groups'] = [Group.objects.get(uuid=group_uuid) for group_uuid in temba_contact.groups]
+            kwargs['groups'] = list(Group.objects.filter(uuid__in=temba_contact.groups))
         return kwargs
 
     def push(self, change_type):
@@ -261,14 +270,14 @@ class DataFieldManager(models.Manager.from_queryset(DataFieldQuerySet)):
     def from_temba(self, org, temba_field):
         field, _ = DataField.objects.get_or_create(org=org, key=temba_field.key)
         field.label = temba_field.label
-        field.value_type = temba_field.value_type
+        field.value_type = DataField.MAP_V2_TYPE_VALUE_TO_DB_VALUE[temba_field.value_type]
         field.save()
         return field
 
     def sync(self, org):
         """Update the org's DataFields from RapidPro."""
         # Retrieve current DataFields known to RapidPro.
-        temba_fields = {t.key: t for t in org.get_temba_client().get_fields()}
+        temba_fields = {t.key: t for t in get_client(org).get_fields()}
 
         # Remove DataFields (and corresponding values per contact) that are no
         # longer on RapidPro.
@@ -294,13 +303,30 @@ class DataField(models.Model):
     TYPE_DATETIME = "D"
     TYPE_STATE = "S"
     TYPE_DISTRICT = "I"
+    TYPE_DECIMAL = 'N'  # New in v2 API
+    TYPE_WARD = 'W'  # New in v2 API
     TYPE_CHOICES = (
         (TYPE_TEXT, _("Text")),
         (TYPE_NUMERIC, _("Numeric")),
         (TYPE_DATETIME, _("Datetime")),
         (TYPE_STATE, _("State")),
         (TYPE_DISTRICT, _("District")),
+        (TYPE_DECIMAL, _("Numeric")),
+        (TYPE_WARD, _("Ward")),
     )
+
+    # This is copied from the rapidpro source
+    # The v1 API sent us the single-characters above.
+    # The v2 API sends us the 3rd element from each tuple here.
+    API_V2_TYPE_CONFIG = ((TYPE_TEXT, _("Text"), 'text'),
+                          (TYPE_DECIMAL, _("Numeric"), 'numeric'),
+                          (TYPE_DATETIME, _("Date & Time"), 'datetime'),
+                          (TYPE_STATE, _("State"), 'state'),
+                          (TYPE_DISTRICT, _("District"), 'district'),
+                          (TYPE_WARD, _("Ward"), 'ward'))
+
+    # v2 value: v1 value
+    MAP_V2_TYPE_VALUE_TO_DB_VALUE = {tup[2]: tup[0] for tup in API_V2_TYPE_CONFIG}
 
     org = models.ForeignKey(
         "orgs.Org", verbose_name=_("org"))

@@ -2,8 +2,8 @@ from __future__ import absolute_import, unicode_literals
 
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from temba_client.base import TembaNoSuchObjectError
 
+from tracpro.client import get_client
 from tracpro.groups.models import Group
 from .models import Contact, ContactField
 
@@ -41,9 +41,10 @@ def set_groups_to_new_contact(sender, instance, created, **kwargs):
     """Hook to set the groups of a temba contact when a Contact is created after sync."""
     if created:
         try:
-            temba_contact = instance.org.get_temba_client().get_contact(uuid=instance.uuid)
-            for group_uuid in temba_contact.groups:
-                instance.groups.add(Group.objects.get(uuid=group_uuid))
-        except TembaNoSuchObjectError:
+            temba_contact = get_client(instance.org).get_contacts(uuid=instance.uuid)[0]
+            # This will omit the contact's groups that are not selected to sync, but that's intentional.
+            groups = Group.objects.filter(uuid__in=temba_contact.groups)
+            instance.groups.add(*groups)
+        except IndexError:
             # The contact was created locally
             pass

@@ -14,6 +14,7 @@ from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 
+from tracpro.client import get_client
 from tracpro.contacts.models import Contact
 
 from . import rules
@@ -33,7 +34,11 @@ class PollQuerySet(models.QuerySet):
 class PollManager(models.Manager.from_queryset(PollQuerySet)):
 
     def from_temba(self, org, temba_poll):
-        """Create new or update existing Poll from RapidPro data."""
+        """
+        Create new or update existing Poll from RapidPro data.
+
+        :param TembaFlow temba_poll:
+        """
         poll, _ = self.get_or_create(org=org, flow_uuid=temba_poll.uuid)
 
         if poll.name == poll.rapidpro_name:
@@ -65,7 +70,7 @@ class PollManager(models.Manager.from_queryset(PollQuerySet)):
     def sync(self, org):
         """Update the org's Polls from RapidPro."""
         # Retrieve current Polls known to RapidPro.
-        temba_polls = org.get_temba_client().get_flows(archived=False)
+        temba_polls = get_client(org).get_flows()
         temba_polls = {p.uuid: p for p in temba_polls}
 
         # Remove Polls that are no longer on RapidPro.
@@ -116,11 +121,12 @@ class Poll(models.Model):
     def get_flow_definition(self):
         """Retrieve extra metadata about the RapidPro flow."""
         if not hasattr(self, '_flow_definition'):
-            # NOTE: Flow definition endpoint is not documented in the
-            # RapidPro API docs.
-            client = self.org.get_temba_client()
-            definition = client.get_flow_definition(self.flow_uuid)
-            self._flow_definition = definition
+            client = get_client(self.org)
+            export = client.get_definitions(flows=[self.flow_uuid])
+            if export.flows:
+                self._flow_definition = export.flows[0]
+            else:
+                self._flow_definition = None
         return self._flow_definition
 
     def save(self, *args, **kwargs):
@@ -143,25 +149,22 @@ class QuestionManager(models.Manager.from_queryset(QuestionQuerySet)):
 
     def from_temba(self, poll, temba_question, order):
         """Create new or update existing Question from RapidPro data."""
-        question, _ = self.get_or_create(poll=poll, ruleset_uuid=temba_question.uuid)
+        question, _ = self.get_or_create(poll=poll, ruleset_uuid=temba_question['uuid'])
 
         if question.name == question.rapidpro_name:
             # Name is tracking RapidPro name so we must update both.
-            question.name = question.rapidpro_name = temba_question.label
+            question.name = question.rapidpro_name = temba_question['label']
         else:
             # Custom name will be maintained despite update of RapidPro name.
-            question.rapidpro_name = temba_question.label
+            question.rapidpro_name = temba_question['label']
 
         # Save the rules used to categorize answers to this question.
         rules = []
-        for rule_set in question.poll.get_flow_definition().rule_sets:
-            if rule_set['uuid'] == question.ruleset_uuid:  # Find the first matching rule set.
-                for rule in rule_set['rules'][:-1]:  # The last rule is always "Other".
-                    rules.append({
-                        'category': rule['category'],
-                        'test': rule['test'],
-                    })
-                break
+        for rule in temba_question['rules'][:-1]:  # The last rule is always "Other".
+            rules.append({
+                'category': rule['category'],
+                'test': rule['test'],
+            })
         question.json_rules = json.dumps(rules)
 
         # The user can alter or correct the question's type after it is
@@ -343,7 +346,10 @@ class PollRunManager(models.Manager.from_queryset(PollRunQuerySet)):
         """Create a poll run that is for all regions."""
         # Get the requested date in the org timezone
         for_date = for_date or timezone.now()
-        org_timezone = pytz.timezone(poll.org.timezone)
+        if isinstance(poll.org.timezone, basestring):
+            org_timezone = pytz.timezone(poll.org.timezone)
+        else:
+            org_timezone = poll.org.timezone
         for_local_date = for_date.astimezone(org_timezone).date()
 
         # look for a non-regional pollrun on that date
@@ -573,12 +579,12 @@ class Response(models.Model):
             return response
 
         if not poll:
-            poll = Poll.objects.active().by_org(org).get(flow_uuid=run.flow)
+            poll = Poll.objects.active().by_org(org).get(flow_uuid=run.flow.uuid)
 
-        contact = Contact.get_or_fetch(poll.org, uuid=run.contact)
+        contact = Contact.get_or_fetch(poll.org, uuid=run.contact.uuid)
 
         # categorize completeness
-        if run.completed:
+        if run.exit_type == u'completed':
             status = Response.STATUS_COMPLETE
         elif run.values:
             status = Response.STATUS_PARTIAL
@@ -602,7 +608,6 @@ class Response(models.Model):
 
             # if contact has an older response for this pollrun, retire it
             Response.objects.filter(pollrun=pollrun, contact=contact).update(is_active=False)
-
             response = Response.objects.create(
                 flow_run_id=run.id, pollrun=pollrun, contact=contact,
                 created_on=run.created_on, updated_on=run_updated_on,
@@ -611,7 +616,7 @@ class Response(models.Model):
 
         # organize values by ruleset UUID
         questions = poll.questions.active()
-        valuesets_by_ruleset = {valueset.node: valueset for valueset in run.values}
+        valuesets_by_ruleset = {value.node: value for key, value in run.values.iteritems()}
         valuesets_by_question = {q: valuesets_by_ruleset.get(q.ruleset_uuid, None)
                                  for q in questions}
 
@@ -630,11 +635,12 @@ class Response(models.Model):
 
     @classmethod
     def get_run_updated_on(cls, run):
-        # find the valueset with the latest time
+        # find the result with the latest time
         last_value_on = None
-        for valueset in run.values:
-            if not last_value_on or valueset.time > last_value_on:
-                last_value_on = valueset.time
+
+        for key, value in run.values.iteritems():
+            if not last_value_on or value.time > last_value_on:
+                last_value_on = value.time
 
         return last_value_on if last_value_on else run.created_on
 
