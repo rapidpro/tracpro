@@ -1,6 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
 from dash.orgs.views import OrgPermsMixin
+from django.db.models.functions import Lower
 
 from django.utils.translation import ugettext_lazy as _
 
@@ -22,8 +23,7 @@ class HomeView(OrgPermsMixin, SmartTemplateView):
         return request.user.is_authenticated()
 
     def get_context_data(self, **kwargs):
-        polls = Poll.objects.active().by_org(self.request.org)
-        polls = polls.order_by('name')
+        polls = Poll.objects.active().by_org(self.request.org).order_by(Lower('name'))
 
         indicators = BaselineTerm.objects.by_org(self.request.org)
         indicators = indicators.order_by('-end_date')

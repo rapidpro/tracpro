@@ -9,7 +9,9 @@ from tracpro.client import get_client
 class ContactGroupsForm(forms.Form):
     groups = forms.MultipleChoiceField(
         choices=(), label=_("Groups"),
-        help_text=_("Contact groups to use."))
+        help_text=_("Contact groups to use."),
+        widget=forms.widgets.SelectMultiple(attrs={'size': '20'}),
+    )
 
     def __init__(self, model, org, *args, **kwargs):
         self.model = model
@@ -20,6 +22,8 @@ class ContactGroupsForm(forms.Form):
         # Retrieve Contact Group choices from RapidPro.
         choices = [(group.uuid, "%s (%d)" % (group.name, group.count))
                    for group in get_client(org).get_groups()]
+        # Sort choices by the labels, case-insensitively
+        choices.sort(key=lambda item: item[1].lower())
         self.fields['groups'].choices = choices
 
         # Set initial group values from the org.

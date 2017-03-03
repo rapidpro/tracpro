@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 from django import forms
+from django.db.models.functions import Lower
 from django.utils.translation import ugettext_lazy as _
 
 from tracpro.charts import filters
@@ -32,7 +33,7 @@ class BaselineTermForm(forms.ModelForm):
         super(BaselineTermForm, self).__init__(*args, **kwargs)
 
         if org:
-            polls = Poll.objects.active().by_org(org).order_by('name')
+            polls = Poll.objects.active().by_org(org).order_by(Lower('name'))
             self.fields['baseline_poll'].queryset = polls
             self.fields['follow_up_poll'].queryset = polls
 
@@ -62,20 +63,22 @@ class QuestionModelChoiceField(forms.ModelChoiceField):
 class SpoofDataForm(forms.Form):
     """ Form to create spoofed poll data """
     contacts = forms.ModelMultipleChoiceField(
-        queryset=Contact.objects.all(),
-        help_text=_("Select contacts for this set of spoofed data."))
+        queryset=Contact.objects.order_by(Lower('name')),
+        help_text=_("Select contacts for this set of spoofed data."),
+        widget=forms.widgets.SelectMultiple(attrs={'size': '20'}),
+    )
     start_date = forms.DateField(
         help_text=_("Baseline poll data will be submitted on this date. "
                     "Follow up data will start on this date."))
     end_date = forms.DateField(
         help_text=_("Follow up data will end on this date. "))
     baseline_question = QuestionModelChoiceField(
-        queryset=Question.objects.all().order_by('poll__name', 'text'),
+        queryset=Question.objects.order_by(Lower('poll__name'), 'text'),
         help_text=_("Select a baseline question which will have numeric "
                     "answers only."))
     follow_up_question = QuestionModelChoiceField(
         label=_("Follow Up Question"),
-        queryset=Question.objects.all().order_by('poll__name', 'text'),
+        queryset=Question.objects.order_by(Lower('poll__name'), 'text'),
         help_text=_("Select a follow up question which will have "
                     "numeric answers only."))
     baseline_minimum = forms.IntegerField(
@@ -99,7 +102,7 @@ class SpoofDataForm(forms.Form):
         super(SpoofDataForm, self).__init__(*args, **kwargs)
 
         if org:
-            contacts = Contact.objects.active().by_org(org).order_by('name')
+            contacts = Contact.objects.active().by_org(org).order_by(Lower('name'))
             self.fields['contacts'].queryset = contacts
             questions = Question.objects.filter(poll__in=Poll.objects.active().by_org(org))
             self.fields['baseline_question'].queryset = questions
@@ -168,8 +171,7 @@ class BaselineTermFilterForm(filters.DateRangeFilter, filters.DataFieldFilter,
             queryset = self.org.regions.filter(is_active=True)
         else:
             queryset = data_regions
-        queryset = queryset.filter(pk__in=baseline_term.get_regions())
-        queryset = queryset.order_by('name')
+        queryset = queryset.filter(pk__in=baseline_term.get_regions()).order_by(Lower('name'))
         self.fields['region'].queryset = queryset
 
     def filter_contacts(self, queryset=None):
