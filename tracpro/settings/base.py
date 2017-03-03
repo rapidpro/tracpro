@@ -333,7 +333,7 @@ PERMISSIONS = {
         'delete',  # can delete an object
         'list',  # can view a list of the objects
     ),
-    'orgs.org': ('create', 'update', 'list', 'edit', 'home'),
+    'orgs.org': ('create', 'update', 'list', 'edit', 'home', 'fetch_runs'),
     'baseline.baselineterm': ('create', 'read', 'update', 'delete', 'list', 'data_spoof', 'clear_spoof'),
     'contacts.contact': ('create', 'read', 'update', 'delete', 'list'),
     'groups.group': ('list', 'most_active', 'select'),
