@@ -78,7 +78,7 @@ class OrgExtCRUDL(OrgCRUDL):
 
     class Fetchruns(InferOrgMixin, SmartFormView):
         form_class = forms.FetchRunsForm
-        permission = 'orgs.fetch_runs'
+        permission = 'orgs.org_fetch_runs'
         success_url = '@orgs_ext.org_home'
         title = _("Fetch past runs for my organization")
 
