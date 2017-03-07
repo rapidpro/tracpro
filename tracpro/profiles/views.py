@@ -131,6 +131,11 @@ class UserCRUDL(SmartCRUDL):
 
     class Read(OrgPermsMixin, UserFieldsMixin, SmartReadView):
         permission = 'profiles.profile_user_read'
+        field_config = {
+            'regions': {
+                'label': 'Panels'
+            }
+        }
 
         def derive_title(self):
             if self.object == self.request.user:
@@ -177,6 +182,11 @@ class UserCRUDL(SmartCRUDL):
         permission = 'profiles.profile_user_list'
         select_related = ('profile',)
         title = _("Supervisors")
+        field_config = {
+            'regions': {
+                'label': 'Panels'
+            }
+        }
 
         def derive_queryset(self, **kwargs):
             qs = super(UserCRUDL.List, self).derive_queryset(**kwargs)
