@@ -211,7 +211,7 @@ class ManageUserCRUDL(SmartCRUDL):
         form_class = UserFormWithSuperuser
 
     class List(UserFieldsMixin, SmartListView):
-        fields = ('full_name', 'email', 'orgs', 'is_superuser')
+        fields = ('full_name', 'email', 'orgs', 'is_superuser', 'is_staff')
         default_order = ('profile__full_name',)
         select_related = ('profile',)
 
