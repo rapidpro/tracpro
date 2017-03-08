@@ -356,6 +356,7 @@ SITE_ALLOW_NO_ORG = (
     'profiles.admin_update',
     'profiles.admin_list',
     'set_language',
+    'orgs_ext.org_chooser',
 )
 
 SITE_API_HOST = 'rapidpro.io'
