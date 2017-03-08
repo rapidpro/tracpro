@@ -76,7 +76,7 @@ class OrgExtCRUDL(OrgCRUDL):
         success_url = '@orgs_ext.org_home'
         title = _("Edit My Organization")
 
-    class Fetchruns(InferOrgMixin, SmartFormView):
+    class Fetchruns(InferOrgMixin, OrgPermsMixin, SmartFormView):
         form_class = forms.FetchRunsForm
         permission = 'orgs.org_fetch_runs'
         success_url = '@orgs_ext.org_home'
