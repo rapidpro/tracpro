@@ -16,11 +16,18 @@ from . import forms
 from . import tasks
 
 
+class MakeAdminsIntoStaffMixin(object):
+    # Make sure all admins are staff users.
+    def post_save(self, obj):
+        obj.get_org_admins().filter(is_staff=False).update(is_staff=True)
+        return super(MakeAdminsIntoStaffMixin, self).post_save(obj)
+
+
 class OrgExtCRUDL(OrgCRUDL):
     actions = ('create', 'update', 'list', 'home', 'edit', 'chooser',
                'choose', 'fetchruns')
 
-    class Create(OrgCRUDL.Create):
+    class Create(MakeAdminsIntoStaffMixin, OrgCRUDL.Create):
         form_class = forms.OrgExtForm
         fields = ('name', 'available_languages', 'language',
                   'timezone', 'subdomain', 'api_token', 'show_spoof_data',
@@ -29,7 +36,7 @@ class OrgExtCRUDL(OrgCRUDL):
     class List(OrgCRUDL.List):
         default_order = ('name',)
 
-    class Update(OrgCRUDL.Update):
+    class Update(MakeAdminsIntoStaffMixin, OrgCRUDL.Update):
         form_class = forms.OrgExtForm
         fields = ('is_active', 'name', 'available_languages', 'language',
                   'contact_fields', 'timezone', 'subdomain', 'api_token',
