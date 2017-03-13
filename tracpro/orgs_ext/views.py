@@ -83,12 +83,9 @@ class OrgExtCRUDL(OrgCRUDL):
         success_url = '@orgs_ext.org_home'
         title = _("Edit My Organization")
 
-    class Fetchruns(InferOrgMixin, SmartFormView):
+    class Fetchruns(InferOrgMixin, OrgPermsMixin, SmartFormView):
         form_class = forms.FetchRunsForm
-        # Hack: has_perm always returns true for a superuser.  Since this
-        # isn't a valid permission name, it'll always be false for non superuser.
-        # If there's a real way to require superuser in SmartView, I'm all ears.
-        permission = 'must be superuser'
+        permission = 'orgs.org_fetch_runs'
         success_url = '@orgs_ext.org_home'
         title = _("Fetch past runs for my organization")
 
