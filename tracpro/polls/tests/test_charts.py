@@ -247,6 +247,8 @@ class PollChartTest(TracProTest):
         self.assertEqual(summary_table, None)
 
     def test_single_pollrun_numeric(self):
+        # Make answers numeric
+        models.Answer.objects.update(category='numeric')
         # Answers for question 3 = 8, 3 and 4
         # Average = 5, Response Rate = 100%, STDEV = 2.2
         chart_type, chart_data, summary_table = charts.single_pollrun(
@@ -257,3 +259,7 @@ class PollChartTest(TracProTest):
         self.assertEqual(summary_data['Mean'], 5)
         self.assertEqual(summary_data['Response rate average (%)'], 100)
         self.assertEqual(summary_data['Standard deviation'], 2.2)
+
+        # Results are autocategorized
+        self.assertEqual([2, 1], chart_data['data'])
+        self.assertEqual(2, len(chart_data['categories']))
