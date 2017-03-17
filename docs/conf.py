@@ -54,7 +54,7 @@ author = u'UNICEF'
 # built documents.
 #
 # The full version, including alpha/beta/rc tags.
-release = "1.5.1"
+release = "1.5.2"
 
 # The short X.Y version.
 version = "1.5"
