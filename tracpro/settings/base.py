@@ -271,6 +271,7 @@ GROUP_PERMISSIONS = {
     "Administrators": (
         'orgs.org_home',
         'orgs.org_edit',
+        'orgs.org_fetch_runs',
         'baseline.baselineterm.*',
         'contacts.contact.*',
         'groups.boundary.*',
@@ -332,7 +333,7 @@ PERMISSIONS = {
         'delete',  # can delete an object
         'list',  # can view a list of the objects
     ),
-    'orgs.org': ('create', 'update', 'list', 'edit', 'home'),
+    'orgs.org': ('create', 'update', 'list', 'edit', 'home', 'fetch_runs'),
     'baseline.baselineterm': ('create', 'read', 'update', 'delete', 'list', 'data_spoof', 'clear_spoof'),
     'contacts.contact': ('create', 'read', 'update', 'delete', 'list'),
     'groups.group': ('list', 'most_active', 'select'),
@@ -356,6 +357,7 @@ SITE_ALLOW_NO_ORG = (
     'profiles.admin_update',
     'profiles.admin_list',
     'set_language',
+    'orgs_ext.org_chooser',
 )
 
 SITE_API_HOST = 'rapidpro.io'

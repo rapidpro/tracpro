@@ -35,9 +35,15 @@ class FetchRunsViewTest(TracProDataTest):
         self.assertEqual(response.status_code, 302)
         self.assertIn(settings.LOGIN_URL + "?next", response['Location'])
 
-    def test_get_not_superuser(self):
+    def test_get_as_admin(self):
         self.client.logout()
         self.login(self.admin)
+        response = self.url_get('unicef', reverse(self.url_name))
+        self.assertEqual(response.status_code, 200)
+
+    def test_get_not_superuser_or_admin(self):
+        self.client.logout()
+        self.login(self.user1)
         response = self.url_get('unicef', reverse(self.url_name))
         self.assertEqual(response.status_code, 302)
         self.assertIn(settings.LOGIN_URL + "?next", response['Location'])

@@ -16,11 +16,18 @@ from . import forms
 from . import tasks
 
 
+class MakeAdminsIntoStaffMixin(object):
+    # Make sure all admins are staff users.
+    def post_save(self, obj):
+        obj.get_org_admins().filter(is_staff=False).update(is_staff=True)
+        return super(MakeAdminsIntoStaffMixin, self).post_save(obj)
+
+
 class OrgExtCRUDL(OrgCRUDL):
     actions = ('create', 'update', 'list', 'home', 'edit', 'chooser',
                'choose', 'fetchruns')
 
-    class Create(OrgCRUDL.Create):
+    class Create(MakeAdminsIntoStaffMixin, OrgCRUDL.Create):
         form_class = forms.OrgExtForm
         fields = ('name', 'available_languages', 'language',
                   'timezone', 'subdomain', 'api_token', 'show_spoof_data',
@@ -29,7 +36,7 @@ class OrgExtCRUDL(OrgCRUDL):
     class List(OrgCRUDL.List):
         default_order = ('name',)
 
-    class Update(OrgCRUDL.Update):
+    class Update(MakeAdminsIntoStaffMixin, OrgCRUDL.Update):
         form_class = forms.OrgExtForm
         fields = ('is_active', 'name', 'available_languages', 'language',
                   'contact_fields', 'timezone', 'subdomain', 'api_token',
@@ -76,12 +83,9 @@ class OrgExtCRUDL(OrgCRUDL):
         success_url = '@orgs_ext.org_home'
         title = _("Edit My Organization")
 
-    class Fetchruns(InferOrgMixin, SmartFormView):
+    class Fetchruns(InferOrgMixin, OrgPermsMixin, SmartFormView):
         form_class = forms.FetchRunsForm
-        # Hack: has_perm always returns true for a superuser.  Since this
-        # isn't a valid permission name, it'll always be false for non superuser.
-        # If there's a real way to require superuser in SmartView, I'm all ears.
-        permission = 'must be superuser'
+        permission = 'orgs.org_fetch_runs'
         success_url = '@orgs_ext.org_home'
         title = _("Fetch past runs for my organization")
 

@@ -1,6 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
 from django.core.urlresolvers import reverse
+from django.db.models.functions import Lower
 from django.utils.http import urlencode
 
 from tracpro.charts.formatters import format_series, format_x_axis
@@ -168,7 +169,8 @@ def multiple_pollruns_numeric_split(pollruns, answers, responses, question, cont
     sum_data = []
     avg_data = []
     rate_data = []
-    for region in Region.objects.filter(pk__in=data.keys()).order_by('name'):
+    regions = (Region.objects.filter(pk__in=data.keys()).order_by(Lower('name')))
+    for region in regions:
         answer_sums, answer_avgs, answer_stdevs, response_rates = data.get(region.pk)
         region_answer_sums = []
         region_answer_avgs = []
