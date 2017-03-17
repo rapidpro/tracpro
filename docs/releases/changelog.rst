@@ -7,6 +7,19 @@ Tracpro's version is incremented upon each merge to master according to our
 We recommend reviewing the release notes and code diffs before upgrading
 between versions.
 
+v1.5.2 (released 2017-03-17)
+----------------------------
+
+Code diff: https://github.com/rapidpro/tracpro/compare/v1.5.2...develop
+
+* Larger, sorted multi-select drop-downs
+* Fixes for error emails from tasks
+* Permissions fix for fetch runs front-end: Admins can now use this feature, in addition to super users.
+* Fix redirect loop on change password
+* Fixes for admins:
+    - When someone is added to an org as an admin, make sure they're flagged as staff.
+    - In the users list, add a column showing whether a user is staff or not.
+
 v1.5.1 (released 2017-02-28)
 ----------------------------
 
