@@ -399,6 +399,7 @@ class PollRun(models.Model):
 
     region = models.ForeignKey(
         'groups.Region', blank=True, null=True,
+        verbose_name=_('panel'),
         help_text=_("Panel where the poll was conducted."))
 
     conducted_on = models.DateTimeField(
