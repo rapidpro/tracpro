@@ -689,7 +689,8 @@ class AnswerQuerySet(models.QuerySet):
 
         Category names are of the form "N.N-N.N".
         """
-        answers = just_floats(self.filter(category='numeric').values_list('value', flat=True))
+        answers_to_numeric_questions = self.filter(question__question_type=Question.TYPE_NUMERIC)
+        answers = just_floats(answers_to_numeric_questions.values_list('value', flat=True))
         if not answers:
             return {
                 'categories': [],
@@ -697,8 +698,10 @@ class AnswerQuerySet(models.QuerySet):
             }
 
         hist, bin_edges = np.histogram(answers, bins='sqrt')
-
-        category_names = ["%r-%r" % (bin_edges[i], bin_edges[i+1]) for i in range(len(hist))]
+        category_names = [
+            "%r-%r" % (round(bin_edges[i], 2), round(bin_edges[i+1], 2))
+            for i in range(len(hist))
+        ]
         data = list(hist)
 
         return {

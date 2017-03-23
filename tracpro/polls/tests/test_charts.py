@@ -248,7 +248,8 @@ class PollChartTest(TracProTest):
 
     def test_single_pollrun_numeric(self):
         # Make answers numeric
-        models.Answer.objects.update(category='numeric')
+        self.question3.question_type=models.Question.TYPE_NUMERIC
+        self.question3.save()
         # Answers for question 3 = 8, 3 and 4
         # Average = 5, Response Rate = 100%, STDEV = 2.2
         chart_type, chart_data, summary_table = charts.single_pollrun(
