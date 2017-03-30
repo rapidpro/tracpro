@@ -147,11 +147,11 @@ class BaselineTermFilterForm(filters.DateRangeFilter, filters.DataFieldFilter,
                     "baseline data."))
     region = forms.ModelChoiceField(
         required=False,
-        label=_("Contact region"),
+        label=_("Contact panel"),
         queryset=None,
-        empty_label=_("All regions"),
+        empty_label=_("All panels"),
         help_text=_("If specified, only responses from contacts in this "
-                    "region will be shown."))
+                    "panel will be shown."))
 
     def __init__(self, baseline_term, data_regions, *args, **kwargs):
         if not kwargs.get('data'):

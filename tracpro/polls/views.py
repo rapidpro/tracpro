@@ -484,7 +484,10 @@ class ResponseCRUDL(smartmin.SmartCRUDL):
 
     class ByPollrun(OrgPermsMixin, smartmin.SmartListView):
         default_order = ('-updated_on',)
-        field_config = {'updated_on': {'label': _("Date")}}
+        field_config = {
+            'updated_on': {'label': _("Date")},
+            'region': {'label': _('Panel')},
+        }
         link_fields = ('contact',)
 
         def dispatch(self, request, *args, **kwargs):
@@ -600,7 +603,7 @@ class ResponseCRUDL(smartmin.SmartCRUDL):
                 questions = self.derive_questions().values()
 
                 resp_headers = ['Date']
-                contact_headers = ['Name', 'URN', 'Region', 'Group']
+                contact_headers = ['Name', 'URN', 'Panel', 'Cohort']
                 question_headers = [q.name for q in questions]
                 writer.writerow(resp_headers + contact_headers + question_headers)
 

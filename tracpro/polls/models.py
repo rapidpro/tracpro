@@ -322,7 +322,7 @@ class PollRunManager(models.Manager.from_queryset(PollRunQuerySet)):
     def create_regional(self, region, do_start=True, **kwargs):
         """Create a poll run for a single region."""
         if not region:
-            raise ValueError("Regional poll requires a non-null region.")
+            raise ValueError("Panel poll requires a non-null panel.")
         kwargs['pollrun_type'] = PollRun.TYPE_REGIONAL
         pollrun = self.create(region=region, **kwargs)
         if do_start:
@@ -332,7 +332,7 @@ class PollRunManager(models.Manager.from_queryset(PollRunQuerySet)):
     def create_propagated(self, region, do_start=True, **kwargs):
         """Create a poll run for a region and its sub-regions."""
         if not region:
-            raise ValueError("Propagated poll requires a non-null region.")
+            raise ValueError("Propagated poll requires a non-null panel.")
         kwargs['pollrun_type'] = PollRun.TYPE_PROPAGATED
         pollrun = self.create(region=region, **kwargs)
         if do_start:
@@ -389,7 +389,7 @@ class PollRun(models.Model):
     TYPE_CHOICES = (
         (TYPE_UNIVERSAL, _('Universal')),
         (TYPE_SPOOFED, _('Spoofed')),
-        (TYPE_REGIONAL, _('Single Region')),
+        (TYPE_REGIONAL, _('Single Panel')),
         (TYPE_PROPAGATED, _('Propagated to sub-children')),
     )
 
@@ -400,7 +400,8 @@ class PollRun(models.Model):
 
     region = models.ForeignKey(
         'groups.Region', blank=True, null=True,
-        help_text=_("Region where the poll was conducted."))
+        verbose_name=_('panel'),
+        help_text=_("Panel where the poll was conducted."))
 
     conducted_on = models.DateTimeField(
         help_text=_("When the poll was conducted"), default=timezone.now)
@@ -452,7 +453,7 @@ class PollRun(models.Model):
         """Return queryset of all PollRun responses for this region and sub-regions."""
         if not self.covers_region(region, include_subregions):
             raise ValueError(
-                "Request for responses in region where poll wasn't conducted")
+                "Request for responses in panel where poll wasn't conducted")
         responses = self.responses.filter(
             is_active=True,
             contact__region__is_active=True,

@@ -7,7 +7,7 @@
 {% block content %}
   {% if not request.user_regions %}
     <div class='none'>
-      {% trans "You don't have access to any regions. Contact your administrator." %}
+      {% trans "You don't have access to any panels. Contact your administrator." %}
     </div>
   {% else %}
     <div class='row bottom-margin'>
@@ -104,7 +104,7 @@
                 {% trans "Poll" %}
               </th>
               <th>
-                {% trans "Region" %}
+                {% trans "Panel" %}
               </th>
               <th>
                 {% trans "Participants" %}
@@ -170,19 +170,19 @@
             </a>
           {% endif %}
           <h2>
-            {% trans "Active Regions" %}
+            {% trans "Active Panels" %}
 
           </h2>
         </div>
         <div class='ng-cloak' ng-cloak='' ng-controller='ActiveRegionsController'>
           <p>
-            Regions with most responses in the last 30 days:
+            Panels with most responses in the last 30 days:
           </p>
           <table class='table table-striped' style='width: 100%'>
             <thead>
               <tr>
                 <th>
-                  {% trans "Region" %}
+                  {% trans "Panel" %}
                 </th>
                 <th>
                   {% trans "Responses" %}
@@ -217,19 +217,19 @@
             </a>
           {% endif %}
           <h2>
-            {% trans "Active Groups" %}
+            {% trans "Active Cohorts" %}
 
           </h2>
         </div>
         <div class='ng-cloak' ng-cloak='' ng-controller='ActiveGroupsController'>
           <p>
-            Reporting groups with most responses in the last 30 days:
+            Cohorts with most responses in the last 30 days:
           </p>
           <table class='table table-striped' style='width: 100%'>
             <thead>
               <tr>
                 <th>
-                  {% trans "Group" %}
+                  {% trans "Cohort" %}
                 </th>
                 <th>
                   {% trans "Responses" %}

@@ -28,10 +28,10 @@ class BaseMapsTest(TracProTest):
         boundary = kwargs.pop('boundary', None)
         if response:
             if region or boundary:
-                raise Exception("Cannot specify region or boundary with response.")
+                raise Exception("Cannot specify panel or boundary with response.")
         else:
             if region and boundary:
-                raise Exception("Please specify either region or boundary, but not both. ")
+                raise Exception("Please specify either panel or boundary, but not both. ")
             region = region or self._create_region(boundary)
             response = self._create_response(region)
 

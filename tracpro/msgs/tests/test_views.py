@@ -21,10 +21,10 @@ class MessageCRUDLTest(TracProDataTest):
             self.unicef, self.admin, "Test to all", pollrun1, COHORT_ALL,
             None)
         msg2 = Message.create(
-            self.unicef, self.admin, "Test to region #1", pollrun1,
+            self.unicef, self.admin, "Test to panel #1", pollrun1,
             COHORT_ALL, self.region1)
         msg3 = Message.create(
-            self.unicef, self.admin, "Test to region #2", pollrun1,
+            self.unicef, self.admin, "Test to panel #2", pollrun1,
             COHORT_ALL, self.region2)
 
         self.login(self.admin)

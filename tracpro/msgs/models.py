@@ -50,7 +50,8 @@ class Message(models.Model):
 
     cohort = models.CharField(max_length=1, verbose_name=_("Cohort"), choices=COHORT_CHOICES)
 
-    region = models.ForeignKey('groups.Region', null=True, related_name="messages")
+    region = models.ForeignKey('groups.Region', null=True, related_name="messages",
+                               verbose_name=_('panel'))
 
     status = models.CharField(max_length=1, verbose_name=_("Status"), choices=STATUS_CHOICES,
                               help_text=_("Current status of this message"))

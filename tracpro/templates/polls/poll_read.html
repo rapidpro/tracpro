@@ -97,8 +97,8 @@
   {% if question_data and not request.region %}
     <p>
       {% blocktrans %}
-        Charts only include data from non-regional poll runs.
-        To see regional poll runs, choose a region from the dropdown in the navbar.
+        Charts only include data from non-panel poll runs.
+        To see panel poll runs, choose a panel from the dropdown in the navbar.
       {% endblocktrans %}
     </p>
   {% endif %}
@@ -115,7 +115,7 @@
           (Categorical)
         {% endif %}
         {% if request.region %}
-           / Region: {{ request.region }}
+           / Panel: {{ request.region }}
         {% endif %}
       </h3>
 

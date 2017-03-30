@@ -27,7 +27,7 @@ class AbstractGroup(models.Model):
         'orgs.Org', verbose_name=_("Organization"), related_name="%(class)ss")
     name = models.CharField(
         verbose_name=_("Name"), max_length=128, blank=True,
-        help_text=_("The name of this region"))
+        help_text=_("The name of this panel"))
     is_active = models.BooleanField(
         default=True,
         help_text=_("Whether this item is active"))
@@ -115,7 +115,7 @@ class Region(mptt.MPTTModel, AbstractGroup):
     """A geographical region modelled as a group."""
     users = models.ManyToManyField(
         settings.AUTH_USER_MODEL, verbose_name=_("Users"), related_name='regions',
-        help_text=_("Users who can access this region"))
+        help_text=_("Users who can access this panel"))
     parent = mptt.TreeForeignKey(
         'self', null=True, blank=True, related_name="children", db_index=True)
     boundary = models.ForeignKey(
@@ -124,6 +124,9 @@ class Region(mptt.MPTTModel, AbstractGroup):
         verbose_name=_('boundary'),
         related_name='regions',
         on_delete=models.SET_NULL)
+
+    class Meta:
+        verbose_name = 'panel'
 
     class MPTTMeta:
         order_insertion_by = ['name']
@@ -155,7 +158,8 @@ class Region(mptt.MPTTModel, AbstractGroup):
 
 class Group(AbstractGroup):
     """A data reporting group."""
-    pass
+    class Meta:
+        verbose_name = 'cohort'
 
 
 # === Boundaries === #

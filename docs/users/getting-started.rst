@@ -8,8 +8,8 @@ Preparing RapidPro
 
 Before setting up your TracPro organization, one should ensure that the RapidPro organization has the following:
 
-* A set of contact groups representing geographical regions, e.g. *Kigali*, *Florida*
-* A set of contact groups representing reporting groups, e.g. *Males*, *Teachers*
+* A set of contact groups representing panels, e.g. *Kigali*, *Florida*
+* A set of contact groups representing cohorts, e.g. *Males*, *Teachers*
 
 Obviously you will also want to define some flows in RapidPro which are suitable for running as polls.
 
@@ -31,8 +31,8 @@ Configuring An Organization
 There won't be much to see until you tell TracPro about which flows and groups to use.
 
  * Navigate to **Administration** > **Polls** and click **Select** to select which flows in RapidPro will be used as polls in TracPro
- * Navigate to **Administration** > **Reporter Groups** and click **Select** to select which contact groups in RapidPro will be used as reporter groups in TracPro
- * Navigate to **Administration** > **Regions** and click **Select** to select which contact groups in RapidPro will be used as regions in TracPro. This will trigger a fetch of all contacts from those groups.
+ * Navigate to **Administration** > **Cohorts** and click **Select** to select which contact groups in RapidPro will be used as cohorts in TracPro
+ * Navigate to **Administration** > **Panels** and click **Select** to select which contact groups in RapidPro will be used as panels in TracPro. This will trigger a fetch of all contacts from those groups.
 
 Fetching old runs
 ------------------

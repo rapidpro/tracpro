@@ -141,7 +141,7 @@
                     {% if org_perms.groups.region_list %}
                       <li>
                         <a href='{% url 'groups.region_list' %}'>
-                          {% trans "Regions" %}
+                          {% trans "Panels" %}
 
                         </a>
                       </li>
@@ -165,7 +165,7 @@
                     {% if org_perms.groups.group_list %}
                       <li>
                         <a href='{% url 'groups.group_list' %}'>
-                          {% trans "Reporter Groups" %}
+                          {% trans "Cohorts" %}
 
                         </a>
                       </li>
@@ -236,7 +236,7 @@
                             {% if request.region %}
                               {{ request.region }}
                             {% else %}
-                              {% trans "All Regions" %}
+                              {% trans "All Panels" %}
                             {% endif %}
                           </strong>
                           <span class='caret'></span>
@@ -254,8 +254,8 @@
                                 <input type="submit" class="hidden" />
                               </form>
                               <a class="submit-form" href="#" data-form="#show-region-all"
-                                 title="Show data from all regions.">
-                                {% trans "All Regions" %}
+                                 title="Show data from all panels.">
+                                {% trans "All Panels" %}
                               </a>
                             </li>
                           {% endif %}
@@ -272,13 +272,13 @@
                               </form>
                               {% if request.include_subregions %}
                                 <a class="submit-form" href="#" data-form="#toggle-subregions"
-                                   title="Currently showing data for {{ request.region }} and all sub-regions. Click to show data from {{ request.region }} only.">
-                                   Hide sub-region data
+                                   title="Currently showing data for {{ request.region }} and all sub-panels. Click to show data from {{ request.region }} only.">
+                                   Hide sub-panel data
                                  </a>
                               {% else %}
                                 <a class="submit-form" href="#" data-form="#toggle-subregions"
-                                   title="Currently showing data for {{ request.region }} only. Click to show data from {{ request.region }} and all sub-regions.">
-                                  Show sub-region data
+                                   title="Currently showing data for {{ request.region }} only. Click to show data from {{ request.region }} and all sub-panels.">
+                                  Show sub-panel data
                                 </a>
                               {% endif %}
                             </li>
