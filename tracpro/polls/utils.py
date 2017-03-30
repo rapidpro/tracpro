@@ -108,3 +108,19 @@ def overall_stdev(pollruns, data, default=0, round_to=1):
     """Return the standard deviation of data values for each pollrun."""
     padded_data = [data.get(pollrun.pk, default) for pollrun in pollruns]
     return round(numpy.std(padded_data), round_to)
+
+
+def just_floats(values):
+    """
+    Convert the values to floats and return them as a list, skipping any that
+    don't convert successfully.
+    """
+    result = []
+    for value in values:
+        try:
+            f = float(value)
+        except ValueError:
+            pass
+        else:
+            result.append(f)
+    return result

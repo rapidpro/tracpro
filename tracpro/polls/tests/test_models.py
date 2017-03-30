@@ -713,3 +713,94 @@ class TestAnswer(TracProDataTest):
             response=response, question=self.poll1_question1,
             value="rain", category=dict(eng="Yes"))
         self.assertEqual(answer3.category, "Yes")
+
+
+class TestAnswerQuerySet(TracProDataTest):
+
+    def setUp(self):
+        super(TestAnswerQuerySet, self).setUp()
+
+        self.org = factories.Org()
+
+        self.poll = factories.Poll(org=self.org)
+
+        self.region1 = factories.Region(org=self.org, name="Beta")
+        self.region2 = factories.Region(org=self.org, name="Acme")
+
+        self.question1 = factories.Question(
+            poll=self.poll, question_type=models.Question.TYPE_NUMERIC)
+
+        self.pollrun = factories.UniversalPollRun(poll=self.poll)
+
+        factories.Answer(
+            response__contact__org=self.org,
+            response__contact__region=self.region1,
+            response__pollrun=self.pollrun,
+            response__status=models.Response.STATUS_COMPLETE,
+            question=self.question1,
+            value="4.00000",
+            category="numeric")
+
+        factories.Answer(
+            response__contact__org=self.org,
+            response__contact__region=self.region1,
+            response__pollrun=self.pollrun,
+            response__status=models.Response.STATUS_COMPLETE,
+            question=self.question1,
+            value="3.00000",
+            category="numeric")
+
+        factories.Answer(
+            response__contact__org=self.org,
+            response__contact__region=self.region2,
+            response__pollrun=self.pollrun,
+            response__status=models.Response.STATUS_COMPLETE,
+            question=self.question1,
+            value="8.00000", category="numeric")
+
+    def test_autocategorize(self):
+        # autocategorize breaks down numeric results into categories
+        answers = models.Answer.objects.filter(response__pollrun=self.pollrun)
+        result = answers.autocategorize()
+        self.assertEqual(2, len(result['categories']))
+        self.assertEqual([2, 1], result['data'])
+
+    def test_autocategorize_none(self):
+        # autocategorize doesn't blow up when passed no data
+        result = models.Answer.objects.none().autocategorize()
+        self.assertEqual(
+            result,
+            {
+                'categories': [],
+                'data': [],
+            }
+        )
+
+    def test_autocategorize_with_non_numeric_answers(self):
+        # non-numeric answers are just ignored
+
+        # We ignore answers where the category is not 'numeric'
+        factories.Answer(
+            response__contact__org=self.org,
+            response__contact__region=self.region2,
+            response__pollrun=self.pollrun,
+            response__status=models.Response.STATUS_COMPLETE,
+            question=self.question1,
+            value="10.2",
+            category="foo")
+
+        # We skip any non-numeric response, even if category is 'numeric'
+        # (as opposed to blowing up)
+        factories.Answer(
+            response__contact__org=self.org,
+            response__contact__region=self.region2,
+            response__pollrun=self.pollrun,
+            response__status=models.Response.STATUS_COMPLETE,
+            question=self.question1,
+            value="abcd",
+            category="numeric")
+
+        answers = models.Answer.objects.filter(response__pollrun=self.pollrun)
+        result = answers.autocategorize()
+        self.assertEqual(2, len(result['categories']))
+        self.assertEqual(2, len(result['data']))

@@ -5,6 +5,7 @@ from itertools import chain, groupby
 import json
 from operator import itemgetter
 
+import numpy as np
 import pytz
 
 from django.conf import settings
@@ -19,7 +20,7 @@ from tracpro.contacts.models import Contact
 
 from . import rules
 from .tasks import pollrun_start
-from .utils import extract_words, natural_sort_key
+from .utils import extract_words, natural_sort_key, just_floats
 
 
 class PollQuerySet(models.QuerySet):
@@ -448,7 +449,7 @@ class PollRun(models.Model):
 
     def get_responses(self, region=None, include_subregions=True,
                       include_empty=True):
-        """Return all PollRun responses for this region and sub-regions."""
+        """Return queryset of all PollRun responses for this region and sub-regions."""
         if not self.covers_region(region, include_subregions):
             raise ValueError(
                 "Request for responses in region where poll wasn't conducted")
@@ -467,7 +468,11 @@ class PollRun(models.Model):
         return responses.select_related('contact')
 
     def get_response_counts(self, region=None, include_subregions=True):
-        """Returns PollRun response counts for this region and sub-regions."""
+        """
+        Returns dictionary of PollRun response counts for this region and sub-regions.
+        key = str 'status' field from response
+        value = int count of responses with that status.
+        """
         status_counts = self.get_responses(region, include_subregions)
         status_counts = status_counts.values('status')
         status_counts = status_counts.annotate(count=Count('status'))
@@ -666,7 +671,49 @@ class AnswerQuerySet(models.QuerySet):
         counts = Counter(categories)
         return counts.most_common()
 
+    def autocategorize(self):
+        """
+        Break down numeric answers into categories automatically, based somewhat
+        on ranges where there are bunches of responses.
+
+        See http://numpy.readthedocs.io/en/stable/reference/generated/numpy.histogram.html
+        where we're using the 'sqrt' bin assignment algorithm.
+
+        Silently ignores answers where `category` != "numeric", and any whose value
+        can't be successfully converted to a float.
+
+        Returns dictionary {
+          'categories': list of category names in order,
+          'data': list of counts in order
+        }
+
+        Category names are of the form "N.N-N.N".
+        """
+        answers_to_numeric_questions = self.filter(question__question_type=Question.TYPE_NUMERIC)
+        answers = just_floats(answers_to_numeric_questions.values_list('value', flat=True))
+        if not answers:
+            return {
+                'categories': [],
+                'data': [],
+            }
+
+        hist, bin_edges = np.histogram(answers, bins='sqrt')
+        category_names = [
+            "%r-%r" % (round(bin_edges[i], 2), round(bin_edges[i+1], 2))
+            for i in range(len(hist))
+        ]
+        data = list(hist)
+
+        return {
+            'categories': category_names,
+            'data': data,
+        }
+
     def category_counts_by_pollrun(self):
+        """
+        Returns list of (categoryname, Counter) tuples, sorted by category name.
+        Each Counter breaks down the number of answers per poll run.
+        """
         counts = []
         answers = self.order_by('category').values('category', 'response__pollrun')
         for category, _answers in groupby(answers, itemgetter('category')):

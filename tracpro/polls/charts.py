@@ -19,10 +19,23 @@ def _url(name, args=None, kwargs=None, params=None):
 
 
 def single_pollrun(pollrun, responses, question):
-    """Chart data for a single pollrun.
+    """Chart the data for one question from a single pollrun.
 
-    Will be a word cloud for open-ended questions, and pie chart of categories
-    for everything else.
+    Assumes responses are already filtered for the desired pollrun/date,
+    and includes all valid answers for the given question and responses.
+
+    Will be a word cloud for open-ended questions, a bar chart with autocreated
+    categories for numeric questions, and a bar chart of categories for everything else.
+
+    Returns a tuple (chart_type, chart_data, summary_table), where:
+
+    chart_type = None|'open-ended'|'bar'
+    chart_data = {'categories': list of category names, 'data': list of counts} for all but open-ended,
+       or list of {'text': 'xxx', 'weight': NNN} dictionaries for open-ended}
+       or empty list if there were no answers.
+    summary_table = if numeric:
+        [('Mean', value), ('Standard deviation', value), ('Response rate average (%)', value)]
+        else (no answers or non-numeric) None.
     """
     chart_type = None
     chart_data = []
@@ -35,7 +48,10 @@ def single_pollrun(pollrun, responses, question):
             chart_data = word_cloud_data(answers)
         else:
             chart_type = 'bar'
-            chart_data = single_pollrun_multiple_choice(answers, pollrun)
+            if question.question_type == Question.TYPE_NUMERIC:
+                chart_data = single_pollrun_auto_categorize(answers)
+            else:
+                chart_data = single_pollrun_multiple_choice(answers, pollrun)
 
             _, answer_avgs, answer_stdevs, response_rates = utils.summarize_by_pollrun(
                 answers, responses)
@@ -46,6 +62,10 @@ def single_pollrun(pollrun, responses, question):
             ]
 
     return chart_type, chart_data, summary_table
+
+
+def single_pollrun_auto_categorize(answers):
+    return answers.autocategorize()
 
 
 def single_pollrun_multiple_choice(answers, pollrun):
