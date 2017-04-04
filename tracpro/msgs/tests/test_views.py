@@ -89,3 +89,11 @@ class InboxMessageCRUDLTest(TracProDataTest):
         response = self.url_get('unicef', url)
         self.assertEqual(list(response.context['object_list']),
                          [self.inboxmsg2, self.inboxmsg1])
+
+    def test_conversation_not_logged_in(self):
+        self.client.logout()
+        url = reverse('msgs.inboxmessage_conversation', args=[self.contact1.pk])
+
+        # This should redirect to login (not 500)
+        response = self.url_get('unicef', url)
+        self.assertLoginRedirect(response, 'unicef', url)

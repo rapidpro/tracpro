@@ -142,18 +142,20 @@ class InboxMessageCRUDL(SmartCRUDL):
         title = "Conversation"
 
         def get_queryset(self, **kwargs):
+            # We'll need the contact to find the messages, and in other places
+            # later, so save it on the object.
+            # We don't need the form quite yet, but we will soon in a couple of other
+            # places, so go ahead and create it and save that on the object too.
+            contact_id = self.kwargs['contact_id']
+            regions = self.request.user.get_all_regions(self.request.org)
+            data = self.request.POST or None
+            self.contact = get_object_or_404(Contact.objects.filter(region__in=regions), pk=contact_id)
+            self.form = InboxMessageResponseForm(contact=self.contact, data=data)
             return InboxMessage.objects.filter(contact=self.contact).order_by('-created_on')
 
         @classmethod
         def derive_url_pattern(cls, path, action):
             return r'^%s/%s/(?P<contact_id>\d+)/$' % (path, action)
-
-        def dispatch(self, request, contact_id, *args, **kwargs):
-            regions = self.request.user.get_all_regions(self.request.org)
-            data = self.request.POST or None
-            self.contact = get_object_or_404(Contact.objects.filter(region__in=regions), pk=contact_id)
-            self.form = InboxMessageResponseForm(contact=self.contact, data=data)
-            return super(InboxMessageCRUDL.Conversation, self).dispatch(request, *args, **kwargs)
 
         def get_context_data(self, **kwargs):
             context = super(InboxMessageCRUDL.Conversation, self).get_context_data(**kwargs)
