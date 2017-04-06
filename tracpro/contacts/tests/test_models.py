@@ -18,6 +18,7 @@ from tracpro.contacts.models import ChangeType
 from tracpro.polls.models import Response
 from tracpro.test import factories
 from tracpro.test.cases import TracProDataTest, TracProTest
+from tracpro.utils import get_uuids
 
 from .. import models
 
@@ -134,7 +135,7 @@ class ContactTest(TracProDataTest):
         self.assertEqual(temba_contact.name, "Ann")
         self.assertEqual(temba_contact.urns, ['tel:1234'])
         self.assertEqual(temba_contact.fields, {})
-        self.assertEqual(set(temba_contact.groups), set(['G-005', 'G-001']))
+        self.assertEqual(set(get_uuids(temba_contact.groups)), set(['G-005', 'G-001', self.region1.uuid]))
         self.assertEqual(temba_contact.uuid, 'C-001')
 
     def test_by_org(self):

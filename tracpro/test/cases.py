@@ -125,7 +125,7 @@ class TracProDataTest(TracProTest):
         self.group5 = factories.Group(org=self.unicef, name="Kandahar", uuid='G-001')
 
         # some contacts
-        self.contact1 = factories.Contact.create(
+        self.contact1 = factories.Contact(
             org=self.unicef, name="Ann", urn='tel:1234', uuid='C-001',
             region=self.region1, group=self.group1, groups=(self.group1, self.group5))
         self.contact2 = factories.Contact(
