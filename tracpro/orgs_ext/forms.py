@@ -61,6 +61,10 @@ class OrgExtForm(OrgForm):
         widget=forms.widgets.SelectMultiple(attrs={'size': '20'}),
         help_text=_("The administrators for this organization")
     )
+    google_analytics = forms.CharField(
+        required=False,
+        help_text=_("Tracking code to use for Google Analytics"),
+    )
 
     def __init__(self, *args, **kwargs):
         super(OrgExtForm, self).__init__(*args, **kwargs)
@@ -77,6 +81,7 @@ class OrgExtForm(OrgForm):
         # Config field values are not set automatically.
         self.fields['available_languages'].initial = self.instance.available_languages or []
         self.fields['show_spoof_data'].initial = self.instance.show_spoof_data or False
+        self.fields['google_analytics'].initial = self.instance.get_config('google_analytics', '')
 
         # Sort the administrators
         self.fields['administrators'].queryset \
@@ -114,6 +119,12 @@ class OrgExtForm(OrgForm):
                       "for this organization."))
         return self.cleaned_data
 
+    def clean_google_analytics(self):
+        value = self.cleaned_data.get('google_analytics')
+        if value and not value.startswith("UA-"):
+            raise forms.ValidationError(_("Google analytics tracking codes start with UA-"))
+        return value
+
     def save(self, *args, **kwargs):
         # Config field values are not set automatically.
         if 'available_languages' in self.fields:
@@ -122,6 +133,8 @@ class OrgExtForm(OrgForm):
         if 'show_spoof_data' in self.fields:
             show_spoof_data = self.cleaned_data.get('show_spoof_data')
             self.instance.show_spoof_data = show_spoof_data or False
+        if 'google_analytics' in self.cleaned_data:
+            self.instance.set_config('google_analytics', self.cleaned_data.get('google_analytics'), False)
 
         if 'contact_fields' in self.fields:
             # Set hook that will be picked up by a post-save signal.

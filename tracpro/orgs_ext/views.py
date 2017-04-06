@@ -30,7 +30,7 @@ class OrgExtCRUDL(OrgCRUDL):
     class Create(MakeAdminsIntoStaffMixin, OrgCRUDL.Create):
         form_class = forms.OrgExtForm
         fields = ('name', 'available_languages', 'language',
-                  'timezone', 'subdomain', 'api_token', 'show_spoof_data',
+                  'timezone', 'subdomain', 'api_token', 'google_analytics', 'show_spoof_data',
                   'logo', 'administrators')
 
     class List(OrgCRUDL.List):
@@ -39,11 +39,11 @@ class OrgExtCRUDL(OrgCRUDL):
     class Update(MakeAdminsIntoStaffMixin, OrgCRUDL.Update):
         form_class = forms.OrgExtForm
         fields = ('is_active', 'name', 'available_languages', 'language',
-                  'contact_fields', 'timezone', 'subdomain', 'api_token',
+                  'contact_fields', 'timezone', 'subdomain', 'api_token', 'google_analytics',
                   'show_spoof_data', 'logo', 'administrators')
 
     class Home(OrgCRUDL.Home):
-        fields = ('name', 'timezone', 'api_token', 'last_contact_sync',
+        fields = ('name', 'timezone', 'api_token', 'google_analytics', 'last_contact_sync',
                   'last_flow_run_fetch')
         field_config = {
             'api_token': {
@@ -52,6 +52,9 @@ class OrgExtCRUDL(OrgCRUDL):
         }
         permission = 'orgs.org_home'
         title = _("My Organization")
+
+        def get_google_analytics(self, obj):
+            return obj.get_config("google_analytics", "")
 
         def get_last_contact_sync(self, obj):
             result = obj.get_task_result(constants.TaskType.sync_contacts)
