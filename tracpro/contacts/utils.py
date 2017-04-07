@@ -53,8 +53,8 @@ def sync_pull_contacts(org, group_uuids):
             if diff or not existing.is_active:
                 try:
                     kwargs = Contact.kwargs_from_temba(org, temba_contact)
-                except NoMatchingCohortsWarning:
-                    logger.warning("Updating existing contact", exc_info=1)
+                except NoMatchingCohortsWarning as e:
+                    logger.warning(e.message)
                     failed_uuids.append(temba_contact.uuid)
                     continue
 
@@ -68,8 +68,8 @@ def sync_pull_contacts(org, group_uuids):
         else:
             try:
                 kwargs = Contact.kwargs_from_temba(org, temba_contact)
-            except NoMatchingCohortsWarning:
-                logger.warning("Creating contact", exc_info=1)
+            except NoMatchingCohortsWarning as e:
+                logger.warning(e.message)
                 failed_uuids.append(temba_contact.uuid)
                 continue
 

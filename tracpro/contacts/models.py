@@ -215,13 +215,11 @@ class Contact(models.Model):
         # Use the first Temba group that matches one of the org's Regions.
         region = _get_first(Region, temba_contact.groups)
         if not region:
-            raise NoMatchingCohortsWarning(("Unable to save contact {c.uuid} ({c}) because none of "
-                                            "their cohorts ({cohorts}) match an active Panel "
-                                            "({panels}) for this org.").format(
-                c=temba_contact,
-                cohorts=get_uuids(temba_contact.groups),
-                panels=get_uuids(Region.objects.filter(org=org, is_active=True)),
-            ))
+            raise NoMatchingCohortsWarning(
+                "Unable to save contact {c.name} ({c.uuid}) because none of "
+                "their cohorts match an active Panel for this org.".format(
+                    c=temba_contact,
+                ))
 
         # Use the first Temba group that matches one of the org's Groups.
         group = _get_first(Group, temba_contact.groups)
