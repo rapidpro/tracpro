@@ -32,9 +32,9 @@ from .utils import sync_pull_contacts
 logger = logging.getLogger(__name__)
 
 
-class NoMatchingCohortsError(ValueError):
+class NoMatchingCohortsWarning(Exception):
     """
-    Have Contact.kwargs_from_temba be a little more specific about failures by
+    Have Contact.kwargs_from_temba be a little more specific about this case by
     raising this exception.
     """
     pass
@@ -215,9 +215,9 @@ class Contact(models.Model):
         # Use the first Temba group that matches one of the org's Regions.
         region = _get_first(Region, temba_contact.groups)
         if not region:
-            raise NoMatchingCohortsError(("Unable to save contact {c.uuid} ({c}) because none of "
-                                          "their cohorts ({cohorts}) match an active Panel "
-                                          "({panels}) for this org.").format(
+            raise NoMatchingCohortsWarning(("Unable to save contact {c.uuid} ({c}) because none of "
+                                            "their cohorts ({cohorts}) match an active Panel "
+                                            "({panels}) for this org.").format(
                 c=temba_contact,
                 cohorts=get_uuids(temba_contact.groups),
                 panels=get_uuids(Region.objects.filter(org=org, is_active=True)),

@@ -23,7 +23,7 @@ def sync_pull_contacts(org, group_uuids):
     :param group_uuidss: the contact group UUIDs used - used to determine if local contact differs
     :return: tuple containing list of UUIDs for created, updated, deleted and failed contacts
     """
-    from tracpro.contacts.models import Contact, NoMatchingCohortsError
+    from tracpro.contacts.models import Contact, NoMatchingCohortsWarning
     from tracpro.groups.models import Group
 
     # get all remote contacts for the specified groups
@@ -53,9 +53,8 @@ def sync_pull_contacts(org, group_uuids):
             if diff or not existing.is_active:
                 try:
                     kwargs = Contact.kwargs_from_temba(org, temba_contact)
-                except NoMatchingCohortsError:
-                    # Should not happen since we only fetched contacts for the org's groups
-                    logger.exception("Updating existing contact")
+                except NoMatchingCohortsWarning:
+                    logger.warning("Updating existing contact", exc_info=1)
                     failed_uuids.append(temba_contact.uuid)
                     continue
 
@@ -69,9 +68,8 @@ def sync_pull_contacts(org, group_uuids):
         else:
             try:
                 kwargs = Contact.kwargs_from_temba(org, temba_contact)
-            except NoMatchingCohortsError:
-                # Should not happen since we only fetched contacts for the org's groups
-                logger.exception("Creating contact")
+            except NoMatchingCohortsWarning:
+                logger.warning("Creating contact", exc_info=1)
                 failed_uuids.append(temba_contact.uuid)
                 continue
 
