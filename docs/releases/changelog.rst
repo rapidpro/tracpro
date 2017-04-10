@@ -7,6 +7,14 @@ Tracpro's version is incremented upon each merge to master according to our
 We recommend reviewing the release notes and code diffs before upgrading
 between versions.
 
+v1.5.3 (released 2017-04-10)
+----------------------------
+
+Code diff: https://github.com/rapidpro/tracpro/compare/v1.5.3...develop
+
+* Rename Regions to Panels and Reporter Groups to Cohorts
+* Smart Categories on single date numeric charts
+
 v1.5.2 (released 2017-03-17)
 ----------------------------
 
