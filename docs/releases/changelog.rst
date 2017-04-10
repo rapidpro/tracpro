@@ -7,10 +7,18 @@ Tracpro's version is incremented upon each merge to master according to our
 We recommend reviewing the release notes and code diffs before upgrading
 between versions.
 
+v1.5.3 (released 2017-04-10)
+----------------------------
+
+Code diff: https://github.com/rapidpro/tracpro/compare/v1.5.3...v1.5.2
+
+* Rename Regions to Panels and Reporter Groups to Cohorts
+* Smart Categories on single date numeric charts
+
 v1.5.2 (released 2017-03-17)
 ----------------------------
 
-Code diff: https://github.com/rapidpro/tracpro/compare/v1.5.2...develop
+Code diff: https://github.com/rapidpro/tracpro/compare/v1.5.2...v1.5.1
 
 * Larger, sorted multi-select drop-downs
 * Fixes for error emails from tasks
@@ -23,7 +31,7 @@ Code diff: https://github.com/rapidpro/tracpro/compare/v1.5.2...develop
 v1.5.1 (released 2017-02-28)
 ----------------------------
 
-Code diff: https://github.com/rapidpro/tracpro/compare/v1.5.1...develop
+Code diff: https://github.com/rapidpro/tracpro/compare/v1.5.1...v1.5.0
 
 * API v2 Updates: Code now points to version 2 of the RapidPro API.
 
@@ -40,7 +48,7 @@ Code diff: https://github.com/rapidpro/tracpro/compare/v1.5.0...develop
 v1.4.3 (released 2016-04-06)
 ----------------------------
 
-Code diff: https://github.com/rapidpro/tracpro/compare/v1.4.2...develop
+Code diff: https://github.com/rapidpro/tracpro/compare/v1.4.2...v1.4.1
 
 * Update docs structure.
 * Remove outdated docs.

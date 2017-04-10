@@ -77,7 +77,7 @@ def pollrun_start(pollrun_id):
 
     pollrun = PollRun.objects.select_related('poll', 'region').get(pk=pollrun_id)
     if pollrun.pollrun_type not in (PollRun.TYPE_PROPAGATED, PollRun.TYPE_REGIONAL):
-        raise ValueError("Can't start non-regional poll")
+        raise ValueError("Can't start non-panel poll")
 
     org = pollrun.poll.org
     client = get_client(org)
@@ -109,10 +109,10 @@ def pollrun_restart_participants(pollrun_id, contact_uuids):
 
     pollrun = PollRun.objects.select_related('poll', 'region').get(pk=pollrun_id)
     if pollrun.pollrun_type not in (PollRun.TYPE_REGIONAL, PollRun.TYPE_PROPAGATED):
-        raise ValueError("Can't restart participants of a non-regional poll")
+        raise ValueError("Can't restart participants of a non-panel poll")
 
     if not pollrun.is_last_for_region(pollrun.region):
-        raise ValueError("Can only restart last pollrun of poll for a region")
+        raise ValueError("Can only restart last pollrun of poll for a panel")
 
     org = pollrun.poll.org
     client = get_client(org)

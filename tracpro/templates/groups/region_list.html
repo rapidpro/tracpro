@@ -36,27 +36,27 @@
       <a class="btn btn-default"
          href="{% url 'groups.region_select' %}">
         <span class="glyphicon glyphicon-download"></span>
-        {% trans "Select Groups" %}
+        {% trans "Select Panels" %}
       </a>
       <button id="edit-regions"
               class="btn btn-default action">
-        {% trans "Edit Regions" %}
+        {% trans "Edit Panels" %}
       </button>
       <button id="save-regions"
               class="btn btn-primary action hidden">
-        {% trans "Save Regions" %}
+        {% trans "Save Panels" %}
       </button>
       <button id="saving-regions"
               class="btn btn-primary disabled action hidden"
               disabled>
-        {% trans "Saving Regions..." %}
+        {% trans "Saving Panels..." %}
       </button>
     </div>
     <div class="clearfix"></div>
   {% endif %}
 
   <div>
-    <p>{% trans "Each region is a contact group in RapidPro." %}</p>
+    <p>{% trans "Each panel is a contact group in RapidPro." %}</p>
   </div>
 {% endblock table-controls %}
 
@@ -73,12 +73,12 @@
     <tbody>
       {# Something to display while treetable loads. #}
       <tr class="loading-text">
-        <td colspan="{{ fields|length }}">Loading regions...</td>
+        <td colspan="{{ fields|length }}">Loading panels...</td>
       </tr>
 
       {# Include a dummy row so regions can be dragged to the top level. #}
       <tr class="region hidden" data-tt-id="0">
-        <td colspan="{{ fields|length }}">All {{ org.name }} Regions</td>
+        <td colspan="{{ fields|length }}">All {{ org.name }} Panels</td>
       </tr>
 
       {% recursetree object_list %}

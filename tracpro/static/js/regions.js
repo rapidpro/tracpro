@@ -1,6 +1,6 @@
 $(function() {
-    var EDIT_REGIONS_HELP = "Edit region hierarchy by dragging and " +
-                            "dropping table rows. Click 'Save Regions' " +
+    var EDIT_REGIONS_HELP = "Edit panel hierarchy by dragging and " +
+                            "dropping table rows. Click 'Save Panels' " +
                             "when changes are complete.";
 
     // Identifier for any message related to editing regions.
@@ -128,7 +128,7 @@ $(function() {
                 saveRegionsSuccess(data['message']);
             } else {
                 message = "<strong>An error occurred while saving the " +
-                          "region changes:</strong> " + data["message"];
+                          "panel changes:</strong> " + data["message"];
                 saveRegionsFailure(message);
             }
         }).fail(function() {

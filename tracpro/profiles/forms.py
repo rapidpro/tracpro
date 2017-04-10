@@ -41,11 +41,11 @@ class UserForm(forms.ModelForm):
         required=False,
         help_text=_("Whether user must change password on next login."))
     regions = ModifiedLevelTreeNodeMultipleChoiceField(
-        label=_("Regions"),
+        label=_("Panels"),
         queryset=Region.objects.order_by(Lower('name')),
         required=False,
-        help_text=_("Region(s) which this user can access. User will "
-                    "automatically be granted access to sub-regions."),
+        help_text=_("Panel(s) which this user can access. User will "
+                    "automatically be granted access to sub-panels."),
         widget=forms.widgets.SelectMultiple(attrs={'size': '20'}),
     )
 

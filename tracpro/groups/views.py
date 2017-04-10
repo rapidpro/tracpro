@@ -47,18 +47,18 @@ class SetRegion(View):
         if region_id == "all":
             if not request.user.is_admin_for(request.org):
                 return HttpResponseBadRequest(
-                    "Only org admins may see all regions.")
+                    "Only org admins may see all panels.")
             else:
                 region = None
         else:
             region = request.user_regions.filter(pk=region_id).first()
             if not region:
                 return HttpResponseBadRequest(
-                    "Either region {} does not exist or you do not have "
-                    "permission to see this region.".format(region_id))
+                    "Either panel {} does not exist or you do not have "
+                    "permission to see this panel.".format(region_id))
 
         # Show a message confirming the change.
-        region_name = region.name if region else "all regions"
+        region_name = region.name if region else "all panels"
         msg = "Now showing data from {}.".format(region_name)
         messages.info(request, msg)
 
@@ -95,7 +95,7 @@ class ToggleSubregions(View):
             request.session['include_subregions'] = val
             request.session.save()
             if val:
-                msg = "Now showing data from {region} and its sub-regions."
+                msg = "Now showing data from {region} and its sub-panels."
             else:
                 msg = "Showing data from {region} only."
             messages.info(request, msg.format(region=request.region))
@@ -153,11 +153,11 @@ class RegionCRUDL(SmartCRUDL):
             })
 
     class Select(OrgPermsMixin, SmartFormView):
-        title = _("Region Groups")
+        title = _("Panel Contact Groups")
         form_class = ContactGroupsForm
         success_url = '@groups.region_list'
         submit_button_name = _("Update")
-        success_message = _("Updated contact groups to use as regions")
+        success_message = _("Updated contact groups to use as panels")
 
         def get_form_kwargs(self):
             kwargs = super(RegionCRUDL.Select, self).get_form_kwargs()
@@ -190,7 +190,7 @@ class RegionCRUDL(SmartCRUDL):
                     "Data must be valid JSON.")
             if not isinstance(data, dict):
                 return self.error(
-                    "Data must be a dict that maps region id to "
+                    "Data must be a dict that maps panel id to "
                     "(parent id, boundary id).")
             if not all(isinstance(v, list) and len(v) == 2 for v in data.values()):
                 return self.error(
@@ -211,15 +211,15 @@ class RegionCRUDL(SmartCRUDL):
             sent_boundaries = set(str(i[1]) for i in data.values() if i[1] is not None)
             if sent_regions != valid_regions:
                 return self.error(
-                    "Data must map region id to parent id for every region "
+                    "Data must map panel id to parent id for every panel "
                     "in this org.")
             if not sent_parents.issubset(valid_regions):
                 return self.error(
-                    "Region parent must be a region from the same org, "
+                    "Panel parent must be a panel from the same org, "
                     "or null.")
             if not sent_boundaries.issubset(valid_boundaries):
                 return self.error(
-                    "Region boundary must be a boundary from the same "
+                    "Panel boundary must be a boundary from the same "
                     "org, or null.")
 
             # Re-set parent and boundary values for each region,
@@ -244,7 +244,7 @@ class RegionCRUDL(SmartCRUDL):
                         region.save()
             Region.objects.rebuild()
 
-            return self.success("{} regions have been updated.".format(request.org))
+            return self.success("{} panels have been updated.".format(request.org))
 
         def log_change(self, name, region, old, new):
             message = "Updating {name} of {region} from {old} -> {new}.".format(
@@ -281,7 +281,7 @@ class GroupCRUDL(SmartCRUDL):
     class List(OrgPermsMixin, SmartListView):
         fields = ('name', 'contacts')
         default_order = ('name',)
-        title = _("Reporter Groups")
+        title = _("Cohorts")
 
         def derive_queryset(self, **kwargs):
             return Group.get_all(self.request.org)
@@ -301,11 +301,11 @@ class GroupCRUDL(SmartCRUDL):
             })
 
     class Select(OrgPermsMixin, SmartFormView):
-        title = _("Reporter Groups")
+        title = _("Cohorts")
         form_class = ContactGroupsForm
         success_url = '@groups.group_list'
         submit_button_name = _("Update")
-        success_message = _("Updated contact groups to use as reporter groups")
+        success_message = _("Updated contact groups to use as cohorts")
 
         def get_form_kwargs(self):
             kwargs = super(GroupCRUDL.Select, self).get_form_kwargs()

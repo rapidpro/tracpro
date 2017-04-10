@@ -91,16 +91,16 @@ class Contact(models.Model):
         max_length=255,
         help_text=_("Phone number or Twitter handle of this contact."))
     region = models.ForeignKey(
-        'groups.Region', verbose_name=_("Region"), related_name='contacts',
-        help_text=_("Region where this contact lives."))
+        'groups.Region', verbose_name=_("Panel"), related_name='contacts',
+        help_text=_("Panel of this contact."))
     group = models.ForeignKey(
-        'groups.Group', null=True, verbose_name=_("Reporter group"),
+        'groups.Group', null=True, verbose_name=_("Cohort"),
         related_name='contacts',
-        help_text=_("Reporter group to which this contact belongs."))
+        help_text=_("Cohort to which this contact belongs."))
     groups = models.ManyToManyField(
-        'groups.Group', verbose_name=_("Groups"),
+        'groups.Group', verbose_name=_("Cohorts"),
         related_name='all_contacts',
-        help_text=_("All groups to which this contact belongs."))
+        help_text=_("All cohorts to which this contact belongs."))
     language = models.CharField(
         max_length=3, verbose_name=_("Language"), null=True, blank=True,
         help_text=_("Language for this contact"))
@@ -202,7 +202,7 @@ class Contact(models.Model):
         if not region:
             raise ValueError(
                 "Unable to save contact {c.uuid} ({c.name}) because none of "
-                "their groups match an active Region for this org.".format(
+                "their cohorts match an active Panel for this org.".format(
                     c=temba_contact))
 
         # Use the first Temba group that matches one of the org's Groups.
@@ -227,9 +227,9 @@ class Contact(models.Model):
 
     def save(self, *args, **kwargs):
         if self.org.pk != self.region.org_id:
-            raise ValidationError("Region does not belong to Org.")
+            raise ValidationError("Panel does not belong to Org.")
         if self.group and self.org.pk != self.group.org_id:
-            raise ValidationError("Group does not belong to Org.")
+            raise ValidationError("Cohort does not belong to Org.")
 
         # RapidPro might return blank or null values.
         self.name = self.name or ""
