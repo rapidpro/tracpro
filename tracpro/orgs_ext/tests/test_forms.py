@@ -156,6 +156,39 @@ class TestOrgExtForm(TracProTest):
                          ['Default language must be one of the languages '
                           'available for this organization.'])
 
+    def test_initial_google_analytics(self, mock_sync):
+        # The form gets initialized with the org's current code
+        org = factories.Org(google_analytics='UA-12345')
+        form = self.form_class(instance=org)
+        self.assertEqual(form.fields['google_analytics'].initial, 'UA-12345')
+
+    def test_change_google_analytics(self, mock_sync):
+        # You can change the GA code
+        org = factories.Org(google_analytics='UA-12345')
+        self.data['google_analytics'] = 'UA-54321'
+        form = self.form_class(instance=org, data=self.data)
+        self.assertTrue(form.is_valid())
+        form.save()
+        org.refresh_from_db()
+        self.assertEqual('UA-54321', org.get_config('google_analytics'))
+
+    def test_validate_google_analytics(self, mock_sync):
+        # If entered, GA code must start with "UA"
+        self.data['google_analytics'] = 'XA-54321'
+        form = self.form_class(data=self.data)
+        self.assertFalse(form.is_valid())
+        self.assertIn('google_analytics', form.errors)
+
+    def test_unset_google_analytics(self, mock_sync):
+        # You can remove the tracking code by blanking the input field
+        org = factories.Org(google_analytics='UA-12345')
+        self.data['google_analytics'] = ''
+        form = self.form_class(instance=org, data=self.data)
+        self.assertTrue(form.is_valid())
+        form.save()
+        org.refresh_from_db()
+        self.assertEqual('', org.get_config('google_analytics'))
+
 
 class FetchRunsFormTest(TestCase):
     def test_no_input(self):
