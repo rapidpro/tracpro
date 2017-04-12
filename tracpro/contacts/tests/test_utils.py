@@ -167,9 +167,9 @@ class SyncPullTest(TracProDataTest):
 
     def test_new_contact_with_no_urns(self):
         # Work around the overloaded 'delete' method on Contact to really delete contact1 locally,
-        # so as far as our code is concerned, contact1 will be a new contact when we
+        # so as far as our code is concerned, this will be a new contact when we
         # see it come back from Rapidpro.
-        Contact.objects.filter(uuid=self.contact1.uuid).delete()
+        Contact.objects.filter(uuid=self.rapidpro_contacts_as_temba[0].uuid).delete()
 
         # Remove the urns from that contact as we'll see it from rapidpro
         self.rapidpro_contacts_as_temba[0].urns = []
