@@ -77,9 +77,12 @@ def sync_pull_contacts(org, group_uuids):
                 failed_uuids.append(temba_contact.uuid)
                 continue
 
-            new_contact = Contact.objects.create(**kwargs)
-            # Now set groups, we couldn't include them on creation
-            new_contact.groups = Group.objects.filter(uuid__in=get_uuids(temba_contact.groups))
+            # We have a signal that queries rapidpro and sets groups on new Contacts,
+            # but we already know the groups so we can skip that. This bit will let
+            # the signal handler know which groups to add without having to call Rapidpro.
+            new_contact = Contact(**kwargs)
+            new_contact.new_groups = Group.objects.filter(uuid__in=get_uuids(temba_contact.groups))
+            new_contact.save()
             created_uuids.append(kwargs['uuid'])
 
     # any contact that has been deleted from rapidpro
