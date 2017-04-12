@@ -42,7 +42,11 @@ def sync_pull_contacts(org, group_uuids):
     groups = Group.objects.filter(uuid__in=group_uuids)
 
     for temba_contact in incoming_contacts:
-        if temba_contact.blocked:
+        if not temba_contact.urns:
+            # Just skip contacts without URNs
+            continue
+
+        elif temba_contact.blocked:
             deleted_uuids.append(temba_contact.uuid)
 
         elif temba_contact.uuid in existing_by_uuid:
