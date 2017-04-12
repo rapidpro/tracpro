@@ -21,3 +21,6 @@ LOGGING['root']['handlers'] = ['console']
 
 for logger in LOGGING.get('loggers', {}):
     LOGGING['loggers'][logger]['level'] = 'DEBUG'
+
+# Don't stop tasks from running frequently
+ORG_TASK_TIMEOUT = datetime.timedelta(seconds=1)

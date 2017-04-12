@@ -9,35 +9,29 @@ from temba_client.clients import TembaBadRequestError
 from temba_client.v2.types import Contact as TembaContact
 
 from tracpro.client import get_client
+from tracpro.utils import get_uuids
 
 
 logger = get_task_logger(__name__)
 
 
-def sync_pull_contacts(org, contact_class, fields=None, groups=None,
-                       last_time=None, delete_blocked=False):
+def sync_pull_contacts(org, group_uuids):
     """
-    Pulls updated contacts or all contacts from RapidPro and syncs with local contacts.
-    Contact class must define a class method called kwargs_from_temba which generates
-    field kwargs from a fetched temba contact.
+    Pull contacts from RapidPro and sync with local contacts.
+
     :param org: the org
-    :param contact_class: the contact class type
-    :param fields: the contact field keys used - used to determine if local contact differs
-    :param groups: the contact group UUIDs used - used to determine if local contact differs
-    :param last_time: the last time we pulled contacts, if None, sync all contacts
-    :param delete_blocked: if True, delete the blocked contacts
+    :param group_uuidss: the contact group UUIDs used - used to determine if local contact differs
     :return: tuple containing list of UUIDs for created, updated, deleted and failed contacts
     """
-    # get all remote contacts
-    client = get_client(org)
-    updated_incoming_contacts = []
-    if last_time:
-        updated_incoming_contacts = client.get_contacts(after=last_time)
-    else:
-        updated_incoming_contacts = client.get_contacts()
+    from tracpro.contacts.models import Contact, NoMatchingCohortsWarning
+    from tracpro.groups.models import Group
 
-    # get all existing contacts and organize by their UUID
-    existing_contacts = contact_class.objects.filter(org=org)
+    # get all remote contacts for the specified groups
+    client = get_client(org)
+    incoming_contacts = client.get_contacts_in_groups(group_uuids)
+
+    # get all existing local contacts (active or not) and organize by their UUID
+    existing_contacts = Contact.objects.filter(org=org)
     existing_by_uuid = {contact.uuid: contact for contact in existing_contacts}
 
     created_uuids = []
@@ -45,21 +39,23 @@ def sync_pull_contacts(org, contact_class, fields=None, groups=None,
     deleted_uuids = []
     failed_uuids = []
 
-    for updated_incoming in updated_incoming_contacts:
-        # delete blocked contacts if deleted_blocked=True
-        if updated_incoming.blocked and delete_blocked:
-            deleted_uuids.append(updated_incoming.uuid)
+    groups = Group.objects.filter(uuid__in=group_uuids)
 
-        elif updated_incoming.uuid in existing_by_uuid:
-            existing = existing_by_uuid[updated_incoming.uuid]
+    for temba_contact in incoming_contacts:
+        if temba_contact.blocked:
+            deleted_uuids.append(temba_contact.uuid)
 
-            diff = temba_compare_contacts(updated_incoming, existing.as_temba(), fields, groups)
+        elif temba_contact.uuid in existing_by_uuid:
+            existing = existing_by_uuid[temba_contact.uuid]
+
+            diff = temba_compare_contacts(temba_contact, existing.as_temba(), fields=(), groups=groups)
 
             if diff or not existing.is_active:
                 try:
-                    kwargs = contact_class.kwargs_from_temba(org, updated_incoming)
-                except ValueError:
-                    failed_uuids.append(updated_incoming.uuid)
+                    kwargs = Contact.kwargs_from_temba(org, temba_contact)
+                except NoMatchingCohortsWarning as e:
+                    logger.warning(e.message)
+                    failed_uuids.append(temba_contact.uuid)
                     continue
 
                 for field, value in six.iteritems(kwargs):
@@ -68,27 +64,27 @@ def sync_pull_contacts(org, contact_class, fields=None, groups=None,
                 existing.is_active = True
                 existing.save()
 
-                updated_uuids.append(updated_incoming.uuid)
+                updated_uuids.append(temba_contact.uuid)
         else:
             try:
-                kwargs = contact_class.kwargs_from_temba(org, updated_incoming)
-            except ValueError:
-                failed_uuids.append(updated_incoming.uuid)
+                kwargs = Contact.kwargs_from_temba(org, temba_contact)
+            except NoMatchingCohortsWarning as e:
+                logger.warning(e.message)
+                failed_uuids.append(temba_contact.uuid)
                 continue
 
-            contact_class.objects.create(**kwargs)
+            new_contact = Contact.objects.create(**kwargs)
+            # Now set groups, we couldn't include them on creation
+            new_contact.groups = Group.objects.filter(uuid__in=get_uuids(temba_contact.groups))
             created_uuids.append(kwargs['uuid'])
 
     # any contact that has been deleted from rapidpro
-    # should also be deleted from dash
-    # if last_time was passed in, just get contacts deleted after the last time we synced
-    if last_time:
-        deleted_incoming_contacts = client.get_contacts(deleted=True, after=last_time)
-    else:
-        deleted_incoming_contacts = client.get_contacts(deleted=True)
-    for deleted_incoming in deleted_incoming_contacts:
-        deleted_uuids.append(deleted_incoming.uuid)
-    existing_contacts.filter(uuid__in=deleted_uuids).update(is_active=False)
+    # should be marked inactive in tracpro
+    deleted_rapidpro_contacts = client.get_contacts_in_groups(group_uuids, deleted=True)
+    deleted_uuids += get_uuids(deleted_rapidpro_contacts)
+
+    # Mark all deleted contacts as not active if they aren't already.
+    existing_contacts.filter(uuid__in=deleted_uuids, is_active=True).update(is_active=False)
 
     return created_uuids, updated_uuids, deleted_uuids, failed_uuids
 
@@ -104,7 +100,8 @@ def temba_compare_contacts(first, second, fields=None, groups=None):
     groups: if this is passed in, we can check that the two contacts
             belong to the same groups
 
-    Returns first difference found.
+    Returns name of first difference found, one of 'name' or 'urns' or
+    'groups' or 'fields', or None if no differences were spotted.
     """
     if first.uuid != second.uuid:  # pragma: no cover
         raise ValueError("Can't compare contacts with different UUIDs")

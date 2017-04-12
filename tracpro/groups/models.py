@@ -112,7 +112,13 @@ class AbstractGroup(models.Model):
 
 
 class Region(mptt.MPTTModel, AbstractGroup):
-    """A geographical region modelled as a group."""
+    """
+    *In the user interface, this is now named a "Panel"*
+
+    A geographical region modelled as a group.
+
+    In RapidPro, this is a Group.
+    """
     users = models.ManyToManyField(
         settings.AUTH_USER_MODEL, verbose_name=_("Users"), related_name='regions',
         help_text=_("Users who can access this panel"))
@@ -157,7 +163,11 @@ class Region(mptt.MPTTModel, AbstractGroup):
 
 
 class Group(AbstractGroup):
-    """A data reporting group."""
+    """
+    A data "reporting group".
+
+    In RapidPro, this is a Group.
+    """
     class Meta:
         verbose_name = 'cohort'
 
