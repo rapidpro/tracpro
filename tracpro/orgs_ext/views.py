@@ -80,7 +80,7 @@ class OrgExtCRUDL(OrgCRUDL):
                 return None
 
     class Edit(InferOrgMixin, OrgPermsMixin, SmartUpdateView):
-        fields = ('name', 'timezone', 'contact_fields', 'logo')
+        fields = ('name', 'timezone', 'contact_fields', 'logo', 'google_analytics')
         form_class = forms.OrgExtForm
         permission = 'orgs.org_edit'
         success_url = '@orgs_ext.org_home'
