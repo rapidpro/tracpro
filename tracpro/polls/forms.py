@@ -37,7 +37,9 @@ class ActivePollsForm(forms.Form):
     """Set which polls should be synced with RapidPro."""
     polls = forms.ModelMultipleChoiceField(
         queryset=None, required=False, label=_("Active flows"),
-        help_text=_("Flows to track as polls."),
+        help_text=_(
+            "Flows to track as polls. Please note, any polls that begin with 'Single \
+            Message' are filtered out of this list."),
         widget=forms.widgets.SelectMultiple(attrs={'size': '20'}),
     )
 
