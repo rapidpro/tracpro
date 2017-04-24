@@ -76,10 +76,10 @@ class PollManager(models.Manager.from_queryset(PollQuerySet)):
         # Filter out polls with names starting with 'Single Message'
         temba_polls = {}
         for poll in temba_polls_result:
-            if poll.name.lower()[:14] != 'single message':
+            if poll.name[:14] != 'Single Message':
                 temba_polls[poll.uuid] = poll
 
-        # Remove Polls that are no longer on RapidPro.
+        # Remove Polls that are no longer on RapidPro or that we are filtering out.
         org.polls.exclude(flow_uuid__in=temba_polls.keys()).delete()
 
         # Create new or update existing Polls to match RapidPro data.
