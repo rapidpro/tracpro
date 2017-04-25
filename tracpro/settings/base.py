@@ -240,7 +240,7 @@ CELERY_SEND_TASK_ERROR_EMAILS = True
 
 CELERY_TIMEZONE = 'UTC'
 
-ORG_TASK_TIMEOUT = datetime.timedelta(minutes=20)
+ORG_TASK_TIMEOUT = datetime.timedelta(minutes=30)
 
 
 def _org_scheduler_task(task_name):
