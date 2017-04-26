@@ -3,6 +3,7 @@ from __future__ import absolute_import, unicode_literals
 import datetime
 from decimal import Decimal, InvalidOperation
 import logging
+from pprint import pformat
 from uuid import uuid4
 from enum import Enum
 
@@ -61,14 +62,25 @@ class ContactQuerySet(models.QuerySet):
 class ContactManager(models.Manager.from_queryset(ContactQuerySet)):
 
     def sync(self, org):
+        logger.info("ContactManager.sync...")
         try:
-            region_uuids = set(get_uuids(Region.get_all(org)))
+            # region_uuids = set(get_uuids(Region.get_all(org)))
+            # logger.info("%d regions" % len(region_uuids))
             group_uuids = set(get_uuids(Group.get_all(org)))
+            logger.info("%d groups" % len(group_uuids))
 
             created, updated, deleted, failed = sync_pull_contacts(
                 org=org,
-                group_uuids=region_uuids | group_uuids
+                # group_uuids=region_uuids | group_uuids
+                group_uuids=group_uuids
             )
+
+            logger.info("Results of sync: %s" % pformat({
+                    'created': len(created),
+                    'updated': len(updated),
+                    'deleted': len(deleted),
+                    'failed': len(failed),
+                }))
 
             org.set_task_result(TaskType.sync_contacts, {
                 'time': datetime_to_ms(timezone.now()),
@@ -81,6 +93,7 @@ class ContactManager(models.Manager.from_queryset(ContactQuerySet)):
             })
         except:
             logger.exception("EXCEPTION in ContactManager.sync")
+        logger.info("ContactManager.sync...done")
 
 
 @python_2_unicode_compatible

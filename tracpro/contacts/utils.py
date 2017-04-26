@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 import six
 from collections import OrderedDict
+import logging
 
 from celery.utils.log import get_task_logger
 
@@ -12,7 +13,10 @@ from tracpro.client import get_client
 from tracpro.utils import get_uuids
 
 
-logger = get_task_logger(__name__)
+#logger = get_task_logger(__name__)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+logger.addHandler(logging.StreamHandler())
 
 
 def sync_pull_contacts(org, group_uuids):
@@ -30,9 +34,15 @@ def sync_pull_contacts(org, group_uuids):
     client = get_client(org)
     incoming_contacts = client.get_contacts_in_groups(group_uuids)
 
-    # get all existing local contacts (active or not) and organize by their UUID
-    existing_contacts = Contact.objects.filter(org=org)
+    # get all existing local contacts (active or not, in these groups or not) and organize by their UUID
+    existing_contacts = Contact.objects.filter(org=org).select_related('group').prefetch_related('groups')
     existing_by_uuid = {contact.uuid: contact for contact in existing_contacts}
+
+    # Some sanity checking
+    for contact in existing_contacts:
+        if not contact.group in contact.groups.all():
+            print("WARNING: Contact's .group is not in its .groups")
+
 
     created_uuids = []
     updated_uuids = []
@@ -41,12 +51,39 @@ def sync_pull_contacts(org, group_uuids):
 
     groups = Group.objects.filter(uuid__in=group_uuids)
 
+    for group in groups:
+        contacts = group.get_contacts()
+        uuids = set(get_uuids(contacts))
+        print("%s group has %d contacts with %d uuids" % (group.name, contacts.count(), len(uuids)))
+
+    no_urn = 0
+    blocked = 0
+    updated = 0
+    unchanged = 0
+    changed_no_match = 0
+    num_new = 0
+    new_no_match = 0
+
+    logger.info("Going to look at %d incoming_contacts..." % len(incoming_contacts))
+
+    # incoming_contact_uuids = set(get_uuids(incoming_contacts))
+    # expected_contact_uuids = set(get_uuids(existing_contacts.filter(group__in=groups)))
+    # expected_but_not_seen = expected_contact_uuids - incoming_contact_uuids
+    # for uuid in expected_but_not_seen:
+    #     contact = Contact.objects.get(org=org, uuid=uuid)
+    #     print("Contact was expected but not seen in response: %s" % contact)
+    #     # This contact cannot be in any of the groups we were looking for, or
+    #     # it would have come back from rapidpro
+    #     contact.groups.remove(*groups)
+
     for temba_contact in incoming_contacts:
         if not temba_contact.urns:
             # Just skip contacts without URNs
+            no_urn += 1
             continue
 
         elif temba_contact.blocked:
+            blocked += 1
             deleted_uuids.append(temba_contact.uuid)
 
         elif temba_contact.uuid in existing_by_uuid:
@@ -55,9 +92,11 @@ def sync_pull_contacts(org, group_uuids):
             diff = temba_compare_contacts(temba_contact, existing.as_temba(), fields=(), groups=groups)
 
             if diff or not existing.is_active:
+                updated += 1
                 try:
                     kwargs = Contact.kwargs_from_temba(org, temba_contact)
                 except NoMatchingCohortsWarning as e:
+                    changed_no_match += 1
                     logger.warning(e.message)
                     failed_uuids.append(temba_contact.uuid)
                     continue
@@ -69,10 +108,14 @@ def sync_pull_contacts(org, group_uuids):
                 existing.save()
 
                 updated_uuids.append(temba_contact.uuid)
+            else:
+                unchanged += 1
         else:
+            num_new += 1
             try:
                 kwargs = Contact.kwargs_from_temba(org, temba_contact)
             except NoMatchingCohortsWarning as e:
+                new_no_match += 1
                 logger.warning(e.message)
                 failed_uuids.append(temba_contact.uuid)
                 continue
@@ -85,13 +128,27 @@ def sync_pull_contacts(org, group_uuids):
             new_contact.save()
             created_uuids.append(kwargs['uuid'])
 
+    logger.info("Finished looking at %d incoming_contacts" % len(incoming_contacts))
+
     # any contact that has been deleted from rapidpro
     # should be marked inactive in tracpro
     deleted_rapidpro_contacts = client.get_contacts_in_groups(group_uuids, deleted=True)
     deleted_uuids += get_uuids(deleted_rapidpro_contacts)
 
+    logger.info("Sync: received %d contacts from RapidPro.", len(incoming_contacts))
+    logger.info("Sync: skipped %d contacts that had no URN", no_urn)
+    logger.info("Sync: skipped/ignored %d contacts that were blocked", blocked)
+    logger.info("Sync: updated %d contacts that had changed", updated)
+    logger.info("Sync: of those, unable to update %d that had no cohorts in active panels", changed_no_match)
+    logger.info("Sync: %d contacts had not changed", unchanged)
+    logger.info("Sync: %d contacts were new", num_new)
+    logger.info("Sync: of those, unable to update %d that had no cohorts in active panels", new_no_match)
+
     # Mark all deleted contacts as not active if they aren't already.
-    existing_contacts.filter(uuid__in=deleted_uuids, is_active=True).update(is_active=False)
+    n = existing_contacts.filter(uuid__in=deleted_uuids, is_active=True).update(is_active=False)
+    logger.info("Marked %d contacts inactive" % n)
+    for group in groups:
+        print("%s group has %d contacts" % (group.name, group.get_contacts().count()))
 
     return created_uuids, updated_uuids, deleted_uuids, failed_uuids
 

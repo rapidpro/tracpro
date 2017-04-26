@@ -1,6 +1,10 @@
+import logging
 from django.conf import settings
 from temba_client.clients import CursorQuery
 from temba_client.v2 import Boundary, TembaClient
+
+
+logger = logging.getLogger(__name__)
 
 
 def get_client(org):
@@ -43,11 +47,16 @@ class TracProClient(TembaClient):
 
         https://app.rapidpro.io/api/v2/contacts
         """
+        logger.info("get_contacts_in_groups(%d groups, deleted=%s)..." % (len(group_uuids), deleted))
         contact_by_uuid = {}
         for uuid in group_uuids:
+            from groups.models import Group
+            grp = Group.objects.get(uuid=uuid)
+            logger.info("start fetch for group %s..." % grp.name)
             contact_by_uuid.update(
                 {contact.uuid: contact
                  for contact in self.get_contacts(deleted=deleted, group=uuid)})
+            logger.info("finished fetch for group %s" % uuid)
         return contact_by_uuid.values()
 
 

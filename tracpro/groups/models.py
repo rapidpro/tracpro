@@ -1,5 +1,6 @@
 from __future__ import absolute_import, unicode_literals
 
+import logging
 import json
 from operator import attrgetter
 
@@ -16,6 +17,9 @@ from django.utils.translation import ugettext_lazy as _
 
 from tracpro.client import get_client
 from tracpro.contacts.tasks import SyncOrgContacts
+
+
+logger = logging.getLogger(__name__)
 
 
 @python_2_unicode_compatible
@@ -49,6 +53,7 @@ class AbstractGroup(models.Model):
     def sync_with_temba(cls, org, uuids):
         """Sync org groups with the selected UUIDs."""
         # De-activate any groups that are not specified.
+        logger.info("sync_with_temba: %d groups" % len(uuids))
         other_groups = cls.objects.filter(org=org, is_active=True)
         other_groups = other_groups.exclude(uuid__in=uuids)
         for group in other_groups:
@@ -71,6 +76,7 @@ class AbstractGroup(models.Model):
                 if obj:
                     obj.deactivate()
 
+        logger.info("Scheduling SyncOrgContacts for org")
         SyncOrgContacts().delay(org.pk)
 
     @classmethod
@@ -108,7 +114,7 @@ class AbstractGroup(models.Model):
         return sorted(groups, key=lambda g: g.response_count, reverse=True)
 
     def get_contacts(self):
-        return self.contacts.filter(is_active=True)
+        return self.all_contacts.filter(is_active=True)
 
 
 class Region(mptt.MPTTModel, AbstractGroup):
