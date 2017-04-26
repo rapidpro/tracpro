@@ -10,6 +10,10 @@ from django.utils.translation import ugettext_lazy as _
 
 from .utils import *  # noqa
 
+REDIS_CELERY_BROKER_DATABASE = 1
+REDIS_CELERY_RESULTS_DATABASE = 2
+REDIS_CACHE_DATABASE = 3
+
 
 djcelery.setup_loader()
 
@@ -27,7 +31,7 @@ AUTHENTICATION_BACKENDS = (
 CACHES = {
     'default': {
         'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': '127.0.0.1:6379:10',
+        'LOCATION': '127.0.0.1:6379:%d' % REDIS_CACHE_DATABASE,
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
         },
@@ -230,7 +234,8 @@ USE_TZ = True
 
 ANONYMOUS_USER_ID = -1
 
-BROKER_URL = CELERY_RESULT_BACKEND = 'redis://localhost:6379/4'
+BROKER_URL = 'redis://localhost:6379/%d' % REDIS_CELERY_BROKER_DATABASE
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/%d' % REDIS_CELERY_RESULTS_DATABASE
 
 CELERYD_HIJACK_ROOT_LOGGER = False
 
