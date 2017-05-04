@@ -1,0 +1,10 @@
+{% extends 'smartmin/form.html' %}
+{% load i18n %}
+
+{% block pre-form %}
+{% blocktrans %}
+  This will retrieve data from RapidPro about flow runs for this organization that
+  happened within some number of days ago. For example, if days is set to 2, it will
+  retrieve runs from the last 48 hours.
+{% endblocktrans %}
+{% endblock %}

@@ -91,6 +91,7 @@ class OrgExtCRUDL(OrgCRUDL):
         permission = 'orgs.org_fetch_runs'
         success_url = '@orgs_ext.org_home'
         title = _("Fetch past runs for my organization")
+        template_name = 'polls/fetch_runs.html'
 
         def form_valid(self, form):
             org = self.get_object()
