@@ -12,6 +12,7 @@ may be needed for Mac setup. To begin you should have the following applications
 - `virtualenvwrapper <http://pypi.python.org/pypi/virtualenvwrapper>`_ >= 3.0
 - Postgres >= 9.3
 - git >= 1.7
+- Redis
 
 #. Install the LESS CSS precompiler and the CoffeeScript JavaScript compiler using ``npm``.
    First, install ``nodejs`` which comes with ``npm``::
