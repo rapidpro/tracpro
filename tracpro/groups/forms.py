@@ -8,8 +8,11 @@ from tracpro.client import get_client
 
 class ContactGroupsForm(forms.Form):
     groups = forms.MultipleChoiceField(
-        choices=(), label=_("Contact groups"),
-        help_text=_("Contact groups to use."),
+        choices=(), label=' ',
+        help_text=_(
+            "To select more than one panel, hold the Control key "
+            "(or the Command key on a Macintosh) "
+            "while clicking on a panel to add or remove it. "),
         widget=forms.widgets.SelectMultiple(attrs={'size': '20'}),
     )
 

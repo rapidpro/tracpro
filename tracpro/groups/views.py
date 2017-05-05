@@ -153,11 +153,11 @@ class RegionCRUDL(SmartCRUDL):
             })
 
     class Select(OrgPermsMixin, SmartFormView):
-        title = _("Panel Contact Groups")
+        title = _("Panels")
         form_class = ContactGroupsForm
         success_url = '@groups.region_list'
         submit_button_name = _("Update")
-        success_message = _("Updated contact groups to use as panels")
+        success_message = _("Updated panels to use")
 
         def get_form_kwargs(self):
             kwargs = super(RegionCRUDL.Select, self).get_form_kwargs()
