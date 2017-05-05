@@ -40,16 +40,25 @@ def sync_pull_contacts(org, group_uuids):
     failed_uuids = []
 
     groups = Group.objects.filter(uuid__in=group_uuids)
-
+    total_contacts = 0
     for temba_contact in incoming_contacts:
+        total_contacts += 1
         if not temba_contact.urns:
+            msg = "%d Skipping contact: %s" % (total_contacts, temba_contact.name)
+            logger.info(msg)
             # Just skip contacts without URNs
             continue
 
         elif temba_contact.blocked:
+            msg = "%d Deleting BLOCKED contact: %s" % (
+                total_contacts, temba_contact.name)
+            logger.info(msg)
             deleted_uuids.append(temba_contact.uuid)
 
         elif temba_contact.uuid in existing_by_uuid:
+            msg = "%d Updating existing contact: %s" % (total_contacts, temba_contact.name)
+            logger.info(msg)
+
             existing = existing_by_uuid[temba_contact.uuid]
 
             diff = temba_compare_contacts(temba_contact, existing.as_temba(), fields=(), groups=groups)
@@ -77,6 +86,8 @@ def sync_pull_contacts(org, group_uuids):
                 failed_uuids.append(temba_contact.uuid)
                 continue
 
+            msg = "%d Adding NEW contact: %s" % (total_contacts, temba_contact.name)
+            logger.info(msg)
             # We have a signal that queries rapidpro and sets groups on new Contacts,
             # but we already know the groups so we can skip that. This bit will let
             # the signal handler know which groups to add without having to call Rapidpro.
