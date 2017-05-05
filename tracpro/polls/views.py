@@ -178,13 +178,14 @@ class PollCRUDL(smartmin.SmartCRUDL):
             return super(PollCRUDL.List, self).lookup_field_link(context, field, obj)
 
     class Select(OrgPermsMixin, smartmin.SmartFormView):
-        title = _("Poll Flows")
+        title = _("Select Flows")
         form_class = forms.ActivePollsForm
         success_url = '@polls.poll_list'
         submit_button_name = _("Update")
         success_message = _(
             "Updated flows to track as polls." +
             " Notice: questions and categories have been scheduled to update shortly.")
+        template = 'polls/poll_select.html'
 
         def get_form_kwargs(self):
             kwargs = super(PollCRUDL.Select, self).get_form_kwargs()

@@ -36,10 +36,12 @@ QuestionFormSet = forms.modelformset_factory(
 class ActivePollsForm(forms.Form):
     """Set which polls should be synced with RapidPro."""
     polls = forms.ModelMultipleChoiceField(
-        queryset=None, required=False, label=_("Active flows"),
+        queryset=None, required=False,
+        label=_('Flows'),
         help_text=_(
-            "Flows to track as polls. Please note, any polls that begin with 'Single \
-            Message' are filtered out of this list."),
+            "To select more than one flow, hold the Control key "
+            "(or the Command key on a Macintosh) "
+            "while clicking on a flow to add or remove it. "),
         widget=forms.widgets.SelectMultiple(attrs={'size': '20'}),
     )
 
