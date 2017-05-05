@@ -301,11 +301,11 @@ class GroupCRUDL(SmartCRUDL):
             })
 
     class Select(OrgPermsMixin, SmartFormView):
-        title = _("Cohorts")
+        title = _("Select Cohorts")
         form_class = ContactGroupsForm
         success_url = '@groups.group_list'
         submit_button_name = _("Update")
-        success_message = _("Updated contact groups to use as cohorts")
+        success_message = _("Updated cohorts to use")
 
         def get_form_kwargs(self):
             kwargs = super(GroupCRUDL.Select, self).get_form_kwargs()
