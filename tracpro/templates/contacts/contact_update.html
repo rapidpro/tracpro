@@ -1,0 +1,12 @@
+{% extends 'smartmin/update.html' %}
+{% load i18n %}
+{% block pre-content %}
+  {{ block.super }}
+  <div class="row">
+    <div class="col-md-12">
+      <p>
+        {% trans "Please note! If you edit your contact, changes will be immediately reflected in RapidPro." %}
+      </p>
+    </div>
+  </div>
+{% endblock %}
