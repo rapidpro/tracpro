@@ -2,7 +2,7 @@ Changelog
 =========
 
 Tracpro's version is incremented upon each merge to master according to our
- `Deployment Process <deployment-process.rst>`_
+ `Deployment Process <https://github.com/caktus/hosted-tracpro/blob/master/docs/deployment-process.rst> on Hosted TracPro`_
 
 We recommend reviewing the release notes and code diffs before upgrading
 between versions.
