@@ -18,17 +18,26 @@ from django.utils.translation import ugettext_lazy as _
 
 from dash.utils import datetime_to_ms
 
-from temba_client.v2.types import Contact as TembaContact
+from temba_client.v2.types import Contact as TembaContact, ObjectRef
 
 from tracpro.client import get_client
 from tracpro.groups.models import Region, Group
 from tracpro.orgs_ext.constants import TaskType
+from tracpro.utils import get_uuids
 
 from .tasks import push_contact_change
 from .utils import sync_pull_contacts
 
 
 logger = logging.getLogger(__name__)
+
+
+class NoMatchingCohortsWarning(Exception):
+    """
+    Have Contact.kwargs_from_temba be a little more specific about this case by
+    raising this exception.
+    """
+    pass
 
 
 class ChangeType(Enum):
@@ -52,28 +61,26 @@ class ContactQuerySet(models.QuerySet):
 class ContactManager(models.Manager.from_queryset(ContactQuerySet)):
 
     def sync(self, org):
-        recent_contacts = Contact.objects.by_org(org).active()
-        recent_contacts = recent_contacts.exclude(temba_modified_on=None)
-        recent_contacts = recent_contacts.order_by('-temba_modified_on')
+        try:
+            region_uuids = set(get_uuids(Region.get_all(org)))
+            group_uuids = set(get_uuids(Group.get_all(org)))
 
-        most_recent = recent_contacts.first()
-        sync_regions = [r.uuid for r in Region.get_all(org)]
-        sync_groups = [g.uuid for g in Group.get_all(org)]
+            created, updated, deleted, failed = sync_pull_contacts(
+                org=org,
+                group_uuids=region_uuids | group_uuids
+            )
 
-        created, updated, deleted, failed = sync_pull_contacts(
-            org=org, contact_class=Contact, fields=(), delete_blocked=True,
-            groups=sync_regions + sync_groups,
-            last_time=most_recent.temba_modified_on if most_recent else None)
-
-        org.set_task_result(TaskType.sync_contacts, {
-            'time': datetime_to_ms(timezone.now()),
-            'counts': {
-                'created': len(created),
-                'updated': len(updated),
-                'deleted': len(deleted),
-                'failed': len(failed),
-            },
-        })
+            org.set_task_result(TaskType.sync_contacts, {
+                'time': datetime_to_ms(timezone.now()),
+                'counts': {
+                    'created': len(created),
+                    'updated': len(updated),
+                    'deleted': len(deleted),
+                    'failed': len(failed),
+                },
+            })
+        except:
+            logger.exception("EXCEPTION in ContactManager.sync")
 
 
 @python_2_unicode_compatible
@@ -143,15 +150,25 @@ class Contact(models.Model):
         """Return a Temba object representing this Contact."""
         fields = {f.field.key: f.get_value() for f in self.contactfield_set.all()}
 
-        temba_contact = TembaContact()
-        temba_contact.name = self.name
-        temba_contact.urns = [self.urn]
-        temba_contact.fields = fields
-        temba_contact.groups = list(self.groups.values_list('uuid', flat=True))
-        temba_contact.language = self.language
-        temba_contact.uuid = self.uuid
+        # Include all the groups associated with the contact.
+        # In Temba v2, we get back ObjectRefs for these, so imitate that here.
+        groups = [ObjectRef.create(uuid=group.uuid, name=group.name)
+                  for group in self.groups.all()]
+        if self.region and self.region.uuid not in get_uuids(groups):
+            groups.append(ObjectRef.create(uuid=self.region.uuid, name=self.region.name))
+        if self.group and self.group.uuid not in get_uuids(groups):
+            groups.append(ObjectRef.create(uuid=self.group.uuid, name=self.group.name))
 
-        return temba_contact
+        return TembaContact.create(
+            name=self.name,
+            urns=[self.urn],
+            fields=fields,
+            groups=groups,
+            language=self.language,
+            uuid=self.uuid,
+            blocked=not self.is_active,
+            modified_on=self.modified_on
+        )
 
     def delete(self):
         """Deactivate the local copy & delete from RapidPro."""
@@ -191,19 +208,18 @@ class Contact(models.Model):
     def kwargs_from_temba(cls, org, temba_contact):
         """Get data to create a Contact instance from a Temba object."""
         def _get_first(model_class, temba_objects):
-            """Return first obj from this org that matches one of the given uuids."""
+            """Return first obj from this org that matches one of the given uuids, or None."""
             queryset = model_class.get_all(org)
-            tracpro_uuids = queryset.values_list('uuid', flat=True)
-            temba_uuids = [temba_object.uuid for temba_object in temba_objects]
-            uuid = next((uuid for uuid in temba_uuids if uuid in tracpro_uuids), None)
-            return queryset.get(uuid=uuid) if uuid else None
+            temba_uuids = get_uuids(temba_objects)
+            return queryset.filter(uuid__in=temba_uuids).first()
         # Use the first Temba group that matches one of the org's Regions.
         region = _get_first(Region, temba_contact.groups)
         if not region:
-            raise ValueError(
-                "Unable to save contact {c.uuid} ({c.name}) because none of "
+            raise NoMatchingCohortsWarning(
+                "Unable to save contact {c.name} ({c.uuid}) because none of "
                 "their cohorts match an active Panel for this org.".format(
-                    c=temba_contact))
+                    c=temba_contact,
+                ))
 
         # Use the first Temba group that matches one of the org's Groups.
         group = _get_first(Group, temba_contact.groups)
@@ -219,7 +235,8 @@ class Contact(models.Model):
             '_data_field_values': temba_contact.fields,  # managed by post-save signal
         }
         if cls.objects.filter(org=org, uuid=temba_contact.uuid).exists():
-            kwargs['groups'] = list(Group.objects.filter(uuid__in=temba_contact.groups))
+            # Note that 'groups' is only a valid kwarg if the contact already exists
+            kwargs['groups'] = list(Group.objects.filter(uuid__in=get_uuids(temba_contact.groups)))
         return kwargs
 
     def push(self, change_type):

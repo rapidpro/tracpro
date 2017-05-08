@@ -13,8 +13,6 @@ WEBSERVER_ROOT = '/var/www/tracpro/'
 
 ALLOWED_HOSTS = [".{}".format(DOMAIN)]
 
-CACHES['default']['LOCATION'] = 'localhost:6379:4'
-
 CELERY_SEND_TASK_ERROR_EMAILS = True
 
 COMPRESS_CSS_HASHING_METHOD = 'content'

@@ -23,3 +23,8 @@ class Org(SmartModelFactory):
         self.available_languages = extracted or ["en"]
         if create:
             self.save()
+
+    @factory.post_generation
+    def google_analytics(self, create, extracted, **kwargs):
+        if extracted:
+            self.set_config('google_analytics', extracted)

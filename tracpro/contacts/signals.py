@@ -41,9 +41,14 @@ def set_groups_to_new_contact(sender, instance, created, **kwargs):
     """Hook to set the groups of a temba contact when a Contact is created after sync."""
     if created:
         try:
-            temba_contact = get_client(instance.org).get_contacts(uuid=instance.uuid)[0]
-            # This will omit the contact's groups that are not selected to sync, but that's intentional.
-            groups = Group.objects.filter(uuid__in=temba_contact.groups)
+            if hasattr(instance, 'new_groups'):
+                # The caller already knew the groups and helpfully passed them along to us
+                groups = instance.new_groups
+            else:
+                # We have to ask RapidPro what the user's groups are.
+                # This will omit the contact's groups that are not selected to sync, but that's intentional.
+                temba_contact = get_client(instance.org).get_contacts(uuid=instance.uuid)[0]
+                groups = Group.objects.filter(uuid__in=temba_contact.groups)
             instance.groups.add(*groups)
         except IndexError:
             # The contact was created locally

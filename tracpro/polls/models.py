@@ -71,10 +71,15 @@ class PollManager(models.Manager.from_queryset(PollQuerySet)):
     def sync(self, org):
         """Update the org's Polls from RapidPro."""
         # Retrieve current Polls known to RapidPro.
-        temba_polls = get_client(org).get_flows()
-        temba_polls = {p.uuid: p for p in temba_polls}
+        temba_polls_result = get_client(org).get_flows()
 
-        # Remove Polls that are no longer on RapidPro.
+        # Filter out polls with names starting with 'Single Message'
+        temba_polls = {}
+        for poll in temba_polls_result:
+            if not poll.name.startswith('Single Message'):
+                temba_polls[poll.uuid] = poll
+
+        # Remove Polls that are no longer on RapidPro or that we are filtering out.
         org.polls.exclude(flow_uuid__in=temba_polls.keys()).delete()
 
         # Create new or update existing Polls to match RapidPro data.

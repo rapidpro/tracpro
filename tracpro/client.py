@@ -32,6 +32,24 @@ class TracProClient(TembaClient):
     def get_boundaries(self):
         return self._get_query('boundaries', {'geometry': 'true'}, Boundary)
 
+    def get_contacts_in_groups(self, group_uuids, deleted=None):
+        """
+        Get all contacts from RapidPro that are in a list of groups,
+        only including each contact once.
+
+        :param group_uuids: array of uuids and/or names
+        :param deleted: return deleted contacts only
+        :return: iterable of TembaContact objects
+
+        https://app.rapidpro.io/api/v2/contacts
+        """
+        contact_by_uuid = {}
+        for uuid in group_uuids:
+            contact_by_uuid.update(
+                {contact.uuid: contact
+                 for contact in self.get_contacts(deleted=deleted, group=uuid)})
+        return contact_by_uuid.values()
+
 
 class TracProCursorQuery(CursorQuery):
     """
