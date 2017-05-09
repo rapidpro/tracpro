@@ -153,7 +153,7 @@ class RegionCRUDL(SmartCRUDL):
             })
 
     class Select(OrgPermsMixin, SmartFormView):
-        title = _("Panels")
+        title = _("Select Panels")
         form_class = ContactGroupsForm
         success_url = '@groups.region_list'
         submit_button_name = _("Update")
