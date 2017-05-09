@@ -123,8 +123,11 @@ class TestRegion(TracProTest):
     def test_sync_update_existing(self):
         """Update existing group with new information from remote."""
         self.temba_groups['2'].name = "Changed"  # Kampala
+        self.temba_groups['8'] = TembaGroup.create(uuid="5", name="Wonkaland")
+        self.wonkaland = factories.Region(
+            org=self.org, uuid='8', name="Wonkaland")
         self.mock_temba_client.get_groups.return_value = self.temba_groups.values()
-        uuids = ['1', '2', '3', '4']
+        uuids = ['1', '2', '3', '4', '8']
         models.Region.sync_with_temba(self.org, uuids)
         self.refresh_regions()
 
@@ -133,6 +136,7 @@ class TestRegion(TracProTest):
             self.kampala,
             self.makerere,
             self.entebbe,
+            self.wonkaland,
         ]))
         self.assertEqual(self.kampala.name, "Changed")
         self.assertEqual(self.kampala.parent, self.uganda)

@@ -54,3 +54,17 @@ def caused_by_bad_api_key(exception):
             if response is not None and response.status_code == 403:
                 return True
     return False
+
+
+def is_supervisor(org, user):
+    """
+    Return True if user is a supervisor for org.
+    
+    (In TracPro's endless quest to confuse and obfuscate by using different
+    names for the same things, a "supervisor" is another name for
+    an org "editor".)
+    """
+    if org and user.is_authenticated() and user.is_active:
+        editors = org.get_org_editors()
+        return editors.filter(pk=user.pk).exists()
+    return False
