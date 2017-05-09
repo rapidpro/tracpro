@@ -9,7 +9,9 @@ from tracpro.client import get_client
 class ContactGroupsForm(forms.Form):
     groups = forms.MultipleChoiceField(
         choices=(), label=_("Contact groups"),
-        help_text=_("Contact groups to use."),
+        help_text=_(
+            "Contact groups to use. If any contacts in these RapidPro groups" +
+            "are not also in your selected Panels, they will not be synced in TracPro."),
         widget=forms.widgets.SelectMultiple(attrs={'size': '20'}),
     )
 

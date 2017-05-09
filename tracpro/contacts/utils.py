@@ -15,7 +15,7 @@ from tracpro.utils import get_uuids
 logger = get_task_logger(__name__)
 
 
-def sync_pull_contacts(org, group_uuids):
+def sync_pull_contacts(org, region_uuids, group_uuids):
     """
     Pull contacts from RapidPro and sync with local contacts.
 
@@ -24,11 +24,11 @@ def sync_pull_contacts(org, group_uuids):
     :return: tuple containing list of UUIDs for created, updated, deleted and failed contacts
     """
     from tracpro.contacts.models import Contact, NoMatchingCohortsWarning
-    from tracpro.groups.models import Group
+    from tracpro.groups.models import Group, Region
 
     # get all remote contacts for the specified groups
     client = get_client(org)
-    incoming_contacts = client.get_contacts_in_groups(group_uuids)
+    incoming_contacts = client.get_contacts_in_groups(group_uuids | region_uuids)
 
     # get all existing local contacts (active or not) and organize by their UUID
     existing_contacts = Contact.objects.filter(org=org)
@@ -40,21 +40,30 @@ def sync_pull_contacts(org, group_uuids):
     failed_uuids = []
 
     groups = Group.objects.filter(uuid__in=group_uuids)
-
+    total_contacts = 0
     for temba_contact in incoming_contacts:
+        total_contacts += 1
         if not temba_contact.urns:
+            msg = "%d Skipping contact: %s" % (total_contacts, temba_contact.name)
+            logger.info(msg)
             # Just skip contacts without URNs
             continue
 
         elif temba_contact.blocked:
+            msg = "%d Deleting BLOCKED contact: %s" % (
+                total_contacts, temba_contact.name)
+            logger.info(msg)
             deleted_uuids.append(temba_contact.uuid)
 
         elif temba_contact.uuid in existing_by_uuid:
+            msg = "%d Updating existing contact: %s" % (total_contacts, temba_contact.name)
+            logger.info(msg)
+
             existing = existing_by_uuid[temba_contact.uuid]
 
             diff = temba_compare_contacts(temba_contact, existing.as_temba(), fields=(), groups=groups)
 
-            if diff or not existing.is_active:
+            if diff or not existing.is_active or not existing.region or not existing.group:
                 try:
                     kwargs = Contact.kwargs_from_temba(org, temba_contact)
                 except NoMatchingCohortsWarning as e:
@@ -65,6 +74,10 @@ def sync_pull_contacts(org, group_uuids):
                 for field, value in six.iteritems(kwargs):
                     setattr(existing, field, value)
 
+                if temba_contact.group_uuid in region_uuids:
+                    existing.region = Region.objects.get(uuid=temba_contact.group_uuid)
+                if temba_contact.group_uuid in group_uuids:
+                    existing.group = Group.objects.get(uuid=temba_contact.group_uuid)
                 existing.is_active = True
                 existing.save()
 
@@ -77,13 +90,22 @@ def sync_pull_contacts(org, group_uuids):
                 failed_uuids.append(temba_contact.uuid)
                 continue
 
+            msg = "%d Adding NEW contact: %s" % (total_contacts, temba_contact.name)
+            logger.info(msg)
             # We have a signal that queries rapidpro and sets groups on new Contacts,
             # but we already know the groups so we can skip that. This bit will let
             # the signal handler know which groups to add without having to call Rapidpro.
             new_contact = Contact(**kwargs)
             new_contact.new_groups = Group.objects.filter(uuid__in=get_uuids(temba_contact.groups))
+            if temba_contact.group_uuid in region_uuids:
+                new_contact.region = Region.objects.get(uuid=temba_contact.group_uuid)
+            if temba_contact.group_uuid in group_uuids:
+                new_contact.group = Group.objects.get(uuid=temba_contact.group_uuid)
             new_contact.save()
             created_uuids.append(kwargs['uuid'])
+
+            # If we see this contact again, recognize it as now existing
+            existing_by_uuid[new_contact.uuid] = new_contact
 
     # any contact that has been deleted from rapidpro
     # should be marked inactive in tracpro
