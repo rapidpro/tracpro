@@ -125,7 +125,7 @@ class SyncPullTest(TracProDataTest):
         # Add the group_uuid per contact for sync
         contacts = []
         for contact in self.rapidpro_contacts_as_temba:
-             for group in contact.groups:
+            for group in contact.groups:
                 if group.name in self.sync_group_names or group.name in self.sync_region_names:
                     contact.group_uuid = group.uuid
                     contacts.append(contact)
