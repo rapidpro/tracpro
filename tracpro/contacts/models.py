@@ -67,7 +67,8 @@ class ContactManager(models.Manager.from_queryset(ContactQuerySet)):
 
             created, updated, deleted, failed = sync_pull_contacts(
                 org=org,
-                group_uuids=region_uuids | group_uuids
+                region_uuids=region_uuids,
+                group_uuids=group_uuids
             )
 
             org.set_task_result(TaskType.sync_contacts, {
