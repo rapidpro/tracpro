@@ -104,6 +104,9 @@ def sync_pull_contacts(org, region_uuids, group_uuids):
             new_contact.save()
             created_uuids.append(kwargs['uuid'])
 
+            # If we see this contact again, recognize it as now existing
+            existing_by_uuid[new_contact.uuid] = new_contact
+
     # any contact that has been deleted from rapidpro
     # should be marked inactive in tracpro
     deleted_rapidpro_contacts = client.get_contacts_in_groups(group_uuids, deleted=True)
