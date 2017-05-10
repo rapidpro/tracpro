@@ -39,7 +39,6 @@ def sync_pull_contacts(org, region_uuids, group_uuids):
     deleted_uuids = []
     failed_uuids = []
 
-    groups = Group.objects.filter(uuid__in=group_uuids)
     total_contacts = 0
     for temba_contact in incoming_contacts:
         total_contacts += 1
@@ -61,27 +60,27 @@ def sync_pull_contacts(org, region_uuids, group_uuids):
 
             existing = existing_by_uuid[temba_contact.uuid]
 
-            diff = temba_compare_contacts(temba_contact, existing.as_temba(), fields=(), groups=groups)
+            try:
+                kwargs = Contact.kwargs_from_temba(org, temba_contact)
+            except NoMatchingCohortsWarning as e:
+                logger.warning(e.message)
+                failed_uuids.append(temba_contact.uuid)
+                continue
 
-            if diff or not existing.is_active or not existing.region or not existing.group:
-                try:
-                    kwargs = Contact.kwargs_from_temba(org, temba_contact)
-                except NoMatchingCohortsWarning as e:
-                    logger.warning(e.message)
-                    failed_uuids.append(temba_contact.uuid)
-                    continue
+            for field, value in six.iteritems(kwargs):
+                setattr(existing, field, value)
 
-                for field, value in six.iteritems(kwargs):
-                    setattr(existing, field, value)
+            # Note, following code overrides
+            # contact.region and/or contact.group fields
+            # that come back from kwargs_from_temba()
+            if temba_contact.group_uuid in region_uuids:
+                existing.region = Region.objects.get(uuid=temba_contact.group_uuid)
+            if temba_contact.group_uuid in group_uuids:
+                existing.group = Group.objects.get(uuid=temba_contact.group_uuid)
+            existing.is_active = True
+            existing.save()
 
-                if temba_contact.group_uuid in region_uuids:
-                    existing.region = Region.objects.get(uuid=temba_contact.group_uuid)
-                if temba_contact.group_uuid in group_uuids:
-                    existing.group = Group.objects.get(uuid=temba_contact.group_uuid)
-                existing.is_active = True
-                existing.save()
-
-                updated_uuids.append(temba_contact.uuid)
+            updated_uuids.append(temba_contact.uuid)
         else:
             try:
                 kwargs = Contact.kwargs_from_temba(org, temba_contact)
@@ -97,6 +96,9 @@ def sync_pull_contacts(org, region_uuids, group_uuids):
             # the signal handler know which groups to add without having to call Rapidpro.
             new_contact = Contact(**kwargs)
             new_contact.new_groups = Group.objects.filter(uuid__in=get_uuids(temba_contact.groups))
+            # Note, following code overrides
+            # contact.region and/or contact.group fields
+            # that come back from kwargs_from_temba()
             if temba_contact.group_uuid in region_uuids:
                 new_contact.region = Region.objects.get(uuid=temba_contact.group_uuid)
             if temba_contact.group_uuid in group_uuids:
@@ -115,7 +117,10 @@ def sync_pull_contacts(org, region_uuids, group_uuids):
     # Mark all deleted contacts as not active if they aren't already.
     existing_contacts.filter(uuid__in=deleted_uuids, is_active=True).update(is_active=False)
 
-    return created_uuids, updated_uuids, deleted_uuids, failed_uuids
+    return (list(set(created_uuids)),
+            list(set(updated_uuids)),
+            list(set(deleted_uuids)),
+            list(set(failed_uuids)))
 
 
 def temba_compare_contacts(first, second, fields=None, groups=None):

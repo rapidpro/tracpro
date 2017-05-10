@@ -218,7 +218,7 @@ class Contact(models.Model):
         if not region:
             raise NoMatchingCohortsWarning(
                 "Unable to save contact {c.name} ({c.uuid}) because none of "
-                "their cohorts match an active Panel for this org.".format(
+                "their RapidPro Groups match an active Panel for this org.".format(
                     c=temba_contact,
                 ))
 
