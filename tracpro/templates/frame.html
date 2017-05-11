@@ -144,10 +144,7 @@
                       <li><a href='{% url 'groups.group_list' %}'> {% trans "Cohorts" %} </a></li>
                     {% endif %}
                     {% if org_perms.polls.pollrun_list or request.user.is_superuser or user_is_admin %}
-                      <li><a href='{% url 'polls.pollrun_list' %}'>{% trans "Runs" %}</a></li>
-                    {% endif %}
-                    {% if request.user.is_superuser or request.user.is_staff %}
-                      <li><a href="{% url 'orgs_ext.org_fetchruns' %}"> {% trans "Fetch runs" %} </a> </li>
+                      <li><a href='{% url 'polls.pollrun_list' %}'>{% trans "Flow Runs" %}</a></li>
                     {% endif %}
                     {% if org_perms.baseline.baselineterm_list or request.user.is_superuser or user_is_admin %}
                       <li><a href='{% url 'baseline.baselineterm_list' %}'> {% trans "Recent Indicators" %} </a> </li>

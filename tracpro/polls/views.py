@@ -427,7 +427,7 @@ class PollRunCRUDL(smartmin.SmartCRUDL):
         add_button = False
 
         def derive_title(self):
-            return _("All Poll Runs")
+            return _("All Flow Runs")
 
         def derive_queryset(self, **kwargs):
             return PollRun.objects.get_all(
