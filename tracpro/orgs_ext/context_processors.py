@@ -2,12 +2,15 @@ from __future__ import unicode_literals
 
 from django.conf import settings
 
+from tracpro.orgs_ext.utils import is_supervisor
+
 
 def user_is_admin(request):
     org = request.org
     is_admin = org and request.user.is_authenticated() and request.user.is_admin_for(org)
     return {
         'user_is_admin': is_admin,
+        'user_is_supervisor': is_supervisor(org, request.user),
     }
 
 
