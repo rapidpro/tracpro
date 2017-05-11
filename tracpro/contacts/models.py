@@ -222,7 +222,7 @@ class Contact(models.Model):
                     c=temba_contact,
                 ))
 
-        # Use the first Temba group that matches one of the org's Groups.
+        # Use the first Temba group that matches one of the org's Groups. (cohort)
         group = _get_first(Group, temba_contact.groups)
         kwargs = {
             'org': org,

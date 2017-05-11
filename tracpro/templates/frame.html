@@ -110,125 +110,75 @@
           <nav id='admin-top-navbar-collapse' class='admin-top-navbar collapse navbar-collapse' role='navigation'>
             <ul class='nav navbar-nav'>
               {% if org and request.user.is_authenticated %}
-                <li>
-                  <a href='/'>
-                    {% trans "Home" %}
-                  </a>
-                </li>
+                <li><a href='/'> {% trans "Home" %} </a></li>
               {% endif %}
+
+              {# (My) Organization #}
+              {% if org_perms.orgs.org_home or request.user.is_superuser or user_is_admin %}
+                <li><a href='{% url 'orgs_ext.org_home' %}'>{% trans "My Organization" %}</a></li>
+              {% endif %}
+
+              {# Site Mgmt (v) #}
               {% if request.user.is_superuser %}
                 <li class='dropdown'>
-                  <a class='dropdown-toggle' data-toggle='dropdown' href='#'>
-                    {% trans "Site Manage" %}
-                    <b class='caret'></b>
-                  </a>
+                  <a class='dropdown-toggle' data-toggle='dropdown' href='#'>{% trans "Site Management" %} <b class='caret'></b></a>
                   <ul class='dropdown-menu'>
-                    <li>
-                      <a href='{% url 'orgs_ext.org_list' %}'>
-                        {% trans "Orgs" %}
-                      </a>
-                    </li>
-                    <li>
-                      <a href='{% url 'profiles.admin_list' %}'>
-                        {% trans "Users" %}
-
-                      </a>
-                    </li>
+                    <li><a href='{% url 'orgs_ext.org_list' %}'> {% trans "Organizations" %} </a></li>
+                    <li><a href='{% url 'profiles.admin_list' %}'> {% trans "Users" %} </a></li>
                   </ul>
                 </li>
               {% endif %}
-              {% if org_perms.orgs.org_home or org_perms.groups.group_list or org_perms.groups.region_list or org_perms.profiles.profile_user_list or org_perms.polls.poll_list or org_perms.msgs.message_list %}
+
+              {# Polls Management (v) #}
+              {% if org_perms.polls.poll_list or org_perms.groups.region_list or org_perms.groups.group_list or org_perms.polls.pollrun_list or org_perms.baseline.baselineterm_list or org_perms.msgs.message_list or org_perms.profiles.profile_user_list or request.user.is_superuser or user_is_admin or user_is_supervisor %}
                 <li class='dropdown'>
-                  <a class='dropdown-toggle' data-toggle='dropdown' href='#'>
-                    {% trans "Administration" %}
-                    <b class='caret'></b>
-                  </a>
+                  <a class='dropdown-toggle' data-toggle='dropdown' href='#'>{% trans "Polls Management" %} <b class='caret'></b></a>
                   <ul class='dropdown-menu'>
-                    {% if org_perms.orgs.org_home %}
-                      <li>
-                        <a href='{% url 'orgs_ext.org_home' %}'>
-                          {% trans "Organization" %}
-
-                        </a>
-                      </li>
+                    {% if org_perms.polls.poll_list or request.user.is_superuser or user_is_admin %}
+                      <li><a href='{% url 'polls.poll_list' %}'> {% trans "Polls" %} </a></li>
                     {% endif %}
-                    {% if org_perms.groups.region_list %}
-                      <li>
-                        <a href='{% url 'groups.region_list' %}'>
-                          {% trans "Panels" %}
-
-                        </a>
-                      </li>
+                    {% if org_perms.groups.region_list or request.user.is_superuser or user_is_admin %}
+                      <li><a href='{% url 'groups.region_list' %}'> {% trans "Panels" %} </a></li>
                     {% endif %}
-                    {% if org_perms.profiles.profile_user_list %}
-                      <li>
-                        <a href='{% url 'profiles.user_list' %}'>
-                          {% trans "Supervisors" %}
-
-                        </a>
-                      </li>
+                    {% if org_perms.groups.group_list or request.user.is_superuser or user_is_admin %}
+                      <li><a href='{% url 'groups.group_list' %}'> {% trans "Cohorts" %} </a></li>
                     {% endif %}
-                    {% if org_perms.polls.poll_list %}
-                      <li>
-                        <a href='{% url 'polls.poll_list' %}'>
-                          {% trans "Polls" %}
-
-                        </a>
-                      </li>
+                    {% if org_perms.polls.pollrun_list or request.user.is_superuser or user_is_admin %}
+                      <li><a href='{% url 'polls.pollrun_list' %}'>{% trans "Runs" %}</a></li>
                     {% endif %}
-                    {% if org_perms.groups.group_list %}
-                      <li>
-                        <a href='{% url 'groups.group_list' %}'>
-                          {% trans "Cohorts" %}
-
-                        </a>
-                      </li>
+                    {% if org_perms.baseline.baselineterm_list or request.user.is_superuser or user_is_admin %}
+                      <li><a href='{% url 'baseline.baselineterm_list' %}'> {% trans "Recent Indicators" %} </a> </li>
                     {% endif %}
-                    {% if org_perms.msgs.message_list %}
-                      <li>
-                        <a href='{% url 'msgs.message_list' %}'>
-                          {% trans "Message Log" %}
-                        </a>
-                      </li>
+                    {% if org_perms.msgs.message_list or request.user.is_superuser or user_is_admin %}
+                      <li><a href='{% url 'msgs.message_list' %}'> {% trans "Message Log" %} </a> </li>
+                    {% endif %}
+                    {% if org_perms.profiles.profile_user_list or request.user.is_superuser or user_is_admin %}
+                      <li><a href='{% url 'profiles.user_list' %}'> {% trans "Supervisors" %} </a> </li>
                     {% endif %}
                   </ul>
                 </li>
               {% endif %}
-              {% if org_perms.contacts.contact_list or org_perms.msgs.inboxmessage_list or org_perms.baseline.baselineterm_list %}
+
+              {# Contacts (v) #}
+              {% if org_perms.contacts.contact_list or org_perms.msgs.inboxmessage_list or request.user.is_superuser or user_is_admin or user_is_supervisor %}
                 <li class='dropdown'>
-                    <a class='dropdown-toggle' data-toggle='dropdown' href='#'>
-                      {% trans "Management" %}
-                      <b class='caret'></b>
-                    </a>
-                    <ul class='dropdown-menu'>
-                      {% if org_perms.contacts.contact_list %}
-                        <li>
-                          <a href='{% url 'contacts.contact_list' %}'>
-                            {% trans "Contacts" %}
+                  <a class='dropdown-toggle' data-toggle='dropdown' href='#'>{% trans "Contacts" %} <b class='caret'></b></a>
+                  <ul class='dropdown-menu'>
+                    {% if org_perms.contacts.contact_list or request.user.is_superuser or user_is_admin or user_is_supervisor %}
+                      <li><a href='{% url 'contacts.contact_list' %}'>{% trans "Contacts Management" %}</a></li>
+                    {% endif %}
+                    {% if org_perms.msgs.inboxmessage_list or request.user.is_superuser or user_is_admin or user_is_supervisor %}
+                      <li><a href='{% url 'msgs.inboxmessage_list' %}'> {% trans "Inbox Messages" %} </a> </li>
+                    {% endif %}
 
-                          </a>
-                        </li>
-                      {% endif %}
-                      {% if org_perms.msgs.inboxmessage_list %}
-                            <li>
-                              <a href='{% url 'msgs.inboxmessage_list' %}'>
-                                {% trans "Inbox Messages" %}
-
-                              </a>
-                            </li>
-                      {% endif %}
-                      {% if org_perms.baseline.baselineterm_list %}
-                            <li>
-                              <a href='{% url 'baseline.baselineterm_list' %}'>
-                                {% trans "Recent Indicators" %}
-
-                              </a>
-                            </li>
-                      {% endif %}
-                    </ul>
+                  </ul>
                 </li>
               {% endif %}
             </ul>
+
+            {############################}
+            {# Nav bar at the right end #}
+            {############################}
             <ul class='nav navbar-nav navbar-right'>
               {% block login %}
                 {% if request.user and request.user.is_authenticated %}
@@ -257,7 +207,7 @@
                         </a>
                         <ul class='dropdown-menu' role='menu'>
                           {% url "set-region" as set_region_url %}
-                          {% if user_is_admin %}
+                          {% if user_is_admin or request.user.is_superuser %}
                             <li>
                               <form id="show-region-all" method="POST"
                                     action="{{ set_region_url }}">

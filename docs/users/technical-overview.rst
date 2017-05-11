@@ -4,7 +4,7 @@ Technical Overview
 Concepts
 --------------------
 
-* `Polls` are RapidPro flows. Click on the name of a poll to see a summary of the responses over time and dates it was conducted.
+* `Polls` or `Flows` are RapidPro flows. Click on the name of a poll to see a summary of the responses over time and dates it was conducted.
 * `PollRuns` are the dates a poll was conducted. Click on a poll date to see a summary of just the responses for that date, participation among cohorts, send a message to contacts, individual responses, and export responses.
 * `Contacts` are the same as in RapidPro, they are the respondents of polls.
 * `Supervisors` could be, for example, a provincial monitoring officer in a ministry. They are meant to see a particular panel or multiple panels, and encourage participation by seeing who is responding, and restart polls. Supervisors also manage contacts.
