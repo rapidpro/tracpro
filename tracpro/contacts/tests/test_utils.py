@@ -131,6 +131,11 @@ class SyncPullTest(TracProDataTest):
                     contacts.append(contact)
         self.rapidpro_contacts_as_temba = contacts
 
+        # Contacts that we are actually syncing here, because they are in the regions we sync
+        self.sync_contacts = Contact.objects.filter(region__in=(self.sync_regions))
+        # Order this list
+        self.sync_contacts = list(set([contact.uuid for contact in self.sync_contacts]))
+
         self.deleted_rapidpro_contacts = []
 
         def mock_get_contacts_in_groups(groups, deleted=None):
@@ -154,8 +159,11 @@ class SyncPullTest(TracProDataTest):
             group_uuids=self.get_group_uuids(),
         )
 
-        # Should be no change since we just returned the contacts we already had
-        self.assertTupleEqual(([], [], [], []), (created, updated, deleted, failed))
+        # Most tuples don't change
+        # because we just returned the contacts we already had
+        # However, we always update the contacts to get most up-to-date information
+        # on the region/cohort relationship
+        self.assertTupleEqual(([], self.sync_contacts, [], []), (created, updated, deleted, failed))
 
     def test_new_contact_in_rapidpro(self):
         original_kwargs = self.contact1.as_temba().serialize()
@@ -171,7 +179,9 @@ class SyncPullTest(TracProDataTest):
             region_uuids=self.get_region_uuids(),
             group_uuids=self.get_group_uuids(),
         )
-        self.assertTupleEqual(([new_temba_contact.uuid], [], [], []), (created, updated, deleted, failed))
+        self.assertTupleEqual(
+            ([new_temba_contact.uuid], self.sync_contacts, [], []),
+            (created, updated, deleted, failed))
 
         # We have created a new contact:
         c = Contact.objects.get(uuid=new_temba_contact.uuid)
@@ -185,7 +195,9 @@ class SyncPullTest(TracProDataTest):
         # Work around the overloaded 'delete' method on Contact to really delete contact1 locally,
         # so as far as our code is concerned, this will be a new contact when we
         # see it come back from Rapidpro.
-        Contact.objects.filter(uuid=self.rapidpro_contacts_as_temba[0].uuid).delete()
+        uuid_to_delete = self.rapidpro_contacts_as_temba[0].uuid
+        Contact.objects.filter(uuid=uuid_to_delete).delete()
+        self.sync_contacts.remove(uuid_to_delete)
 
         # Remove the urns from that contact as we'll see it from rapidpro
         self.rapidpro_contacts_as_temba[0].urns = []
@@ -196,7 +208,7 @@ class SyncPullTest(TracProDataTest):
             group_uuids=self.get_group_uuids(),
         )
         # We do *not* see the new contact (or blow up)
-        self.assertTupleEqual(([], [], [], []), (created, updated, deleted, failed))
+        self.assertTupleEqual(([], self.sync_contacts, [], []), (created, updated, deleted, failed))
 
     def test_modified_contact_in_rapidpro(self):
         # Have "rapidpro" return a new name on the first contact in the list
@@ -212,7 +224,7 @@ class SyncPullTest(TracProDataTest):
             region_uuids=self.get_region_uuids(),
             group_uuids=self.get_group_uuids(),
         )
-        self.assertTupleEqual(([], [self.rapidpro_contacts_as_temba[0].uuid], [], []),
+        self.assertTupleEqual(([], self.sync_contacts, [], []),
                               (created, updated, deleted, failed))
         # Our contact has changed its name, in the existing record
         c = Contact.objects.get(uuid=self.rapidpro_contacts_as_temba[0].uuid)
@@ -227,7 +239,7 @@ class SyncPullTest(TracProDataTest):
             region_uuids=self.get_region_uuids(),
             group_uuids=self.get_group_uuids(),
         )
-        self.assertTupleEqual(([], [], [deleted_rapidpro_contact.uuid], []),
+        self.assertTupleEqual(([], self.sync_contacts, [deleted_rapidpro_contact.uuid], []),
                               (created, updated, deleted, failed))
         # Our contact has changed to is_active=False
         c = Contact.objects.get(uuid=deleted_rapidpro_contact.uuid)
@@ -236,12 +248,13 @@ class SyncPullTest(TracProDataTest):
     def test_blocked_contact_in_rapidpro(self):
         blocked_contact = self.rapidpro_contacts_as_temba[0]
         blocked_contact.blocked = True
+        self.sync_contacts.remove(blocked_contact.uuid)
         created, updated, deleted, failed = sync_pull_contacts(
             org=self.org,
             region_uuids=self.get_region_uuids(),
             group_uuids=self.get_group_uuids(),
         )
-        self.assertTupleEqual(([], [], [blocked_contact.uuid, blocked_contact.uuid], []),
+        self.assertTupleEqual(([], self.sync_contacts, [blocked_contact.uuid], []),
                               (created, updated, deleted, failed))
         # Our contact has changed to is_active=False
         c = Contact.objects.get(uuid=blocked_contact.uuid)
