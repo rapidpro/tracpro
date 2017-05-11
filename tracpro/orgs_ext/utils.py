@@ -59,7 +59,7 @@ def caused_by_bad_api_key(exception):
 def is_supervisor(org, user):
     """
     Return True if user is a supervisor for org.
-    
+
     (In TracPro's endless quest to confuse and obfuscate by using different
     names for the same things, a "supervisor" is another name for
     an org "editor".)

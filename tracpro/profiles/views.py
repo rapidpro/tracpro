@@ -191,7 +191,6 @@ class UserCRUDL(SmartCRUDL):
         def derive_queryset(self, **kwargs):
             qs = super(UserCRUDL.List, self).derive_queryset(**kwargs)
             qs = qs.filter(pk__in=self.request.org.get_org_editors(), is_active=True)
-            # qs = qs.filter(pk__in=self.request.org.get_org_editors() | self.request.org.administrators.all(), is_active=True).exclude(profile=None)
             return qs
 
 
