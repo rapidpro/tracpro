@@ -83,6 +83,7 @@ class ContactCRUDL(SmartCRUDL):
 
     class Update(OrgObjPermsMixin, ContactFormMixin, ContactBase, SmartUpdateView):
         form_class = ContactForm
+        template_name = 'contacts/contact_update.html'
 
         def post_save(self, obj):
             obj = super(ContactCRUDL.Update, self).post_save(obj)
