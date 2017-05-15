@@ -54,7 +54,7 @@ $(function() {
 
         /* Display only the "Save Regions" button. */
         $("#region-actions .btn.action").addClass("hidden");
-        $("#save-regions").removeClass("hidden");
+        $("#save-regions, #cancel-regions").removeClass("hidden");
 
         /* Show user help message. */
         addUserMessage(EDIT_REGIONS_MESSAGE, "info", EDIT_REGIONS_HELP, true);
@@ -67,6 +67,11 @@ $(function() {
         $(".list_groups_region").addClass("edit-mode");
         REGION_ROWS.draggable("enable");
         ALL_ROWS.droppable("enable");
+    })
+
+    /* Cancel changing */
+    $("#cancel-regions").click(function() {
+        window.location = window.location;  // just reload the page
     })
 
     /* Save region edits to server. */
