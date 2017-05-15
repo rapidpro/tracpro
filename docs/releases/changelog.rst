@@ -1,16 +1,26 @@
 Changelog
 =========
 
-Tracpro's version is incremented upon each merge to master according to our
-:ref:`production deployment process <release-to-production>`.
+Tracpro's version is incremented upon each merge to master according to our `Deployment Process on Hosted TracPro <https://github.com/caktus/hosted-tracpro/blob/master/docs/deployment-process.rst>`_.
 
 We recommend reviewing the release notes and code diffs before upgrading
 between versions.
 
+v1.5.4 (released 2017-05-08)
+----------------------------
+
+Code diff: https://github.com/rapidpro/tracpro/compare/v1.5.3...v1.5.4
+
+* Google Analytics field editable for organization administrators and Google Analytics to website per org.
+* Filter out polls that begin with "Single Message"
+* Sync improvements
+* Redis database fix: use different database for celery and cache
+* Fix 500 on logged out access for Inbox Conversations
+
 v1.5.3 (released 2017-04-10)
 ----------------------------
 
-Code diff: https://github.com/rapidpro/tracpro/compare/v1.5.3...v1.5.2
+Code diff: https://github.com/rapidpro/tracpro/compare/v1.5.2...v1.5.3
 
 * Rename Regions to Panels and Reporter Groups to Cohorts
 * Smart Categories on single date numeric charts
@@ -18,7 +28,7 @@ Code diff: https://github.com/rapidpro/tracpro/compare/v1.5.3...v1.5.2
 v1.5.2 (released 2017-03-17)
 ----------------------------
 
-Code diff: https://github.com/rapidpro/tracpro/compare/v1.5.2...v1.5.1
+Code diff: https://github.com/rapidpro/tracpro/compare/v1.5.1...v1.5.2
 
 * Larger, sorted multi-select drop-downs
 * Fixes for error emails from tasks
@@ -31,7 +41,7 @@ Code diff: https://github.com/rapidpro/tracpro/compare/v1.5.2...v1.5.1
 v1.5.1 (released 2017-02-28)
 ----------------------------
 
-Code diff: https://github.com/rapidpro/tracpro/compare/v1.5.1...v1.5.0
+Code diff: https://github.com/rapidpro/tracpro/compare/v1.5.0...v1.5.1
 
 * API v2 Updates: Code now points to version 2 of the RapidPro API.
 
@@ -39,7 +49,7 @@ Code diff: https://github.com/rapidpro/tracpro/compare/v1.5.1...v1.5.0
 v1.5.0 (released 2017-02-27)
 ----------------------------
 
-Code diff: https://github.com/rapidpro/tracpro/compare/v1.5.0...develop
+Code diff: https://github.com/rapidpro/tracpro/compare/v1.4.3...v1.5.0
 
 * Many-to-many contact to group relation update in the back-end
 * Allow admins to set super user status on the front end
@@ -48,7 +58,7 @@ Code diff: https://github.com/rapidpro/tracpro/compare/v1.5.0...develop
 v1.4.3 (released 2016-04-06)
 ----------------------------
 
-Code diff: https://github.com/rapidpro/tracpro/compare/v1.4.2...v1.4.1
+Code diff: https://github.com/rapidpro/tracpro/compare/v1.4.2...v1.4.3
 
 * Update docs structure.
 * Remove outdated docs.

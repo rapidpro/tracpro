@@ -1,0 +1,15 @@
+{% extends 'smartmin/form.html' %}
+{% load i18n %}
+
+{% block pre-form %}
+
+  <p>
+    {% trans "This manual fetch is only needed if you want to retrieve data from flow runs that happened before a panel was selected." %}*
+    {% trans "Enter for how many days in the past to retrieve flow run data. For example, if you enter 2, TracPro will fetch data from the last 48 hours." %}
+  </p>
+  <p>
+  *{% trans "Once a panel has been selected for an organization, TracPro will automatically retrieve its flow run data from then on." %}
+  </p>
+
+
+{% endblock %}

@@ -10,9 +10,12 @@ class ContactGroupsForm(forms.Form):
     groups = forms.MultipleChoiceField(
         choices=(), label=_("Cohorts"),
         help_text=_(
+            "Contact groups to use. If any contacts in these RapidPro groups "
+            "are not also in your selected Panels, they will not be synced in TracPro. "
             "To select more than one cohort, hold the Control key "
             "(or the Command key on a Macintosh) "
-            "while clicking on a cohort to add or remove it. "),
+            "while clicking on a cohort to add or remove it."
+        ),
         widget=forms.widgets.SelectMultiple(attrs={'size': '20'}),
     )
 

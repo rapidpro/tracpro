@@ -5,8 +5,7 @@
   <div class='clearfix'>
     <div class='pull-back'>
       {% blocktrans %}
-        Each cohort is a contact group in RapidPro.
-
+        Select the cohorts you want tracked in TracPro. Cohorts are Groups in RapidPro. Your RapidPro contacts that belong to selected cohorts will be tracked.
       {% endblocktrans %}
     </div>
     <div class='pull-away buttons'>
@@ -14,7 +13,6 @@
         <a class='btn btn-default pull-right' href='{% url 'groups.group_select' %}'>
           <span class='glyphicon glyphicon-download'></span>
           {% trans "Select Cohorts" %}
-
         </a>
       {% endif %}
     </div>
