@@ -1,6 +1,15 @@
 {% extends "smartmin/list.html" %}
 {% load smartmin i18n %}
 
+{% block pre-content %}
+  {{ block.super }}
+  <div class="row">
+    <div class="col-md-12">
+        <p>{% trans "Contacts that are being tracked in TracPro. If you don't see contacts on this list, make sure that you are tracking them via the Panels and Cohorts pages." %}</p>
+    </div>
+  </div>
+{% endblock %}
+
 {% block table-controls %}
   <div class='clearfix'>
     <div class='pull-back'>

@@ -67,7 +67,8 @@ class ContactManager(models.Manager.from_queryset(ContactQuerySet)):
 
             created, updated, deleted, failed = sync_pull_contacts(
                 org=org,
-                group_uuids=region_uuids | group_uuids
+                region_uuids=region_uuids,
+                group_uuids=group_uuids
             )
 
             org.set_task_result(TaskType.sync_contacts, {
@@ -217,11 +218,11 @@ class Contact(models.Model):
         if not region:
             raise NoMatchingCohortsWarning(
                 "Unable to save contact {c.name} ({c.uuid}) because none of "
-                "their cohorts match an active Panel for this org.".format(
+                "their RapidPro Groups match an active Panel for this org.".format(
                     c=temba_contact,
                 ))
 
-        # Use the first Temba group that matches one of the org's Groups.
+        # Use the first Temba group that matches one of the org's Groups. (cohort)
         group = _get_first(Group, temba_contact.groups)
         kwargs = {
             'org': org,
