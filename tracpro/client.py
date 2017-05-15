@@ -34,21 +34,22 @@ class TracProClient(TembaClient):
 
     def get_contacts_in_groups(self, group_uuids, deleted=None):
         """
-        Get all contacts from RapidPro that are in a list of groups,
-        only including each contact once.
+        Get all contacts from RapidPro that are in a list of groups.
+        Add a group_uuid field to track the last group found.
 
         :param group_uuids: array of uuids and/or names
         :param deleted: return deleted contacts only
-        :return: iterable of TembaContact objects
+        :return: list of contacts
 
         https://app.rapidpro.io/api/v2/contacts
         """
-        contact_by_uuid = {}
+        contacts = []
         for uuid in group_uuids:
-            contact_by_uuid.update(
-                {contact.uuid: contact
-                 for contact in self.get_contacts(deleted=deleted, group=uuid)})
-        return contact_by_uuid.values()
+            for contact in self.get_contacts(deleted=deleted, group=uuid):
+                contact.group_uuid = uuid
+                contacts.append(contact)
+
+        return contacts
 
 
 class TracProCursorQuery(CursorQuery):

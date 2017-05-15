@@ -6,6 +6,7 @@ default: lint test
 test:
 	# Run all tests and report coverage
 	# Requires coverage
+	coverage erase
 	coverage run manage.py test
 	coverage report -m --fail-under 80
 

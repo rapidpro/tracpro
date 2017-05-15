@@ -106,7 +106,8 @@ class InboxMessageCRUDL(SmartCRUDL):
             'contact', 'direction', 'text', 'archived', 'created_on',
             'delivered_on', 'sent_on')
         link_fields = ('contact', 'text')
-        title = "Unsolicited message conversations by most recent message"
+        title = _("Inbox Messages")
+        template_name = 'msgs/inbox.html'
 
         def derive_queryset(self, **kwargs):
             qs = InboxMessage.get_all(self.request.org, self.request.data_regions)
