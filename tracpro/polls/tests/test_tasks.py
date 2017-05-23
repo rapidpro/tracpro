@@ -49,10 +49,18 @@ class TestPollTask(TracProTest):
                 ruleset_new,
             ]
         }
+        # A flow item we didn't ask for and should ignore
+        flow_2 = {
+            'metadata': {
+                'uuid': self.poll_2.flow_uuid,
+                'name': self.poll_2.name,
+            },
+            'rule_sets': []
+        }
 
         # Mock the call to the API to send back an Export object containing a
         # single flow matching our first poll
-        export_object = factories.TembaExport(flows=[flow_1])
+        export_object = factories.TembaExport(flows=[flow_1, flow_2])
         self.mock_temba_client.get_definitions.return_value = export_object
         # Mock this call to return an empty rule set so that RapidPro API is not called
         mock_poll_get_flow.return_value.rulesets = []
@@ -67,5 +75,5 @@ class TestPollTask(TracProTest):
         self.assertEqual(models.Question.objects.first().ruleset_uuid, 'goodquestion')
         self.assertEqual(models.Question.objects.last().ruleset_uuid, 'newquestion')
         # Only 1 poll was reflected in the log message as only 1 poll was sent into the form data
-        self.assertEqual(mock_logger.call_count, 2)
+        self.assertEqual(mock_logger.call_count, 3)
         self.assertIn("1 Poll(s)", mock_logger.call_args[0][0])
