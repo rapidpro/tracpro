@@ -6,6 +6,19 @@ Tracpro's version is incremented upon each merge to master according to our `Dep
 We recommend reviewing the release notes and code diffs before upgrading
 between versions.
 
+v1.6.0 (released 2017-05-26)
+----------------------------
+
+Code diff: https://github.com/rapidpro/tracpro/compare/v1.5.4...v1.6.0
+
+* Contact sync updates with additional logging
+* Question sync update
+* UX adjustments: 
+** New navigation
+** Clarified wording for Inbox Messages, Panels and Cohorts
+** Updated wording to reflect RapidPro wording, "Poll" changed to "Flow"
+** Fetch runs is now moved to the "Flow Runs" page and is it's own page
+
 v1.5.4 (released 2017-05-08)
 ----------------------------
 
