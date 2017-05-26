@@ -1,4 +1,40 @@
-<div class="row">
-<div class="col-md-3 circle">1</div>
-<div class="col-md-3 circle">2</div>
+<div class="row workflow-tracker">
+    <a href="{% url 'groups.region_list' %}">
+        <div class="col-md-2 col-sm-1 hidden-xs {% if step == 1 %}circle-selected{% else %}circle{% endif %}">
+            1
+            <div class="circle-label">
+                Select Panels
+            </div>
+        </div>
+    </a>
+    <div class="col-md-2 hidden-sm hidden-xs workflow-spacer"></div>
+
+    <a href="{% url 'groups.group_list' %}">
+        <div class="col-md-2 col-sm-1 hidden-xs {% if step == 2 %}circle-selected{% else %}circle{% endif %}">
+            2
+            <div class="circle-label">
+                Select Cohorts
+            </div>
+        </div>
+    </a>
+    <div class="col-md-2 hidden-sm hidden-xs workflow-spacer"></div>
+
+    <a href="{% url 'polls.poll_list' %}">
+        <div class="col-md-2 col-sm-1 hidden-xs {% if step == 3 %}circle-selected{% else %}circle{% endif %}">
+            3
+            <div class="circle-label">
+                Select Flows
+            </div>
+        </div>
+    </a>
+    <div class="col-md-2 hidden-sm hidden-xs workflow-spacer"></div>
+
+    <a href="{% url 'orgs_ext.org_fetchruns' %}">
+        <div class="col-md-2 col-sm-1 hidden-xs {% if step == 4 %}circle-selected{% else %}circle{% endif %}">
+            4
+            <div class="circle-label">
+                Fetch Runs
+            </div>
+        </div>
+    </a>
 </div>

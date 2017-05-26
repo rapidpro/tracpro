@@ -1,6 +1,12 @@
 {% extends "smartmin/list.html" %}
 {% load smartmin i18n %}
 
+
+{% block pre-content %}
+  {{ block.super }}
+  {% include 'workflow_tracker_steps.html' with step=2 %}
+{% endblock %}
+
 {% block table-controls %}
   <div class='clearfix'>
     <div class='pull-back'>

@@ -30,98 +30,97 @@
   {% endcompress %}
 {% endblock extra-style %}
 
-{% block content %}
+{% block pre-content %}
+  {{ block.super }}
+  {% include 'workflow_tracker_steps.html' with step=1 %}
+{% endblock %}
 
-  {% include 'workflow_tracker_steps.html' with step='panel' %}
-
-  {% block table-controls %}
-    {% if org_perms.groups.region_select %}
-      <div id="region-actions" class="pull-right buttons">
-        <a class="btn btn-default action"
-           href="{% url 'groups.region_select' %}">
-          <span class="glyphicon glyphicon-download"></span>
-          {% trans "Select Panels" %}
-        </a>
-        <button id="edit-regions"
-                class="btn btn-default action">
-          {% trans "Edit Panels" %}
-        </button>
-        <button id="cancel-regions"
-                class="btn btn-default action hidden">
-          {% trans "Cancel Changes" %}
-        </button>
-        <button id="save-regions"
-                class="btn btn-primary action hidden">
-          {% trans "Save Panels" %}
-        </button>
-        <button id="saving-regions"
-                class="btn btn-primary disabled action hidden"
-                disabled>
-          {% trans "Saving Panels..." %}
-        </button>
-      </div>
-      <div class="clearfix"></div>
-    {% endif %}
-
-    <div>
-      <p>
-        {% blocktrans %}
-        List of Panels you track in TracPro. Panels are Groups in RapidPro. Click the "Select Panels" button to track additional RapidPro Groups.
-        {% endblocktrans %}
-      </p>
+{% block table-controls %}
+  {% if org_perms.groups.region_select %}
+    <div id="region-actions" class="pull-right buttons">
+      <a class="btn btn-default action"
+         href="{% url 'groups.region_select' %}">
+        <span class="glyphicon glyphicon-download"></span>
+        {% trans "Select Panels" %}
+      </a>
+      <button id="edit-regions"
+              class="btn btn-default action">
+        {% trans "Edit Panels" %}
+      </button>
+      <button id="cancel-regions"
+              class="btn btn-default action hidden">
+        {% trans "Cancel Changes" %}
+      </button>
+      <button id="save-regions"
+              class="btn btn-primary action hidden">
+        {% trans "Save Panels" %}
+      </button>
+      <button id="saving-regions"
+              class="btn btn-primary disabled action hidden"
+              disabled>
+        {% trans "Saving Panels..." %}
+      </button>
     </div>
-  {% endblock table-controls %}
+    <div class="clearfix"></div>
+  {% endif %}
 
-  {% block table %}
-    <table class="treetable list-table {% get_list_class object_list %} table"
-           data-update-regions-url="{% url "groups.region_update_all" %}">
-      <thead>
-        <tr>
+  <div>
+    <p>
+      {% blocktrans %}
+      List of Panels you track in TracPro. Panels are Groups in RapidPro. Click the "Select Panels" button to track additional RapidPro Groups.
+      {% endblocktrans %}
+    </p>
+  </div>
+{% endblock table-controls %}
+
+{% block table %}
+  <table class="treetable list-table {% get_list_class object_list %} table"
+         data-update-regions-url="{% url "groups.region_update_all" %}">
+    <thead>
+      <tr>
+        {% for field in fields %}
+          <th class="header-{{ field }}">{% get_label field %}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {# Something to display while treetable loads. #}
+      <tr class="loading-text">
+        <td colspan="{{ fields|length }}">Loading panels...</td>
+      </tr>
+
+      {# Include a dummy row so regions can be dragged to the top level. #}
+      <tr class="region hidden" data-tt-id="0">
+        <td colspan="{{ fields|length }}">All {{ org.name }} Panels</td>
+      </tr>
+
+      {% recursetree object_list %}
+        <tr class="region hidden" data-tt-id="{{ node.pk }}"
+            data-tt-parent-id="{% if node.is_child_node %}{{ node.parent.pk }}{% else %}0{% endif %}">
           {% for field in fields %}
-            <th class="header-{{ field }}">{% get_label field %}</th>
+            <td class="value-{{ field }}">
+              <span class="value">
+                {% get_value node field %}
+              </span>
+              {% if org_perms.groups.region_select and field == "boundary" %}
+                <select class="form-control boundary-select hidden">
+                  <option value=""{% if not node.boundary %} selected{% endif %}>
+                    -
+                  </option>
+                  {% for boundary in org_boundaries %}
+                    <option value="{{ boundary.id }}"{% if node.boundary == boundary %} selected{% endif %}>
+                      {{ boundary.name }}
+                    </option>
+                  {% endfor %}
+                </select>
+              {% endif %}
+            </td>
           {% endfor %}
         </tr>
-      </thead>
-      <tbody>
-        {# Something to display while treetable loads. #}
-        <tr class="loading-text">
-          <td colspan="{{ fields|length }}">Loading panels...</td>
-        </tr>
+        {{ children }}
+      {% endrecursetree %}
 
-        {# Include a dummy row so regions can be dragged to the top level. #}
-        <tr class="region hidden" data-tt-id="0">
-          <td colspan="{{ fields|length }}">All {{ org.name }} Panels</td>
-        </tr>
-
-        {% recursetree object_list %}
-          <tr class="region hidden" data-tt-id="{{ node.pk }}"
-              data-tt-parent-id="{% if node.is_child_node %}{{ node.parent.pk }}{% else %}0{% endif %}">
-            {% for field in fields %}
-              <td class="value-{{ field }}">
-                <span class="value">
-                  {% get_value node field %}
-                </span>
-                {% if org_perms.groups.region_select and field == "boundary" %}
-                  <select class="form-control boundary-select hidden">
-                    <option value=""{% if not node.boundary %} selected{% endif %}>
-                      -
-                    </option>
-                    {% for boundary in org_boundaries %}
-                      <option value="{{ boundary.id }}"{% if node.boundary == boundary %} selected{% endif %}>
-                        {{ boundary.name }}
-                      </option>
-                    {% endfor %}
-                  </select>
-                {% endif %}
-              </td>
-            {% endfor %}
-          </tr>
-          {{ children }}
-        {% endrecursetree %}
-
-        {% block extra-rows %}{% endblock extra-rows %}
-      </tbody>
-    </table>
-  {% endblock table %}
-
-{% endblock content %}
+      {% block extra-rows %}{% endblock extra-rows %}
+    </tbody>
+  </table>
+{% endblock table %}

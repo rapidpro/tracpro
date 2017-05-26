@@ -7,6 +7,9 @@
       {% trans "Flows" %}
     </h2>
   </div>
+
+  {% include 'workflow_tracker_steps.html' with step=3 %}
+
   {% blocktrans %}
     Latest statistics on flows that are being tracked in TracPro. Click on the 'Select Flows' button to change the flows you are tracking. All flow data is tracked going forward. If you need to track flow data for dates in the past, ask your administrator to fetch runs for those dates.
   {% endblocktrans %}
