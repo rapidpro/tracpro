@@ -2,6 +2,11 @@
 {% load smartmin i18n %}
 
 {% block table-buttons %}
-
+  {% if request.user.is_superuser or request.user.is_staff %}
+    <a class="btn btn-default pull-right" href="{% url 'orgs_ext.org_fetchruns' %}">
+      <span class="glyphicon glyphicon-download"></span>
+      {% trans "Fetch runs" %}
+    </a>
+  {% endif %}
 {% endblock %}
 

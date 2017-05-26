@@ -24,7 +24,7 @@ from smartmin.views import SmartCRUDL, SmartListView, SmartFormView, SmartView
 from tracpro.contacts.models import Contact
 
 from .models import Boundary, Group, Region
-from .forms import ContactGroupsForm
+from .forms import CohortsForm, PanelsForm
 
 
 logger = logging.getLogger(__name__)
@@ -153,11 +153,11 @@ class RegionCRUDL(SmartCRUDL):
             })
 
     class Select(OrgPermsMixin, SmartFormView):
-        title = _("Panel Contact Groups")
-        form_class = ContactGroupsForm
+        title = _("Select Panels")
+        form_class = PanelsForm
         success_url = '@groups.region_list'
         submit_button_name = _("Update")
-        success_message = _("Updated contact groups to use as panels")
+        success_message = _("Updated panels to use")
 
         def get_form_kwargs(self):
             kwargs = super(RegionCRUDL.Select, self).get_form_kwargs()
@@ -301,11 +301,11 @@ class GroupCRUDL(SmartCRUDL):
             })
 
     class Select(OrgPermsMixin, SmartFormView):
-        title = _("Cohorts")
-        form_class = ContactGroupsForm
+        title = _("Select Cohorts")
+        form_class = CohortsForm
         success_url = '@groups.group_list'
         submit_button_name = _("Update")
-        success_message = _("Updated contact groups to use as cohorts")
+        success_message = _("Updated cohorts to use")
 
         def get_form_kwargs(self):
             kwargs = super(GroupCRUDL.Select, self).get_form_kwargs()

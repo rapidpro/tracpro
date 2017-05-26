@@ -33,7 +33,7 @@
 {% block table-controls %}
   {% if org_perms.groups.region_select %}
     <div id="region-actions" class="pull-right buttons">
-      <a class="btn btn-default"
+      <a class="btn btn-default action"
          href="{% url 'groups.region_select' %}">
         <span class="glyphicon glyphicon-download"></span>
         {% trans "Select Panels" %}
@@ -41,6 +41,10 @@
       <button id="edit-regions"
               class="btn btn-default action">
         {% trans "Edit Panels" %}
+      </button>
+      <button id="cancel-regions"
+              class="btn btn-default action hidden">
+        {% trans "Cancel Changes" %}
       </button>
       <button id="save-regions"
               class="btn btn-primary action hidden">
@@ -56,7 +60,11 @@
   {% endif %}
 
   <div>
-    <p>{% trans "Each panel is a contact group in RapidPro." %}</p>
+    <p>
+      {% blocktrans %}
+      List of Panels you track in TracPro. Panels are Groups in RapidPro. Click the "Select Panels" button to track additional RapidPro Groups.
+      {% endblocktrans %}
+    </p>
   </div>
 {% endblock table-controls %}
 

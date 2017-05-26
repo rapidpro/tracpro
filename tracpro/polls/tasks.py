@@ -144,6 +144,7 @@ def sync_questions_categories(org, polls):
     # now that these polls have been activated for the Org
     flow_uuids = [poll.flow_uuid for poll in polls]
     total_polls = len(flow_uuids)
+    polls_by_uuid = {poll.flow_uuid: poll for poll in polls}
 
     logger.info(
         "Retrieving Questions and Categories for %d Poll(s) that were recently updated via the interface." %
@@ -151,9 +152,18 @@ def sync_questions_categories(org, polls):
 
     result = get_client(org).get_definitions(flows=flow_uuids)
     flows = result.flows
+    num_synced = 0
 
     for flow in flows:
-        poll = polls[flow_uuids.index(flow['metadata']['uuid'])]
+        uuid = flow['metadata']['uuid']
+        if uuid not in flow_uuids:
+            logger.error("Ignoring flow definition with uuid %r that we didn't ask for. "
+                         "We asked for %r." % (uuid, flow_uuids))
+            continue
+
+        poll = polls_by_uuid[uuid]
+
+        logger.info("Retrieving questions and categories for flow %s (%s)" % (poll.flow_uuid, poll.name))
 
         # Sync related Questions, and maintain question order.
         rule_sets = flow['rule_sets']
@@ -166,4 +176,6 @@ def sync_questions_categories(org, polls):
         for order, rule_set in enumerate(rule_sets, 1):
             Question.objects.from_temba(poll=poll, temba_question=rule_set, order=order)
 
-    logger.info("Completed retrieving Questions and Categories for %d Poll(s)." % (total_polls))
+        num_synced += 1
+
+    logger.info("Completed retrieving Questions and Categories for %d Poll(s)." % (num_synced))

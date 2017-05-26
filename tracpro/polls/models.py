@@ -16,7 +16,8 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 
 from tracpro.client import get_client
-from tracpro.contacts.models import Contact
+from tracpro.contacts.models import Contact, NoMatchingCohortsWarning
+from tracpro.groups.models import Region
 
 from . import rules
 from .tasks import pollrun_start
@@ -592,7 +593,13 @@ class Response(models.Model):
         if not poll:
             poll = Poll.objects.active().by_org(org).get(flow_uuid=run.flow.uuid)
 
-        contact = Contact.get_or_fetch(poll.org, uuid=run.contact.uuid)
+        try:
+            contact = Contact.get_or_fetch(poll.org, uuid=run.contact.uuid)
+        except NoMatchingCohortsWarning:
+            # Callers expect a ValueError if we don't sync the response
+            raise ValueError(
+                "not syncing run because contact %s does not exist locally and has no matching cohorts among %r"
+                % (run.contact.uuid, Region.get_all(org)))
 
         # categorize completeness
         if run.exit_type == u'completed':
