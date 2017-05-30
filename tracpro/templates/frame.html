@@ -134,14 +134,14 @@
                 <li class='dropdown'>
                   <a class='dropdown-toggle' data-toggle='dropdown' href='#'>{% trans "Flow Management" %} <b class='caret'></b></a>
                   <ul class='dropdown-menu'>
-                    {% if org_perms.polls.poll_list or request.user.is_superuser or user_is_admin %}
-                      <li><a href='{% url 'polls.poll_list' %}'> {% trans "Flows" %} </a></li>
-                    {% endif %}
                     {% if org_perms.groups.region_list or request.user.is_superuser or user_is_admin %}
                       <li><a href='{% url 'groups.region_list' %}'> {% trans "Panels" %} </a></li>
                     {% endif %}
                     {% if org_perms.groups.group_list or request.user.is_superuser or user_is_admin %}
                       <li><a href='{% url 'groups.group_list' %}'> {% trans "Cohorts" %} </a></li>
+                    {% endif %}
+                    {% if org_perms.polls.poll_list or request.user.is_superuser or user_is_admin %}
+                      <li><a href='{% url 'polls.poll_list' %}'> {% trans "Flows" %} </a></li>
                     {% endif %}
                     {% if org_perms.polls.pollrun_list or request.user.is_superuser or user_is_admin %}
                       <li><a href='{% url 'polls.pollrun_list' %}'>{% trans "Flow Runs" %}</a></li>

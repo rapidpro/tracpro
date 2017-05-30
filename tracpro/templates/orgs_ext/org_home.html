@@ -2,6 +2,14 @@
 
 {% load i18n %}
 
+{% block pre-content %}
+  {{ block.super }}
+  <div>
+    Follow these steps to start tracking your polls:<br /><br />
+  </div>
+  {% include 'workflow_tracker_steps.html' with step=0 %}
+{% endblock %}
+
 {% block read-buttons %}
   <a class="btn btn-default pull-right" href="{% url 'orgs_ext.org_edit' %}">
     <span class="glyphicon glyphicon-pencil"></span>
