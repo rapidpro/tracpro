@@ -6,6 +6,14 @@ Tracpro's version is incremented upon each merge to master according to our `Dep
 We recommend reviewing the release notes and code diffs before upgrading
 between versions.
 
+
+v1.6.1 (released 2017-06-05)
+----------------------------
+
+Code diff: https://github.com/rapidpro/tracpro/compare/v1.6.0...v1.6.1
+
+* New infographic to guide the user through navigation between steps of making selections of data to track: Panels --> Cohorts --> Flows --> Fetch Runs
+
 v1.6.0 (released 2017-05-26)
 ----------------------------
 

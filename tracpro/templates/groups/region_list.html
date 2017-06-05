@@ -30,6 +30,11 @@
   {% endcompress %}
 {% endblock extra-style %}
 
+{% block pre-content %}
+  {{ block.super }}
+  {% include 'workflow_tracker_steps.html' with step=1 %}
+{% endblock %}
+
 {% block table-controls %}
   {% if org_perms.groups.region_select %}
     <div id="region-actions" class="pull-right buttons">
