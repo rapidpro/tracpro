@@ -347,6 +347,14 @@ class TestRegionUpdateAll(TracProTest):
         response = self.url_get(None, reverse(self.url_name))
         self.assertRedirects(response, reverse("orgs_ext.org_chooser"))
 
+    def test_chooser_with_org(self):
+        """If org is already selected, chooser redirects to home."""
+        chooser = reverse("orgs_ext.org_chooser")
+        home = reverse('home.home')
+        response = self.url_get("test", chooser, follow=False)
+        self.assertEqual(302, response.status_code)
+        self.assertRedirects(response, home, subdomain="test", fetch_redirect_response=False)
+
     def test_no_perms(self):
         """View requires that the user is an org administrator."""
         self.org.administrators.remove(self.user)

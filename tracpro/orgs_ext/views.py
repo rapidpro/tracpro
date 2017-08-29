@@ -1,6 +1,8 @@
 from __future__ import absolute_import, unicode_literals
 
 from django.contrib import messages
+from django.core.urlresolvers import reverse
+from django.shortcuts import redirect
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 
@@ -26,6 +28,13 @@ class MakeAdminsIntoStaffMixin(object):
 class OrgExtCRUDL(OrgCRUDL):
     actions = ('create', 'update', 'list', 'home', 'edit', 'chooser',
                'choose', 'fetchruns')
+
+    class Chooser(OrgCRUDL.Chooser):
+        def dispatch(self, request, *args, **kwargs):
+            if request.org:
+                # We have an org, no need for the chooser view
+                return redirect(reverse('home.home'))
+            return super(OrgExtCRUDL.Chooser, self).dispatch(request, *args, **kwargs)
 
     class Create(MakeAdminsIntoStaffMixin, OrgCRUDL.Create):
         form_class = forms.OrgExtForm
