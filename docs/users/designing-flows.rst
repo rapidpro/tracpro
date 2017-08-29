@@ -1,5 +1,5 @@
-Desigining Flows
-================
+Designing Flows
+===============
 
 This section addresses additional design considerations for users who are
 building RapidPro flows that will be imported as TracPro polls.
