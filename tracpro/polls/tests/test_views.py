@@ -142,13 +142,13 @@ class MultipleResponseCRUDLTest(TracProDataTest):
 
         self.pollrun1_r3 = factories.Response(
             pollrun=self.pollrun, contact=self.contact1,
-            created_on=dates[2], updated_on=dates[0],
+            created_on=dates[2], updated_on=dates[2],
             status=Response.STATUS_COMPLETE)
 
         # Adding Bob response on the same exact date as an Ann response
         self.pollrun1_r4 = factories.Response(
             pollrun=self.pollrun, contact=self.contact2,
-            created_on=dates[2], updated_on=dates[0],
+            created_on=dates[2], updated_on=dates[2],
             status=Response.STATUS_COMPLETE)
 
     def test_get_responses(self):
