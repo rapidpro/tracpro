@@ -472,7 +472,21 @@ class PollRun(models.Model):
                 responses = responses.filter(contact__region=region)
         if not include_empty:
             responses = responses.exclude(status=Response.STATUS_EMPTY)
-        return responses.select_related('contact')
+
+        responses = responses.select_related('contact')
+
+        # Remove duplicate resopnse from the same user on the same day
+        response_tuple_list = []
+        response_pk_list = []
+        for response in responses.order_by('-created_on'):
+            response_tuple = (response.contact, response.created_on.day)
+
+            if response_tuple not in response_tuple_list:
+                response_tuple_list.append(response_tuple)
+                response_pk_list.append(response.pk)
+
+        responses = responses.filter(pk__in=response_pk_list)
+        return responses
 
     def get_response_counts(self, region=None, include_subregions=True):
         """

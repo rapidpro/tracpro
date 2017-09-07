@@ -113,3 +113,55 @@ class ResponseCRUDLTest(TracProDataTest):
         self.assertEqual(len(responses), 2)
         # newest non-empty first
         self.assertEqual(responses, [self.pollrun2_r1, self.pollrun1_r1])
+
+
+class MultipleResponseCRUDLTest(TracProDataTest):
+
+    def setUp(self):
+        super(MultipleResponseCRUDLTest, self).setUp()
+
+        dates = [
+            datetime.datetime(2014, 1, 1, 6, tzinfo=pytz.UTC),
+            datetime.datetime(2014, 1, 1, 7, tzinfo=pytz.UTC),
+            datetime.datetime(2014, 1, 2, 8, tzinfo=pytz.UTC)
+        ]
+
+        # create pollrun with 3 responses by the same contact (Ann), (2 on the same day, 1 on a different day)
+        self.pollrun = factories.UniversalPollRun(
+            poll=self.poll1, conducted_on=dates[0])
+
+        self.pollrun1_r1 = factories.Response(
+            pollrun=self.pollrun, contact=self.contact1,
+            created_on=dates[0], updated_on=dates[0],
+            status=Response.STATUS_COMPLETE)
+
+        self.pollrun1_r2 = factories.Response(
+            pollrun=self.pollrun, contact=self.contact1,
+            created_on=dates[1], updated_on=dates[1],
+            status=Response.STATUS_COMPLETE)
+
+        self.pollrun1_r3 = factories.Response(
+            pollrun=self.pollrun, contact=self.contact1,
+            created_on=dates[2], updated_on=dates[0],
+            status=Response.STATUS_COMPLETE)
+
+        # Adding Bob response on the same exact date as an Ann response
+        self.pollrun1_r4 = factories.Response(
+            pollrun=self.pollrun, contact=self.contact2,
+            created_on=dates[2], updated_on=dates[0],
+            status=Response.STATUS_COMPLETE)
+
+    def test_get_responses(self):
+        url = reverse('polls.response_by_pollrun', args=[self.pollrun.pk])
+
+        # log in as admin
+        self.login(self.admin)
+
+        # view responses for pollrun #1
+        response = self.url_get('unicef', url)
+        self.assertContains(response, "Number of sheep", status_code=200)
+        self.assertContains(response, "How is the weather?")
+
+        # see that there is only one response per contact for any given day
+        day_list = [(r.contact, r.created_on.day) for r in response.context['object_list']]
+        self.assertEqual(len(set(day_list)), 3)
