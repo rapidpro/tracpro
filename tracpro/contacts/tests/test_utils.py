@@ -118,7 +118,7 @@ class SyncPullTest(TracProDataTest):
         self.rapidpro_contacts_as_temba = [
             tracpro_contact.as_temba()
             for tracpro_contact in Contact.objects.filter(
-                Q(groups__in=self.sync_groups),
+                groups__in=self.sync_groups,
                 org=self.org,
             ).distinct()
         ]

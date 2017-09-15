@@ -50,6 +50,7 @@ class ContactTest(TracProDataTest):
             region=self.region1,
             group=self.group1,
             language="eng",
+            groups=[self.group1, self.group2, self.group3],
         )
 
         self.assertEqual(contact.name, "Mo Polls")
@@ -60,6 +61,8 @@ class ContactTest(TracProDataTest):
         self.assertIsNotNone(contact.created_on)
         self.assertEqual(contact.modified_by, self.user1)
         self.assertIsNotNone(contact.modified_on)
+        self.assertEqual(contact.groups.count(), 3)
+        self.assertEqual(contact.groups.all()[0].uuid, 'G-005')
 
         contact.push(ChangeType.created)
 
@@ -73,20 +76,20 @@ class ContactTest(TracProDataTest):
     def test_get_or_fetch_existing_local_contact(self, mock_kwargs_from_temba):
         self.mock_temba_client.get_contacts.return_value = TembaContact.create(
             uuid='C-007', name="Mo Polls",
-            urns=['tel:078123'], groups=['G-001', 'G-005'],
+            urns=['tel:078123'], groups=[self.group3, self.group5],
             fields={},
             language='eng', modified_on=timezone.now())
         # get locally
         contact = models.Contact.get_or_fetch(org=self.unicef, uuid='C-001')
         self.assertEqual(contact.name, "Ann")
 
-    @skip("Skipping test_get_or_fetch_non_existing_local_contact() for now, fixing functionality for API v2.")
+    # @skip("Skipping test_get_or_fetch_non_existing_local_contact() for now, fixing functionality for API v2.")
     def test_get_or_fetch_non_existing_local_contact(self):
         mock_contact = TembaContact.create(
             name='Mo Polls',
             uuid='C-009',
             urns=['tel:123'],
-            groups=[self.region1.uuid, self.group1.uuid],
+            groups=[self.region1, self.group1], #changed from [self.region1.uuid, self.group1.uuid]
             fields={
                 'gender': 'M',
             },
@@ -97,14 +100,13 @@ class ContactTest(TracProDataTest):
         contact = models.Contact.get_or_fetch(org=self.unicef, uuid='C-009')
         self.assertEqual(contact.name, "Mo Polls")
 
-    @skip("Skipping test_kwargs_from_temba() for now, fixing functionality for API v2.")
     def test_kwargs_from_temba(self):
         modified_date = timezone.now()
         temba_contact = TembaContact.create(
             uuid='C-007',
             name="Jan",
             urns=['tel:123'],
-            groups=['G-001', 'G-007'],
+            groups=[self.group3, self.group5], # changed from uuid list ['G-001', 'G-007']
             fields={
                 'gender': 'M',
             },
@@ -113,29 +115,34 @@ class ContactTest(TracProDataTest):
         )
 
         kwargs = models.Contact.kwargs_from_temba(self.unicef, temba_contact)
+
+        # try creating contact from them
+        models.Contact.objects.create(**kwargs)
+
+        # we will test groups test seperately then take out of kwargs
+        self.assertEqual([g.uuid for g in kwargs['groups']], ['G-001', 'G-007'])
+        kwargs.pop('groups', None)
+
         self.assertDictEqual(kwargs, {
-            'uuid': 'C-007',
             'org': self.unicef,
             'name': "Jan",
             'urn': 'tel:123',
             'region': self.region1,
             'group': self.group5,
             'language': 'eng',
+            'uuid': 'C-007',
             'temba_modified_on': modified_date,
-            '_data_field_values': {
-                'gender': 'M',
-            },
+            '_data_field_values': {'gender': 'M'},
         })
 
-        # try creating contact from them
-        models.Contact.objects.create(**kwargs)
+
 
     def test_as_temba(self):
         temba_contact = self.contact1.as_temba()
         self.assertEqual(temba_contact.name, "Ann")
         self.assertEqual(temba_contact.urns, ['tel:1234'])
         self.assertEqual(temba_contact.fields, {})
-        self.assertEqual(set(get_uuids(temba_contact.groups)), set(['G-005', 'G-001', self.region1.uuid]))
+        self.assertEqual(set(get_uuids(temba_contact.groups)), set(['G-005', 'G-006', self.region1.uuid]))
         self.assertEqual(temba_contact.uuid, 'C-001')
 
     def test_by_org(self):

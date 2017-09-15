@@ -41,6 +41,7 @@ def sync_pull_contacts(org, region_uuids, group_uuids):
 
     total_contacts = 0
     for temba_contact in incoming_contacts:
+        print(temba_contact.groups)
         total_contacts += 1
         if not temba_contact.urns:
             msg = "%d Skipping contact: %s" % (total_contacts, temba_contact.name)
@@ -55,17 +56,18 @@ def sync_pull_contacts(org, region_uuids, group_uuids):
             deleted_uuids.append(temba_contact.uuid)
 
         elif temba_contact.uuid in existing_by_uuid:
+
             msg = "%d Updating existing contact: %s" % (total_contacts, temba_contact.name)
             logger.info(msg)
 
             existing = existing_by_uuid[temba_contact.uuid]
-
             try:
                 kwargs = Contact.kwargs_from_temba(org, temba_contact)
             except NoMatchingCohortsWarning as e:
                 logger.warning(e.message)
                 failed_uuids.append(temba_contact.uuid)
                 continue
+
 
             for field, value in six.iteritems(kwargs):
                 setattr(existing, field, value)
@@ -82,6 +84,7 @@ def sync_pull_contacts(org, region_uuids, group_uuids):
 
             updated_uuids.append(temba_contact.uuid)
         else:
+
             try:
                 kwargs = Contact.kwargs_from_temba(org, temba_contact)
             except NoMatchingCohortsWarning as e:
@@ -94,16 +97,18 @@ def sync_pull_contacts(org, region_uuids, group_uuids):
             # We have a signal that queries rapidpro and sets groups on new Contacts,
             # but we already know the groups so we can skip that. This bit will let
             # the signal handler know which groups to add without having to call Rapidpro.
+
+            # TODO: find this signal handler
+
+            # create new contact from kwargs
             new_contact = Contact(**kwargs)
-            new_contact.new_groups = Group.objects.filter(uuid__in=get_uuids(temba_contact.groups))
-            # Note, following code overrides
-            # contact.region and/or contact.group fields
-            # that come back from kwargs_from_temba()
-            if temba_contact.group_uuid in region_uuids:
-                new_contact.region = Region.objects.get(uuid=temba_contact.group_uuid)
-            if temba_contact.group_uuid in group_uuids:
-                new_contact.group = Group.objects.get(uuid=temba_contact.group_uuid)
             new_contact.save()
+
+            # add all the related groups to
+            # Though, Do we need to hit the database again?
+            # Contact.objects.get(uuid=new_contact.uuid).groups = kwargs['groups']
+            new_contact.groups = kwargs['groups']
+
             created_uuids.append(kwargs['uuid'])
 
             # If we see this contact again, recognize it as now existing
