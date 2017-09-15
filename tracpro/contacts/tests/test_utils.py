@@ -129,14 +129,11 @@ class SyncPullTest(TracProDataTest):
                     contact.group_uuid = group.uuid
                     contacts.append(contact)
         self.rapidpro_contacts_as_temba = contacts
-        # print(self.sync_regions)
-        # print(Contact.objects.all)
+
         # Contacts that we are actually syncing here, because they are in the regions we sync
         self.sync_contacts = Contact.objects.filter(region__in=(self.sync_regions))
         # Order this list
-        # print(self.sync_contacts)
         self.sync_contacts = list(set([contact.uuid for contact in self.sync_contacts]))
-        # print(self.sync_contacts)
         self.deleted_rapidpro_contacts = []
 
         def mock_get_contacts_in_groups(groups, deleted=None):
@@ -159,10 +156,7 @@ class SyncPullTest(TracProDataTest):
             region_uuids=self.get_region_uuids(),
             group_uuids=self.get_group_uuids(),
         )
-        print(Contact.objects.filter(
-                # groups__in=self.sync_groups,
-                org=self.org,
-            ))
+
         # Most tuples don't change
         # because we just returned the contacts we already had
         # However, we always update the contacts to get most up-to-date information
