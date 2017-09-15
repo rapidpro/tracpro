@@ -685,16 +685,51 @@ class TestAnswer(TracProDataTest):
         self.assertEqual(answer1.question, self.poll1_question1)
         self.assertEqual(answer1.category, "1 - 5")
         self.assertEqual(answer1.value, "4.00000")
+        self.assertEqual(answer1.value_to_use, "4.00000")
 
         answer2 = factories.Answer(
             response=response, question=self.poll1_question1,
             value="rain", category=dict(base="Rain", rwa="Imvura"))
         self.assertEqual(answer2.category, "Rain")
+        self.assertEqual(answer2.value_to_use, "rain")
 
         answer3 = factories.Answer(
             response=response, question=self.poll1_question1,
             value="rain", category=dict(eng="Yes"))
         self.assertEqual(answer3.category, "Yes")
+        self.assertEqual(answer3.value_to_use, "rain")
+
+
+class TestAnswerSumming(TracProDataTest):
+    how_to_handle_sameday_responses = 'sum'
+
+    def test_create_with_summing(self):
+        pollrun = factories.UniversalPollRun(
+            poll=self.poll1, conducted_on=timezone.now())
+        response = Response.create_empty(
+            self.unicef, pollrun,
+            Run.create(id=123, contact='C-001', created_on=timezone.now()))
+
+        answer1 = factories.Answer(
+            response=response, question=self.poll1_question1,
+            value="4.00000", category="1 - 5")
+        self.assertEqual(answer1.value, "4.00000")  # untouched
+        self.assertEqual(answer1.value_to_use, "4.000000")
+
+        # Another response, same contact
+        response2 = Response.create_empty(
+            self.unicef, pollrun,
+            Run.create(id=124, contact='C-001', created_on=timezone.now()))
+        answer2 = factories.Answer(
+            response=response2,
+            question=self.poll1_question1,  # same question
+            value="8.000",  # new value
+            submitted_on=answer1.submitted_on,  # same day (exactly!)
+        )
+        self.assertEqual(answer2.value, "8.000")
+        self.assertEqual(answer2.value_to_use, "12.000000")
+        answer1.refresh_from_db()  # This should have been updated in the DB
+        self.assertEqual(answer1.value_to_use, "12.000000")
 
 
 class TestAnswerQuerySet(TracProDataTest):

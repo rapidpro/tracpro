@@ -783,12 +783,12 @@ class Answer(models.Model):
 
     def save(self, *args, **kwargs):
         is_new = self.pk is None
-        if is_new:
-            self.value_to_use = self.compute_value_to_use()
+        if is_new and not self.should_use_sum():
+            self.value_to_use = self.value
         super(Answer, self).save(*args, **kwargs)
         if is_new and self.should_use_sum():
-            # We created a new answer - we might need to update the summed
-            # values in other answers
+            # We created a new answer - we need to update the summed
+            # values in this and maybe other answers
             self.update_own_summed_values_and_others()
 
     def update_own_summed_values_and_others(self):
@@ -797,7 +797,11 @@ class Answer(models.Model):
         the same day/contact/question.
         """
         answers = self.same_question_contact_and_day()
-        answers.update(value_to_use=self.compute_value_to_use())
+        value = self.compute_value_to_use()
+        # Update the database
+        answers.update(value_to_use=value)
+        # And update this particular record in memory to avoid confusion
+        self.value_to_use = value
 
     def should_use_sum(self):
         """
@@ -816,8 +820,8 @@ class Answer(models.Model):
         contact, and day as this one (includes this one).
         """
         return Answer.objects.filter(
-            question=self.question,
-            response__contact=self.response.contact,
+            question_id=self.question_id,
+            response__contact_id=self.response.contact_id,
             submitted_on__gte=midnight(self.submitted_on),
             submitted_on__lte=end_of_day(self.submitted_on),
         )
@@ -830,10 +834,11 @@ class Answer(models.Model):
         the same contact, look up all the answers from that contact to this
         question on this same day and return the sum of them as a float.
         """
+        assert self.pk  # Don't use on unsaved records, it'll miss this record's value
         if self.should_use_sum():
             # Include inactive responses from same contact on same day and
             # add them all up, including this one
-            return sum([float(a.value)
-                        for a in self.same_question_contact_and_day()])
+            values = [float(a.value) for a in self.same_question_contact_and_day()]
+            return "%f" % sum(values)
         else:
             return self.value

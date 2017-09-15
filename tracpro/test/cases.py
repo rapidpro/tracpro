@@ -86,6 +86,9 @@ class TracProTest(TestCase):
 
 class TracProDataTest(TracProTest):
     """Common data set-up."""
+    # Test classes can override this so we use the desired value
+    # from the beginning of setup:
+    how_to_handle_sameday_responses = 'use_last'
 
     def setUp(self):
         super(TracProDataTest, self).setUp()
@@ -96,8 +99,12 @@ class TracProDataTest(TracProTest):
         # some orgs
         self.unicef = factories.Org(
             name="UNICEF", timezone="Asia/Kabul", subdomain="unicef")
+        self.unicef.how_to_handle_sameday_responses = self.how_to_handle_sameday_responses
+        self.unicef.save()
         self.nyaruka = factories.Org(
             name="Nyaruka", timezone="Africa/Kigali", subdomain="nyaruka")
+        self.nyaruka.how_to_handle_sameday_responses = self.how_to_handle_sameday_responses
+        self.nyaruka.save()
 
         # some admins for those orgs
         self.admin = self.create_admin(self.unicef, "Richard", "admin@unicef.org")
