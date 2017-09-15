@@ -133,10 +133,10 @@ class TracProDataTest(TracProTest):
             region=self.region1, groups=[self.group1, self.group5])
         self.contact3 = factories.Contact(
             org=self.unicef, name="Cat", urn='tel:3456', uuid='C-003',
-            region=self.region1, groups=[self.group2, self.group3])
+            region=self.region2, groups=[self.group2, self.group3])
         self.contact4 = factories.Contact(
             org=self.unicef, name="Dan", urn='twitter:danny', uuid='C-004',
-            region=self.region2)
+            region=self.region3)
         self.contact5 = factories.Contact(
             org=self.unicef, name="Eve", urn='twitter:evee', uuid='C-005',
             region=self.region3)

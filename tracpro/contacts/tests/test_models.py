@@ -7,8 +7,6 @@ import mock
 
 import pytz
 
-from unittest import skip
-
 from temba_client.v2.types import Contact as TembaContact
 
 from django.test.utils import override_settings
@@ -48,7 +46,6 @@ class ContactTest(TracProDataTest):
             modified_by=self.user1,
             urn="tel:078123",
             region=self.region1,
-            group=self.group1,
             language="eng",
             groups=[self.group1, self.group2, self.group3],
         )
@@ -83,13 +80,12 @@ class ContactTest(TracProDataTest):
         contact = models.Contact.get_or_fetch(org=self.unicef, uuid='C-001')
         self.assertEqual(contact.name, "Ann")
 
-    # @skip("Skipping test_get_or_fetch_non_existing_local_contact() for now, fixing functionality for API v2.")
     def test_get_or_fetch_non_existing_local_contact(self):
         mock_contact = TembaContact.create(
             name='Mo Polls',
             uuid='C-009',
             urns=['tel:123'],
-            groups=[self.region1, self.group1], #changed from [self.region1.uuid, self.group1.uuid]
+            groups=[self.region1, self.group1],
             fields={
                 'gender': 'M',
             },
@@ -106,7 +102,7 @@ class ContactTest(TracProDataTest):
             uuid='C-007',
             name="Jan",
             urns=['tel:123'],
-            groups=[self.group3, self.group5], # changed from uuid list ['G-001', 'G-007']
+            groups=[self.group3, self.group5],
             fields={
                 'gender': 'M',
             },
@@ -128,14 +124,11 @@ class ContactTest(TracProDataTest):
             'name': "Jan",
             'urn': 'tel:123',
             'region': self.region1,
-            'group': self.group5,
             'language': 'eng',
             'uuid': 'C-007',
             'temba_modified_on': modified_date,
             '_data_field_values': {'gender': 'M'},
         })
-
-
 
     def test_as_temba(self):
         temba_contact = self.contact1.as_temba()

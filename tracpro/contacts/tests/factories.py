@@ -32,8 +32,6 @@ class Contact(factory_utils.SmartModelFactory):
         if create and extracted:
             # A list of groups were passed in, use them
             self.groups.add(*extracted)
-        # if self.group and not self.groups.all():
-        #     self.groups.add(self.group)
 
 
 class TwitterContact(Contact):

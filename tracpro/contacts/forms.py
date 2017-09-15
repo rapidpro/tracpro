@@ -18,7 +18,7 @@ class ContactForm(forms.ModelForm):
 
     class Meta:
         model = models.Contact
-        fields = ['name', 'urn', 'region', 'group', 'language']
+        fields = ['name', 'urn', 'region', 'groups', 'language']
         widgets = {
             'language': forms.TextInput(attrs={'class': 'language-field'}),
         }
@@ -34,7 +34,7 @@ class ContactForm(forms.ModelForm):
             self.instance.created_by = self.user
 
         self.fields['name'].required = True
-        self.fields['group'].required = True
+        self.fields['groups'].required = True
 
         regions = self.user.get_all_regions(org).order_by(Lower('name'))
         self.fields['region'].queryset = regions

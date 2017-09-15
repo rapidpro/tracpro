@@ -41,8 +41,8 @@ def sync_pull_contacts(org, region_uuids, group_uuids):
 
     total_contacts = 0
     for temba_contact in incoming_contacts:
-        print(temba_contact.groups)
         total_contacts += 1
+
         if not temba_contact.urns:
             msg = "%d Skipping contact: %s" % (total_contacts, temba_contact.name)
             logger.info(msg)
@@ -67,7 +67,6 @@ def sync_pull_contacts(org, region_uuids, group_uuids):
                 logger.warning(e.message)
                 failed_uuids.append(temba_contact.uuid)
                 continue
-
 
             for field, value in six.iteritems(kwargs):
                 setattr(existing, field, value)

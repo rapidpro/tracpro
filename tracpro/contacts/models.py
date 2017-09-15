@@ -101,10 +101,6 @@ class Contact(models.Model):
     region = models.ForeignKey(
         'groups.Region', verbose_name=_("Panel"), related_name='contacts',
         help_text=_("Panel of this contact."))
-    # group = models.ForeignKey(
-    #     'groups.Group', null=True, verbose_name=_("Cohort"),
-    #     related_name='old_contacts',
-    #     help_text=_("Cohort to which this contact belongs."))
     groups = models.ManyToManyField(
         'groups.Group', verbose_name=_("Cohorts"),
         related_name='contacts',
@@ -159,8 +155,6 @@ class Contact(models.Model):
 
         if self.region and self.region.uuid not in get_uuids(groups):
             groups.append(ObjectRef.create(uuid=self.region.uuid, name=self.region.name))
-        if self.group and self.group.uuid not in get_uuids(groups):
-            groups.append(ObjectRef.create(uuid=self.group.uuid, name=self.group.name))
 
         return TembaContact.create(
             name=self.name,
@@ -185,7 +179,7 @@ class Contact(models.Model):
 
         If we don't find them locally, we try to fetch them from RapidPro.
         """
-        contacts = cls.objects.filter(org=org).select_related('region', 'group')
+        contacts = cls.objects.filter(org=org).select_related('region')
         try:
             return contacts.get(uuid=uuid)
         except cls.DoesNotExist:
@@ -217,10 +211,9 @@ class Contact(models.Model):
             queryset = model_class.get_all(org)
             temba_uuids = get_uuids(temba_objects)
 
-            # '.first()' doesn't really mean anything here, so we need to refactor after
-            # we will get rid of 'group' and start using 'groups'
-            # this function will only be used for 'regions', if at all
-            return queryset.filter(uuid__in=temba_uuids).order_by('-name').first()
+            # '.first()' doesn't really mean first
+            # there should only be one region here
+            return queryset.filter(uuid__in=temba_uuids).order_by('name').first()
 
         # Use the first Temba group that matches one of the org's Regions.
         region = _get_first(Region, temba_contact.groups)
@@ -232,10 +225,6 @@ class Contact(models.Model):
                     c=temba_contact,
                 ))
 
-        # Use the first Temba group that matches one of the org's Groups. (cohort)
-        # REMOVE after we switch to 'groups'
-        group = _get_first(Group, temba_contact.groups)
-
         # make a list of groups
         # Use all the Temba groups that match one of the org's Groups. (cohort)
         groups = list(Group.get_all(org).filter(uuid__in=get_uuids(temba_contact.groups)))
@@ -245,7 +234,6 @@ class Contact(models.Model):
             'name': temba_contact.name or "",
             'urn': temba_contact.urns[0],
             'region': region,
-            'group': group,
             'groups': groups,
             'language': temba_contact.language,
             'uuid': temba_contact.uuid,
@@ -265,6 +253,7 @@ class Contact(models.Model):
             raise ValidationError("Panel does not belong to Org.")
         print('| | | | | | | | | | | | | | | |')
 
+        # write a validation error for 'groups' below?
         # if self.group and self.org.pk != self.group.org_id:
         #     raise ValidationError("Cohort does not belong to Org.")
 

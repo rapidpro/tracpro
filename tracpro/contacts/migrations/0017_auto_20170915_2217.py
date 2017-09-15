@@ -11,10 +11,9 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AlterField(
+        migrations.RemoveField(
             model_name='contact',
             name='group',
-            field=models.ForeignKey(related_name='old_contacts', verbose_name='Cohort', to='groups.Group', help_text='Cohort to which this contact belongs.', null=True),
         ),
         migrations.AlterField(
             model_name='contact',
