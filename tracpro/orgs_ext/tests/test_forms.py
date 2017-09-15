@@ -37,6 +37,7 @@ class TestOrgExtForm(TracProTest):
             'administrators': [self.user.pk],
             'show_spoof_data': True,
             'subdomain': 'org',
+            'how_to_handle_sameday_responses': 'use_last',
         }
 
     def test_subdomain_required(self, mock_sync):

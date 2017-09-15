@@ -11,9 +11,8 @@ from ..tasks import sync_questions_categories
 
 class TestPollTask(TracProTest):
 
-    @mock.patch.object(models.Poll, 'get_flow_definition')
     @mock.patch('tracpro.polls.tasks.logger.info')
-    def test_sync_questions_categories(self, mock_logger, mock_poll_get_flow):
+    def test_sync_questions_categories(self, mock_logger):
         self.org = factories.Org()
         self.poll_1 = factories.Poll(org=self.org, name='Poll 1')
         self.poll_2 = factories.Poll(org=self.org, name='Poll 2')
@@ -62,8 +61,6 @@ class TestPollTask(TracProTest):
         # single flow matching our first poll
         export_object = factories.TembaExport(flows=[flow_1, flow_2])
         self.mock_temba_client.get_definitions.return_value = export_object
-        # Mock this call to return an empty rule set so that RapidPro API is not called
-        mock_poll_get_flow.return_value.rulesets = []
 
         # Assert that the 2 questions exist before we sync when one should be deleted
         self.assertEqual(models.Question.objects.count(), 2)

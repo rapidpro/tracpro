@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 from dash.orgs.forms import OrgForm
 from django.contrib.auth.models import User
+from django.db.models import F
 from django.db.models.functions import Lower
 
 from temba_client.base import TembaAPIError
@@ -11,6 +12,7 @@ from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
 
 from tracpro.contacts.models import DataField
+from tracpro.polls.models import Answer, Question
 
 from . import utils
 
@@ -65,6 +67,15 @@ class OrgExtForm(OrgForm):
         required=False,
         help_text=_("Tracking code to use for Google Analytics"),
     )
+    how_to_handle_sameday_responses = forms.ChoiceField(
+        required=True,
+        choices=[
+            ('use_last', _('Use last value submitted on that day by each contact')),
+            ('sum', _('Use sum of responses on that day by each contact')),
+        ],
+        help_text=_('How to chart responses to numeric questions when the same contact '
+                    'responds more than once in the same day'),
+    )
 
     def __init__(self, *args, **kwargs):
         super(OrgExtForm, self).__init__(*args, **kwargs)
@@ -82,6 +93,8 @@ class OrgExtForm(OrgForm):
         self.fields['available_languages'].initial = self.instance.available_languages or []
         self.fields['show_spoof_data'].initial = self.instance.show_spoof_data or False
         self.fields['google_analytics'].initial = self.instance.get_config('google_analytics', '')
+        self.fields['how_to_handle_sameday_responses'].initial =\
+            self.instance.get_config('how_to_handle_sameday_responses', 'use_last')
 
         # Sort the administrators
         self.fields['administrators'].queryset \
@@ -126,6 +139,8 @@ class OrgExtForm(OrgForm):
         return value
 
     def save(self, *args, **kwargs):
+        how_to_handle_was = self.instance.how_to_handle_sameday_responses
+
         # Config field values are not set automatically.
         if 'available_languages' in self.fields:
             available_languages = self.cleaned_data.get('available_languages')
@@ -135,6 +150,9 @@ class OrgExtForm(OrgForm):
             self.instance.show_spoof_data = show_spoof_data or False
         if 'google_analytics' in self.cleaned_data:
             self.instance.set_config('google_analytics', self.cleaned_data.get('google_analytics'), False)
+        if 'how_to_handle_sameday_responses' in self.fields:
+            how_to_handle_sameday_responses = self.cleaned_data.get('how_to_handle_sameday_responses')
+            self.instance.how_to_handle_sameday_responses = how_to_handle_sameday_responses or 'use_last'
 
         if 'contact_fields' in self.fields:
             # Set hook that will be picked up by a post-save signal.
@@ -142,7 +160,27 @@ class OrgExtForm(OrgForm):
             # part of the transaction fails.
             self.instance._visible_data_fields = self.cleaned_data.get('contact_fields')
 
-        return super(OrgExtForm, self).save(*args, **kwargs)
+        instance = super(OrgExtForm, self).save(*args, **kwargs)
+
+        if instance.how_to_handle_sameday_responses == 'sum' and how_to_handle_was != 'sum':
+            # This org has changed from not summing to summing.
+            # We potentially need to update all this orgs' numeric answers.
+            # This might be slow, but it's not going to need to happen
+            # very often at all.
+            for answer in Answer.objects.filter(
+                question__poll__org=instance,
+                question__type=Question.TYPE_NUMERIC,
+            ).distinct():
+                answer.update_own_summed_values_and_others()
+        elif how_to_handle_was == 'sum' and instance.how_to_handle_sameday_responses != 'sum':
+            # This org has changed from summing to not summing.
+            # Reset the values we'll be using.
+            Answer.objects.filter(
+                question__poll__org=instance,
+                question__type=Question.TYPE_NUMERIC,
+            ).update(value_to_use=F('value'))
+
+        return instance
 
 
 class FetchRunsForm(forms.Form):

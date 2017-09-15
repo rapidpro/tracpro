@@ -181,24 +181,6 @@ class TestPoll(TracProTest):
         factories.Poll(org=factories.Org(), flow_uuid='abc')
         factories.Poll(org=factories.Org(), flow_uuid='abc')
 
-    def test_get_flow_definition(self):
-        """Flow definition should be retrieved from the API and cached on the poll."""
-        flow = {
-            'metadata': {
-                'uuid': 'abc',
-            },
-        }
-        self.mock_temba_client.get_definitions.return_value = factories.TembaExport(flows=[flow])
-        poll = factories.Poll()
-        self.assertFalse(hasattr(poll, '_flow_definition'))
-        for i in range(2):
-            # The result of the method should be cached on the poll.
-            self.assertEqual(poll.get_flow_definition(), flow)
-            self.assertEqual(poll._flow_definition, flow)
-
-            # API call count should not go up.
-            self.assertEqual(self.mock_temba_client.get_definitions.call_count, 1)
-
 
 class TestQuestionQueryset(TracProTest):
 
