@@ -20,6 +20,8 @@ from .fields import URN_SCHEME_CHOICES
 from .forms import ContactForm
 from .models import Contact, ChangeType
 
+from pprint import pprint
+
 
 class ContactCRUDL(SmartCRUDL):
     model = Contact
@@ -93,7 +95,7 @@ class ContactCRUDL(SmartCRUDL):
     class Read(OrgObjPermsMixin, ContactFieldsMixin, ContactBase, SmartReadView):
 
         def derive_fields(self):
-            fields = ['urn', 'region', 'group', 'language', 'last_response']
+            fields = ['urn', 'region', 'groups', 'language', 'last_response']
             if self.object.created_by_id:
                 fields.append('created_by')
 
@@ -122,6 +124,10 @@ class ContactCRUDL(SmartCRUDL):
                 value = self.data_fields.get(field).contactfield_set.filter(contact=obj)
                 value = value.first()
                 return value.get_value() or "-" if value else "Unknown"
+
+            if field == 'groups':
+                return ', '.join(str(group.name) for group in obj.groups.all())
+
             return super(ContactCRUDL.Read, self).lookup_field_value(context, obj, field)
 
     class List(OrgPermsMixin, ContactFieldsMixin, ContactBase, SmartListView):
@@ -129,7 +135,7 @@ class ContactCRUDL(SmartCRUDL):
         search_fields = ('name__icontains', 'urn__icontains')
 
         def derive_fields(self):
-            fields = ['name', 'urn', 'group', 'region']
+            fields = ['name', 'urn', 'groups', 'region']
             if self.request.region:
                 fields.extend(self.derive_pollruns().keys())
             return fields
@@ -148,6 +154,9 @@ class ContactCRUDL(SmartCRUDL):
                     contact=obj, status=Response.STATUS_COMPLETE).exists()
                 return ('<span class="glyphicon glyphicon-%s"></span>' %
                         ('ok' if has_completed else 'time'))
+
+            if field == 'groups':
+                return ', '.join(str(group.name) for group in obj.groups.all())
 
             return super(ContactCRUDL.List, self).lookup_field_value(context, obj, field)
 
