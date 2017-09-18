@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 from django.core.urlresolvers import reverse
 
-from tracpro.polls.models import SAMEDAY_SUM
 from tracpro.test import factories
 from tracpro.test.cases import TracProTest
 
@@ -118,7 +117,7 @@ class PollChartTest(TracProTest):
 
         # Single item for single date: sum = 4 + 3 + 8 = 15
         # URL points to pollrun detail page for this date
-        self.assertEqual(data[SAMEDAY_SUM], [{
+        self.assertEqual(data['sum'], [{
             'name': self.question3.name,
             'data': [15.0],
         }])
@@ -180,7 +179,7 @@ class PollChartTest(TracProTest):
             reverse('polls.pollrun_participation', args=[self.pollrun.pk]),
         ])
 
-        self.assertEqual(data[SAMEDAY_SUM], [
+        self.assertEqual(data['sum'], [
             {
                 'name': "Acme",
                 'data': [8.0],

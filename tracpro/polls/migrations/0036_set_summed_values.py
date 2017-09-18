@@ -4,6 +4,8 @@ import json
 from django.db import migrations
 from django.db.models import F
 
+from tracpro.polls.models import SAMEDAY_SUM, SAMEDAY_LAST
+
 
 def forward(apps, schema):
     Answer = apps.get_model('polls.Answer')
@@ -14,7 +16,7 @@ def forward(apps, schema):
 
     for org in Org.objects.all():
         config = json.loads(org.config)
-        how_to_handle = config.get('how_to_handle_sameday_responses', 'use_last')
+        how_to_handle = config.get('how_to_handle_sameday_responses', SAMEDAY_LAST)
         if how_to_handle == SAMEDAY_SUM:
             # We don't handle existing orgs already set to SAMEDAY_SUM -
             # There should not be any, but

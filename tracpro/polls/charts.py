@@ -7,7 +7,7 @@ from django.utils.http import urlencode
 from tracpro.charts.formatters import format_series, format_x_axis
 from tracpro.groups.models import Region
 
-from .models import Answer, Question, SAMEDAY_SUM
+from .models import Answer, Question
 from . import utils
 
 
@@ -166,7 +166,7 @@ def multiple_pollruns_numeric(pollruns, answers, responses, question, contact_fi
 
     chart_data = {
         'dates': format_x_axis(pollruns),
-        SAMEDAY_SUM: [{'name': question.name, 'data': sum_data}],
+        'sum': [{'name': question.name, 'data': sum_data}],
         'average': [{'name': question.name, 'data': avg_data}],
         'response-rate': [{'name': question.name, 'data': rate_data}],
         'pollrun-urls': pollrun_urls,
@@ -212,7 +212,7 @@ def multiple_pollruns_numeric_split(pollruns, answers, responses, question, cont
         for p in pollruns]
     chart_data = {
         'dates': format_x_axis(pollruns),
-        SAMEDAY_SUM: sum_data,
+        'sum': sum_data,
         'average': avg_data,
         'response-rate': rate_data,
         'pollrun-urls': pollrun_urls,

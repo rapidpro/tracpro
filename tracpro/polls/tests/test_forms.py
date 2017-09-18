@@ -6,7 +6,6 @@ import mock
 
 import pytz
 
-from tracpro.polls.models import SAMEDAY_SUM
 from tracpro.test import factories
 from tracpro.test.cases import TracProTest
 
@@ -55,7 +54,7 @@ class TestPollChartFilterForm(TracProTest):
         self.assertTrue(form.is_bound)
         self.assertTrue(form.is_valid())
         self.assertDictEqual(form.data, {
-            'numeric': SAMEDAY_SUM,
+            'numeric': 'sum',
             'date_range': 'month',
             'start_date': datetime.datetime(2016, 2, 1, tzinfo=pytz.UTC),
             'end_date': datetime.datetime(2016, 2, 29, tzinfo=pytz.UTC),
