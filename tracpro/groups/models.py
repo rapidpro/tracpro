@@ -90,7 +90,8 @@ class AbstractGroup(models.Model):
         window_min = window_max - relativedelta(days=30)
         qs = qs.filter(updated_on__gte=window_min, updated_on__lt=window_max)
 
-        field = 'contact__%s' % cls.__name__.lower()
+        # field = 'contact__%s' % cls.__name__.lower()
+        field = 'contact'
 
         qs = qs.filter(**{'%s__is_active' % field: True})
         counts = qs.values(field).annotate(count=Count(field))
