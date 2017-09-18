@@ -20,8 +20,6 @@ from .fields import URN_SCHEME_CHOICES
 from .forms import ContactForm
 from .models import Contact, ChangeType
 
-from pprint import pprint
-
 
 class ContactCRUDL(SmartCRUDL):
     model = Contact
