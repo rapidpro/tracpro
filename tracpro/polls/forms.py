@@ -7,6 +7,7 @@ from django.utils.translation import ugettext_lazy as _
 from dash.utils import get_month_range
 
 from tracpro.charts import filters
+from tracpro.polls.models import SAMEDAY_SUM
 
 from . import models
 from .tasks import sync_questions_categories
@@ -71,7 +72,7 @@ class PollChartFilterForm(filters.DateRangeFilter, filters.DataFieldFilter,
                           filters.FilterForm):
     NUMERIC_DATA_CHOICES = (
         ('', ''),
-        ('sum', _("Sum of responses")),
+        (SAMEDAY_SUM, _("Sum of responses")),
         ('average', _("Average of responses")),
         ('response-rate', _("Response rate")),
     )
@@ -90,7 +91,7 @@ class PollChartFilterForm(filters.DateRangeFilter, filters.DataFieldFilter,
             # Form will always be considered bound.
             start_date, end_date = get_month_range()
             kwargs['data'] = {
-                'numeric': 'sum',
+                'numeric': SAMEDAY_SUM,
                 'date_range': 'month',
                 'start_date': start_date,
                 'end_date': end_date,

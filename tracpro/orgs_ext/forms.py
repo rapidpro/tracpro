@@ -12,7 +12,7 @@ from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
 
 from tracpro.contacts.models import DataField
-from tracpro.polls.models import Answer, Question
+from tracpro.polls.models import Answer, Question, SAMEDAY_LAST, SAMEDAY_SUM
 
 from . import utils
 
@@ -70,8 +70,8 @@ class OrgExtForm(OrgForm):
     how_to_handle_sameday_responses = forms.ChoiceField(
         required=True,
         choices=[
-            ('use_last', _('Use last value submitted on that day by each contact')),
-            ('sum', _('Use sum of responses on that day by each contact')),
+            (SAMEDAY_LAST, _('Use last value submitted on that day by each contact')),
+            (SAMEDAY_SUM, _('Use sum of responses on that day by each contact')),
         ],
         help_text=_('How to chart responses to numeric questions when the same contact '
                     'responds more than once in the same day'),
@@ -94,7 +94,7 @@ class OrgExtForm(OrgForm):
         self.fields['show_spoof_data'].initial = self.instance.show_spoof_data or False
         self.fields['google_analytics'].initial = self.instance.get_config('google_analytics', '')
         self.fields['how_to_handle_sameday_responses'].initial =\
-            self.instance.get_config('how_to_handle_sameday_responses', 'use_last')
+            self.instance.get_config('how_to_handle_sameday_responses', SAMEDAY_LAST)
 
         # Sort the administrators
         self.fields['administrators'].queryset \
@@ -152,7 +152,7 @@ class OrgExtForm(OrgForm):
             self.instance.set_config('google_analytics', self.cleaned_data.get('google_analytics'), False)
         if 'how_to_handle_sameday_responses' in self.fields:
             how_to_handle_sameday_responses = self.cleaned_data.get('how_to_handle_sameday_responses')
-            self.instance.how_to_handle_sameday_responses = how_to_handle_sameday_responses or 'use_last'
+            self.instance.how_to_handle_sameday_responses = how_to_handle_sameday_responses or SAMEDAY_LAST
 
         if 'contact_fields' in self.fields:
             # Set hook that will be picked up by a post-save signal.
@@ -162,7 +162,7 @@ class OrgExtForm(OrgForm):
 
         instance = super(OrgExtForm, self).save(*args, **kwargs)
 
-        if instance.how_to_handle_sameday_responses == 'sum' and how_to_handle_was != 'sum':
+        if instance.how_to_handle_sameday_responses == SAMEDAY_SUM and how_to_handle_was != SAMEDAY_SUM:
             # This org has changed from not summing to summing.
             # We potentially need to update all this orgs' numeric answers.
             # This might be slow, but it's not going to need to happen
@@ -172,7 +172,7 @@ class OrgExtForm(OrgForm):
                 question__type=Question.TYPE_NUMERIC,
             ).distinct():
                 answer.update_own_summed_values_and_others()
-        elif how_to_handle_was == 'sum' and instance.how_to_handle_sameday_responses != 'sum':
+        elif how_to_handle_was == SAMEDAY_SUM and instance.how_to_handle_sameday_responses != SAMEDAY_SUM:
             # This org has changed from summing to not summing.
             # Reset the values we'll be using.
             Answer.objects.filter(

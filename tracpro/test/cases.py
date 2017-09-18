@@ -10,7 +10,7 @@ from django.core.urlresolvers import reverse
 from django.test import TestCase
 
 from tracpro.client import TracProClient
-from tracpro.polls.models import Question
+from tracpro.polls.models import Question, SAMEDAY_LAST
 
 from . import factories
 
@@ -88,7 +88,7 @@ class TracProDataTest(TracProTest):
     """Common data set-up."""
     # Test classes can override this so we use the desired value
     # from the beginning of setup:
-    how_to_handle_sameday_responses = 'use_last'
+    how_to_handle_sameday_responses = SAMEDAY_LAST
 
     def setUp(self):
         super(TracProDataTest, self).setUp()

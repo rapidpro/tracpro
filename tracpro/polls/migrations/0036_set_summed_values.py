@@ -15,8 +15,8 @@ def forward(apps, schema):
     for org in Org.objects.all():
         config = json.loads(org.config)
         how_to_handle = config.get('how_to_handle_sameday_responses', 'use_last')
-        if how_to_handle == 'sum':
-            # We don't handle existing orgs already set to 'sum' -
+        if how_to_handle == SAMEDAY_SUM:
+            # We don't handle existing orgs already set to SAMEDAY_SUM -
             # There should not be any, but
             # just to avoid misleading someone if they're migrating forward
             # and back or something:

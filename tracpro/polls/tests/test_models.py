@@ -18,7 +18,7 @@ from django.utils import timezone
 from tracpro.test import factories
 from tracpro.test.cases import TracProTest, TracProDataTest
 
-from ..models import Poll, PollRun, Response
+from ..models import Poll, PollRun, Response, SAMEDAY_SUM
 from .. import models
 
 
@@ -701,7 +701,7 @@ class TestAnswer(TracProDataTest):
 
 
 class TestAnswerSumming(TracProDataTest):
-    how_to_handle_sameday_responses = 'sum'
+    how_to_handle_sameday_responses = SAMEDAY_SUM
 
     def test_create_with_summing(self):
         pollrun = factories.UniversalPollRun(

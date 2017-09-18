@@ -25,6 +25,10 @@ from .tasks import pollrun_start
 from .utils import extract_words, natural_sort_key, just_floats
 
 
+SAMEDAY_LAST = 'use_last'
+SAMEDAY_SUM = 'sum'
+
+
 class PollQuerySet(models.QuerySet):
 
     def active(self):
@@ -811,7 +815,7 @@ class Answer(models.Model):
         """
         question = self.question
         org = question.poll.org
-        return (org.how_to_handle_sameday_responses == 'sum' and
+        return (org.how_to_handle_sameday_responses == SAMEDAY_SUM and
                 question.question_type == Question.TYPE_NUMERIC)
 
     def same_question_contact_and_day(self):
