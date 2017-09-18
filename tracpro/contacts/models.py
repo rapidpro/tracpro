@@ -251,7 +251,6 @@ class Contact(models.Model):
     def save(self, *args, **kwargs):
         if self.org.pk != self.region.org_id:
             raise ValidationError("Panel does not belong to Org.")
-        print('| | | | | | | | | | | | | | | |')
 
         # write a validation error for 'groups' below?
         # if self.group and self.org.pk != self.group.org_id:
