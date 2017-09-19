@@ -91,7 +91,6 @@ class ContactCRUDL(SmartCRUDL):
             return obj
 
     class Read(OrgObjPermsMixin, ContactFieldsMixin, ContactBase, SmartReadView):
-
         def derive_fields(self):
             fields = ['urn', 'region', 'groups', 'language', 'last_response']
             if self.object.created_by_id:

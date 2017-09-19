@@ -543,8 +543,8 @@ class ResponseCRUDL(smartmin.SmartCRUDL):
         def lookup_field_value(self, context, obj, field):
             if field == 'region':
                 return obj.contact.region
-            elif field == 'group':
-                return obj.contact.group
+            elif field == 'groups':
+                return ', '.join(str(group.name) for group in obj.contact.groups.all())
             elif field.startswith('question_'):
                 question = self.derive_questions()[field]
                 answer = obj.answers.filter(question=question).first()

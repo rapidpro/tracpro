@@ -90,12 +90,23 @@ class AbstractGroup(models.Model):
         window_min = window_max - relativedelta(days=30)
         qs = qs.filter(updated_on__gte=window_min, updated_on__lt=window_max)
 
-        # field = 'contact__%s' % cls.__name__.lower()
-        field = 'contact'
+        cls_str = cls.__name__.lower()
+        if cls_str == 'region':
+            field = 'contact__%s' % cls_str
+            counts = qs.values(field).annotate(count=Count(field))
+            return_counts = {count[field]: count['count'] for count in counts}
+        else:
+            # a potential issue is that there is no longer a one-to-one relationship,
+            # so counts for groups here do not relate to the number of responses
+            return_counts = {}
+            for q in qs:
+                for qcg in q.contact.groups.all():
+                    if qcg.pk in return_counts:
+                        return_counts[qcg.pk] += 1
+                    else:
+                        return_counts[qcg.pk] = 1
 
-        qs = qs.filter(**{'%s__is_active' % field: True})
-        counts = qs.values(field).annotate(count=Count(field))
-        return {count[field]: count['count'] for count in counts}
+        return return_counts
 
     @classmethod
     def get_most_active(cls, org):
@@ -106,6 +117,7 @@ class AbstractGroup(models.Model):
             if count:
                 group.response_count = count
                 groups.append(group)
+
         return sorted(groups, key=lambda g: g.response_count, reverse=True)
 
     def get_contacts(self):

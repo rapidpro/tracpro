@@ -464,9 +464,9 @@ class PollRunTest(TracProDataTest):
         })
 
         self.assertEqual(
-            list(pollrun.get_responses(self.region2)),
+            list(pollrun.get_responses(self.region3)),
             [response3])
-        self.assertDictEqual(pollrun.get_response_counts(self.region2), {
+        self.assertDictEqual(pollrun.get_response_counts(self.region3), {
             Response.STATUS_EMPTY: 0,
             Response.STATUS_PARTIAL: 0,
             Response.STATUS_COMPLETE: 1,

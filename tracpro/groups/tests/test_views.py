@@ -221,13 +221,13 @@ class TestRegionMostActive(TracProDataTest):
 
         # partial response not in last month for contact in region #2
         factories.Response(
-            pollrun=pollrun, contact=self.contact4,
+            pollrun=pollrun, contact=self.contact3,
             created_on=five_weeks_ago, updated_on=five_weeks_ago,
             status=polls.Response.STATUS_PARTIAL)
 
         # partial response in last month for contact in region #2
         factories.Response(
-            pollrun=pollrun, contact=self.contact4,
+            pollrun=pollrun, contact=self.contact3,
             created_on=five_days_ago, updated_on=five_days_ago,
             status=polls.Response.STATUS_PARTIAL)
 
@@ -554,24 +554,24 @@ class TestGroupMostActive(TracProDataTest):
 
         # partial response not in last month for contact in group #2
         factories.Response(
-            pollrun=pollrun, contact=self.contact3,
+            pollrun=pollrun, contact=self.contact2,
             created_on=five_weeks_ago, updated_on=five_weeks_ago,
             status=polls.Response.STATUS_PARTIAL)
 
         # partial response in last month for contact in group #2
         factories.Response(
-            pollrun=pollrun, contact=self.contact3,
+            pollrun=pollrun, contact=self.contact2,
             created_on=five_days_ago, updated_on=five_days_ago,
             status=polls.Response.STATUS_PARTIAL)
 
         # 2 complete responses in last month for contact in group #3
         factories.Response(
-            pollrun=pollrun, contact=self.contact5,
+            pollrun=pollrun, contact=self.contact1,
             created_on=five_days_ago, updated_on=five_days_ago,
             status=polls.Response.STATUS_COMPLETE)
 
         factories.Response(
-            pollrun=pollrun, contact=self.contact5,
+            pollrun=pollrun, contact=self.contact1,
             created_on=five_days_ago, updated_on=five_days_ago,
             status=polls.Response.STATUS_COMPLETE)
 
@@ -580,10 +580,10 @@ class TestGroupMostActive(TracProDataTest):
 
         response = self.url_get('unicef', reverse(self.url_name))
         results = json.loads(response.content)['results']
-        self.assertEqual(len(results), 2)
-        self.assertEqual(results[0]['id'], self.group3.pk)
-        self.assertEqual(results[0]['name'], self.group3.name)
-        self.assertEqual(results[0]['response_count'], 2)
+        self.assertEqual(len(results), 3)
+        self.assertEqual(results[0]['id'], self.group1.pk)
+        self.assertEqual(results[0]['name'], self.group1.name)
+        self.assertEqual(results[0]['response_count'], 3)
         self.assertEqual(results[1]['id'], self.group2.pk)
         self.assertEqual(results[1]['name'], self.group2.name)
-        self.assertEqual(results[1]['response_count'], 1)
+        self.assertEqual(results[1]['response_count'], 2)
