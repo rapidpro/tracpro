@@ -93,6 +93,7 @@ class AbstractGroup(models.Model):
         cls_str = cls.__name__.lower()
         if cls_str == 'region':
             field = 'contact__%s' % cls_str
+            qs = qs.filter(**{'%s__is_active' % field: True})
             counts = qs.values(field).annotate(count=Count(field))
             return_counts = {count[field]: count['count'] for count in counts}
         else:
