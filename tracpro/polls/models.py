@@ -15,6 +15,7 @@ from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 
+from tracpro.charts.utils import midnight, end_of_day
 from tracpro.client import get_client
 from tracpro.contacts.models import Contact, NoMatchingCohortsWarning
 from tracpro.groups.models import Region
@@ -22,6 +23,10 @@ from tracpro.groups.models import Region
 from . import rules
 from .tasks import pollrun_start
 from .utils import extract_words, natural_sort_key, just_floats
+
+
+SAMEDAY_LAST = 'use_last'
+SAMEDAY_SUM = 'sum'
 
 
 class PollQuerySet(models.QuerySet):
@@ -124,17 +129,6 @@ class Poll(models.Model):
 
     def __str__(self):
         return self.name
-
-    def get_flow_definition(self):
-        """Retrieve extra metadata about the RapidPro flow."""
-        if not hasattr(self, '_flow_definition'):
-            client = get_client(self.org)
-            export = client.get_definitions(flows=[self.flow_uuid])
-            if export.flows:
-                self._flow_definition = export.flows[0]
-            else:
-                self._flow_definition = None
-        return self._flow_definition
 
     def save(self, *args, **kwargs):
         """Don't save custom name if it is the same as the RapidPro name.
@@ -581,6 +575,9 @@ class Response(models.Model):
 
         If a new response has been created, the returned response will have
         attribute `is_new` = True.
+
+        :param run: temba Run instance
+        :param poll: tracpro Poll instance, or None
         """
         responses = Response.objects.filter(pollrun__poll__org=org, flow_run_id=run.id)
         response = responses.select_related('pollrun').first()
@@ -624,12 +621,22 @@ class Response(models.Model):
                 for_date=run.created_on,
             )
 
-            # if contact has an older response for this pollrun, retire it
-            Response.objects.filter(pollrun=pollrun, contact=contact).update(is_active=False)
             response = Response.objects.create(
+                is_active=True,  # default, just being explicit
                 flow_run_id=run.id, pollrun=pollrun, contact=contact,
                 created_on=run.created_on, updated_on=run_updated_on,
                 status=status)
+
+            # If more than one for this contact and pollrun,
+            # set the last one created as the active one.
+            if Response.objects.filter(pollrun=pollrun, contact=contact).count() > 1:
+                # Set them all False, then the one we want true
+                with transaction.atomic():
+                    Response.objects.filter(pollrun=pollrun, contact=contact).update(is_active=False)
+                    last = Response.objects.filter(pollrun=pollrun, contact=contact).order_by('-created_on').first()
+                    last.is_active = True
+                    last.save()
+
             response.is_new = True
 
         # organize values by ruleset UUID
@@ -666,17 +673,17 @@ class Response(models.Model):
 class AnswerQuerySet(models.QuerySet):
 
     def word_counts(self):
-        answers = self.values_list('value', 'response__contact__language')
+        answers = self.values_list('value_to_use', 'response__contact__language')
         words = [extract_words(*a) for a in answers]
         counts = Counter(chain(*words))
         return counts.most_common(50)
 
     def group_values(self, *fields):
         """Group answers by the given fields then map to a list of matching values."""
-        answers = self.order_by(*fields).values('value', *fields)
+        answers = self.order_by(*fields).values('value_to_use', *fields)
         data = {}
         for field_values, _answers in groupby(answers, itemgetter(*fields)):
-            data[field_values] = [a['value'] for a in _answers]
+            data[field_values] = [a['value_to_use'] for a in _answers]
         return data
 
     def category_counts(self):
@@ -703,7 +710,7 @@ class AnswerQuerySet(models.QuerySet):
         Category names are of the form "N.N-N.N".
         """
         answers_to_numeric_questions = self.filter(question__question_type=Question.TYPE_NUMERIC)
-        answers = just_floats(answers_to_numeric_questions.values_list('value', flat=True))
+        answers = just_floats(answers_to_numeric_questions.values_list('value_to_use', flat=True))
         if not answers:
             return {
                 'categories': [],
@@ -755,13 +762,87 @@ class AnswerManager(models.Manager.from_queryset(AnswerQuerySet)):
 
 
 class Answer(models.Model):
-    """Corresponds to RapidPro FlowStep."""
+    """
+    Corresponds to RapidPro FlowStep.
+    In Temba API, corresponds to one entry in the Run.Value dictionary.
+    """
 
     response = models.ForeignKey('polls.Response', related_name='answers')
     question = models.ForeignKey('polls.Question', related_name='answers')
-    value = models.CharField(max_length=640, null=True)
+    value = models.CharField(
+        max_length=640, null=True,
+        help_text="Value from rapidpro")
+    value_to_use = models.CharField(
+        max_length=640, null=True,
+        help_text=_("For numeric questions for orgs that want to use the sum of numeric "
+                    "responses from the same contact on the same day, the sum of those "
+                    "responses. For all others, just a copy of 'value'.")
+    )
+
     category = models.CharField(max_length=36, null=True)
     submitted_on = models.DateTimeField(
         help_text=_("When this answer was submitted"))
 
     objects = AnswerManager()
+
+    def save(self, *args, **kwargs):
+        is_new = self.pk is None
+        if is_new and not self.should_use_sum():
+            self.value_to_use = self.value
+        super(Answer, self).save(*args, **kwargs)
+        if is_new and self.should_use_sum():
+            # We created a new answer - we need to update the summed
+            # values in this and maybe other answers
+            self.update_own_summed_values_and_others()
+
+    def update_own_summed_values_and_others(self):
+        """
+        Update the summed value for this answer, and any others on
+        the same day/contact/question.
+        """
+        answers = self.same_question_contact_and_day()
+        value = self.compute_value_to_use()
+        # Update the database
+        answers.update(value_to_use=value)
+        # And update this particular record in memory to avoid confusion
+        self.value_to_use = value
+
+    def should_use_sum(self):
+        """
+        Return true if we should use a sum of response values from
+        the same contact on the same day for the same question
+        for this answer.
+        """
+        question = self.question
+        org = question.poll.org
+        return (org.how_to_handle_sameday_responses == SAMEDAY_SUM and
+                question.question_type == Question.TYPE_NUMERIC)
+
+    def same_question_contact_and_day(self):
+        """
+        Return a queryset of answers that are the same question,
+        contact, and day as this one (includes this one).
+        """
+        return Answer.objects.filter(
+            question_id=self.question_id,
+            response__contact_id=self.response.contact_id,
+            submitted_on__gte=midnight(self.submitted_on),
+            submitted_on__lte=end_of_day(self.submitted_on),
+        )
+
+    def compute_value_to_use(self):
+        """
+        Normally, just return the value from rapidpro.
+        But if it's a numeric question and
+        the org is configured to sum multiple responses on the same day from
+        the same contact, look up all the answers from that contact to this
+        question on this same day and return the sum of them as a float.
+        """
+        assert self.pk  # Don't use on unsaved records, it'll miss this record's value
+        if self.should_use_sum():
+            # Include inactive responses from same contact on same day and
+            # add them all up, including this one
+            values = [float(a.value) for a in self.same_question_contact_and_day()]
+            return "%f" % sum(values)
+        else:
+            return self.value

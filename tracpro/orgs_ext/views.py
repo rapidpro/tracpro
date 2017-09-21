@@ -40,7 +40,9 @@ class OrgExtCRUDL(OrgCRUDL):
         form_class = forms.OrgExtForm
         fields = ('is_active', 'name', 'available_languages', 'language',
                   'contact_fields', 'timezone', 'subdomain', 'api_token', 'google_analytics',
-                  'show_spoof_data', 'logo', 'administrators')
+                  'show_spoof_data', 'logo', 'administrators',
+                  'how_to_handle_sameday_responses',
+                  )
 
     class Home(OrgCRUDL.Home):
         fields = ('name', 'timezone', 'api_token', 'google_analytics', 'last_contact_sync',

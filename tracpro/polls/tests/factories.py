@@ -9,6 +9,7 @@ import factory
 import factory.fuzzy
 
 from django.utils import timezone
+from django.utils.timezone import now
 
 from tracpro.test.factory_utils import FuzzyUUID
 
@@ -99,9 +100,9 @@ class Answer(factory.django.DjangoModelFactory):
     question = factory.SubFactory('tracpro.test.factories.Question')
     value = factory.fuzzy.FuzzyText()
     category = factory.fuzzy.FuzzyText()
-    submitted_on = factory.fuzzy.FuzzyDate(
-        start_date=datetime.date.today() - relativedelta(days=7),
-        end_date=datetime.date.today())
+    submitted_on = factory.fuzzy.FuzzyDateTime(
+        start_dt=now() - relativedelta(days=7),
+        end_dt=now())
 
     class Meta:
         model = models.Answer

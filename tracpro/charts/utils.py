@@ -25,3 +25,7 @@ def render_data(chart_data):
 
 def midnight(d):
     return datetime.datetime(d.year, d.month, d.day, tzinfo=d.tzinfo)
+
+
+def end_of_day(d):
+    return datetime.datetime(d.year, d.month, d.day, 23, 59, 59, tzinfo=d.tzinfo)

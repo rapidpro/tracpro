@@ -18,7 +18,7 @@ from django.utils import timezone
 from tracpro.test import factories
 from tracpro.test.cases import TracProTest, TracProDataTest
 
-from ..models import Poll, PollRun, Response
+from ..models import Poll, PollRun, Response, SAMEDAY_SUM
 from .. import models
 
 
@@ -180,24 +180,6 @@ class TestPoll(TracProTest):
         """flow_uuid can be repeated with different Orgs."""
         factories.Poll(org=factories.Org(), flow_uuid='abc')
         factories.Poll(org=factories.Org(), flow_uuid='abc')
-
-    def test_get_flow_definition(self):
-        """Flow definition should be retrieved from the API and cached on the poll."""
-        flow = {
-            'metadata': {
-                'uuid': 'abc',
-            },
-        }
-        self.mock_temba_client.get_definitions.return_value = factories.TembaExport(flows=[flow])
-        poll = factories.Poll()
-        self.assertFalse(hasattr(poll, '_flow_definition'))
-        for i in range(2):
-            # The result of the method should be cached on the poll.
-            self.assertEqual(poll.get_flow_definition(), flow)
-            self.assertEqual(poll._flow_definition, flow)
-
-            # API call count should not go up.
-            self.assertEqual(self.mock_temba_client.get_definitions.call_count, 1)
 
 
 class TestQuestionQueryset(TracProTest):
@@ -703,16 +685,51 @@ class TestAnswer(TracProDataTest):
         self.assertEqual(answer1.question, self.poll1_question1)
         self.assertEqual(answer1.category, "1 - 5")
         self.assertEqual(answer1.value, "4.00000")
+        self.assertEqual(answer1.value_to_use, "4.00000")
 
         answer2 = factories.Answer(
             response=response, question=self.poll1_question1,
             value="rain", category=dict(base="Rain", rwa="Imvura"))
         self.assertEqual(answer2.category, "Rain")
+        self.assertEqual(answer2.value_to_use, "rain")
 
         answer3 = factories.Answer(
             response=response, question=self.poll1_question1,
             value="rain", category=dict(eng="Yes"))
         self.assertEqual(answer3.category, "Yes")
+        self.assertEqual(answer3.value_to_use, "rain")
+
+
+class TestAnswerSumming(TracProDataTest):
+    how_to_handle_sameday_responses = SAMEDAY_SUM
+
+    def test_create_with_summing(self):
+        pollrun = factories.UniversalPollRun(
+            poll=self.poll1, conducted_on=timezone.now())
+        response = Response.create_empty(
+            self.unicef, pollrun,
+            Run.create(id=123, contact='C-001', created_on=timezone.now()))
+
+        answer1 = factories.Answer(
+            response=response, question=self.poll1_question1,
+            value="4.00000", category="1 - 5")
+        self.assertEqual(answer1.value, "4.00000")  # untouched
+        self.assertEqual(answer1.value_to_use, "4.000000")
+
+        # Another response, same contact
+        response2 = Response.create_empty(
+            self.unicef, pollrun,
+            Run.create(id=124, contact='C-001', created_on=timezone.now()))
+        answer2 = factories.Answer(
+            response=response2,
+            question=self.poll1_question1,  # same question
+            value="8.000",  # new value
+            submitted_on=answer1.submitted_on,  # same day (exactly!)
+        )
+        self.assertEqual(answer2.value, "8.000")
+        self.assertEqual(answer2.value_to_use, "12.000000")
+        answer1.refresh_from_db()  # This should have been updated in the DB
+        self.assertEqual(answer1.value_to_use, "12.000000")
 
 
 class TestAnswerQuerySet(TracProDataTest):
