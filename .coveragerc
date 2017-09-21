@@ -9,7 +9,8 @@ omit =
     fabfile.py,
     manage.py,
     */tests.py,
-    */test/*
+    */test/*,
+    */fakedata.py
 source = .
 
 [report]

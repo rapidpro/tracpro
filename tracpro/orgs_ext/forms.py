@@ -169,7 +169,7 @@ class OrgExtForm(OrgForm):
             # very often at all.
             for answer in Answer.objects.filter(
                 question__poll__org=instance,
-                question__type=Question.TYPE_NUMERIC,
+                question__question_type=Question.TYPE_NUMERIC,
             ).distinct():
                 answer.update_own_summed_values_and_others()
         elif how_to_handle_was == SAMEDAY_SUM and instance.how_to_handle_sameday_responses != SAMEDAY_SUM:
@@ -177,7 +177,7 @@ class OrgExtForm(OrgForm):
             # Reset the values we'll be using.
             Answer.objects.filter(
                 question__poll__org=instance,
-                question__type=Question.TYPE_NUMERIC,
+                question__question_type=Question.TYPE_NUMERIC,
             ).update(value_to_use=F('value'))
 
         return instance
