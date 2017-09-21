@@ -14,16 +14,11 @@ def backward(apps, schema_editor):
         and adds to the newly reproduced field 'group'.
         For development purposes, this seems resonable. '''
     Contact = apps.get_model("contacts", "Contact")
-    migrations.AddField(
-            model_name='contact',
-            name='group',
-            field=models.ForeignKey(related_name='old_contacts', verbose_name='group', to='groups.Group')
-        )
     for contact in Contact.objects.all():
-        if contact.groups.first():
-            this_contact = Contact.objects.get(id=contact.id)
-            this_contact.group_id = contact.groups.first().pk
-            this_contact.save()
+        first_group = contact.groups.first()
+        if first_group:
+            contact.group = first_group
+            contact.save()
 
 
 class Migration(migrations.Migration):
