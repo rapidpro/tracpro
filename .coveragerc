@@ -10,7 +10,8 @@ omit =
     manage.py,
     */tests.py,
     */test/*,
-    */fakedata.py
+    */fakedata.py,
+    */fetchruns.py
 source = .
 
 [report]
