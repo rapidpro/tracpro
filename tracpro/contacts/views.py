@@ -123,7 +123,7 @@ class ContactCRUDL(SmartCRUDL):
                 return value.get_value() or "-" if value else "Unknown"
 
             if field == 'groups':
-                return ', '.join(str(group.name) for group in obj.groups.all())
+                return ', '.join(group.name.encode('utf-8') for group in obj.groups.all())
 
             return super(ContactCRUDL.Read, self).lookup_field_value(context, obj, field)
 
@@ -153,7 +153,7 @@ class ContactCRUDL(SmartCRUDL):
                         ('ok' if has_completed else 'time'))
 
             if field == 'groups':
-                return ', '.join(str(group.name) for group in obj.groups.all())
+                return ', '.join(group.name.encode('utf-8') for group in obj.groups.all())
 
             return super(ContactCRUDL.List, self).lookup_field_value(context, obj, field)
 
