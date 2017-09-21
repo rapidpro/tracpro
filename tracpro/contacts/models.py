@@ -60,6 +60,12 @@ class ContactQuerySet(models.QuerySet):
 
 class ContactManager(models.Manager.from_queryset(ContactQuerySet)):
 
+    def create(self, *args, **kwargs):
+        contact_groups = kwargs.pop('groups', [])
+        new_contact = super(ContactManager, self).create(*args, **kwargs)
+        new_contact.groups = contact_groups
+        return new_contact
+
     def sync(self, org):
         try:
             region_uuids = set(get_uuids(Region.get_all(org)))
@@ -138,8 +144,7 @@ class Contact(models.Model):
 
     def __init__(self, *args, **kwargs):
         self._data_field_values = kwargs.pop('_data_field_values', None)
-        kwargs.pop('groups', None)
-        self.new_contact = super(Contact, self).__init__(*args, **kwargs)
+        super(Contact, self).__init__(*args, **kwargs)
 
     def __str__(self):
         return self.name or self.get_urn()[1]
@@ -227,7 +232,7 @@ class Contact(models.Model):
 
         # make a list of groups
         # Use all the Temba groups that match one of the org's Groups. (cohort)
-        groups = list(Group.get_all(org).filter(uuid__in=get_uuids(temba_contact.groups)))
+        groups = Group.get_all(org).filter(uuid__in=get_uuids(temba_contact.groups))
 
         kwargs = {
             'org': org,
