@@ -116,7 +116,7 @@ class ContactTest(TracProDataTest):
         models.Contact.objects.create(**kwargs)
 
         # we will test groups test seperately then take out of kwargs
-        self.assertEqual([g.uuid for g in kwargs['groups']], ['G-001', 'G-007'])
+        self.assertEqual(set([g.uuid for g in kwargs['groups']]), set(['G-001', 'G-007']))
         kwargs.pop('groups', None)
 
         self.assertDictEqual(kwargs, {
