@@ -674,27 +674,35 @@ class TestAnswer(TracProDataTest):
     def test_create(self):
         pollrun = factories.UniversalPollRun(
             poll=self.poll1, conducted_on=timezone.now())
-        response = Response.create_empty(
+        response1 = Response.create_empty(
             self.unicef, pollrun,
             Run.create(id=123, contact='C-001', created_on=timezone.now()))
 
         answer1 = factories.Answer(
-            response=response, question=self.poll1_question1,
+            response=response1, question=self.poll1_question1,
             value="4.00000", category="1 - 5")
-        self.assertEqual(answer1.response, response)
+        self.assertEqual(answer1.response, response1)
         self.assertEqual(answer1.question, self.poll1_question1)
         self.assertEqual(answer1.category, "1 - 5")
         self.assertEqual(answer1.value, "4.00000")
         self.assertEqual(answer1.value_to_use, "4.00000")
 
+        response2 = Response.create_empty(
+            self.unicef, pollrun,
+            Run.create(id=124, contact='C-002', created_on=timezone.now()))
+
         answer2 = factories.Answer(
-            response=response, question=self.poll1_question1,
+            response=response2, question=self.poll1_question1,
             value="rain", category=dict(base="Rain", rwa="Imvura"))
         self.assertEqual(answer2.category, "Rain")
         self.assertEqual(answer2.value_to_use, "rain")
 
+        response3 = Response.create_empty(
+            self.unicef, pollrun,
+            Run.create(id=125, contact='C-003', created_on=timezone.now()))
+
         answer3 = factories.Answer(
-            response=response, question=self.poll1_question1,
+            response=response3, question=self.poll1_question1,
             value="rain", category=dict(eng="Yes"))
         self.assertEqual(answer3.category, "Yes")
         self.assertEqual(answer3.value_to_use, "rain")
