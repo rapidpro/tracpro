@@ -24,7 +24,6 @@ def sync_pull_contacts(org, region_uuids, group_uuids):
     :return: tuple containing list of UUIDs for created, updated, deleted and failed contacts
     """
     from tracpro.contacts.models import Contact, NoMatchingCohortsWarning
-    from tracpro.groups.models import Group, Region
 
     # get all remote contacts for the specified groups
     client = get_client(org)
