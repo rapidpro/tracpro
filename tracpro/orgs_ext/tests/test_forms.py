@@ -173,7 +173,7 @@ class TestOrgExtForm(TracProTest):
         self.assertTrue(form.is_valid())
         form.save()
         org.refresh_from_db()
-        self.assertEqual('UA-54321', org.get_config('google_analytics'))
+        self.assertEqual('UA-54321', org.google_analytics)
 
     def test_validate_google_analytics(self, mock_sync):
         # If entered, GA code must start with "UA"
@@ -190,7 +190,7 @@ class TestOrgExtForm(TracProTest):
         self.assertTrue(form.is_valid())
         form.save()
         org.refresh_from_db()
-        self.assertEqual('', org.get_config('google_analytics'))
+        self.assertEqual('', org.google_analytics)
 
 
 class FetchRunsFormTest(TestCase):
@@ -256,6 +256,8 @@ class TestChangingHowRepeatedAnswersAreHandled(TracProDataTest):
             with mock.patch.object(Answer, 'update_own_sameday_values_and_others') as mock_update:
                 form.save()
             self.assertFalse(mock_update.call_args_list)
+            self.unicef.refresh_from_db()
+            self.assertEqual(SAMEDAY_LAST, self.unicef.how_to_handle_sameday_responses)
 
     def test_changed_last_to_sum(self):
         self.assertEqual(SAMEDAY_LAST, self.unicef.how_to_handle_sameday_responses)
@@ -276,6 +278,8 @@ class TestChangingHowRepeatedAnswersAreHandled(TracProDataTest):
             with mock.patch.object(Answer, 'update_own_sameday_values_and_others') as mock_update:
                 form.save()
             self.assertTrue(mock_update.call_args_list)
+            self.unicef.refresh_from_db()
+            self.assertEqual(SAMEDAY_SUM, self.unicef.how_to_handle_sameday_responses)
 
     def test_changed_sum_to_last(self):
         self.unicef.how_to_handle_sameday_responses = SAMEDAY_SUM
@@ -299,3 +303,5 @@ class TestChangingHowRepeatedAnswersAreHandled(TracProDataTest):
             with mock.patch.object(Answer, 'update_own_sameday_values_and_others') as mock_update:
                 form.save()
             self.assertTrue(mock_update.call_args_list)
+            self.unicef.refresh_from_db()
+            self.assertEqual(SAMEDAY_LAST, self.unicef.how_to_handle_sameday_responses)

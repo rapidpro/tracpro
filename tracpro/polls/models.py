@@ -801,11 +801,11 @@ class Answer(models.Model):
         the same day/contact/question.
         """
         answers = self.same_question_contact_and_day()
-        value = self.compute_value_to_use()
+        value_to_use = self.compute_value_to_use()
         # Update the database
-        answers.update(value_to_use=value)
+        answers.update(value_to_use=value_to_use)
         # And update this particular record in memory to avoid confusion
-        self.value_to_use = value
+        self.value_to_use = value_to_use
 
     def should_use_sum(self):
         """

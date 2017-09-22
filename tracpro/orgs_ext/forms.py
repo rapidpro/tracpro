@@ -137,7 +137,7 @@ class OrgExtForm(OrgForm):
             raise forms.ValidationError(_("Google analytics tracking codes start with UA-"))
         return value
 
-    def save(self, *args, **kwargs):
+    def save(self, commit=True):
         # Config field values are not set automatically.
         if 'available_languages' in self.fields:
             available_languages = self.cleaned_data.get('available_languages')
@@ -146,10 +146,10 @@ class OrgExtForm(OrgForm):
             show_spoof_data = self.cleaned_data.get('show_spoof_data')
             self.instance.show_spoof_data = show_spoof_data or False
         if 'google_analytics' in self.cleaned_data:
-            self.instance.set_config('google_analytics', self.cleaned_data.get('google_analytics'), False)
-        if 'how_to_handle_sameday_responses' in self.fields:
-            how_to_handle_sameday_responses = self.cleaned_data.get('how_to_handle_sameday_responses')
-            self.instance.how_to_handle_sameday_responses = how_to_handle_sameday_responses or SAMEDAY_LAST
+            self.instance.google_analytics = self.cleaned_data.get('google_analytics') or ''
+        if 'how_to_handle_sameday_responses' in self.cleaned_data:
+            self.instance.how_to_handle_sameday_responses = \
+                self.cleaned_data['how_to_handle_sameday_responses']
 
         if 'contact_fields' in self.fields:
             # Set hook that will be picked up by a post-save signal.
@@ -157,7 +157,7 @@ class OrgExtForm(OrgForm):
             # part of the transaction fails.
             self.instance._visible_data_fields = self.cleaned_data.get('contact_fields')
 
-        instance = super(OrgExtForm, self).save(*args, **kwargs)
+        instance = super(OrgExtForm, self).save(commit=commit)
 
         if 'how_to_handle_sameday_responses' in self.changed_data:
             # This org has changed how it handles sameday responses.
