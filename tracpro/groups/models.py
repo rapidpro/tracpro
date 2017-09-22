@@ -80,7 +80,7 @@ class AbstractGroup(models.Model):
     @classmethod
     def get_counts(cls, org, include_empty=False):
         """Return response counts for a region or
-           return contact counts for groups from the last 30 days.
+           return group counts for groups from the last 30 days.
            to find the most active groups below get_most_active()"""
         from tracpro.polls.models import Response
         responses = Response.objects.filter(pollrun__poll__org=org, is_active=True)
