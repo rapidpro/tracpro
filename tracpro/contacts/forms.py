@@ -38,7 +38,6 @@ class ContactForm(forms.ModelForm):
 
         regions = self.user.get_all_regions(org).order_by(Lower('name'))
         self.fields['region'].queryset = regions
-        self.fields['groups'].empty_label = ""
         self.fields['groups'].queryset = Group.get_all(org).order_by(Lower('name'))
 
         # Add form fields to update contact's DataField values.

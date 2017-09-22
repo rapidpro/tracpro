@@ -114,6 +114,10 @@ class ContactCRUDL(SmartCRUDL):
                 return dict(URN_SCHEME_CHOICES)[scheme]
             elif field in self.data_fields:
                 return self.data_fields.get(field).display_name
+
+            if field.startswith('groups'):
+                return _("Cohorts")
+
             return super(ContactCRUDL.Read, self).lookup_field_label(context, field, default)
 
         def lookup_field_value(self, context, obj, field):
@@ -141,6 +145,9 @@ class ContactCRUDL(SmartCRUDL):
             if field.startswith('pollrun_'):
                 pollrun = self.derive_pollruns()[field]
                 return "%s (%s)" % (pollrun.poll.name, pollrun.conducted_on.date())
+
+            if field.startswith('groups'):
+                return _("Cohorts")
 
             return super(ContactCRUDL.List, self).lookup_field_label(context, field, default)
 

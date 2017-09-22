@@ -179,8 +179,11 @@ class SyncPullTest(TracProDataTest):
             region_uuids=self.get_region_uuids(),
             group_uuids=self.get_group_uuids(),
         )
+
+        #
+        updated_contacts = [c for c in self.sync_contacts if c != new_temba_contact.uuid]
         self.assertTupleEqual(
-            ([new_temba_contact.uuid], self.sync_contacts, [], []),
+            ([new_temba_contact.uuid], updated_contacts, [], []),
             (created, updated, deleted, failed))
 
         # We have created a new contact:

@@ -28,7 +28,7 @@ def sync_pull_contacts(org, region_uuids, group_uuids):
 
     # get all remote contacts for the specified groups
     client = get_client(org)
-    incoming_contacts = client.get_contacts_in_groups(group_uuids | region_uuids) # sending all tracpros group and region uuids
+    incoming_contacts = client.get_contacts_in_groups(group_uuids | region_uuids)
 
     # get all existing local contacts (active or not) and organize by their UUID
     existing_contacts = Contact.objects.filter(org=org)
@@ -48,7 +48,11 @@ def sync_pull_contacts(org, region_uuids, group_uuids):
             # Just skip contacts without URNs
             continue
 
-        elif temba_contact.uuid in created_uuids or temba_contact.uuid in updated_uuids or temba_contact.uuid in deleted_uuids or temba_contact.uuid in failed_uuids:
+        elif temba_contact.uuid in created_uuids \
+                or temba_contact.uuid in updated_uuids \
+                or temba_contact.uuid in deleted_uuids \
+                or temba_contact.uuid in failed_uuids:
+
             msg = "%d Skipping duplicate contact: %s" % (total_contacts, temba_contact.name)
             logger.info(msg)
             continue
