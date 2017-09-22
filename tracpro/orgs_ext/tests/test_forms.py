@@ -3,13 +3,14 @@ from __future__ import unicode_literals
 import mock
 
 from django.core.exceptions import NON_FIELD_ERRORS
+from django.forms import model_to_dict
 from django.test import TestCase
 from django.test import override_settings
 
-from tracpro.orgs_ext.forms import FetchRunsForm
-from tracpro.polls.models import SAMEDAY_LAST
+from tracpro.orgs_ext.forms import FetchRunsForm, OrgExtForm
+from tracpro.polls.models import SAMEDAY_LAST, Answer, SAMEDAY_SUM, Question
 from tracpro.test import factories
-from tracpro.test.cases import TracProTest
+from tracpro.test.cases import TracProTest, TracProDataTest
 
 from .. import forms
 
@@ -222,3 +223,80 @@ class FetchRunsFormTest(TestCase):
         form = FetchRunsForm(data={'days': '1'})
         self.assertTrue(form.is_valid())
         self.assertEqual({'days': 1}, form.cleaned_data)
+
+
+class TestChangingHowRepeatedAnswersAreHandled(TracProDataTest):
+    how_to_handle_sameday_responses = SAMEDAY_LAST
+
+    def setUp(self):
+        super(TestChangingHowRepeatedAnswersAreHandled, self).setUp()
+        # Create an answer in the unicef org with a numeric question
+        # so we'll actually call Answer.update_own_sameday_values_and_others if needed
+        self.answer = factories.Answer(
+            question__poll__org=self.unicef,
+            question__question_type=Question.TYPE_NUMERIC,
+        )
+
+    def test_unchanged(self):
+        self.assertEqual(SAMEDAY_LAST, self.unicef.how_to_handle_sameday_responses)
+        with mock.patch('tracpro.orgs_ext.forms.DataField'):
+            data = model_to_dict(self.unicef)
+            data.update(dict(
+                administrators=list(self.unicef.administrators.values_list('pk', flat=True)),
+                viewers=[self.superuser.pk],
+                available_languages=self.unicef.available_languages,
+                modified_by=self.unicef.modified_by_id,
+                name=self.unicef.name,
+                language=self.unicef.language,
+                how_to_handle_sameday_responses=SAMEDAY_LAST,
+            ))
+            form = OrgExtForm(instance=self.unicef, data=data)
+            self.assertTrue(form.is_valid(), form.errors.as_data())
+            # No change - should not try to update answers
+            with mock.patch.object(Answer, 'update_own_sameday_values_and_others') as mock_update:
+                form.save()
+            self.assertFalse(mock_update.call_args_list)
+
+    def test_changed_last_to_sum(self):
+        self.assertEqual(SAMEDAY_LAST, self.unicef.how_to_handle_sameday_responses)
+        with mock.patch('tracpro.orgs_ext.forms.DataField'):
+            data = model_to_dict(self.unicef)
+            data.update(dict(
+                administrators=list(self.unicef.administrators.values_list('pk', flat=True)),
+                viewers=[self.superuser.pk],
+                available_languages=self.unicef.available_languages,
+                modified_by=self.unicef.modified_by_id,
+                name=self.unicef.name,
+                language=self.unicef.language,
+                how_to_handle_sameday_responses=SAMEDAY_SUM,
+            ))
+            form = OrgExtForm(instance=self.unicef, data=data)
+            self.assertTrue(form.is_valid(), form.errors.as_data())
+            # Changed - should try to update answers
+            with mock.patch.object(Answer, 'update_own_sameday_values_and_others') as mock_update:
+                form.save()
+            self.assertTrue(mock_update.call_args_list)
+
+
+    def test_changed_sum_to_last(self):
+        self.unicef.how_to_handle_sameday_responses = SAMEDAY_SUM
+        self.unicef.save()
+        self.unicef.refresh_from_db()
+        self.assertEqual(SAMEDAY_SUM, self.unicef.how_to_handle_sameday_responses)
+        with mock.patch('tracpro.orgs_ext.forms.DataField'):
+            data = model_to_dict(self.unicef)
+            data.update(dict(
+                administrators=list(self.unicef.administrators.values_list('pk', flat=True)),
+                viewers=[self.superuser.pk],
+                available_languages=self.unicef.available_languages,
+                modified_by=self.unicef.modified_by_id,
+                name=self.unicef.name,
+                language=self.unicef.language,
+                how_to_handle_sameday_responses=SAMEDAY_LAST,
+            ))
+            form = OrgExtForm(instance=self.unicef, data=data)
+            self.assertTrue(form.is_valid(), form.errors.as_data())
+            # Changed - should try to update answers
+            with mock.patch.object(Answer, 'update_own_sameday_values_and_others') as mock_update:
+                form.save()
+            self.assertTrue(mock_update.call_args_list)

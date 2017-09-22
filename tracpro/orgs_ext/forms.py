@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 from dash.orgs.forms import OrgForm
+from dash.orgs.models import Org
 from django.contrib.auth.models import User
 from django.db.models.functions import Lower
 
@@ -138,8 +139,6 @@ class OrgExtForm(OrgForm):
         return value
 
     def save(self, *args, **kwargs):
-        how_to_handle_was = self.instance.how_to_handle_sameday_responses
-
         # Config field values are not set automatically.
         if 'available_languages' in self.fields:
             available_languages = self.cleaned_data.get('available_languages')
@@ -161,7 +160,7 @@ class OrgExtForm(OrgForm):
 
         instance = super(OrgExtForm, self).save(*args, **kwargs)
 
-        if instance.how_to_handle_sameday_responses != how_to_handle_was:
+        if 'how_to_handle_sameday_responses' in self.changed_data:
             # This org has changed how it handles sameday responses.
             # We potentially need to update all this orgs' numeric answers.
             # This might be slow, but it's not going to need to happen
