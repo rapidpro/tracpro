@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 from dash.orgs.forms import OrgForm
 from django.contrib.auth.models import User
-from django.db.models import F
 from django.db.models.functions import Lower
 
 from temba_client.base import TembaAPIError
@@ -162,8 +161,8 @@ class OrgExtForm(OrgForm):
 
         instance = super(OrgExtForm, self).save(*args, **kwargs)
 
-        if instance.how_to_handle_sameday_responses == SAMEDAY_SUM and how_to_handle_was != SAMEDAY_SUM:
-            # This org has changed from not summing to summing.
+        if instance.how_to_handle_sameday_responses != how_to_handle_was:
+            # This org has changed how it handles sameday responses.
             # We potentially need to update all this orgs' numeric answers.
             # This might be slow, but it's not going to need to happen
             # very often at all.
@@ -171,14 +170,7 @@ class OrgExtForm(OrgForm):
                 question__poll__org=instance,
                 question__question_type=Question.TYPE_NUMERIC,
             ).distinct():
-                answer.update_own_summed_values_and_others()
-        elif how_to_handle_was == SAMEDAY_SUM and instance.how_to_handle_sameday_responses != SAMEDAY_SUM:
-            # This org has changed from summing to not summing.
-            # Reset the values we'll be using.
-            Answer.objects.filter(
-                question__poll__org=instance,
-                question__question_type=Question.TYPE_NUMERIC,
-            ).update(value_to_use=F('value'))
+                answer.update_own_sameday_values_and_others()
 
         return instance
 

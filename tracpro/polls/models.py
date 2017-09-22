@@ -787,17 +787,17 @@ class Answer(models.Model):
 
     def save(self, *args, **kwargs):
         is_new = self.pk is None
-        if is_new and not self.should_use_sum():
+        if is_new and not (self.should_use_sum() or self.should_use_last()):
             self.value_to_use = self.value
         super(Answer, self).save(*args, **kwargs)
-        if is_new and self.should_use_sum():
+        if is_new and (self.should_use_sum() or self.should_use_last()):
             # We created a new answer - we need to update the summed
             # values in this and maybe other answers
-            self.update_own_summed_values_and_others()
+            self.update_own_sameday_values_and_others()
 
-    def update_own_summed_values_and_others(self):
+    def update_own_sameday_values_and_others(self):
         """
-        Update the summed value for this answer, and any others on
+        Update the sameday value for this answer, and any others on
         the same day/contact/question.
         """
         answers = self.same_question_contact_and_day()
@@ -818,6 +818,17 @@ class Answer(models.Model):
         return (org.how_to_handle_sameday_responses == SAMEDAY_SUM and
                 question.question_type == Question.TYPE_NUMERIC)
 
+    def should_use_last(self):
+        """
+        Return true if we should use the latest of the response values from
+        the same contact on the same day for the same question
+        for this answer.
+        """
+        question = self.question
+        org = question.poll.org
+        return (org.how_to_handle_sameday_responses == SAMEDAY_LAST and
+                question.question_type == Question.TYPE_NUMERIC)
+
     def same_question_contact_and_day(self):
         """
         Return a queryset of answers that are the same question,
@@ -832,11 +843,15 @@ class Answer(models.Model):
 
     def compute_value_to_use(self):
         """
-        Normally, just return the value from rapidpro.
-        But if it's a numeric question and
+        If it's a numeric question and
         the org is configured to sum multiple responses on the same day from
         the same contact, look up all the answers from that contact to this
         question on this same day and return the sum of them as a float.
+
+        If it's a numeric question and the org is configured to use the
+        last response, find the last response and use its value.
+
+        Otherwise, use the value from rapidpro.
         """
         assert self.pk  # Don't use on unsaved records, it'll miss this record's value
         if self.should_use_sum():
@@ -844,5 +859,8 @@ class Answer(models.Model):
             # add them all up, including this one
             values = [float(a.value) for a in self.same_question_contact_and_day()]
             return "%f" % sum(values)
+        elif self.should_use_last():
+            answers = self.same_question_contact_and_day().order_by('-submitted_on')
+            return answers[0].value
         else:
             return self.value
