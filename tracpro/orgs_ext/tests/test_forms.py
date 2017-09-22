@@ -277,7 +277,6 @@ class TestChangingHowRepeatedAnswersAreHandled(TracProDataTest):
                 form.save()
             self.assertTrue(mock_update.call_args_list)
 
-
     def test_changed_sum_to_last(self):
         self.unicef.how_to_handle_sameday_responses = SAMEDAY_SUM
         self.unicef.save()

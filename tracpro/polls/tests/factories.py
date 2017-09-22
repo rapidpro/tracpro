@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-import datetime
 import json
 
 from dateutil.relativedelta import relativedelta

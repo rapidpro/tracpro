@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 
 from dash.orgs.forms import OrgForm
-from dash.orgs.models import Org
 from django.contrib.auth.models import User
 from django.db.models.functions import Lower
 
