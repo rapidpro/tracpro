@@ -53,3 +53,14 @@ def set_groups_to_new_contact(sender, instance, created, **kwargs):
         except IndexError:
             # The contact was created locally
             pass
+
+
+@receiver(post_save, sender=Contact)
+def set_groups_to_contact_for_push(sender, instance, **kwargs):
+    """Hook to save groups to a new contact created in TracPro"""
+    if not hasattr(instance, '_groups'):
+        return
+
+    if instance._groups is not None:
+        new_contact = Contact.objects.get(uuid=instance.uuid)
+        new_contact.groups = instance._groups

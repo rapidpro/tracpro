@@ -52,4 +52,6 @@ class ContactForm(forms.ModelForm):
         # Updating DataField values is managed by a post-save signal.
         field_values = {f: self.cleaned_data.pop(f, None) for f in self.data_field_keys}
         self.instance._data_field_values = field_values
+        # Saving groups is managed by a post-save signal.
+        self.instance._groups = self.cleaned_data['groups']
         return super(ContactForm, self).save(commit)
