@@ -11,7 +11,7 @@ from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
 
 from tracpro.contacts.models import DataField
-from tracpro.polls.models import Answer, Question, SAMEDAY_LAST, SAMEDAY_SUM
+from tracpro.polls.models import SAMEDAY_LAST, SAMEDAY_SUM
 
 from . import utils
 
@@ -157,20 +157,7 @@ class OrgExtForm(OrgForm):
             # part of the transaction fails.
             self.instance._visible_data_fields = self.cleaned_data.get('contact_fields')
 
-        instance = super(OrgExtForm, self).save(commit=commit)
-
-        if 'how_to_handle_sameday_responses' in self.changed_data:
-            # This org has changed how it handles sameday responses.
-            # We potentially need to update all this orgs' numeric answers.
-            # This might be slow, but it's not going to need to happen
-            # very often at all.
-            for answer in Answer.objects.filter(
-                question__poll__org=instance,
-                question__question_type=Question.TYPE_NUMERIC,
-            ).distinct():
-                answer.update_own_sameday_values_and_others()
-
-        return instance
+        return super(OrgExtForm, self).save(commit=commit)
 
 
 class FetchRunsForm(forms.Form):

@@ -276,10 +276,9 @@ class TestChangingHowRepeatedAnswersAreHandledFromLatestToSum(TracProDataTest):
             ))
             form = OrgExtForm(instance=self.unicef, data=data)
             self.assertTrue(form.is_valid(), form.errors.as_data())
-            # No change - should not try to update answers
             with mock.patch.object(Answer, 'update_own_sameday_values_and_others') as mock_update:
                 form.save()
-            self.assertFalse(mock_update.call_args_list)
+            self.assertTrue(mock_update.call_args_list)
             self.unicef.refresh_from_db()
             self.assertEqual(SAMEDAY_LAST, self.unicef.how_to_handle_sameday_responses)
             self.answer1.refresh_from_db()
