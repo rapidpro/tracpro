@@ -23,7 +23,7 @@ def sync_pull_contacts(org, region_uuids, group_uuids):
     :param group_uuidss: the contact group UUIDs used - used to determine if local contact differs
     :return: tuple containing list of UUIDs for created, updated, deleted and failed contacts
     """
-    from tracpro.contacts.models import Contact, NoMatchingCohortsWarning
+    from tracpro.contacts.models import Contact, NoMatchingCohortsWarning, NoUsableURNWarning
     from tracpro.groups.models import Group, Region
 
     # get all remote contacts for the specified groups
@@ -63,6 +63,10 @@ def sync_pull_contacts(org, region_uuids, group_uuids):
             try:
                 kwargs = Contact.kwargs_from_temba(org, temba_contact)
             except NoMatchingCohortsWarning as e:
+                logger.warning(e.message)
+                failed_uuids.append(temba_contact.uuid)
+                continue
+            except NoUsableURNWarning as e:
                 logger.warning(e.message)
                 failed_uuids.append(temba_contact.uuid)
                 continue

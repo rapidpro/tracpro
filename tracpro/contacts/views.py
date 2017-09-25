@@ -16,7 +16,7 @@ from smartmin.views import (
 
 from tracpro.polls.models import PollRun, Response
 
-from .fields import URN_SCHEME_CHOICES
+from .fields import URN_SCHEME_CHOICES, URN_SCHEME_LABELS
 from .forms import ContactForm
 from .models import Contact, ChangeType
 
@@ -112,8 +112,9 @@ class ContactCRUDL(SmartCRUDL):
         def lookup_field_label(self, context, field, default=None):
             if field == 'urn':
                 scheme = self.object.get_urn()[0]
-                return dict(URN_SCHEME_CHOICES)[scheme]
-            elif field in self.data_fields:
+                if scheme in URN_SCHEME_LABELS:
+                    return URN_SCHEME_LABELS[scheme]
+            if field in self.data_fields:
                 return self.data_fields.get(field).display_name
             return super(ContactCRUDL.Read, self).lookup_field_label(context, field, default)
 

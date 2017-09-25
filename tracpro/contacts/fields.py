@@ -5,12 +5,40 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 
 
-URN_SCHEME_TEL = 'tel'
-URN_SCHEME_TWITTER = 'twitter'
-URN_SCHEME_CHOICES = (
-    (URN_SCHEME_TEL, _("Phone")),
-    (URN_SCHEME_TWITTER, _("Twitter")),
-)
+# LATEST URN schemes from RapidPro - Sept 2017
+# WE only use the scheme value (this list) and the label (2nd item in each entry, next list)
+EMAIL_SCHEME = 'mailto'
+EXTERNAL_SCHEME = 'ext'
+FACEBOOK_SCHEME = 'facebook'
+JIOCHAT_SCHEME = 'jiochat'
+LINE_SCHEME = 'line'
+TEL_SCHEME = 'tel'
+TELEGRAM_SCHEME = 'telegram'
+TWILIO_SCHEME = 'twilio'
+TWITTER_SCHEME = 'twitter'
+TWITTERID_SCHEME = 'twitterid'
+VIBER_SCHEME = 'viber'
+FCM_SCHEME = 'fcm'
+
+# Scheme, Label, Export/Import Header, Context Key
+URN_SCHEME_CONFIG = ((TEL_SCHEME, _("Phone number"), 'phone', 'tel_e164'),
+                     (FACEBOOK_SCHEME, _("Facebook identifier"), 'facebook', FACEBOOK_SCHEME),
+                     (TWITTER_SCHEME, _("Twitter handle"), 'twitter', TWITTER_SCHEME),
+                     (TWITTERID_SCHEME, _("Twitter ID"), 'twitterid', TWITTERID_SCHEME),
+                     (VIBER_SCHEME, _("Viber identifier"), 'viber', VIBER_SCHEME),
+                     (LINE_SCHEME, _("LINE identifier"), 'line', LINE_SCHEME),
+                     (TELEGRAM_SCHEME, _("Telegram identifier"), 'telegram', TELEGRAM_SCHEME),
+                     (EMAIL_SCHEME, _("Email address"), 'email', EMAIL_SCHEME),
+                     (EXTERNAL_SCHEME, _("External identifier"), 'external', EXTERNAL_SCHEME),
+                     (JIOCHAT_SCHEME, _("Jiochat identifier"), 'jiochat', JIOCHAT_SCHEME),
+                     (FCM_SCHEME, _("Firebase Cloud Messaging identifier"), 'fcm', FCM_SCHEME))
+
+URN_SCHEME_CHOICES = [
+    (c[0], c[1])
+    for c in URN_SCHEME_CONFIG
+]
+
+URN_SCHEME_LABELS = dict(URN_SCHEME_CHOICES)
 
 
 class URNWidget(forms.widgets.MultiWidget):
@@ -25,7 +53,7 @@ class URNWidget(forms.widgets.MultiWidget):
         if value:
             return value.split(':', 1)
         else:
-            return URN_SCHEME_TEL, ''
+            return TEL_SCHEME, ''
 
     def render(self, name, value, attrs=None):
         output = ['<div class="urn-widget">',
