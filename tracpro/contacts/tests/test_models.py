@@ -59,7 +59,7 @@ class ContactTest(TracProDataTest):
         self.assertEqual(contact.modified_by, self.user1)
         self.assertIsNotNone(contact.modified_on)
         self.assertEqual(contact.groups.count(), 3)
-        self.assertEqual(contact.groups.all()[0].uuid, 'G-005')
+        self.assertEqual(set([g.uuid for g in contact.groups.all()]), set(['G-005', 'G-007', 'G-006']))
 
         contact.push(ChangeType.created)
 
