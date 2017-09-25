@@ -11,6 +11,7 @@ from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
 
 from tracpro.contacts.models import DataField
+from tracpro.polls.models import SAMEDAY_LAST, SAMEDAY_SUM
 
 from . import utils
 
@@ -65,6 +66,15 @@ class OrgExtForm(OrgForm):
         required=False,
         help_text=_("Tracking code to use for Google Analytics"),
     )
+    how_to_handle_sameday_responses = forms.ChoiceField(
+        required=True,
+        choices=[
+            (SAMEDAY_LAST, _('Use last value submitted on that day by each contact')),
+            (SAMEDAY_SUM, _('Use sum of responses on that day by each contact')),
+        ],
+        help_text=_('How to chart responses to numeric questions when the same contact '
+                    'responds more than once in the same day'),
+    )
 
     def __init__(self, *args, **kwargs):
         super(OrgExtForm, self).__init__(*args, **kwargs)
@@ -82,6 +92,8 @@ class OrgExtForm(OrgForm):
         self.fields['available_languages'].initial = self.instance.available_languages or []
         self.fields['show_spoof_data'].initial = self.instance.show_spoof_data or False
         self.fields['google_analytics'].initial = self.instance.get_config('google_analytics', '')
+        self.fields['how_to_handle_sameday_responses'].initial =\
+            self.instance.get_config('how_to_handle_sameday_responses', SAMEDAY_LAST)
 
         # Sort the administrators
         self.fields['administrators'].queryset \
@@ -125,7 +137,7 @@ class OrgExtForm(OrgForm):
             raise forms.ValidationError(_("Google analytics tracking codes start with UA-"))
         return value
 
-    def save(self, *args, **kwargs):
+    def save(self, commit=True):
         # Config field values are not set automatically.
         if 'available_languages' in self.fields:
             available_languages = self.cleaned_data.get('available_languages')
@@ -134,7 +146,10 @@ class OrgExtForm(OrgForm):
             show_spoof_data = self.cleaned_data.get('show_spoof_data')
             self.instance.show_spoof_data = show_spoof_data or False
         if 'google_analytics' in self.cleaned_data:
-            self.instance.set_config('google_analytics', self.cleaned_data.get('google_analytics'), False)
+            self.instance.google_analytics = self.cleaned_data.get('google_analytics') or ''
+        if 'how_to_handle_sameday_responses' in self.cleaned_data:
+            self.instance.how_to_handle_sameday_responses = \
+                self.cleaned_data['how_to_handle_sameday_responses']
 
         if 'contact_fields' in self.fields:
             # Set hook that will be picked up by a post-save signal.
@@ -142,7 +157,7 @@ class OrgExtForm(OrgForm):
             # part of the transaction fails.
             self.instance._visible_data_fields = self.cleaned_data.get('contact_fields')
 
-        return super(OrgExtForm, self).save(*args, **kwargs)
+        return super(OrgExtForm, self).save(commit=commit)
 
 
 class FetchRunsForm(forms.Form):

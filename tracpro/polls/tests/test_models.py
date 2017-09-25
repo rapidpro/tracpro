@@ -10,15 +10,17 @@ import pytz
 
 from unittest import skip
 
+from django.utils.timezone import now
 from temba_client.v2.types import Run
 
 from django.db import IntegrityError
 from django.utils import timezone
 
+from tracpro.polls.models import SAMEDAY_LAST
 from tracpro.test import factories
 from tracpro.test.cases import TracProTest, TracProDataTest
 
-from ..models import Poll, PollRun, Response
+from ..models import Poll, PollRun, Response, SAMEDAY_SUM
 from .. import models
 
 
@@ -180,24 +182,6 @@ class TestPoll(TracProTest):
         """flow_uuid can be repeated with different Orgs."""
         factories.Poll(org=factories.Org(), flow_uuid='abc')
         factories.Poll(org=factories.Org(), flow_uuid='abc')
-
-    def test_get_flow_definition(self):
-        """Flow definition should be retrieved from the API and cached on the poll."""
-        flow = {
-            'metadata': {
-                'uuid': 'abc',
-            },
-        }
-        self.mock_temba_client.get_definitions.return_value = factories.TembaExport(flows=[flow])
-        poll = factories.Poll()
-        self.assertFalse(hasattr(poll, '_flow_definition'))
-        for i in range(2):
-            # The result of the method should be cached on the poll.
-            self.assertEqual(poll.get_flow_definition(), flow)
-            self.assertEqual(poll._flow_definition, flow)
-
-            # API call count should not go up.
-            self.assertEqual(self.mock_temba_client.get_definitions.call_count, 1)
 
 
 class TestQuestionQueryset(TracProTest):
@@ -501,7 +485,7 @@ class PollRunTest(TracProDataTest):
             Run.create(id=123, contact='C-001', created_on=timezone.now()))
         factories.Answer(
             response=response1, question=self.poll1_question1,
-            value="4.00000", category="1 - 5")
+            value=str(4.0), category="1 - 5")
         factories.Answer(
             response=response1, question=self.poll1_question2,
             value="It's very rainy", category="All Responses")
@@ -511,7 +495,7 @@ class PollRunTest(TracProDataTest):
             Run.create(id=234, contact='C-002', created_on=timezone.now()))
         factories.Answer(
             response=response2, question=self.poll1_question1,
-            value="3.00000", category="1 - 5")
+            value=str(3.0), category="1 - 5")
         factories.Answer(
             response=response2, question=self.poll1_question2,
             value="rainy and rainy", category="All Responses")
@@ -521,7 +505,7 @@ class PollRunTest(TracProDataTest):
             Run.create(id=345, contact='C-004', created_on=timezone.now()))
         factories.Answer(
             response=response3, question=self.poll1_question1,
-            value="8.00000", category="6 - 10")
+            value=str(8.0), category="6 - 10")
         factories.Answer(
             response=response3, question=self.poll1_question2,
             value="Sunny sunny", category="All Responses")
@@ -548,13 +532,13 @@ class TestResponse(TracProDataTest):
                 Run.Value.create(
                     category="1 - 50",
                     node='RS-001',
-                    value="6.00000000",
+                    value=str(6.0),
                     time=datetime.datetime(2014, 1, 2, 3, 4, 5, 6, pytz.UTC)
                 ),
                 Run.Value.create(
                     category="1 - 25",
                     node='RS-002',
-                    value="4.00000000",
+                    value=str(4.0),
                     time=datetime.datetime(2015, 1, 2, 3, 4, 5, 6, pytz.UTC),
                 ),
             ],
@@ -574,13 +558,13 @@ class TestResponse(TracProDataTest):
 
         answers = list(response1.answers.order_by('question_id'))
         self.assertEqual(answers[0].question, self.poll1_question1)
-        self.assertEqual(answers[0].value, "6.00000000")
+        self.assertEqual(answers[0].value, str(6.0))
         self.assertEqual(answers[0].category, "1 - 50")
         self.assertEqual(
             answers[0].submitted_on,
             datetime.datetime(2014, 1, 2, 3, 4, 5, 6, pytz.UTC))
         self.assertEqual(answers[1].question, self.poll1_question2)
-        self.assertEqual(answers[1].value, "4.00000000")
+        self.assertEqual(answers[1].value, str(4.0))
         self.assertEqual(answers[1].category, "1 - 25")
         self.assertEqual(
             answers[1].submitted_on,
@@ -596,7 +580,7 @@ class TestResponse(TracProDataTest):
                 Run.Value.create(
                     category="1 - 50",
                     node='RS-001',
-                    value="6.00000000",
+                    value=str(6.0),
                     time=datetime.datetime(2014, 1, 2, 3, 4, 5, 6, pytz.UTC),
                 ),
             ],
@@ -624,13 +608,13 @@ class TestResponse(TracProDataTest):
                 Run.Value.create(
                     category="1 - 50",
                     node='RS-001',
-                    value="6.00000000",
+                    value=str(6.0),
                     time=datetime.datetime(2014, 1, 2, 3, 4, 5, 6, pytz.UTC),
                 ),
                 Run.Value.create(
                     category="1 - 25",
                     node='RS-002',
-                    value="4.00000000",
+                    value=str(4.0),
                     time=datetime.datetime(2015, 1, 2, 3, 4, 5, 6, pytz.UTC),
                 ),
             ],
@@ -692,27 +676,153 @@ class TestAnswer(TracProDataTest):
     def test_create(self):
         pollrun = factories.UniversalPollRun(
             poll=self.poll1, conducted_on=timezone.now())
-        response = Response.create_empty(
+        response1 = Response.create_empty(
             self.unicef, pollrun,
             Run.create(id=123, contact='C-001', created_on=timezone.now()))
 
         answer1 = factories.Answer(
-            response=response, question=self.poll1_question1,
-            value="4.00000", category="1 - 5")
-        self.assertEqual(answer1.response, response)
+            response=response1, question=self.poll1_question1,
+            value=str(4.0), category="1 - 5")
+        self.assertEqual(answer1.response, response1)
         self.assertEqual(answer1.question, self.poll1_question1)
         self.assertEqual(answer1.category, "1 - 5")
-        self.assertEqual(answer1.value, "4.00000")
+        self.assertEqual(answer1.value, str(4.0))
+        self.assertEqual(answer1.value_to_use, str(4.0))
+
+        response2 = Response.create_empty(
+            self.unicef, pollrun,
+            Run.create(id=124, contact='C-002', created_on=timezone.now()))
 
         answer2 = factories.Answer(
-            response=response, question=self.poll1_question1,
+            response=response2, question=self.poll1_question1,
             value="rain", category=dict(base="Rain", rwa="Imvura"))
         self.assertEqual(answer2.category, "Rain")
+        self.assertEqual(answer2.value_to_use, "rain")
+
+        response3 = Response.create_empty(
+            self.unicef, pollrun,
+            Run.create(id=125, contact='C-003', created_on=timezone.now()))
 
         answer3 = factories.Answer(
-            response=response, question=self.poll1_question1,
+            response=response3, question=self.poll1_question1,
             value="rain", category=dict(eng="Yes"))
         self.assertEqual(answer3.category, "Yes")
+        self.assertEqual(answer3.value_to_use, "rain")
+
+    def test_same_question_contact_and_day(self):
+        poll = self.poll1_question1.poll
+        response1 = factories.Response(pollrun__poll=poll)
+        answer1 = factories.Answer(
+            response=response1,
+            question=self.poll1_question1,
+            value=str(4.0),
+            category="1 - 5",
+            submitted_on=now() - datetime.timedelta(minutes=5),
+        )
+
+        response2 = factories.Response(pollrun__poll=poll, contact=response1.contact)
+        answer2 = factories.Answer(
+            response=response2,
+            question=self.poll1_question1,
+            submitted_on=now() - datetime.timedelta(minutes=2),
+        )
+
+        response3 = factories.Response(pollrun__poll=poll, contact=response1.contact)
+        answer3 = factories.Answer(
+            response=response3,
+            question=self.poll1_question1,
+            submitted_on=now(),
+        )
+
+        self.assertEqual(3, len(answer1.same_question_contact_and_day()))
+        self.assertEqual(3, len(answer2.same_question_contact_and_day()))
+        self.assertEqual(3, len(answer3.same_question_contact_and_day()))
+
+
+class TestAnswerSumming(TracProDataTest):
+    how_to_handle_sameday_responses = SAMEDAY_SUM
+
+    def test_create_with_summing(self):
+        pollrun = factories.UniversalPollRun(
+            poll=self.poll1, conducted_on=timezone.now())
+        response = factories.Response(pollrun=pollrun)
+
+        answer1 = factories.Answer(
+            response=response, question=self.poll1_question1,
+            value=str(4.0), category="1 - 5")
+        self.assertEqual(answer1.value, str(4.0))  # untouched
+        self.assertEqual(answer1.value_to_use, str(4.0))
+
+        # Another response, same contact
+        response2 = factories.Response(pollrun=pollrun, contact=response.contact)
+        answer2 = factories.Answer(
+            response=response2,
+            question=self.poll1_question1,  # same question
+            value=str(8.0),  # new value
+            submitted_on=answer1.submitted_on,  # same day (exactly!)
+        )
+        self.assertEqual(answer2.value, str(8.0))
+        self.assertEqual(answer2.value_to_use, str(12.0))
+        answer1.refresh_from_db()  # This should have been updated in the DB
+        self.assertEqual(answer1.value_to_use, str(12.0))
+
+    def test_phone_numbers_not_summed(self):
+        # Really this is testing error handling, since "phone numbers" aren't "numbers"
+        # and shouldn't be in numeric questions' answers anyway.
+        pollrun = factories.UniversalPollRun(
+            poll=self.poll1, conducted_on=timezone.now())
+        response = factories.Response(pollrun=pollrun)
+
+        answer1 = factories.Answer(
+            response=response, question=self.poll1_question1,
+            value="444-5555", category="1 - 5")
+        self.assertEqual(answer1.value, "444-5555")  # untouched
+        self.assertEqual(answer1.value_to_use, "444-5555")
+
+        # Another response, same contact
+        response2 = factories.Response(pollrun=pollrun, contact=response.contact)
+        answer2 = factories.Answer(
+            response=response2,
+            question=self.poll1_question1,  # same question
+            value="555-1212",  # new value
+            submitted_on=answer1.submitted_on,  # same day (exactly!)
+        )
+        self.assertEqual(answer2.value, "555-1212")
+        self.assertEqual(answer2.value_to_use, "555-1212")
+        answer1.refresh_from_db()
+        self.assertEqual(answer1.value_to_use, "444-5555")
+
+    def test_last_answer(self):
+        pollrun = factories.UniversalPollRun(
+            poll=self.poll1, conducted_on=timezone.now())
+        pollrun.poll.org.how_to_handle_sameday_responses = SAMEDAY_LAST
+        pollrun.poll.org.save()
+        response = factories.Response(
+            pollrun=pollrun
+        )
+        answer1 = factories.Answer(
+            response=response, question=self.poll1_question1,
+            value=str(4.0),
+            submitted_on=now() - datetime.timedelta(minutes=5),
+            category="1 - 5")
+        self.assertEqual(answer1.value, str(4.0))  # untouched
+        self.assertEqual(answer1.value_to_use, str(4.0))
+
+        # Another response, same contact
+        response2 = factories.Response(
+            pollrun=pollrun,
+            contact=response.contact
+        )
+        answer2 = factories.Answer(
+            response=response2,
+            question=self.poll1_question1,  # same question
+            value=str(8.0),  # new value
+            submitted_on=now(),
+        )
+        self.assertEqual(answer2.value, str(8.0))
+        self.assertEqual(answer2.value_to_use, str(8.0))
+        answer1.refresh_from_db()  # This should have been updated in the DB
+        self.assertEqual(answer1.value_to_use, str(8.0))
 
 
 class TestAnswerQuerySet(TracProDataTest):
@@ -738,7 +848,7 @@ class TestAnswerQuerySet(TracProDataTest):
             response__pollrun=self.pollrun,
             response__status=models.Response.STATUS_COMPLETE,
             question=self.question1,
-            value="4.00000",
+            value=str(4.0),
             category="numeric")
 
         factories.Answer(
@@ -747,7 +857,7 @@ class TestAnswerQuerySet(TracProDataTest):
             response__pollrun=self.pollrun,
             response__status=models.Response.STATUS_COMPLETE,
             question=self.question1,
-            value="3.00000",
+            value=str(3.0),
             category="numeric")
 
         factories.Answer(
@@ -756,7 +866,7 @@ class TestAnswerQuerySet(TracProDataTest):
             response__pollrun=self.pollrun,
             response__status=models.Response.STATUS_COMPLETE,
             question=self.question1,
-            value="8.00000", category="numeric")
+            value=str(8.0), category="numeric")
 
     def test_autocategorize(self):
         # autocategorize breaks down numeric results into categories
@@ -786,7 +896,7 @@ class TestAnswerQuerySet(TracProDataTest):
             response__pollrun=self.pollrun,
             response__status=models.Response.STATUS_COMPLETE,
             question=self.question1,
-            value="10.2",
+            value=str(10.2),
             category="foo")
 
         # We skip any non-numeric response, even if category is 'numeric'

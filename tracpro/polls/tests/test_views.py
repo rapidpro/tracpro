@@ -1,7 +1,9 @@
 # coding=utf-8
 from __future__ import absolute_import, unicode_literals
 
+import csv
 import datetime
+from StringIO import StringIO
 
 import pytz
 
@@ -113,3 +115,18 @@ class ResponseCRUDLTest(TracProDataTest):
         self.assertEqual(len(responses), 2)
         # newest non-empty first
         self.assertEqual(responses, [self.pollrun2_r1, self.pollrun1_r1])
+
+    def test_fetching_pollruns_csv(self):
+        # log in as admin
+        self.login(self.admin)
+
+        url = reverse('polls.response_by_pollrun', args=[self.pollrun1.pk]) + "?_format=csv"
+        response = self.url_get('unicef', url)
+        self.assertEqual(200, response.status_code)
+        self.assertEqual('text/csv', response['Content-Type'])
+
+        rows = [row for row in csv.reader(StringIO(response.content.decode('utf-8')))]
+        self.assertEqual(rows[0], ['Date', 'Name', 'URN', 'Panel', 'Cohort', 'Number of sheep', 'How is the weather?'])
+        self.assertEqual(rows[1], ['Jan 01, 2014 12:30', 'Bob', 'tel:2345', 'Kandahar', 'Farmers', '6.0000', ''])
+        self.assertEqual(rows[2], ['Jan 01, 2014 11:30', 'Ann', 'tel:1234', 'Kandahar', 'Farmers', '5.0000', 'Sunny'])
+        self.assertEqual(3, len(rows))

@@ -551,11 +551,11 @@ class ResponseCRUDL(smartmin.SmartCRUDL):
                 if answer:
                     if question.question_type == Question.TYPE_RECORDING:
                         return '<a class="answer answer-audio" href="%s" data-answer-id="%d">Play</a>' % (
-                            answer.value,
+                            answer.value_to_use,
                             answer.pk,
                         )
                     else:
-                        return answer.value
+                        return answer.value_to_use
                 else:
                     return '--'
             else:
@@ -618,7 +618,7 @@ class ResponseCRUDL(smartmin.SmartCRUDL):
                     answers_by_question_id = {a.question_id: a for a in resp.answers.all()}
                     for question in questions:
                         answer = answers_by_question_id.get(question.pk, None)
-                        answer_cols.append(answer.value if answer else '')
+                        answer_cols.append(answer.value_to_use if answer else '')
 
                     writer.writerow(resp_cols + contact_cols + answer_cols)
 
@@ -664,7 +664,7 @@ class ResponseCRUDL(smartmin.SmartCRUDL):
                 if not answer:
                     answer_display = ""
                 elif question.question_type == Question.TYPE_OPEN:
-                    answer_display = answer.value
+                    answer_display = answer.value_to_use
                 else:
                     answer_display = answer.category
 

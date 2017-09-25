@@ -329,6 +329,17 @@ ORG_CONFIG_FIELDS = [
             'required': False,
         },
     },
+    {
+        'name': 'how_to_handle_sameday_responses',
+        'field': {
+            'help_text': _(
+                "How to handle multiple responses to the same numeric question by the "
+                "same contact in the same day. "
+                "Values: 'use_last', 'sum'.  "
+                "The default is 'use_last'."),
+            'required': False,
+        }
+    }
 ]
 
 PERMISSIONS = {
