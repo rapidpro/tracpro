@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 from dash.orgs.forms import OrgForm
 from django.contrib.auth.models import User
-from django.db.models import F
 from django.db.models.functions import Lower
 
 from temba_client.base import TembaAPIError
@@ -12,7 +11,7 @@ from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
 
 from tracpro.contacts.models import DataField
-from tracpro.polls.models import Answer, Question, SAMEDAY_LAST, SAMEDAY_SUM
+from tracpro.polls.models import SAMEDAY_LAST, SAMEDAY_SUM
 
 from . import utils
 
@@ -138,9 +137,7 @@ class OrgExtForm(OrgForm):
             raise forms.ValidationError(_("Google analytics tracking codes start with UA-"))
         return value
 
-    def save(self, *args, **kwargs):
-        how_to_handle_was = self.instance.how_to_handle_sameday_responses
-
+    def save(self, commit=True):
         # Config field values are not set automatically.
         if 'available_languages' in self.fields:
             available_languages = self.cleaned_data.get('available_languages')
@@ -149,10 +146,10 @@ class OrgExtForm(OrgForm):
             show_spoof_data = self.cleaned_data.get('show_spoof_data')
             self.instance.show_spoof_data = show_spoof_data or False
         if 'google_analytics' in self.cleaned_data:
-            self.instance.set_config('google_analytics', self.cleaned_data.get('google_analytics'), False)
-        if 'how_to_handle_sameday_responses' in self.fields:
-            how_to_handle_sameday_responses = self.cleaned_data.get('how_to_handle_sameday_responses')
-            self.instance.how_to_handle_sameday_responses = how_to_handle_sameday_responses or SAMEDAY_LAST
+            self.instance.google_analytics = self.cleaned_data.get('google_analytics') or ''
+        if 'how_to_handle_sameday_responses' in self.cleaned_data:
+            self.instance.how_to_handle_sameday_responses = \
+                self.cleaned_data['how_to_handle_sameday_responses']
 
         if 'contact_fields' in self.fields:
             # Set hook that will be picked up by a post-save signal.
@@ -160,27 +157,7 @@ class OrgExtForm(OrgForm):
             # part of the transaction fails.
             self.instance._visible_data_fields = self.cleaned_data.get('contact_fields')
 
-        instance = super(OrgExtForm, self).save(*args, **kwargs)
-
-        if instance.how_to_handle_sameday_responses == SAMEDAY_SUM and how_to_handle_was != SAMEDAY_SUM:
-            # This org has changed from not summing to summing.
-            # We potentially need to update all this orgs' numeric answers.
-            # This might be slow, but it's not going to need to happen
-            # very often at all.
-            for answer in Answer.objects.filter(
-                question__poll__org=instance,
-                question__question_type=Question.TYPE_NUMERIC,
-            ).distinct():
-                answer.update_own_summed_values_and_others()
-        elif how_to_handle_was == SAMEDAY_SUM and instance.how_to_handle_sameday_responses != SAMEDAY_SUM:
-            # This org has changed from summing to not summing.
-            # Reset the values we'll be using.
-            Answer.objects.filter(
-                question__poll__org=instance,
-                question__question_type=Question.TYPE_NUMERIC,
-            ).update(value_to_use=F('value'))
-
-        return instance
+        return super(OrgExtForm, self).save(commit=commit)
 
 
 class FetchRunsForm(forms.Form):

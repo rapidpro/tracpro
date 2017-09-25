@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-import datetime
 import json
 
 from dateutil.relativedelta import relativedelta
@@ -112,9 +111,9 @@ class Response(factory.django.DjangoModelFactory):
     flow_run_id = factory.Sequence(lambda n: n)
     pollrun = factory.SubFactory('tracpro.test.factories.PollRun')
     contact = factory.SubFactory('tracpro.test.factories.Contact')
-    created_on = factory.fuzzy.FuzzyDate(
-        start_date=datetime.date.today() - relativedelta(days=7),
-        end_date=datetime.date.today())
+    created_on = factory.fuzzy.FuzzyDateTime(
+        start_dt=now() - relativedelta(days=7),
+        end_dt=now())
     updated_on = factory.LazyAttribute(lambda o: o.created_on)
     status = factory.fuzzy.FuzzyChoice(c[0] for c in models.Response.STATUS_CHOICES)
 

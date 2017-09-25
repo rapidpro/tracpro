@@ -787,25 +787,38 @@ class Answer(models.Model):
 
     def save(self, *args, **kwargs):
         is_new = self.pk is None
-        if is_new and not self.should_use_sum():
+        if is_new and not (self.should_use_sum() or self.should_use_last()):
             self.value_to_use = self.value
         super(Answer, self).save(*args, **kwargs)
-        if is_new and self.should_use_sum():
+        if is_new and (self.should_use_sum() or self.should_use_last()):
             # We created a new answer - we need to update the summed
             # values in this and maybe other answers
-            self.update_own_summed_values_and_others()
+            self.update_own_sameday_values_and_others()
 
-    def update_own_summed_values_and_others(self):
+    @property
+    def org(self):
+        return self.question.poll.org
+
+    def update_own_sameday_values_and_others(self):
         """
-        Update the summed value for this answer, and any others on
+        Update the sameday value for this answer, and any others on
         the same day/contact/question.
+
+        If any of the values to sum aren't valid floats, set the value
+        to use for this answer to its value, and don't change any other
+        records.
         """
-        answers = self.same_question_contact_and_day()
-        value = self.compute_value_to_use()
-        # Update the database
-        answers.update(value_to_use=value)
-        # And update this particular record in memory to avoid confusion
-        self.value_to_use = value
+        try:
+            value_to_use = self.compute_value_to_use()
+        except ValueError:
+            self.value_to_use = self.value
+            self.save()
+            return
+        else:
+            # Update the database
+            self.same_question_contact_and_day().update(value_to_use=value_to_use)
+            # And update this particular record in memory to avoid confusion
+            self.value_to_use = value_to_use
 
     def should_use_sum(self):
         """
@@ -813,9 +826,18 @@ class Answer(models.Model):
         the same contact on the same day for the same question
         for this answer.
         """
+        return (self.org.how_to_handle_sameday_responses == SAMEDAY_SUM and
+                self.question.question_type == Question.TYPE_NUMERIC)
+
+    def should_use_last(self):
+        """
+        Return true if we should use the latest of the response values from
+        the same contact on the same day for the same question
+        for this answer.
+        """
         question = self.question
         org = question.poll.org
-        return (org.how_to_handle_sameday_responses == SAMEDAY_SUM and
+        return (org.how_to_handle_sameday_responses == SAMEDAY_LAST and
                 question.question_type == Question.TYPE_NUMERIC)
 
     def same_question_contact_and_day(self):
@@ -832,17 +854,29 @@ class Answer(models.Model):
 
     def compute_value_to_use(self):
         """
-        Normally, just return the value from rapidpro.
-        But if it's a numeric question and
+        If it's a numeric question and
         the org is configured to sum multiple responses on the same day from
         the same contact, look up all the answers from that contact to this
         question on this same day and return the sum of them as a float.
+
+        If it's a numeric question and the org is configured to use the
+        last response, find the last response and use its value.
+
+        Otherwise, use the value from rapidpro.
+
+        IF any of the values we try to sum are not valid floats, this
+        will throw a ValueError which the caller must handle.
         """
         assert self.pk  # Don't use on unsaved records, it'll miss this record's value
         if self.should_use_sum():
             # Include inactive responses from same contact on same day and
             # add them all up, including this one
+            # ALLOW ValueError to propagate
             values = [float(a.value) for a in self.same_question_contact_and_day()]
-            return "%f" % sum(values)
+            # Use the sum
+            return str(sum(values))
+        elif self.should_use_last():
+            answers = self.same_question_contact_and_day().order_by('-submitted_on')
+            return answers[0].value
         else:
             return self.value
