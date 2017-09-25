@@ -795,17 +795,30 @@ class Answer(models.Model):
             # values in this and maybe other answers
             self.update_own_sameday_values_and_others()
 
+    @property
+    def org(self):
+        return self.question.poll.org
+
     def update_own_sameday_values_and_others(self):
         """
         Update the sameday value for this answer, and any others on
         the same day/contact/question.
+
+        If any of the values to sum aren't valid floats, set the value
+        to use for this answer to its value, and don't change any other
+        records.
         """
-        answers = self.same_question_contact_and_day()
-        value_to_use = self.compute_value_to_use()
-        # Update the database
-        answers.update(value_to_use=value_to_use)
-        # And update this particular record in memory to avoid confusion
-        self.value_to_use = value_to_use
+        try:
+            value_to_use = self.compute_value_to_use()
+        except ValueError:
+            self.value_to_use = self.value
+            self.save()
+            return
+        else:
+            # Update the database
+            self.same_question_contact_and_day().update(value_to_use=value_to_use)
+            # And update this particular record in memory to avoid confusion
+            self.value_to_use = value_to_use
 
     def should_use_sum(self):
         """
@@ -813,10 +826,8 @@ class Answer(models.Model):
         the same contact on the same day for the same question
         for this answer.
         """
-        question = self.question
-        org = question.poll.org
-        return (org.how_to_handle_sameday_responses == SAMEDAY_SUM and
-                question.question_type == Question.TYPE_NUMERIC)
+        return (self.org.how_to_handle_sameday_responses == SAMEDAY_SUM and
+                self.question.question_type == Question.TYPE_NUMERIC)
 
     def should_use_last(self):
         """
@@ -852,13 +863,18 @@ class Answer(models.Model):
         last response, find the last response and use its value.
 
         Otherwise, use the value from rapidpro.
+
+        IF any of the values we try to sum are not valid floats, this
+        will throw a ValueError which the caller must handle.
         """
         assert self.pk  # Don't use on unsaved records, it'll miss this record's value
         if self.should_use_sum():
             # Include inactive responses from same contact on same day and
             # add them all up, including this one
+            # ALLOW ValueError to propagate
             values = [float(a.value) for a in self.same_question_contact_and_day()]
-            return "%f" % sum(values)
+            # Use the sum
+            return str(sum(values))
         elif self.should_use_last():
             answers = self.same_question_contact_and_day().order_by('-submitted_on')
             return answers[0].value

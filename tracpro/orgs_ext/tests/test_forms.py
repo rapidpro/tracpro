@@ -1,11 +1,13 @@
 from __future__ import unicode_literals
 
+import datetime
 import mock
 
 from django.core.exceptions import NON_FIELD_ERRORS
 from django.forms import model_to_dict
 from django.test import TestCase
 from django.test import override_settings
+from django.utils.timezone import now
 
 from tracpro.orgs_ext.forms import FetchRunsForm, OrgExtForm
 from tracpro.polls.models import SAMEDAY_LAST, Answer, SAMEDAY_SUM, Question
@@ -225,16 +227,38 @@ class FetchRunsFormTest(TestCase):
         self.assertEqual({'days': 1}, form.cleaned_data)
 
 
-class TestChangingHowRepeatedAnswersAreHandled(TracProDataTest):
+class TestChangingHowRepeatedAnswersAreHandledFromLatestToSum(TracProDataTest):
     how_to_handle_sameday_responses = SAMEDAY_LAST
 
     def setUp(self):
-        super(TestChangingHowRepeatedAnswersAreHandled, self).setUp()
-        # Create an answer in the unicef org with a numeric question
-        # so we'll actually call Answer.update_own_sameday_values_and_others if needed
-        self.answer = factories.Answer(
-            question__poll__org=self.unicef,
+        super(TestChangingHowRepeatedAnswersAreHandledFromLatestToSum, self).setUp()
+
+        org = self.unicef
+
+        # 2 responses to the same question
+        self.response1 = factories.Response(
+            pollrun__poll__org=org,
+            contact__org=org,
+            created_on=now() - datetime.timedelta(minutes=1)
+        )
+        self.answer1 = factories.Answer(
+            response=self.response1,
+            question__poll=self.response1.pollrun.poll,
             question__question_type=Question.TYPE_NUMERIC,
+            value=str(1.0),
+            submitted_on=now() - datetime.timedelta(minutes=1),
+        )
+        self.response2 = factories.Response(
+            pollrun__poll__org=org,
+            contact=self.response1.contact,
+            contact__org=org,
+            created_on=now()
+        )
+        self.answer2 = factories.Answer(
+            response=self.response2,
+            question=self.answer1.question,
+            value=str(3.0),
+            submitted_on=now()
         )
 
     def test_unchanged(self):
@@ -258,8 +282,12 @@ class TestChangingHowRepeatedAnswersAreHandled(TracProDataTest):
             self.assertFalse(mock_update.call_args_list)
             self.unicef.refresh_from_db()
             self.assertEqual(SAMEDAY_LAST, self.unicef.how_to_handle_sameday_responses)
+            self.answer1.refresh_from_db()
+            self.assertEqual(str(3.0), self.answer1.value_to_use)
+            self.answer2.refresh_from_db()
+            self.assertEqual(str(3.0), self.answer2.value_to_use)
 
-    def test_changed_last_to_sum(self):
+    def test_changed_last_to_sum_calls_update(self):
         self.assertEqual(SAMEDAY_LAST, self.unicef.how_to_handle_sameday_responses)
         with mock.patch('tracpro.orgs_ext.forms.DataField'):
             data = model_to_dict(self.unicef)
@@ -278,14 +306,69 @@ class TestChangingHowRepeatedAnswersAreHandled(TracProDataTest):
             with mock.patch.object(Answer, 'update_own_sameday_values_and_others') as mock_update:
                 form.save()
             self.assertTrue(mock_update.call_args_list)
+
+    def test_changed_last_to_sum_sets_new_value(self):
+        self.assertEqual(SAMEDAY_LAST, self.unicef.how_to_handle_sameday_responses)
+        with mock.patch('tracpro.orgs_ext.forms.DataField'):
+            data = model_to_dict(self.unicef)
+            data.update(dict(
+                administrators=list(self.unicef.administrators.values_list('pk', flat=True)),
+                viewers=[self.superuser.pk],
+                available_languages=self.unicef.available_languages,
+                modified_by=self.unicef.modified_by_id,
+                name=self.unicef.name,
+                language=self.unicef.language,
+                how_to_handle_sameday_responses=SAMEDAY_SUM,
+            ))
+            form = OrgExtForm(instance=self.unicef, data=data)
+            self.assertTrue(form.is_valid(), form.errors.as_data())
+            # Changed - should try to update answers
+            form.save()
             self.unicef.refresh_from_db()
             self.assertEqual(SAMEDAY_SUM, self.unicef.how_to_handle_sameday_responses)
+            self.answer1.refresh_from_db()
+            self.assertEqual(SAMEDAY_SUM, self.answer1.org.how_to_handle_sameday_responses)
+            self.assertEqual(str(4.0), self.answer1.value_to_use)
+            self.answer2.refresh_from_db()
+            self.assertEqual(SAMEDAY_SUM, self.answer2.org.how_to_handle_sameday_responses)
+            self.assertEqual(str(4.0), self.answer2.value_to_use)
 
-    def test_changed_sum_to_last(self):
-        self.unicef.how_to_handle_sameday_responses = SAMEDAY_SUM
-        self.unicef.save()
-        self.unicef.refresh_from_db()
-        self.assertEqual(SAMEDAY_SUM, self.unicef.how_to_handle_sameday_responses)
+
+class TestChangingHowRepeatedAnswersAreHandledFromSumToLatest(TracProDataTest):
+    how_to_handle_sameday_responses = SAMEDAY_SUM
+
+    def setUp(self):
+        super(TestChangingHowRepeatedAnswersAreHandledFromSumToLatest, self).setUp()
+
+        org = self.unicef
+
+        # 2 responses to the same question
+        self.response1 = factories.Response(
+            pollrun__poll__org=org,
+            contact__org=org,
+            created_on=now() - datetime.timedelta(minutes=1)
+        )
+        self.answer1 = factories.Answer(
+            response=self.response1,
+            question__poll=self.response1.pollrun.poll,
+            question__question_type=Question.TYPE_NUMERIC,
+            value=str(1.0),
+            submitted_on=now() - datetime.timedelta(minutes=1),
+        )
+        self.response2 = factories.Response(
+            pollrun__poll__org=org,
+            contact=self.response1.contact,
+            contact__org=org,
+            created_on=now()
+        )
+        self.answer2 = factories.Answer(
+            response=self.response2,
+            question=self.answer1.question,
+            value=str(3.0),
+            submitted_on=now()
+        )
+
+    def test_changed_sum_to_last_calls_update(self):
         with mock.patch('tracpro.orgs_ext.forms.DataField'):
             data = model_to_dict(self.unicef)
             data.update(dict(
@@ -303,5 +386,31 @@ class TestChangingHowRepeatedAnswersAreHandled(TracProDataTest):
             with mock.patch.object(Answer, 'update_own_sameday_values_and_others') as mock_update:
                 form.save()
             self.assertTrue(mock_update.call_args_list)
+
+    def test_changed_sum_to_last_changes_value(self):
+        self.assertEqual(SAMEDAY_SUM, self.unicef.how_to_handle_sameday_responses)
+        self.answer1.refresh_from_db()
+        self.assertEqual(str(4.0), self.answer1.value_to_use)
+        self.answer2.refresh_from_db()
+        self.assertEqual(str(4.0), self.answer2.value_to_use)
+        with mock.patch('tracpro.orgs_ext.forms.DataField'):
+            data = model_to_dict(self.unicef)
+            data.update(dict(
+                administrators=list(self.unicef.administrators.values_list('pk', flat=True)),
+                viewers=[self.superuser.pk],
+                available_languages=self.unicef.available_languages,
+                modified_by=self.unicef.modified_by_id,
+                name=self.unicef.name,
+                language=self.unicef.language,
+                how_to_handle_sameday_responses=SAMEDAY_LAST,
+            ))
+            form = OrgExtForm(instance=self.unicef, data=data)
+            self.assertTrue(form.is_valid(), form.errors.as_data())
+            # Changed - should try to update answers
+            form.save()
             self.unicef.refresh_from_db()
             self.assertEqual(SAMEDAY_LAST, self.unicef.how_to_handle_sameday_responses)
+            self.answer1.refresh_from_db()
+            self.assertEqual(str(3.0), self.answer1.value_to_use)
+            self.answer2.refresh_from_db()
+            self.assertEqual(str(3.0), self.answer2.value_to_use)
