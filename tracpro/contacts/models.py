@@ -21,7 +21,7 @@ from dash.utils import datetime_to_ms
 from temba_client.v2.types import Contact as TembaContact, ObjectRef
 
 from tracpro.client import get_client
-from tracpro.contacts.fields import URN_SCHEME_CHOICES, URN_SCHEME_LABELS
+from tracpro.contacts.fields import URN_SCHEME_LABELS
 from tracpro.groups.models import Region, Group
 from tracpro.orgs_ext.constants import TaskType
 from tracpro.utils import get_uuids
@@ -39,6 +39,7 @@ class NoMatchingCohortsWarning(Exception):
     raising this exception.
     """
     pass
+
 
 class NoUsableURNWarning(Exception):
     pass

@@ -16,7 +16,7 @@ from smartmin.views import (
 
 from tracpro.polls.models import PollRun, Response
 
-from .fields import URN_SCHEME_CHOICES, URN_SCHEME_LABELS
+from .fields import URN_SCHEME_LABELS
 from .forms import ContactForm
 from .models import Contact, ChangeType
 
