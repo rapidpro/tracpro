@@ -90,8 +90,15 @@ def pollrun_start(pollrun_id):
         contacts = contacts.filter(region=pollrun.region)
     contact_uuids = list(contacts.values_list('uuid', flat=True))
 
-    runs = client.create_flow_start(
-        flow=pollrun.poll.flow_uuid, urns=None, contacts=contact_uuids, restart_participants=True)
+    runs = []
+    # There's a limit of 100 contacts per call to create_flow_start (why?)
+    while len(contact_uuids):
+        runs.extend(
+            client.create_flow_start(
+                flow=pollrun.poll.flow_uuid, urns=None, contacts=contact_uuids[:100],
+                restart_participants=True)
+        )
+        contact_uuids = contact_uuids[100:]
 
     for run in runs:
         Response.create_empty(org, pollrun, run)

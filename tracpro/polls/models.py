@@ -17,7 +17,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from tracpro.charts.utils import midnight, end_of_day
 from tracpro.client import get_client
-from tracpro.contacts.models import Contact, NoMatchingCohortsWarning
+from tracpro.contacts.models import Contact, NoMatchingCohortsWarning, NoContactInRapidProWarning
 
 from . import rules
 from .tasks import pollrun_start
@@ -591,7 +591,7 @@ class Response(models.Model):
 
         try:
             contact = Contact.get_or_fetch(poll.org, uuid=run.contact.uuid)
-        except NoMatchingCohortsWarning as e:
+        except (NoMatchingCohortsWarning, NoContactInRapidProWarning) as e:
             # Callers expect a ValueError if we don't sync the response
             raise ValueError("not syncing run because %s" % e.args[0])
 
