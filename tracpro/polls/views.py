@@ -614,7 +614,7 @@ class ResponseCRUDL(smartmin.SmartCRUDL):
                     contact_cols = [
                         resp.contact.name, resp.contact.urn,
                         resp.contact.region,
-                        ', '.join(group.name.encode('utf-8') for group in resp.contact.groups.all()),
+                        ', '.join(group.name.encode('utf-8') for group in resp.contact.groups.all().order_by('name')),
                         ]
                     answer_cols = []
 
