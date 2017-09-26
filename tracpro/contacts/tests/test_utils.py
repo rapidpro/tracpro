@@ -192,7 +192,14 @@ class SyncPullTest(TracProDataTest):
         new_kwargs = c.as_temba().serialize()
         del original_kwargs['modified_on']
         del new_kwargs['modified_on']
-        self.assertDictEqual(original_kwargs, new_kwargs)
+        self.assertEqual(original_kwargs['uuid'], new_kwargs['uuid'])
+        self.assertEqual(original_kwargs['language'], new_kwargs['language'])
+        self.assertEqual(original_kwargs['fields'], new_kwargs['fields'])
+        self.assertEqual(original_kwargs['created_on'], new_kwargs['created_on'])
+        self.assertEqual(original_kwargs['name'], new_kwargs['name'])
+        self.assertEqual(original_kwargs['urns'], new_kwargs['urns'])
+        self.assertEqual(original_kwargs['groups'], new_kwargs['groups'])
+
 
     def test_new_contact_with_no_urns(self):
         # Work around the overloaded 'delete' method on Contact to really delete contact1 locally,
