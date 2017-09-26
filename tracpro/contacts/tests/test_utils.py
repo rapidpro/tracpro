@@ -200,7 +200,6 @@ class SyncPullTest(TracProDataTest):
         self.assertEqual(original_kwargs['urns'], new_kwargs['urns'])
         self.assertEqual(original_kwargs['groups'], new_kwargs['groups'])
 
-
     def test_new_contact_with_no_urns(self):
         # Work around the overloaded 'delete' method on Contact to really delete contact1 locally,
         # so as far as our code is concerned, this will be a new contact when we
