@@ -3,6 +3,13 @@ from __future__ import unicode_literals
 from django.conf import settings
 
 from tracpro.orgs_ext.utils import is_supervisor
+from tracpro.utils import is_production
+
+
+def deploy_is_production(request):
+    return {
+        'is_production': is_production(),
+    }
 
 
 def user_is_admin(request):

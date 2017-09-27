@@ -125,6 +125,10 @@
                   <ul class='dropdown-menu'>
                     <li><a href='{% url 'orgs_ext.org_list' %}'> {% trans "Organizations" %} </a></li>
                     <li><a href='{% url 'profiles.admin_list' %}'> {% trans "Users" %} </a></li>
+                    {% if not is_production %}
+                      <li><a href='{% url 'force_contacts_sync' %}'>Force contacts sync</a></li>
+                      <li><a href='{% url 'force_runs_sync' %}'>Force runs sync</a></li>
+                    {% endif %}
                   </ul>
                 </li>
               {% endif %}

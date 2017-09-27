@@ -20,6 +20,7 @@ from smartmin.templatetags.smartmin import format_datetime
 
 from tracpro.contacts.models import Contact
 from tracpro.groups.models import Group, Region
+from tracpro.polls.tasks import FetchOrgRuns
 
 from . import charts, forms, maps, tasks
 from .models import Poll, Question, PollRun, Response
@@ -687,3 +688,16 @@ class ResponseCRUDL(smartmin.SmartCRUDL):
             context = super(ResponseCRUDL.ByContact, self).get_context_data(**kwargs)
             context['contact'] = self.derive_contact()
             return context
+
+
+def force_runs_sync(request):
+    if not request.user.is_superuser:
+        return redirect('home.home')
+    fetcher = FetchOrgRuns()
+    errors = fetcher.org_task(request.org)
+    if errors:
+        for err in errors:
+            messages.error(request, err)
+    else:
+        messages.info(request, "Runs appear to have been fetched okay")
+    return redirect('home.home')

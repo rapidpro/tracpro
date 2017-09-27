@@ -18,7 +18,6 @@ from django.utils.translation import ugettext_lazy as _
 from tracpro.charts.utils import midnight, end_of_day
 from tracpro.client import get_client
 from tracpro.contacts.models import Contact, NoMatchingCohortsWarning
-from tracpro.groups.models import Region
 
 from . import rules
 from .tasks import pollrun_start
@@ -592,11 +591,9 @@ class Response(models.Model):
 
         try:
             contact = Contact.get_or_fetch(poll.org, uuid=run.contact.uuid)
-        except NoMatchingCohortsWarning:
+        except NoMatchingCohortsWarning as e:
             # Callers expect a ValueError if we don't sync the response
-            raise ValueError(
-                "not syncing run because contact %s does not exist locally and has no matching cohorts among %r"
-                % (run.contact.uuid, Region.get_all(org)))
+            raise ValueError("not syncing run because %s" % e.args[0])
 
         # categorize completeness
         if run.exit_type == u'completed':

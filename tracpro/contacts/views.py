@@ -6,8 +6,10 @@ import pycountry
 
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from dash.utils import get_obj_cacheable
+from django.contrib import messages
 
 from django.http import JsonResponse
+from django.shortcuts import redirect
 from django.utils.translation import ugettext_lazy as _
 
 from smartmin.views import (
@@ -194,3 +196,15 @@ class ContactCRUDL(SmartCRUDL):
     class Delete(OrgObjPermsMixin, ContactBase, SmartDeleteView):
         cancel_url = '@contacts.contact_list'
         redirect_url = '@contacts.contact_list'
+
+
+def force_contacts_sync(request):
+    if not request.user.is_superuser:
+        return redirect('home.home')
+    errors = Contact.objects.sync(request.org)
+    if errors:
+        for err in errors:
+            messages.error(request, err)
+    else:
+        messages.info(request, 'Contacts synced, apparently okay')
+    return redirect('home.home')

@@ -152,7 +152,7 @@ class SyncPullTest(TracProDataTest):
         return set(get_uuids(self.sync_groups))
 
     def test_no_change(self):
-        created, updated, deleted, failed = sync_pull_contacts(
+        created, updated, deleted, failed, errors = sync_pull_contacts(
             org=self.org,
             region_uuids=self.get_region_uuids(),
             group_uuids=self.get_group_uuids(),
@@ -164,6 +164,7 @@ class SyncPullTest(TracProDataTest):
         # on the region/cohort relationship
 
         self.assertTupleEqual(([], self.sync_contacts, [], []), (created, updated, deleted, failed))
+        self.assertFalse(errors)
 
     def test_new_contact_in_rapidpro(self):
         original_kwargs = self.contact1.as_temba().serialize()
@@ -174,7 +175,7 @@ class SyncPullTest(TracProDataTest):
         # see it come back from Rapidpro.
         Contact.objects.filter(uuid=self.contact1.uuid).delete()
 
-        created, updated, deleted, failed = sync_pull_contacts(
+        created, updated, deleted, failed, errors = sync_pull_contacts(
             org=self.org,
             region_uuids=self.get_region_uuids(),
             group_uuids=self.get_group_uuids(),
@@ -213,13 +214,14 @@ class SyncPullTest(TracProDataTest):
         # Remove the urns from that contact as we'll see it from rapidpro
         self.rapidpro_contacts_as_temba[0].urns = []
 
-        created, updated, deleted, failed = sync_pull_contacts(
+        created, updated, deleted, failed, errors = sync_pull_contacts(
             org=self.org,
             region_uuids=self.get_region_uuids(),
             group_uuids=self.get_group_uuids(),
         )
         # We do *not* see the new contact (or blow up)
         self.assertTupleEqual(([], self.sync_contacts, [], []), (created, updated, deleted, failed))
+        self.assertFalse(errors)
 
     def test_modified_contact_in_rapidpro(self):
         # Have "rapidpro" return a new name on the first contact in the list
@@ -230,7 +232,7 @@ class SyncPullTest(TracProDataTest):
         existing_contact = Contact.objects.get(uuid=modified.uuid)
 
         # Sync and see what happens
-        created, updated, deleted, failed = sync_pull_contacts(
+        created, updated, deleted, failed, errors = sync_pull_contacts(
             org=self.org,
             region_uuids=self.get_region_uuids(),
             group_uuids=self.get_group_uuids(),
@@ -241,11 +243,12 @@ class SyncPullTest(TracProDataTest):
         c = Contact.objects.get(uuid=self.rapidpro_contacts_as_temba[0].uuid)
         self.assertEqual(c.pk, existing_contact.pk)
         self.assertEqual(c.name, new_name)
+        self.assertFalse(errors)
 
     def test_deleted_contact_in_rapidpro(self):
         deleted_rapidpro_contact = self.rapidpro_contacts_as_temba.pop()
         self.deleted_rapidpro_contacts.append(deleted_rapidpro_contact)
-        created, updated, deleted, failed = sync_pull_contacts(
+        created, updated, deleted, failed, errors = sync_pull_contacts(
             org=self.org,
             region_uuids=self.get_region_uuids(),
             group_uuids=self.get_group_uuids(),
@@ -255,12 +258,13 @@ class SyncPullTest(TracProDataTest):
         # Our contact has changed to is_active=False
         c = Contact.objects.get(uuid=deleted_rapidpro_contact.uuid)
         self.assertFalse(c.is_active)
+        self.assertFalse(errors)
 
     def test_blocked_contact_in_rapidpro(self):
         blocked_contact = self.rapidpro_contacts_as_temba[0]
         blocked_contact.blocked = True
         self.sync_contacts.remove(blocked_contact.uuid)
-        created, updated, deleted, failed = sync_pull_contacts(
+        created, updated, deleted, failed, errors = sync_pull_contacts(
             org=self.org,
             region_uuids=self.get_region_uuids(),
             group_uuids=self.get_group_uuids(),
@@ -270,3 +274,4 @@ class SyncPullTest(TracProDataTest):
         # Our contact has changed to is_active=False
         c = Contact.objects.get(uuid=blocked_contact.uuid)
         self.assertFalse(c.is_active)
+        self.assertFalse(errors)
