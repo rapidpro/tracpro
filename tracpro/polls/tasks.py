@@ -30,6 +30,8 @@ class FetchOrgRuns(OrgTask):
         from tracpro.orgs_ext.constants import TaskType
         from tracpro.polls.models import Poll, PollRun, Response
 
+        errors = []
+
         client = get_client(org)
         redis_connection = get_redis_connection()
         last_time_key = LAST_FETCHED_RUN_TIME_KEY % org.pk
@@ -56,6 +58,7 @@ class FetchOrgRuns(OrgTask):
                     Response.from_run(org, run, poll=poll)
                 except ValueError as e:
                     logger.error("Unable to save run #%d due to error: %s" % (run.id, e.message))
+                    errors.append("Unable to save run #%d due to error: %s" % (run.id, e.message))
                     continue
 
         logger.info("Fetched %d new and updated runs for org #%d (since=%s)"
@@ -65,6 +68,7 @@ class FetchOrgRuns(OrgTask):
         org.set_task_result(TaskType.fetch_runs, task_result)
 
         redis_connection.set(last_time_key, format_iso8601(until))
+        return errors
 
 
 @task

@@ -21,7 +21,8 @@ def sync_pull_contacts(org, region_uuids, group_uuids):
 
     :param org: the org
     :param group_uuidss: the contact group UUIDs used - used to determine if local contact differs
-    :return: tuple containing list of UUIDs for created, updated, deleted and failed contacts
+    :return: tuple containing list of UUIDs for created, updated, deleted and failed contacts,
+     and error/warning messages
     """
     from tracpro.contacts.models import Contact, NoMatchingCohortsWarning
     from tracpro.groups.models import Group, Region
@@ -38,6 +39,7 @@ def sync_pull_contacts(org, region_uuids, group_uuids):
     updated_uuids = []
     deleted_uuids = []
     failed_uuids = []
+    errors = []
 
     total_contacts = 0
     for temba_contact in incoming_contacts:
@@ -65,6 +67,7 @@ def sync_pull_contacts(org, region_uuids, group_uuids):
             except NoMatchingCohortsWarning as e:
                 logger.warning(e.message)
                 failed_uuids.append(temba_contact.uuid)
+                errors.append(e.message)
                 continue
 
             for field, value in six.iteritems(kwargs):
@@ -87,6 +90,7 @@ def sync_pull_contacts(org, region_uuids, group_uuids):
             except NoMatchingCohortsWarning as e:
                 logger.warning(e.message)
                 failed_uuids.append(temba_contact.uuid)
+                errors.append(e.message)
                 continue
 
             msg = "%d Adding NEW contact: %s" % (total_contacts, temba_contact.name)
@@ -120,7 +124,8 @@ def sync_pull_contacts(org, region_uuids, group_uuids):
     return (list(set(created_uuids)),
             list(set(updated_uuids)),
             list(set(deleted_uuids)),
-            list(set(failed_uuids)))
+            list(set(failed_uuids)),
+            errors)
 
 
 def temba_compare_contacts(first, second, fields=None, groups=None):

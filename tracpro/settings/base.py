@@ -205,6 +205,7 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'dash.orgs.context_processors.user_group_perms_processor',
     'dash.orgs.context_processors.set_org_processor',
     'dash.context_processors.lang_direction',
+    'tracpro.orgs_ext.context_processors.deploy_is_production',
     'tracpro.orgs_ext.context_processors.user_is_admin',
     'tracpro.orgs_ext.context_processors.available_languages',
     'tracpro.orgs_ext.context_processors.google_analytics',

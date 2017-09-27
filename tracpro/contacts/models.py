@@ -1,6 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
 import datetime
+import traceback
 from decimal import Decimal, InvalidOperation
 import logging
 from uuid import uuid4
@@ -65,7 +66,7 @@ class ContactManager(models.Manager.from_queryset(ContactQuerySet)):
             region_uuids = set(get_uuids(Region.get_all(org)))
             group_uuids = set(get_uuids(Group.get_all(org)))
 
-            created, updated, deleted, failed = sync_pull_contacts(
+            created, updated, deleted, failed, errors = sync_pull_contacts(
                 org=org,
                 region_uuids=region_uuids,
                 group_uuids=group_uuids
@@ -82,6 +83,8 @@ class ContactManager(models.Manager.from_queryset(ContactQuerySet)):
             })
         except:
             logger.exception("EXCEPTION in ContactManager.sync")
+            return [traceback.format_exc()]
+        return errors
 
 
 @python_2_unicode_compatible
