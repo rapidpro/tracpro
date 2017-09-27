@@ -198,7 +198,9 @@ class SyncPullTest(TracProDataTest):
         self.assertEqual(original_kwargs['created_on'], new_kwargs['created_on'])
         self.assertEqual(original_kwargs['name'], new_kwargs['name'])
         self.assertEqual(original_kwargs['urns'], new_kwargs['urns'])
-        self.assertEqual(original_kwargs['groups'], new_kwargs['groups'])
+        original_group_uuids = [grp['uuid'] for grp in original_kwargs['groups']]
+        new_group_uuids = [grp['uuid'] for grp in new_kwargs['groups']]
+        self.assertEqual(set(original_group_uuids), set(new_group_uuids))
 
     def test_new_contact_with_no_urns(self):
         # Work around the overloaded 'delete' method on Contact to really delete contact1 locally,

@@ -97,8 +97,6 @@ def sync_pull_contacts(org, region_uuids, group_uuids):
             # but we already know the groups so we can skip that. This bit will let
             # the signal handler know which groups to add without having to call Rapidpro.
 
-            # TODO: find this signal handler
-
             # create new contact from kwargs
             new_contact = Contact.objects.create(**kwargs)
 

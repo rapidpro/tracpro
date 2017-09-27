@@ -359,9 +359,10 @@ class PollRunCRUDL(smartmin.SmartCRUDL):
             overall_counts = {'E': 0, 'P': 0, 'C': 0}
 
             # Calculate all reporter group or region activity per group or region
+
             for group_or_region in groups_or_regions:
                 if group_by_reporter_group:
-                    responses_group = responses.filter(contact__groups__name=group_or_region)
+                    responses_group = responses.filter(contact__groups=group_or_region)
                 else:
                     responses_group = responses.filter(contact__region=group_or_region)
                 if responses_group:
@@ -545,7 +546,7 @@ class ResponseCRUDL(smartmin.SmartCRUDL):
             if field == 'region':
                 return obj.contact.region
             elif field == 'groups':
-                return ', '.join(group.name.encode('utf-8') for group in obj.contact.groups.all())
+                return ', '.join(group.name.encode('utf-8') for group in obj.contact.groups.all().order_by('name'))
             elif field.startswith('question_'):
                 question = self.derive_questions()[field]
                 answer = obj.answers.filter(question=question).first()
