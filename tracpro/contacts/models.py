@@ -100,9 +100,9 @@ class Contact(models.Model):
         verbose_name=_("Full name"), max_length=128, blank=True,
         help_text=_("The name of this contact"))
     urn = models.CharField(
-        verbose_name=_("Phone/Twitter etc."),
+        verbose_name=_("Phone/Twitter"),
         max_length=255,
-        help_text=_("How to communicate with this contact."))
+        help_text=_("Phone number or Twitter handle of this contact."))
     region = models.ForeignKey(
         'groups.Region', verbose_name=_("Panel"), related_name='contacts',
         help_text=_("Panel of this contact."))
