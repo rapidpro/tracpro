@@ -22,6 +22,7 @@ from dash.utils import datetime_to_ms
 from temba_client.v2.types import Contact as TembaContact, ObjectRef
 
 from tracpro.client import get_client
+from tracpro.contacts.fields import URN_SCHEME_LABELS
 from tracpro.groups.models import Region, Group
 from tracpro.orgs_ext.constants import TaskType
 from tracpro.utils import get_uuids
@@ -38,6 +39,10 @@ class NoMatchingCohortsWarning(Exception):
     Have Contact.kwargs_from_temba be a little more specific about this case by
     raising this exception.
     """
+    pass
+
+
+class NoUsableURNWarning(Exception):
     pass
 
 
@@ -237,10 +242,26 @@ class Contact(models.Model):
         # Use all the Temba groups that match one of the org's Groups. (cohort)
         groups = Group.get_all(org).filter(uuid__in=get_uuids(temba_contact.groups))
 
+        # Use the first URN we know about the scheme of
+        urn = None
+        for u in temba_contact.urns:
+            scheme, value = u.split(':', 1)
+            if scheme in URN_SCHEME_LABELS:
+                urn = u
+                break  # it's a urn we can use
+        if urn is None:
+            raise NoUsableURNWarning(
+                "Unable to save contact {c.name} ({c.uuid}) because none of "
+                "their URNs ({c.urns}) are for schemes that tracpro supports ({schemes})".format(
+                    c=temba_contact,
+                    schemes=URN_SCHEME_LABELS.keys(),
+                )
+            )
+
         kwargs = {
             'org': org,
             'name': temba_contact.name or "",
-            'urn': temba_contact.urns[0],
+            'urn': urn,
             'region': region,
             'groups': groups,
             'language': temba_contact.language,

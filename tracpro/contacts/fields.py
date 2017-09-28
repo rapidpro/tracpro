@@ -7,10 +7,17 @@ from django.utils.translation import ugettext_lazy as _
 
 URN_SCHEME_TEL = 'tel'
 URN_SCHEME_TWITTER = 'twitter'
+URN_SCHEME_TWITTERID = 'twitterid'
 URN_SCHEME_CHOICES = (
     (URN_SCHEME_TEL, _("Phone")),
-    (URN_SCHEME_TWITTER, _("Twitter")),
+    (URN_SCHEME_TWITTER, _("Twitter handle")),
+    (URN_SCHEME_TWITTERID, _("Twitter ID")),
 )
+
+URN_SCHEME_LABELS = {
+    scheme: label
+    for scheme, label in URN_SCHEME_CHOICES
+}
 
 
 class URNWidget(forms.widgets.MultiWidget):
@@ -37,6 +44,13 @@ class URNWidget(forms.widgets.MultiWidget):
 class URNField(forms.fields.MultiValueField):
 
     def __init__(self, *args, **kwargs):
+        kwargs.setdefault(
+            'help_text',
+            _('Format of Twitter handle is just the handle without the "@" at the front. '
+              'Format of Twitter ID is <numeric id>#<Twitter handle> (again, no "@"). '
+              'Format of phone number must include "+" and country code '
+              '(e.g. "+1" for North America).'),
+        )
         fields = (forms.ChoiceField(choices=URN_SCHEME_CHOICES),
                   forms.CharField(max_length=32))
         super(URNField, self).__init__(fields, *args, **kwargs)

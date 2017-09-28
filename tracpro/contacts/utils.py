@@ -24,7 +24,7 @@ def sync_pull_contacts(org, region_uuids, group_uuids):
     :return: tuple containing list of UUIDs for created, updated, deleted and failed contacts,
      and error/warning messages
     """
-    from tracpro.contacts.models import Contact, NoMatchingCohortsWarning
+    from tracpro.contacts.models import Contact, NoMatchingCohortsWarning, NoUsableURNWarning
 
     # get all remote contacts for the specified groups
     client = get_client(org)
@@ -76,6 +76,10 @@ def sync_pull_contacts(org, region_uuids, group_uuids):
                 logger.warning(e.message)
                 failed_uuids.append(temba_contact.uuid)
                 errors.append(e.message)
+                continue
+            except NoUsableURNWarning as e:
+                logger.warning(e.message)
+                failed_uuids.append(temba_contact.uuid)
                 continue
 
             for field, value in six.iteritems(kwargs):
