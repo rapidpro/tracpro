@@ -8,7 +8,6 @@ from django.core.exceptions import ValidationError
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 
-
 URN_SCHEME_TEL = 'tel'
 URN_SCHEME_TWITTER = 'twitter'
 URN_SCHEME_TWITTERID = 'twitterid'
@@ -54,25 +53,59 @@ def validate_twitter_handle(handle):
               "characters."))
 
 
-def validate_twitter_id(twitter_id):
-    if not twitter_id.is_digit():  # True only if all chars are digits
+def validate_numeric_twitter_id(numeric_id):
+    if not numeric_id.isdigit():  # True only if all chars are digits
         raise ValidationError(
-            _("That is not a valid format Twitter ID.  A valid ID has only "
+            _("That is not a valid format Twitter ID.  A valid numeric ID has only "
               "numbers 0-9."))
 
 
-def validate_phone(number):
-    if number[0] != '+':
+def validate_twitter_id(twitter_id):
+    if '#' in twitter_id:
+        numeric_id, handle = twitter_id.split('#', 1)
+        validate_twitter_handle(handle)
+        validate_numeric_twitter_id(numeric_id)
+    else:
         raise ValidationError(
-            _("Phone numbers must start with + and the country code, "
-              "e.g. +19995551212."))
-    # Validate the number the same way that RapidPro will?
-    try:
-        parsed = phonenumbers.parse(path, country_code)
-        return phonenumbers.is_possible_number(parsed)
-    except Exception:
-        return False
+            _("That is not a valid format Twitter ID.  The correct format is: "
+              "<numeric id>#<Twitter handle>"))
 
+
+def validate_phone_used(number):
+    from .models import Contact
+    contacts = Contact.objects.all()
+    phone_numbers = set()
+    for contact in contacts:
+        if contact.urn.startswith('tel'):
+            phone_numbers.add(contact.urn.split(':')[1])
+
+    if number in phone_numbers:
+        raise ValidationError(
+             _("This phone number is already being used by another contact."))
+
+
+def validate_phone(number):
+    try:
+        parsed = phonenumbers.parse(number)
+    except Exception as error:
+        error = str(error)
+        if ')' in error:
+            formatted_error = error.split(')')[1]
+            raise ValidationError(
+                _(formatted_error))
+    else:
+        reason = phonenumbers.is_possible_number_with_reason(parsed)
+        if reason == 1:
+            raise ValidationError(
+                _("This phone number has an invalid country code"))
+        elif reason == 2:
+            raise ValidationError(
+                _("This phone number is too short"))
+        elif reason == 3:
+            raise ValidationError(
+                _("This phone number is too long"))
+        else:
+            validate_phone_used(number)
 
 
 class URNField(forms.fields.MultiValueField):
@@ -82,7 +115,7 @@ class URNField(forms.fields.MultiValueField):
             'help_text',
             _('Format of Twitter handle is just the handle without the "@" at the front. '
               'Format of Twitter ID is <numeric id>#<Twitter handle> (again, no "@"). '
-              'Format of phone number must include "+" and country code '
+              'Format of phone number must include "+" and country code / region '
               '(e.g. "+1" for North America).'),
         )
         fields = (forms.ChoiceField(choices=URN_SCHEME_CHOICES),
@@ -96,14 +129,15 @@ class URNField(forms.fields.MultiValueField):
     def clean(self, value):
         compressed_value = super(URNField, self).clean(value)
         scheme, address = compressed_value.split(':', 1)
-        if not address:
-            raise ValidationError(_("URN is required"))
+
         if scheme == URN_SCHEME_TWITTER:
             validate_twitter_handle(address)
+            return compressed_value
+
         elif scheme == URN_SCHEME_TWITTERID:
-            if '#' in address:
-                twitter_id, handle = address.split('#', 1)
-                validate_twitter_handle(handle)
-                validate_twitter_id(twitter_id)
-            else:
-                validate_twitter_id(address)
+            validate_twitter_id(address)
+            return compressed_value
+
+        elif scheme == URN_SCHEME_TEL:
+            validate_phone(address)
+            return compressed_value
