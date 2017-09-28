@@ -2,11 +2,12 @@ from __future__ import unicode_literals
 
 import mock
 
+from tracpro.polls.models import PollRun
 from tracpro.test import factories
 from tracpro.test.cases import TracProTest
 
 from .. import models
-from ..tasks import sync_questions_categories
+from ..tasks import sync_questions_categories, pollrun_start
 
 
 class TestPollTask(TracProTest):
@@ -74,3 +75,71 @@ class TestPollTask(TracProTest):
         # Only 1 poll was reflected in the log message as only 1 poll was sent into the form data
         self.assertEqual(mock_logger.call_count, 3)
         self.assertIn("1 Poll(s)", mock_logger.call_args[0][0])
+
+    def test_start_flow_runs_one_contact(self):
+        self.org = factories.Org()
+        pollrun = factories.PollRun(
+            poll__org=self.org,
+            pollrun_type=PollRun.TYPE_REGIONAL,
+        )
+        contact = factories.Contact(org=self.org, region=pollrun.region)
+        self.mock_temba_client.create_flow_start.return_value = []
+        pollrun_start(pollrun.id)
+        # Calls to create_flow_start?
+        call_args = self.mock_temba_client.create_flow_start.call_args_list
+        num_calls = len(call_args)
+        self.assertEqual(1, num_calls)
+        self.assertEqual(
+            call_args[0],
+            mock.call(
+                contacts=[contact.uuid],
+                flow=pollrun.poll.flow_uuid,
+                restart_participants=True,
+                urns=None
+            )
+        )
+
+    def test_start_flow_runs_150_contacts(self):
+        self.org = factories.Org()
+        pollrun = factories.PollRun(
+            poll__org=self.org,
+            pollrun_type=PollRun.TYPE_REGIONAL,
+        )
+        contacts = [factories.Contact(org=self.org, region=pollrun.region) for _ in range(150)]
+
+        self.mock_temba_client.create_flow_start.return_value = []
+        pollrun_start(pollrun.id)
+
+        # What calls were made?
+        call_args = self.mock_temba_client.create_flow_start.call_args_list
+        num_calls = len(call_args)
+        self.assertEqual(2, num_calls)
+        self.assertEqual(100, len(call_args[0][1]['contacts']))
+        self.assertEqual(50, len(call_args[1][1]['contacts']))
+
+        # We don't know what order the contacts will be used in.
+        # First check the other args.
+
+        self.assertEqual(
+            call_args[0],
+            mock.call(
+                contacts=mock.ANY,
+                flow=pollrun.poll.flow_uuid,
+                restart_participants=True,
+                urns=None
+            )
+        )
+        self.assertEqual(
+            call_args[1],
+            mock.call(
+                contacts=mock.ANY,
+                flow=pollrun.poll.flow_uuid,
+                restart_participants=True,
+                urns=None
+            )
+        )
+
+        # now make sure all the right contacts were passed
+        contacts_passed = set(call_args[0][1]['contacts']) | set(call_args[1][1]['contacts'])
+        self.assertEqual(150, len(contacts_passed))
+        self.assertEqual(contacts_passed, set([c.uuid for c in contacts]))

@@ -34,6 +34,13 @@ from .utils import sync_pull_contacts
 logger = logging.getLogger(__name__)
 
 
+class NoContactInRapidProWarning(Exception):
+    """
+    Raised when we try to get a remote contact and it doesn't exist.
+    """
+    pass
+
+
 class NoMatchingCohortsWarning(Exception):
     """
     Have Contact.kwargs_from_temba be a little more specific about this case by
@@ -197,11 +204,12 @@ class Contact(models.Model):
             return contacts.get(uuid=uuid)
         except cls.DoesNotExist:
             # If this contact does not exist locally, we need to call the RapidPro API to get it
-            try:
-                temba_contact = get_client(org).get_contacts(uuid=uuid)[0]
-                return cls.objects.create(**cls.kwargs_from_temba(org, temba_contact))
-            except IndexError:
-                return None
+            temba_contacts = get_client(org).get_contacts(uuid=uuid)
+            if not temba_contacts:
+                # Probably shouldn't happen - but does
+                raise NoContactInRapidProWarning("No contact in RapidPro with uuid=%s" % uuid)
+            temba_contact = temba_contacts[0]
+            return cls.objects.create(**cls.kwargs_from_temba(org, temba_contact))
 
     def get_responses(self, include_empty=True):
         from tracpro.polls.models import Response
