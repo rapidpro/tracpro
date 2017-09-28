@@ -78,33 +78,47 @@ class AbstractGroup(models.Model):
         return cls.objects.filter(org=org, is_active=True)
 
     @classmethod
-    def get_response_counts(cls, org, include_empty=False):
-        """Return response counts from the last 30 days."""
+    def get_counts(cls, org, include_empty=False):
+        """Return response counts for a region or
+           return group counts for groups from the last 30 days.
+           to find the most active groups below get_most_active()"""
         from tracpro.polls.models import Response
-        qs = Response.objects.filter(pollrun__poll__org=org, is_active=True)
+        responses = Response.objects.filter(pollrun__poll__org=org, is_active=True)
 
         if not include_empty:
-            qs = qs.exclude(status=Response.STATUS_EMPTY)
+            responses = responses.exclude(status=Response.STATUS_EMPTY)
 
         window_max = timezone.now()
         window_min = window_max - relativedelta(days=30)
-        qs = qs.filter(updated_on__gte=window_min, updated_on__lt=window_max)
+        responses = responses.filter(updated_on__gte=window_min, updated_on__lt=window_max)
 
-        field = 'contact__%s' % cls.__name__.lower()
+        cls_str = cls.__name__.lower()
+        if cls_str == 'region':
+            field = 'contact__%s' % cls_str
+            responses = responses.filter(**{'%s__is_active' % field: True})
+            counts = responses.values(field).annotate(count=Count(field))
+            return_counts = {count[field]: count['count'] for count in counts}
+        else:
+            return_counts = {}
+            for response in responses:
+                for group in response.contact.groups.all():
+                    if group.pk in return_counts:
+                        return_counts[group.pk] += 1
+                    else:
+                        return_counts[group.pk] = 1
 
-        qs = qs.filter(**{'%s__is_active' % field: True})
-        counts = qs.values(field).annotate(count=Count(field))
-        return {count[field]: count['count'] for count in counts}
+        return return_counts
 
     @classmethod
     def get_most_active(cls, org):
-        count_by_id = cls.get_response_counts(org, include_empty=False)
+        count_by_id = cls.get_counts(org, include_empty=False)
         groups = []
         for group in cls.get_all(org):
             count = count_by_id.get(group.pk, 0)
             if count:
                 group.response_count = count
                 groups.append(group)
+
         return sorted(groups, key=lambda g: g.response_count, reverse=True)
 
     def get_contacts(self):

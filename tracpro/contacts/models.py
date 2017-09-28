@@ -61,6 +61,12 @@ class ContactQuerySet(models.QuerySet):
 
 class ContactManager(models.Manager.from_queryset(ContactQuerySet)):
 
+    def create(self, *args, **kwargs):
+        contact_groups = kwargs.pop('groups', [])
+        new_contact = super(ContactManager, self).create(*args, **kwargs)
+        new_contact.groups = contact_groups
+        return new_contact
+
     def sync(self, org):
         try:
             region_uuids = set(get_uuids(Region.get_all(org)))
@@ -104,13 +110,9 @@ class Contact(models.Model):
     region = models.ForeignKey(
         'groups.Region', verbose_name=_("Panel"), related_name='contacts',
         help_text=_("Panel of this contact."))
-    group = models.ForeignKey(
-        'groups.Group', null=True, verbose_name=_("Cohort"),
-        related_name='contacts',
-        help_text=_("Cohort to which this contact belongs."))
     groups = models.ManyToManyField(
         'groups.Group', verbose_name=_("Cohorts"),
-        related_name='all_contacts',
+        related_name='contacts',
         help_text=_("All cohorts to which this contact belongs."))
     language = models.CharField(
         max_length=3, verbose_name=_("Language"), null=True, blank=True,
@@ -158,10 +160,9 @@ class Contact(models.Model):
         # In Temba v2, we get back ObjectRefs for these, so imitate that here.
         groups = [ObjectRef.create(uuid=group.uuid, name=group.name)
                   for group in self.groups.all()]
+
         if self.region and self.region.uuid not in get_uuids(groups):
             groups.append(ObjectRef.create(uuid=self.region.uuid, name=self.region.name))
-        if self.group and self.group.uuid not in get_uuids(groups):
-            groups.append(ObjectRef.create(uuid=self.group.uuid, name=self.group.name))
 
         return TembaContact.create(
             name=self.name,
@@ -186,7 +187,7 @@ class Contact(models.Model):
 
         If we don't find them locally, we try to fetch them from RapidPro.
         """
-        contacts = cls.objects.filter(org=org).select_related('region', 'group')
+        contacts = cls.objects.filter(org=org).select_related('region')
         try:
             return contacts.get(uuid=uuid)
         except cls.DoesNotExist:
@@ -211,13 +212,20 @@ class Contact(models.Model):
     @classmethod
     def kwargs_from_temba(cls, org, temba_contact):
         """Get data to create a Contact instance from a Temba object."""
+
         def _get_first(model_class, temba_objects):
             """Return first obj from this org that matches one of the given uuids, or None."""
+
             queryset = model_class.get_all(org)
             temba_uuids = get_uuids(temba_objects)
-            return queryset.filter(uuid__in=temba_uuids).first()
+
+            # '.first()' doesn't really mean first
+            # there should only be one region here
+            return queryset.filter(uuid__in=temba_uuids).order_by('name').first()
+
         # Use the first Temba group that matches one of the org's Regions.
         region = _get_first(Region, temba_contact.groups)
+
         if not region:
             raise NoMatchingCohortsWarning(
                 "Unable to save contact {c.name} ({c.uuid}) because none of "
@@ -225,14 +233,16 @@ class Contact(models.Model):
                     c=temba_contact,
                 ))
 
-        # Use the first Temba group that matches one of the org's Groups. (cohort)
-        group = _get_first(Group, temba_contact.groups)
+        # make a list of groups
+        # Use all the Temba groups that match one of the org's Groups. (cohort)
+        groups = Group.get_all(org).filter(uuid__in=get_uuids(temba_contact.groups))
+
         kwargs = {
             'org': org,
             'name': temba_contact.name or "",
             'urn': temba_contact.urns[0],
             'region': region,
-            'group': group,
+            'groups': groups,
             'language': temba_contact.language,
             'uuid': temba_contact.uuid,
             'temba_modified_on': temba_contact.modified_on,
@@ -249,8 +259,10 @@ class Contact(models.Model):
     def save(self, *args, **kwargs):
         if self.org.pk != self.region.org_id:
             raise ValidationError("Panel does not belong to Org.")
-        if self.group and self.org.pk != self.group.org_id:
-            raise ValidationError("Cohort does not belong to Org.")
+
+        # write a validation error for 'groups' below?
+        # if self.group and self.org.pk != self.group.org_id:
+        #     raise ValidationError("Cohort does not belong to Org.")
 
         # RapidPro might return blank or null values.
         self.name = self.name or ""

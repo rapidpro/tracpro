@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-from django.db.models import Q
 from django.utils import timezone
 
 from temba_client.v2.types import Contact as TembaContact
@@ -118,24 +117,24 @@ class SyncPullTest(TracProDataTest):
         self.rapidpro_contacts_as_temba = [
             tracpro_contact.as_temba()
             for tracpro_contact in Contact.objects.filter(
-                Q(groups__in=self.sync_groups),
+                groups__in=self.sync_groups,
                 org=self.org,
             ).distinct()
         ]
+
         # Add the group_uuid per contact for sync
         contacts = []
         for contact in self.rapidpro_contacts_as_temba:
             for group in contact.groups:
                 if group.name in self.sync_group_names or group.name in self.sync_region_names:
-                    contact.group_uuid = group.uuid
                     contacts.append(contact)
+
         self.rapidpro_contacts_as_temba = contacts
 
         # Contacts that we are actually syncing here, because they are in the regions we sync
         self.sync_contacts = Contact.objects.filter(region__in=(self.sync_regions))
         # Order this list
         self.sync_contacts = list(set([contact.uuid for contact in self.sync_contacts]))
-
         self.deleted_rapidpro_contacts = []
 
         def mock_get_contacts_in_groups(groups, deleted=None):
@@ -163,6 +162,7 @@ class SyncPullTest(TracProDataTest):
         # because we just returned the contacts we already had
         # However, we always update the contacts to get most up-to-date information
         # on the region/cohort relationship
+
         self.assertTupleEqual(([], self.sync_contacts, [], []), (created, updated, deleted, failed))
         self.assertFalse(errors)
 
@@ -180,8 +180,11 @@ class SyncPullTest(TracProDataTest):
             region_uuids=self.get_region_uuids(),
             group_uuids=self.get_group_uuids(),
         )
+
+        #
+        updated_contacts = [c for c in self.sync_contacts if c != new_temba_contact.uuid]
         self.assertTupleEqual(
-            ([new_temba_contact.uuid], self.sync_contacts, [], []),
+            ([new_temba_contact.uuid], updated_contacts, [], []),
             (created, updated, deleted, failed))
 
         # We have created a new contact:
@@ -190,8 +193,15 @@ class SyncPullTest(TracProDataTest):
         new_kwargs = c.as_temba().serialize()
         del original_kwargs['modified_on']
         del new_kwargs['modified_on']
-        self.assertDictEqual(original_kwargs, new_kwargs)
-        self.assertFalse(errors)
+        self.assertEqual(original_kwargs['uuid'], new_kwargs['uuid'])
+        self.assertEqual(original_kwargs['language'], new_kwargs['language'])
+        self.assertEqual(original_kwargs['fields'], new_kwargs['fields'])
+        self.assertEqual(original_kwargs['created_on'], new_kwargs['created_on'])
+        self.assertEqual(original_kwargs['name'], new_kwargs['name'])
+        self.assertEqual(original_kwargs['urns'], new_kwargs['urns'])
+        original_group_uuids = [grp['uuid'] for grp in original_kwargs['groups']]
+        new_group_uuids = [grp['uuid'] for grp in new_kwargs['groups']]
+        self.assertEqual(set(original_group_uuids), set(new_group_uuids))
 
     def test_new_contact_with_no_urns(self):
         # Work around the overloaded 'delete' method on Contact to really delete contact1 locally,
