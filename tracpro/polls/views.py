@@ -20,6 +20,7 @@ from smartmin.templatetags.smartmin import format_datetime
 
 from tracpro.contacts.models import Contact
 from tracpro.groups.models import Group, Region
+from tracpro.polls.tasks import FetchOrgRuns
 
 from . import charts, forms, maps, tasks
 from .models import Poll, Question, PollRun, Response
@@ -359,9 +360,10 @@ class PollRunCRUDL(smartmin.SmartCRUDL):
             overall_counts = {'E': 0, 'P': 0, 'C': 0}
 
             # Calculate all reporter group or region activity per group or region
+
             for group_or_region in groups_or_regions:
                 if group_by_reporter_group:
-                    responses_group = responses.filter(contact__group=group_or_region)
+                    responses_group = responses.filter(contact__groups=group_or_region)
                 else:
                     responses_group = responses.filter(contact__region=group_or_region)
                 if responses_group:
@@ -376,7 +378,7 @@ class PollRunCRUDL(smartmin.SmartCRUDL):
 
             # Calculate all no-group or no-region activity
             if group_by_reporter_group:
-                responses_no_group = responses.filter(contact__group__isnull=True)
+                responses_no_group = responses.filter(contact__groups__isnull=True)
             else:
                 responses_no_group = responses.filter(contact__region__isnull=True)
             if responses_no_group:
@@ -488,6 +490,7 @@ class ResponseCRUDL(smartmin.SmartCRUDL):
         field_config = {
             'updated_on': {'label': _("Date")},
             'region': {'label': _('Panel')},
+            'groups': {'label': _('Cohorts')}
         }
         link_fields = ('contact',)
 
@@ -517,7 +520,7 @@ class ResponseCRUDL(smartmin.SmartCRUDL):
             return get_obj_cacheable(self, '_questions', fetch)
 
         def derive_fields(self):
-            base_fields = ['updated_on', 'contact', 'region', 'group']
+            base_fields = ['updated_on', 'contact', 'region', 'groups']
             return base_fields + self.derive_questions().keys()
 
         def derive_queryset(self, **kwargs):
@@ -543,8 +546,8 @@ class ResponseCRUDL(smartmin.SmartCRUDL):
         def lookup_field_value(self, context, obj, field):
             if field == 'region':
                 return obj.contact.region
-            elif field == 'group':
-                return obj.contact.group
+            elif field == 'groups':
+                return ', '.join(group.name.encode('utf-8') for group in obj.contact.groups.all().order_by('name'))
             elif field.startswith('question_'):
                 question = self.derive_questions()[field]
                 answer = obj.answers.filter(question=question).first()
@@ -612,7 +615,9 @@ class ResponseCRUDL(smartmin.SmartCRUDL):
                     resp_cols = [format_datetime(resp.updated_on)]
                     contact_cols = [
                         resp.contact.name, resp.contact.urn,
-                        resp.contact.region, resp.contact.group]
+                        resp.contact.region,
+                        ', '.join(group.name.encode('utf-8') for group in resp.contact.groups.all().order_by('name')),
+                        ]
                     answer_cols = []
 
                     answers_by_question_id = {a.question_id: a for a in resp.answers.all()}
@@ -683,3 +688,16 @@ class ResponseCRUDL(smartmin.SmartCRUDL):
             context = super(ResponseCRUDL.ByContact, self).get_context_data(**kwargs)
             context['contact'] = self.derive_contact()
             return context
+
+
+def force_runs_sync(request):
+    if not request.user.is_superuser:
+        return redirect('home.home')
+    fetcher = FetchOrgRuns()
+    errors = fetcher.org_task(request.org)
+    if errors:
+        for err in errors:
+            messages.error(request, err)
+    else:
+        messages.info(request, "Runs appear to have been fetched okay")
+    return redirect('home.home')

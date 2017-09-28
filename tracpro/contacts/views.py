@@ -6,8 +6,10 @@ import pycountry
 
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from dash.utils import get_obj_cacheable
+from django.contrib import messages
 
 from django.http import JsonResponse
+from django.shortcuts import redirect
 from django.utils.translation import ugettext_lazy as _
 
 from smartmin.views import (
@@ -91,9 +93,8 @@ class ContactCRUDL(SmartCRUDL):
             return obj
 
     class Read(OrgObjPermsMixin, ContactFieldsMixin, ContactBase, SmartReadView):
-
         def derive_fields(self):
-            fields = ['urn', 'region', 'group', 'language', 'last_response']
+            fields = ['urn', 'region', 'groups', 'language', 'last_response']
             if self.object.created_by_id:
                 fields.append('created_by')
 
@@ -116,6 +117,10 @@ class ContactCRUDL(SmartCRUDL):
                     return URN_SCHEME_LABELS[scheme]
             if field in self.data_fields:
                 return self.data_fields.get(field).display_name
+
+            if field.startswith('groups'):
+                return _("Cohorts")
+
             return super(ContactCRUDL.Read, self).lookup_field_label(context, field, default)
 
         def lookup_field_value(self, context, obj, field):
@@ -123,6 +128,10 @@ class ContactCRUDL(SmartCRUDL):
                 value = self.data_fields.get(field).contactfield_set.filter(contact=obj)
                 value = value.first()
                 return value.get_value() or "-" if value else "Unknown"
+
+            if field == 'groups':
+                return ', '.join(group.name.encode('utf-8') for group in obj.groups.all().order_by('name'))
+
             return super(ContactCRUDL.Read, self).lookup_field_value(context, obj, field)
 
     class List(OrgPermsMixin, ContactFieldsMixin, ContactBase, SmartListView):
@@ -130,7 +139,7 @@ class ContactCRUDL(SmartCRUDL):
         search_fields = ('name__icontains', 'urn__icontains')
 
         def derive_fields(self):
-            fields = ['name', 'urn', 'group', 'region']
+            fields = ['name', 'urn', 'groups', 'region']
             if self.request.region:
                 fields.extend(self.derive_pollruns().keys())
             return fields
@@ -139,6 +148,9 @@ class ContactCRUDL(SmartCRUDL):
             if field.startswith('pollrun_'):
                 pollrun = self.derive_pollruns()[field]
                 return "%s (%s)" % (pollrun.poll.name, pollrun.conducted_on.date())
+
+            if field.startswith('groups'):
+                return _("Cohorts")
 
             return super(ContactCRUDL.List, self).lookup_field_label(context, field, default)
 
@@ -149,6 +161,9 @@ class ContactCRUDL(SmartCRUDL):
                     contact=obj, status=Response.STATUS_COMPLETE).exists()
                 return ('<span class="glyphicon glyphicon-%s"></span>' %
                         ('ok' if has_completed else 'time'))
+
+            if field == 'groups':
+                return ', '.join(group.name.encode('utf-8') for group in obj.groups.all().order_by('name'))
 
             return super(ContactCRUDL.List, self).lookup_field_value(context, obj, field)
 
@@ -182,3 +197,15 @@ class ContactCRUDL(SmartCRUDL):
     class Delete(OrgObjPermsMixin, ContactBase, SmartDeleteView):
         cancel_url = '@contacts.contact_list'
         redirect_url = '@contacts.contact_list'
+
+
+def force_contacts_sync(request):
+    if not request.user.is_superuser:
+        return redirect('home.home')
+    errors = Contact.objects.sync(request.org)
+    if errors:
+        for err in errors:
+            messages.error(request, err)
+    else:
+        messages.info(request, 'Contacts synced, apparently okay')
+    return redirect('home.home')

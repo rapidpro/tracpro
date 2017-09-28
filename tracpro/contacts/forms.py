@@ -18,7 +18,7 @@ class ContactForm(forms.ModelForm):
 
     class Meta:
         model = models.Contact
-        fields = ['name', 'urn', 'region', 'group', 'language']
+        fields = ['name', 'urn', 'region', 'groups', 'language']
         widgets = {
             'language': forms.TextInput(attrs={'class': 'language-field'}),
         }
@@ -34,12 +34,11 @@ class ContactForm(forms.ModelForm):
             self.instance.created_by = self.user
 
         self.fields['name'].required = True
-        self.fields['group'].required = True
+        self.fields['groups'].required = True
 
         regions = self.user.get_all_regions(org).order_by(Lower('name'))
         self.fields['region'].queryset = regions
-        self.fields['group'].empty_label = ""
-        self.fields['group'].queryset = Group.get_all(org).order_by(Lower('name'))
+        self.fields['groups'].queryset = Group.get_all(org).order_by(Lower('name'))
 
         # Add form fields to update contact's DataField values.
         self.data_field_keys = []
@@ -53,4 +52,6 @@ class ContactForm(forms.ModelForm):
         # Updating DataField values is managed by a post-save signal.
         field_values = {f: self.cleaned_data.pop(f, None) for f in self.data_field_keys}
         self.instance._data_field_values = field_values
+        # Saving groups is managed by a post-save signal.
+        self.instance._groups = self.cleaned_data['groups']
         return super(ContactForm, self).save(commit)

@@ -38,10 +38,13 @@ def set_data_field_values(sender, instance, **kwargs):
 
 @receiver(post_save, sender=Contact)
 def set_groups_to_new_contact(sender, instance, created, **kwargs):
-    """Hook to set the groups of a temba contact when a Contact is created after sync."""
+    """Hook to set the groups of
+       1) a temba contact when a Contact is created after sync.
+       2) a new locally created contact """
     if created:
         try:
             if hasattr(instance, 'new_groups'):
+
                 # The caller already knew the groups and helpfully passed them along to us
                 groups = instance.new_groups
             else:
@@ -53,3 +56,11 @@ def set_groups_to_new_contact(sender, instance, created, **kwargs):
         except IndexError:
             # The contact was created locally
             pass
+
+        # set groups for new local contacts saved from form
+        if not hasattr(instance, '_groups'):
+            return
+
+        if instance._groups is not None:
+            instance.groups = instance._groups
+            del instance._groups

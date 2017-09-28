@@ -134,22 +134,22 @@ class TracProDataTest(TracProTest):
         # some contacts
         self.contact1 = factories.Contact(
             org=self.unicef, name="Ann", urn='tel:1234', uuid='C-001',
-            region=self.region1, group=self.group1, groups=(self.group1, self.group5))
+            region=self.region1, groups=[self.group1, self.group2])
         self.contact2 = factories.Contact(
             org=self.unicef, name="Bob", urn='tel:2345', uuid='C-002',
-            region=self.region1, group=self.group1)
+            region=self.region1, groups=[self.group1, self.group5])
         self.contact3 = factories.Contact(
             org=self.unicef, name="Cat", urn='tel:3456', uuid='C-003',
-            region=self.region1, group=self.group2)
+            region=self.region2, groups=[self.group2, self.group3])
         self.contact4 = factories.Contact(
             org=self.unicef, name="Dan", urn='twitter:danny', uuid='C-004',
-            region=self.region2, group=self.group2)
+            region=self.region3)
         self.contact5 = factories.Contact(
             org=self.unicef, name="Eve", urn='twitter:evee', uuid='C-005',
-            region=self.region3, group=self.group3)
+            region=self.region3)
         self.contact6 = factories.Contact(
             org=self.nyaruka, name="Norbert", urn='twitter:n7', uuid='C-006',
-            region=self.region4, group=self.group4)
+            region=self.region4)
 
         # a poll with some questions
         self.poll1 = factories.Poll(
