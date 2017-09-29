@@ -88,22 +88,19 @@ def validate_phone(number):
     try:
         parsed = phonenumbers.parse(number)
     except Exception as error:
-        error = str(error)
-        if ')' in error:
-            formatted_error = error.split(')')[1]
-            raise ValidationError(
-                _(formatted_error))
+        raise ValidationError(
+            _(error._msg))
     else:
         reason = phonenumbers.is_possible_number_with_reason(parsed)
         if reason == 1:
             raise ValidationError(
-                _("This phone number has an invalid country code"))
+                _("This phone number has an invalid country code."))
         elif reason == 2:
             raise ValidationError(
-                _("This phone number is too short"))
+                _("This phone number is too short."))
         elif reason == 3:
             raise ValidationError(
-                _("This phone number is too long"))
+                _("This phone number is too long."))
         else:
             validate_phone_used(number)
 

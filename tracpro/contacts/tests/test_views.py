@@ -26,6 +26,8 @@ class ContactCRUDLTest(TracProDataTest):
         # log in as an org administrator
         self.login(self.admin)
 
+        # try:
+        #     with transaction.atomic():
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
 
@@ -77,24 +79,6 @@ class ContactCRUDLTest(TracProDataTest):
                              "Select a valid choice. That choice is not one "
                              "of the available choices.")
 
-    @skip("Skipping test_create_with_access() for now.")
-    def test_create_with_access(self):
-        url = reverse('contacts.contact_create')
-
-        # log in as a user
-        self.login(self.user1)
-
-        # try again but this time in a region we do have access to
-        response = self.url_post('unicef', url, {
-            'name': "Mo Polls II",
-            'urn_0': "tel",
-            'urn_1': "+16782345765",
-            'region': self.region1.pk,
-            'groups': (self.group1.pk, self.group2.pk, self.group3.pk),
-        })
-
-        self.assertEqual(response.status_code, 302)
-
         # test ajax querying for languages
         response = self.url_get('unicef', '%s?initial=' % url)
         self.assertEqual(response.status_code, 200)
@@ -111,6 +95,148 @@ class ContactCRUDLTest(TracProDataTest):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(json.loads(response.content),
                          dict(results=[dict(id='kin', text='Kinyarwanda')]))
+
+        # testing form validation
+        # phone number is not numeric
+        response = self.url_post('unicef', url, {
+            'name': "Mo Polls II",
+            'urn_0': "tel",
+            'urn_1': "qwerty",
+            'region': self.region1.pk,
+            'groups': (self.group1.pk, self.group2.pk, self.group3.pk),
+        })
+
+        self.assertEqual(response.status_code, 200)
+        form = response.context['form']
+        self.assertEqual(len(form.errors), 1, form.errors)
+        self.assertFormError(response, 'form', 'urn', ('The string supplied did not seem to be a phone number.'))
+
+        # phone number does not have country code
+        response = self.url_post('unicef', url, {
+            'name': "Mo Polls II",
+            'urn_0': "tel",
+            'urn_1': "2345263746",
+            'region': self.region1.pk,
+            'groups': (self.group1.pk, self.group2.pk, self.group3.pk),
+        })
+
+        self.assertEqual(response.status_code, 200)
+        form = response.context['form']
+        self.assertEqual(len(form.errors), 1, form.errors)
+        self.assertFormError(response, 'form', 'urn', ('Missing or invalid default region.'))
+
+        # phone number has already been used
+        response = self.url_post('unicef', url, {
+            'name': "Mo Polls II",
+            'urn_0': "tel",
+            'urn_1': "+167",
+            'region': self.region1.pk,
+            'groups': (self.group1.pk, self.group2.pk, self.group3.pk),
+        })
+
+        self.assertEqual(response.status_code, 200)
+        form = response.context['form']
+        self.assertEqual(len(form.errors), 1, form.errors)
+        self.assertFormError(response, 'form', 'urn', ('This phone number is too short.'))
+
+        # phone number has already been used
+        response = self.url_post('unicef', url, {
+            'name': "Mo Polls II",
+            'urn_0': "tel",
+            'urn_1': "+167823457657364576297",
+            'region': self.region1.pk,
+            'groups': (self.group1.pk, self.group2.pk, self.group3.pk),
+        })
+
+        self.assertEqual(response.status_code, 200)
+        form = response.context['form']
+        self.assertEqual(len(form.errors), 1, form.errors)
+        self.assertFormError(response, 'form', 'urn', ('The string supplied is too long to be a phone number.'))
+
+        # phone number has already been used
+        response = self.url_post('unicef', url, {
+            'name': "Mo Polls II",
+            'urn_0': "tel",
+            'urn_1': "+16782345765",
+            'region': self.region1.pk,
+            'groups': (self.group1.pk, self.group2.pk, self.group3.pk),
+        })
+
+        self.assertEqual(response.status_code, 200)
+        form = response.context['form']
+        self.assertEqual(len(form.errors), 1, form.errors)
+        self.assertFormError(response, 'form', 'urn', ('This phone number is already being used by another contact.'))
+
+        # try again using an invalid Twitter Handle
+        response = self.url_post('unicef', url, {
+            'name': "Mo Polls II",
+            'urn_0': "twitter",
+            'urn_1': "88-uu-oo",
+            'region': self.region1.pk,
+            'groups': (self.group1.pk, self.group2.pk, self.group3.pk),
+        })
+
+        self.assertEqual(response.status_code, 200)
+        form = response.context['form']
+        self.assertEqual(len(form.errors), 1, form.errors)
+        self.assertFormError(response, 'form', 'urn', (
+                                                        'That is not a valid format Twitter handle.'
+                                                        '  A valid handle has only letters A-Z,'
+                                                        ' numbers 0-9, and underscores (_),'
+                                                        ' and has up to 15 characters.'
+                                                        ))
+
+        # try again using an invalid Twitter ID
+        response = self.url_post('unicef', url, {
+            'name': "Mo Polls II",
+            'urn_0': "twitterid",
+            'urn_1': "just_a_handle",
+            'region': self.region1.pk,
+            'groups': (self.group1.pk, self.group2.pk, self.group3.pk),
+        })
+
+        self.assertEqual(response.status_code, 200)
+        form = response.context['form']
+        self.assertEqual(len(form.errors), 1, form.errors)
+        self.assertFormError(response, 'form', 'urn', (
+                                                        'That is not a valid format Twitter ID.'
+                                                        '  The correct format is: <numeric id>#<Twitter handle>'
+                                                        ))
+
+        # try again using an invalid Twitter numeric ID
+        response = self.url_post('unicef', url, {
+            'name': "Mo Polls II",
+            'urn_0': "twitterid",
+            'urn_1': "aaa123#handle",
+            'region': self.region1.pk,
+            'groups': (self.group1.pk, self.group2.pk, self.group3.pk),
+        })
+
+        self.assertEqual(response.status_code, 200)
+        form = response.context['form']
+        self.assertEqual(len(form.errors), 1, form.errors)
+        self.assertFormError(response, 'form', 'urn', (
+                                                        'That is not a valid format Twitter ID.'
+                                                        '  A valid numeric ID has only numbers 0-9.'
+                                                        ))
+
+    @skip("Skipping test_create_with_access() for now.")
+    def test_create_with_access(self):
+        url = reverse('contacts.contact_create')
+
+        # log in as a user
+        self.login(self.user1)
+
+        # try again but this time in a region we do have access to
+        response = self.url_post('unicef', url, {
+            'name': "Mo Polls II",
+            'urn_0': "tel",
+            'urn_1': "+16782345763",
+            'region': self.region1.pk,
+            'groups': (self.group1.pk, self.group2.pk, self.group3.pk),
+        })
+
+        self.assertEqual(response.status_code, 302)
 
     def test_update(self):
         # log in as a user
