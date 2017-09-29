@@ -46,7 +46,7 @@ class ContactCRUDLTest(TracProDataTest):
         response = self.url_post('unicef', url, {
             'name': "Mo Polls",
             'urn_0': "tel",
-            'urn_1': "5678",
+            'urn_1': "+16782345765",
             'region': self.region1.pk,
             'groups': (self.group1.pk, self.group2.pk, self.group3.pk),
             'language': 'eng',
@@ -55,7 +55,7 @@ class ContactCRUDLTest(TracProDataTest):
         self.assertEqual(self.mock_temba_client.create_contact.call_count, 1)
 
         # check new contact and profile
-        contact = Contact.objects.get(urn='tel:5678')
+        contact = Contact.objects.get(urn='tel:+16782345765')
         self.assertEqual(contact.name, "Mo Polls")
         self.assertEqual(contact.region, self.region1)
         self.assertEqual(set(contact.groups.all()), set([self.group1, self.group2, self.group3]))
@@ -68,7 +68,7 @@ class ContactCRUDLTest(TracProDataTest):
         response = self.url_post('unicef', url, {
             'name': "Mo Polls II",
             'urn_0': "tel",
-            'urn_1': "5678",
+            'urn_1': "+16782345765",
             'region': self.region3.pk,
             'groups': (self.group1.pk, self.group2.pk, self.group3.pk),
         })
@@ -88,7 +88,7 @@ class ContactCRUDLTest(TracProDataTest):
         response = self.url_post('unicef', url, {
             'name': "Mo Polls II",
             'urn_0': "tel",
-            'urn_1': "5678",
+            'urn_1': "+16782345765",
             'region': self.region1.pk,
             'groups': (self.group1.pk, self.group2.pk, self.group3.pk),
         })
@@ -112,6 +112,7 @@ class ContactCRUDLTest(TracProDataTest):
         self.assertEqual(json.loads(response.content),
                          dict(results=[dict(id='kin', text='Kinyarwanda')]))
 
+
     def test_update(self):
         # log in as a user
         self.login(self.user1)
@@ -123,7 +124,7 @@ class ContactCRUDLTest(TracProDataTest):
         response = self.url_post('unicef', url, {
             'name': "Morris",
             'urn_0': "tel",
-            'urn_1': "6789",
+            'urn_1': "+16782345765",
             'region': self.region1.pk,
             'groups': (self.group1.pk, self.group2.pk),
             'language': 'kin',
@@ -134,7 +135,7 @@ class ContactCRUDLTest(TracProDataTest):
         # check updated contact and profile
         contact = Contact.objects.get(pk=self.contact1.pk)
         self.assertEqual(contact.name, "Morris")
-        self.assertEqual(contact.urn, 'tel:6789')
+        self.assertEqual(contact.urn, 'tel:+16782345765')
         self.assertEqual(contact.region, self.region1)
         self.assertEqual(set(contact.groups.all()), set((self.group1, self.group2)))
         self.assertEqual(contact.language, 'kin')
