@@ -6,7 +6,7 @@ Concepts
 
 * `Polls` or `Flows` are RapidPro flows. Click on the name of a poll to see a summary of the responses over time and dates it was conducted.
 * `Questions` are questions asked during polls. These are `flow steps` in RapidPro.
-* `PollRuns` are the dates a poll was conducted. Click on a poll date to see a summary of just the responses for that date, see participation among cohorts, send a message to contacts, see individual responses, and export responses.
+* `Flow Runs` are the dates a poll was conducted. Click on a poll date to see a summary of just the responses for that date, see participation among cohorts and panels, send a message to contacts, see individual responses, and export responses.
 * `Contacts` are the same as in RapidPro. They are the respondents of polls.
 * `Supervisors` could be, for example, a provincial monitoring officer in a ministry. They are meant to see a particular panel or multiple panels, encourage participation by seeing who is responding, and restart polls. Supervisors also manage contacts.
 * `Administrators` set up TracPro for an org and can manage everything supervisors can, in addition to managing supervisors.
