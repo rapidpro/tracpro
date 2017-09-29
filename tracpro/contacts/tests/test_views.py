@@ -112,7 +112,6 @@ class ContactCRUDLTest(TracProDataTest):
         self.assertEqual(json.loads(response.content),
                          dict(results=[dict(id='kin', text='Kinyarwanda')]))
 
-
     def test_update(self):
         # log in as a user
         self.login(self.user1)
