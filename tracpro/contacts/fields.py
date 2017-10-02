@@ -64,9 +64,9 @@ def urn_exists_in_rapidpro(client, uuid, urn):
     """
     contacts = client.get_contacts(urn=urn)
 
-    if uuid: # updating existing contact
+    if uuid:
         return len(list(contacts)) != 0 and contacts[0].uuid != uuid
-    else: # adding new contact
+    else:
         if len(list(contacts)) != 0:
             return contacts[0].uuid is not None
 
