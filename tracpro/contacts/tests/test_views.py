@@ -26,8 +26,6 @@ class ContactCRUDLTest(TracProDataTest):
         # log in as an org administrator
         self.login(self.admin)
 
-        # try:
-        #     with transaction.atomic():
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
 
@@ -48,7 +46,7 @@ class ContactCRUDLTest(TracProDataTest):
         response = self.url_post('unicef', url, {
             'name': "Mo Polls",
             'urn_0': "tel",
-            'urn_1': "+16782345765",
+            'urn_1': "+19102223333",
             'region': self.region1.pk,
             'groups': (self.group1.pk, self.group2.pk, self.group3.pk),
             'language': 'eng',
@@ -57,7 +55,7 @@ class ContactCRUDLTest(TracProDataTest):
         self.assertEqual(self.mock_temba_client.create_contact.call_count, 1)
 
         # check new contact and profile
-        contact = Contact.objects.get(urn='tel:+16782345765')
+        contact = Contact.objects.get(urn='tel:+19102223333')
         self.assertEqual(contact.name, "Mo Polls")
         self.assertEqual(contact.region, self.region1)
         self.assertEqual(set(contact.groups.all()), set([self.group1, self.group2, self.group3]))
@@ -109,7 +107,10 @@ class ContactCRUDLTest(TracProDataTest):
         self.assertEqual(response.status_code, 200)
         form = response.context['form']
         self.assertEqual(len(form.errors), 1, form.errors)
-        self.assertFormError(response, 'form', 'urn', ('The string supplied did not seem to be a phone number.'))
+        self.assertFormError(response, 'form', 'urn', (
+                                                        'This is not a valid phone number.  '
+                                                        'A valid phone number must include "+" and country '
+                                                        'code / region (e.g. "+1" for North America).'))
 
         # phone number does not have country code
         response = self.url_post('unicef', url, {
@@ -123,9 +124,9 @@ class ContactCRUDLTest(TracProDataTest):
         self.assertEqual(response.status_code, 200)
         form = response.context['form']
         self.assertEqual(len(form.errors), 1, form.errors)
-        self.assertFormError(response, 'form', 'urn', ('Missing or invalid default region.'))
+        self.assertFormError(response, 'form', 'urn', ('This phone number has an invalid country code.'))
 
-        # phone number has already been used
+        # phone number is too short
         response = self.url_post('unicef', url, {
             'name': "Mo Polls II",
             'urn_0': "tel",
@@ -137,9 +138,9 @@ class ContactCRUDLTest(TracProDataTest):
         self.assertEqual(response.status_code, 200)
         form = response.context['form']
         self.assertEqual(len(form.errors), 1, form.errors)
-        self.assertFormError(response, 'form', 'urn', ('This phone number is too short.'))
+        self.assertFormError(response, 'form', 'urn', ('The string supplied is too short to be a phone number.'))
 
-        # phone number has already been used
+        # phone number is too long
         response = self.url_post('unicef', url, {
             'name': "Mo Polls II",
             'urn_0': "tel",
@@ -157,7 +158,7 @@ class ContactCRUDLTest(TracProDataTest):
         response = self.url_post('unicef', url, {
             'name': "Mo Polls II",
             'urn_0': "tel",
-            'urn_1': "+16782345765",
+            'urn_1': "+19102223333",
             'region': self.region1.pk,
             'groups': (self.group1.pk, self.group2.pk, self.group3.pk),
         })
@@ -180,10 +181,10 @@ class ContactCRUDLTest(TracProDataTest):
         form = response.context['form']
         self.assertEqual(len(form.errors), 1, form.errors)
         self.assertFormError(response, 'form', 'urn', (
-                                                        'That is not a valid format Twitter handle.'
-                                                        '  A valid handle has only letters A-Z,'
-                                                        ' numbers 0-9, and underscores (_),'
-                                                        ' and has up to 15 characters.'
+                                                        'This is not a valid Twitter handle.  '
+                                                        'A valid handle has only letters A-Z, '
+                                                        'numbers 0-9, and underscores (_), '
+                                                        'and has up to 15 characters.'
                                                         ))
 
         # try again using an invalid Twitter ID
@@ -199,8 +200,8 @@ class ContactCRUDLTest(TracProDataTest):
         form = response.context['form']
         self.assertEqual(len(form.errors), 1, form.errors)
         self.assertFormError(response, 'form', 'urn', (
-                                                        'That is not a valid format Twitter ID.'
-                                                        '  The correct format is: <numeric id>#<Twitter handle>'
+                                                        'This is not a valid numeric ID.  '
+                                                        'The correct format is: <numeric id>#<Twitter handle>'
                                                         ))
 
         # try again using an invalid Twitter numeric ID
@@ -216,8 +217,8 @@ class ContactCRUDLTest(TracProDataTest):
         form = response.context['form']
         self.assertEqual(len(form.errors), 1, form.errors)
         self.assertFormError(response, 'form', 'urn', (
-                                                        'That is not a valid format Twitter ID.'
-                                                        '  A valid numeric ID has only numbers 0-9.'
+                                                        'This is not a valid numeric ID.  '
+                                                        'A valid numeric ID has only numbers 0-9.'
                                                         ))
 
     @skip("Skipping test_create_with_access() for now.")
@@ -249,7 +250,7 @@ class ContactCRUDLTest(TracProDataTest):
         response = self.url_post('unicef', url, {
             'name': "Morris",
             'urn_0': "tel",
-            'urn_1': "+16782345765",
+            'urn_1': "+16782345721",
             'region': self.region1.pk,
             'groups': (self.group1.pk, self.group2.pk),
             'language': 'kin',
@@ -260,7 +261,7 @@ class ContactCRUDLTest(TracProDataTest):
         # check updated contact and profile
         contact = Contact.objects.get(pk=self.contact1.pk)
         self.assertEqual(contact.name, "Morris")
-        self.assertEqual(contact.urn, 'tel:+16782345765')
+        self.assertEqual(contact.urn, 'tel:+16782345721')
         self.assertEqual(contact.region, self.region1)
         self.assertEqual(set(contact.groups.all()), set((self.group1, self.group2)))
         self.assertEqual(contact.language, 'kin')
