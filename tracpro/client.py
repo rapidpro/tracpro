@@ -51,20 +51,6 @@ class TracProClient(TembaClient):
 
         return contacts
 
-    def check_urn_exists(self, urn, uuid):
-        """
-        Check to see if a urn is already taken by
-        a contact in RapidPro. exclude contacts with matching uuids,
-        indicating that the contact is being updated
-        """
-        contacts = self.get_contacts(urn=urn)
-        if len(list(contacts)) > 0 and contacts[0].uuid != uuid:
-            return True
-        elif len(list(contacts)) > 0 and contacts[0].uuid == uuid:
-            return False
-        else:
-            return False
-
 
 class TracProCursorQuery(CursorQuery):
     """

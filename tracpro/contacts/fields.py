@@ -2,7 +2,8 @@ from __future__ import unicode_literals
 
 import re
 
-import phonenumbers
+from phonenumbers import NumberParseException, ValidationResult, parse, is_possible_number_with_reason
+
 from django import forms
 from django.core.exceptions import ValidationError
 from django.utils.safestring import mark_safe
@@ -25,13 +26,13 @@ URN_SCHEME_LABELS = {
 }
 
 PHONE_PARSE_ERROR = {
-    0: "This phone number has an invalid country code.",
-    1: "This is not a valid phone number.  A valid phone number "
+    NumberParseException.INVALID_COUNTRY_CODE: "This phone number has an invalid country code.",
+    NumberParseException.NOT_A_NUMBER: "This is not a valid phone number.  A valid phone number "
     "must include \"+\" and country code / region "
     "(e.g. \"+1\" for North America).",
-    2: "The string supplied is too short to be a phone number.",
-    3: "The string supplied is too short to be a phone number.",
-    4: "The string supplied is too long to be a phone number.",
+    NumberParseException.TOO_SHORT_AFTER_IDD: "The string supplied is too short to be a phone number.",
+    NumberParseException.TOO_SHORT_NSN: "The string supplied is too short to be a phone number.",
+    NumberParseException.TOO_LONG: "The string supplied is too long to be a phone number.",
 }
 
 
@@ -56,26 +57,37 @@ class URNWidget(forms.widgets.MultiWidget):
         return mark_safe(''.join(output))
 
 
-def check_urns(client, uuid, urn):
-    '''Checking the local Contacts for a urn.
-        If none exist, checking RapidPro for a urn.
-        If none exist, returning False.'''
+def urn_exists_in_rapidpro(client, uuid, urn):
+    """
+    Return True if a remote contact with this urn
+    exists in RapidPro and has a different uuid than uuid.
+    """
+    contacts = client.get_contacts(urn=urn)
+
+    if uuid: # updating existing contact
+        return len(list(contacts)) != 0 and contacts[0].uuid != uuid
+    else: # adding new contact
+        if len(list(contacts)) != 0:
+            return contacts[0].uuid is not None
+
+
+def urn_already_used(client, uuid, urn):
+    """Return True if a local or remote contact
+        with this urn exists and has a different uuid than uuid"""
+
     from .models import Contact
     # RapidPro checks for the numeric id without handle
     # we are going to mimic that here locally
-
     if urn.startswith('twitterid'):
-        contacts = Contact.objects.filter(urn__icontains=urn.split('#')[0])
-        contacts = contacts.exclude(uuid=uuid)
+        contacts = Contact.objects.filter(urn__startswith=urn.split('#')[0])
+        if uuid:
+            contacts = contacts.exclude(uuid=uuid)
     else:
-        contacts = Contact.objects.filter(urn=urn).exclude(uuid=uuid)
-    if contacts.count() != 0:
-        return True
-    else:
-        if client.check_urn_exists(urn, uuid) is True:
-            return True
-        else:
-            return False
+        contacts = Contact.objects.filter(urn=urn)
+        if uuid:
+            contacts = contacts.exclude(uuid=uuid)
+
+    return contacts.exists() or urn_exists_in_rapidpro(client, uuid, urn)
 
 
 def validate_twitter_handle(client, uuid, handle, from_id=False):
@@ -85,7 +97,7 @@ def validate_twitter_handle(client, uuid, handle, from_id=False):
             _("This is not a valid Twitter handle.  A valid handle has only "
               "letters A-Z, numbers 0-9, and underscores (_), and has up to 15 "
               "characters."))
-    elif not from_id and check_urns(client, uuid, 'twitter:%s' % handle):
+    elif not from_id and urn_already_used(client, uuid, 'twitter:%s' % handle):
         raise ValidationError(
             _("This Twitter Handle is already being used by another contact."))
 
@@ -102,7 +114,7 @@ def validate_twitter_id(client, uuid, twitter_id):
         numeric_id, handle = twitter_id.split('#', 1)
         validate_twitter_handle(client, uuid, handle, True)
         validate_numeric_twitter_id(numeric_id)
-        if check_urns(client, uuid, 'twitterid:%s' % twitter_id):
+        if urn_already_used(client, uuid, 'twitterid:%s' % twitter_id):
             raise ValidationError(
                 _("This Twitter ID is already being used by another contact."))
     else:
@@ -115,7 +127,7 @@ def validate_phone_used(client, uuid, parsed):
     phone_number = '%s%s%s' % ('+', parsed.country_code, parsed.national_number)
     urn = 'tel:%s' % phone_number
 
-    if check_urns(client, uuid, urn):
+    if urn_already_used(client, uuid, urn):
         raise ValidationError(
              _("This phone number is already being used by another contact."))
     else:
@@ -124,21 +136,21 @@ def validate_phone_used(client, uuid, parsed):
 
 def validate_phone(client, uuid, number):
     try:
-        parsed = phonenumbers.parse(number)
-    except Exception as error:
+        parsed = parse(number)
+    except NumberParseException as error:
         raise ValidationError(
             _(PHONE_PARSE_ERROR[error.error_type]))
     else:
-        reason = phonenumbers.is_possible_number_with_reason(parsed)
-        if reason == phonenumbers.ValidationResult.INVALID_COUNTRY_CODE:
+        reason = is_possible_number_with_reason(parsed)
+        if reason == ValidationResult.INVALID_COUNTRY_CODE:
             raise ValidationError(
-                _(PHONE_PARSE_ERROR[phonenumbers.NumberParseException.INVALID_COUNTRY_CODE]))
-        elif reason == phonenumbers.ValidationResult.TOO_SHORT:
+                _(PHONE_PARSE_ERROR[NumberParseException.INVALID_COUNTRY_CODE]))
+        elif reason == ValidationResult.TOO_SHORT:
             raise ValidationError(
-                _(PHONE_PARSE_ERROR[phonenumbers.NumberParseException.TOO_SHORT_NSN]))
-        elif reason == phonenumbers.ValidationResult.TOO_LONG:
+                _(PHONE_PARSE_ERROR[NumberParseException.TOO_SHORT_NSN]))
+        elif reason == ValidationResult.TOO_LONG:
             raise ValidationError(
-                _(PHONE_PARSE_ERROR[phonenumbers.NumberParseException.TOO_LONG]))
+                _(PHONE_PARSE_ERROR[NumberParseException.TOO_LONG]))
         else:
             return validate_phone_used(client, uuid, parsed)
 
