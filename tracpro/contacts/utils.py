@@ -74,12 +74,24 @@ def sync_pull_contacts(org, region_uuids, group_uuids):
                 kwargs = Contact.kwargs_from_temba(org, temba_contact)
             except NoMatchingCohortsWarning as e:
                 logger.warning(e.message)
+                # This isn't really an error, we purposely only sync contacts in
+                # the selected groups.
                 failed_uuids.append(temba_contact.uuid)
                 errors.append(e.message)
+                # We know none of this contact's cohorts are selected, so mark it inactive.
+                if existing.is_active:
+                    existing.is_active = False
+                    existing.save()
                 continue
             except NoUsableURNWarning as e:
+                # This is an error.  Their URN(s) don't have any of
+                # the schemes that we support.
                 logger.warning(e.message)
                 failed_uuids.append(temba_contact.uuid)
+                # Not a valid contact (for us, anyway).
+                if existing.is_active:
+                    existing.is_active = False
+                    existing.save()
                 continue
 
             for field, value in six.iteritems(kwargs):
@@ -90,10 +102,12 @@ def sync_pull_contacts(org, region_uuids, group_uuids):
 
             updated_uuids.append(temba_contact.uuid)
         else:
-
+            # New contact (to us, anyway)
             try:
                 kwargs = Contact.kwargs_from_temba(org, temba_contact)
             except NoMatchingCohortsWarning as e:
+                # This isn't really an error, we purposely only sync contacts in
+                # the selected groups.
                 logger.warning(e.message)
                 failed_uuids.append(temba_contact.uuid)
                 errors.append(e.message)
@@ -101,21 +115,15 @@ def sync_pull_contacts(org, region_uuids, group_uuids):
 
             msg = "%d Adding NEW contact: %s" % (total_contacts, temba_contact.name)
             logger.info(msg)
-            # We have a signal that queries rapidpro and sets groups on new Contacts,
-            # but we already know the groups so we can skip that. This bit will let
-            # the signal handler know which groups to add without having to call Rapidpro.
 
-            # create new contact from kwargs
             new_contact = Contact.objects.create(**kwargs)
-
             created_uuids.append(temba_contact.uuid)
-
-            # If we see this contact again, recognize it as now existing
             existing_by_uuid[new_contact.uuid] = new_contact
 
     # any contact that has been deleted from rapidpro
     # should be marked inactive in tracpro
-    deleted_rapidpro_contacts = client.get_contacts_in_groups(group_uuids, deleted=True)
+    deleted_rapidpro_contacts = \
+        client.get_contacts_in_groups(group_uuids | region_uuids, deleted=True)
     deleted_uuids += get_uuids(deleted_rapidpro_contacts)
 
     # Mark all deleted contacts as not active if they aren't already.

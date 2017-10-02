@@ -355,8 +355,9 @@ class PollRunCRUDL(smartmin.SmartCRUDL):
                     groups_or_regions = Region.objects.filter(org=self.request.org)
 
             # initialize an ordered dict of group to response counts
+            # response statuses:
+            # E = EMPTY, P = PARTIAL, C = COMPLETE
             per_group_counts = OrderedDict()
-            no_group_counts = {'E': 0, 'P': 0, 'C': 0}
             overall_counts = {'E': 0, 'P': 0, 'C': 0}
 
             # Calculate all reporter group or region activity per group or region
@@ -376,20 +377,10 @@ class PollRunCRUDL(smartmin.SmartCRUDL):
                     overall_counts['P'] = overall_counts['P'] + per_group_counts[group_or_region]['P']
                     overall_counts['C'] = overall_counts['C'] + per_group_counts[group_or_region]['C']
 
-            # Calculate all no-group or no-region activity
-            if group_by_reporter_group:
-                responses_no_group = responses.filter(contact__groups__isnull=True)
-            else:
-                responses_no_group = responses.filter(contact__region__isnull=True)
-            if responses_no_group:
-                no_group_counts = {
-                    "E": responses_no_group.filter(status=Response.STATUS_EMPTY).count(),
-                    "P": responses_no_group.filter(status=Response.STATUS_PARTIAL).count(),
-                    "C": responses_no_group.filter(status=Response.STATUS_COMPLETE).count()
-                }
-                overall_counts['E'] = overall_counts['E'] + no_group_counts['E']
-                overall_counts['P'] = overall_counts['P'] + no_group_counts['P']
-                overall_counts['C'] = overall_counts['C'] + no_group_counts['C']
+            # Note: we used to figure out participation data for contacts with no
+            # group or region - but there cannot be any data from such contacts, since
+            # we already filter to only the data associated with specific cohorts and
+            # panels that the user has selected. So, all that has been removed from here.
 
             def calc_completion(counts):
                 total = counts['E'] + counts['P'] + counts['C']
@@ -399,12 +390,10 @@ class PollRunCRUDL(smartmin.SmartCRUDL):
             for group, counts in per_group_counts.iteritems():
                 counts['X'] = calc_completion(counts)
 
-            no_group_counts['X'] = calc_completion(no_group_counts)
             overall_counts['X'] = calc_completion(overall_counts)
 
             # participation table counts
             context['per_group_counts'] = per_group_counts
-            context['no_group_counts'] = no_group_counts
             context['overall_counts'] = overall_counts
 
             # message recipient counts

@@ -211,29 +211,6 @@
           {% endfor %}
           <tr>
             <td>
-              <i>
-                {% if group_by_reporter_group %}
-                  {% trans "No cohort" %}
-                {% else %}
-                  {% trans "No panel" %}
-                {% endif %}
-              </i>
-            </td>
-            <td>
-              {{ no_group_counts.E }}
-            </td>
-            <td>
-              {{ no_group_counts.P }}
-            </td>
-            <td>
-              {{ no_group_counts.C }}
-            </td>
-            <td>
-              {{ no_group_counts.X }}
-            </td>
-          </tr>
-          <tr>
-            <td>
               <strong>
                 {% trans "Total" %}
               </strong>
