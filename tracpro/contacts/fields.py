@@ -26,13 +26,13 @@ URN_SCHEME_LABELS = {
 }
 
 PHONE_PARSE_ERROR = {
-    NumberParseException.INVALID_COUNTRY_CODE: "This phone number has an invalid country code.",
-    NumberParseException.NOT_A_NUMBER: "This is not a valid phone number.  A valid phone number "
+    NumberParseException.INVALID_COUNTRY_CODE: _("This phone number has an invalid country code."),
+    NumberParseException.NOT_A_NUMBER: _("This is not a valid phone number.  A valid phone number "
     "must include \"+\" and country code / region "
-    "(e.g. \"+1\" for North America).",
-    NumberParseException.TOO_SHORT_AFTER_IDD: "The string supplied is too short to be a phone number.",
-    NumberParseException.TOO_SHORT_NSN: "The string supplied is too short to be a phone number.",
-    NumberParseException.TOO_LONG: "The string supplied is too long to be a phone number.",
+    "(e.g. \"+1\" for North America)."),
+    NumberParseException.TOO_SHORT_AFTER_IDD: _("The string supplied is too short to be a phone number."),
+    NumberParseException.TOO_SHORT_NSN: _("The string supplied is too short to be a phone number."),
+    NumberParseException.TOO_LONG: _("The string supplied is too long to be a phone number."),
 }
 
 
@@ -134,19 +134,15 @@ def validate_phone(client, uuid, number):
     try:
         parsed = parse(number)
     except NumberParseException as error:
-        raise ValidationError(
-            _(PHONE_PARSE_ERROR[error.error_type]))
+        raise ValidationError(PHONE_PARSE_ERROR[error.error_type])
     else:
         reason = is_possible_number_with_reason(parsed)
         if reason == ValidationResult.INVALID_COUNTRY_CODE:
-            raise ValidationError(
-                _(PHONE_PARSE_ERROR[NumberParseException.INVALID_COUNTRY_CODE]))
+            raise ValidationError(PHONE_PARSE_ERROR[NumberParseException.INVALID_COUNTRY_CODE])
         elif reason == ValidationResult.TOO_SHORT:
-            raise ValidationError(
-                _(PHONE_PARSE_ERROR[NumberParseException.TOO_SHORT_NSN]))
+            raise ValidationError(PHONE_PARSE_ERROR[NumberParseException.TOO_SHORT_NSN])
         elif reason == ValidationResult.TOO_LONG:
-            raise ValidationError(
-                _(PHONE_PARSE_ERROR[NumberParseException.TOO_LONG]))
+            raise ValidationError(PHONE_PARSE_ERROR[NumberParseException.TOO_LONG])
         else:
             return validate_phone_used(client, uuid, parsed)
 
