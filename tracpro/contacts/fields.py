@@ -27,9 +27,10 @@ URN_SCHEME_LABELS = {
 
 PHONE_PARSE_ERROR = {
     NumberParseException.INVALID_COUNTRY_CODE: _("This phone number has an invalid country code."),
-    NumberParseException.NOT_A_NUMBER: _("This is not a valid phone number.  A valid phone number "
-    "must include \"+\" and country code / region "
-    "(e.g. \"+1\" for North America)."),
+    NumberParseException.NOT_A_NUMBER: _(
+                                            "This is not a valid phone number.  A valid phone number "
+                                            "must include \"+\" and country code / region "
+                                            "(e.g. \"+1\" for North America)."),
     NumberParseException.TOO_SHORT_AFTER_IDD: _("The string supplied is too short to be a phone number."),
     NumberParseException.TOO_SHORT_NSN: _("The string supplied is too short to be a phone number."),
     NumberParseException.TOO_LONG: _("The string supplied is too long to be a phone number."),
