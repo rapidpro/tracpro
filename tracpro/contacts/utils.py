@@ -1,12 +1,10 @@
 from __future__ import unicode_literals
 
 import six
-from collections import OrderedDict
 
 from celery.utils.log import get_task_logger
 
 from temba_client.clients import TembaBadRequestError
-from temba_client.v2.types import Contact as TembaContact
 
 from tracpro.client import get_client
 from tracpro.utils import get_uuids
@@ -136,16 +134,11 @@ def sync_pull_contacts(org, region_uuids, group_uuids):
             errors)
 
 
-def temba_compare_contacts(first, second, fields=None, groups=None):
+def temba_compare_contacts(first, second):
     """
     Compares two Temba contacts to determine if there are differences.
     These two contacts are presumably referencing the same contact,
     but we need to see if there are any differences between them.
-    fields: if this is passed in, we should check that these specific
-            fields exist on both contacts, and
-            ignore all other non-matching fields from the contacts
-    groups: if this is passed in, we can check that the two contacts
-            belong to the same groups
 
     Returns name of first difference found, one of 'name' or 'urns' or
     'groups' or 'fields', or None if no differences were spotted.
@@ -159,26 +152,18 @@ def temba_compare_contacts(first, second, fields=None, groups=None):
     if sorted(first.urns) != sorted(second.urns):
         return 'urns'
 
-    if groups is None and (sorted(first.groups) != sorted(second.groups)):
+    if sorted(first.groups) != sorted(second.groups):
         return 'groups'
-    if groups:
-        a = sorted(intersection(first.groups, groups))
-        b = sorted(intersection(second.groups, groups))
-        if a != b:
-            return 'groups'
 
-    if fields is None and (first.fields != second.fields):
-        return 'fields'
-    if fields and (filter_dict(first.fields, fields) != filter_dict(second.fields, fields)):
+    if first.fields != second.fields:
         return 'fields'
 
     return None
 
 
-def sync_push_contact(org, contact, change_type, mutex_group_sets):
+def sync_push_contact(org, contact, change_type):
     """
-    Pushes a local change to a contact. mutex_group_sets is a list of UUID sets
-    of groups whose membership is mutually exclusive. Contact class must define
+    Pushes a local change to a contact.  Contact class must define
     an as_temba instance method.
     """
     from tracpro.contacts.models import ChangeType
@@ -205,32 +190,39 @@ def sync_push_contact(org, contact, change_type, mutex_group_sets):
 
     elif change_type == ChangeType.updated:
         # fetch contact so that we can merge with its URNs, fields and groups
-        remote_contact = client.get_contacts(uuid=contact.uuid)[0]
+        remote_contacts = client.get_contacts(uuid=contact.uuid)
+        if not remote_contacts:
+            # No such contact at RapidPro, treat it like creating a contact.
+            # (maybe somebody created then edited a contact before it got pushed to rapidpro?)
+            sync_push_contact(org, contact, ChangeType.created)
+            return
+        remote_contact = remote_contacts[0]
         local_contact = contact.as_temba()
 
         if temba_compare_contacts(remote_contact, local_contact):
-            merged_contact = temba_merge_contacts(
-                local_contact, remote_contact, mutex_group_sets)
+            # Something changed - make an update on rapidpro
 
             # fetched contacts may have fields with null values but we can't
             # push these so we remove them
-            merged_contact.fields = {k: v
-                                     for k, v in six.iteritems(merged_contact.fields)
-                                     if v is not None}
+            local_contact.fields = {
+                k: v
+                for k, v in six.iteritems(local_contact.fields)
+                if v is not None
+            }
 
             try:
-                client.update_contact(contact=merged_contact.uuid,
-                                      name=merged_contact.name,
-                                      language=merged_contact.language,
-                                      urns=merged_contact.urns,
-                                      fields=merged_contact.fields,
-                                      groups=merged_contact.groups)
+                client.update_contact(contact=local_contact.uuid,
+                                      name=local_contact.name,
+                                      language=local_contact.language,
+                                      urns=local_contact.urns,
+                                      fields=local_contact.fields,
+                                      groups=local_contact.groups)
             except TembaBadRequestError as e:
                 temba_err_msg = ''
                 for key, value in e.errors.iteritems():
                     temba_err_msg += key + ': ' + value[0]
                 logger.warning("Unable to update contact %s on RapidPro. Error: %s" %
-                               (merged_contact.name, temba_err_msg))
+                               (local_contact.name, temba_err_msg))
 
     elif change_type == ChangeType.deleted:
         try:
@@ -239,85 +231,4 @@ def sync_push_contact(org, contact, change_type, mutex_group_sets):
             temba_err_msg = ''
             for key, value in e.errors.iteritems():
                 temba_err_msg += key + ': ' + value[0]
-            logger.warning("Unable to delete contact %s on RapidPro. Error: %s" % (merged_contact.name, temba_err_msg))
-
-
-def temba_merge_contacts(first, second, mutex_group_sets):
-    """
-    Merges two Temba contacts, with priority given to the first contact
-    """
-    if first.uuid != second.uuid:  # pragma: no cover
-        raise ValueError("Can't merge contacts with different UUIDs")
-
-    # URNs are merged by scheme
-    first_urns_by_scheme = {u[0]: u[1] for u in [urn.split(':', 1) for urn in first.urns]}
-    urns_by_scheme = {u[0]: u[1] for u in [urn.split(':', 1) for urn in second.urns]}
-    urns_by_scheme.update(first_urns_by_scheme)
-    merged_urns = ['%s:%s' % (scheme, path) for scheme, path in six.iteritems(urns_by_scheme)]
-
-    # fields are simple key based merge
-    merged_fields = second.fields.copy()
-    merged_fields.update(first.fields)
-
-    # first merge mutually exclusive group sets
-    first_groups = list(first.groups)
-    second_groups = list(second.groups)
-    merged_mutex_groups = []
-    for group_set in mutex_group_sets:
-        from_first = intersection(first_groups, group_set)
-        if from_first:
-            merged_mutex_groups.append(from_first[0])
-        else:
-            from_second = intersection(second_groups, group_set)
-            if from_second:
-                merged_mutex_groups.append(from_second[0])
-
-        for group in group_set:
-            if group in first_groups:
-                first_groups.remove(group)
-            if group in second_groups:
-                second_groups.remove(group)
-
-    # then merge the remaining groups
-    merged_groups = merged_mutex_groups + union(first_groups, second_groups)
-
-    return TembaContact.create(uuid=first.uuid, name=first.name,
-                               urns=merged_urns, fields=merged_fields, groups=merged_groups)
-
-
-def intersection(*args):
-    """
-    Return the intersection of lists, using the first list to determine item order
-    """
-    if not args:
-        return []
-
-    # remove duplicates from first list whilst preserving order
-    base = list(OrderedDict.fromkeys(args[0]))
-
-    if len(args) == 1:
-        return base
-    else:
-        others = set(args[1]).intersection(*args[2:])
-        return [e for e in base if e in others]
-
-
-def filter_dict(d, keys):
-    """
-    Creates a new dict from an existing dict that only has the given keys
-    """
-    return {k: v for k, v in six.iteritems(d) if k in keys}
-
-
-def union(*args):
-    """
-    Return the union of lists, ordering by first seen in any list
-    """
-    if not args:
-        return []
-
-    base = args[0]
-    for other in args[1:]:
-        base.extend(other)
-
-    return list(OrderedDict.fromkeys(base))  # remove duplicates whilst preserving order
+            logger.warning("Unable to delete contact %s on RapidPro. Error: %s" % (contact.name, temba_err_msg))
