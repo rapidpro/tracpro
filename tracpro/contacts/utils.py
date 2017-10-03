@@ -190,7 +190,13 @@ def sync_push_contact(org, contact, change_type):
 
     elif change_type == ChangeType.updated:
         # fetch contact so that we can merge with its URNs, fields and groups
-        remote_contact = client.get_contacts(uuid=contact.uuid)[0]
+        remote_contacts = client.get_contacts(uuid=contact.uuid)
+        if not remote_contacts:
+            # No such contact at RapidPro, treat it like creating a contact.
+            # (maybe somebody created then edited a contact before it got pushed to rapidpro?)
+            sync_push_contact(org, contact, ChangeType.created)
+            return
+        remote_contact = remote_contacts[0]
         local_contact = contact.as_temba()
 
         if temba_compare_contacts(remote_contact, local_contact):
