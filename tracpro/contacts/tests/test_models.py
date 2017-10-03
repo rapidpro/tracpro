@@ -143,6 +143,7 @@ class ContactTest(TracProDataTest):
         self.assertEqual(len(models.Contact.objects.active().by_org(self.nyaruka)), 1)
 
     def test_get_responses(self):
+        self.mock_temba_client.create_flow_start.return_value = []
         date1 = datetime.datetime(2014, 1, 1, 7, tzinfo=pytz.UTC)
         date2 = datetime.datetime(2014, 1, 1, 8, tzinfo=pytz.UTC)
         pollrun1 = factories.UniversalPollRun(

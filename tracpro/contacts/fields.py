@@ -62,11 +62,9 @@ def urn_exists_in_rapidpro(client, uuid, urn):
     Return True if a remote contact with this urn
     exists in RapidPro and has a different uuid than uuid.
     """
+
     contacts = client.get_contacts(urn=urn)
-    try:
-        return contacts[0].uuid is not None and contacts[0].uuid != uuid
-    except:
-        return False
+    return contacts and contacts[0].uuid != uuid
 
 
 def urn_already_used(client, uuid, urn):

@@ -12,6 +12,8 @@ BROKER_URL = CELERY_RESULT_BACKEND = 'redis://localhost:6379/10'
 
 CELERY_ALWAYS_EAGER = True
 
+CELERY_EAGER_PROPAGATES_EXCEPTIONS = True
+
 PASSWORD_HASHERS = [
     'django.contrib.auth.hashers.SHA1PasswordHasher',
     'django.contrib.auth.hashers.MD5PasswordHasher',
