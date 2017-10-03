@@ -457,6 +457,7 @@ class PollRunTest(TracProDataTest):
         })
 
     def test_is_last_for_region(self):
+        self.mock_temba_client.create_flow_start.return_value = []
         pollrun1 = factories.RegionalPollRun(
             poll=self.poll1, region=self.region1, conducted_on=timezone.now())
         pollrun2 = factories.UniversalPollRun(

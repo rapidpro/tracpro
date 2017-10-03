@@ -12,7 +12,6 @@ from . import models
 
 
 class ContactForm(forms.ModelForm):
-    urn = URNField(label=_("Phone/Twitter"))
     region = ModifiedLevelTreeNodeChoiceField(
         label=_("Panel"), empty_label="", queryset=Region.objects.none())
 
@@ -26,7 +25,10 @@ class ContactForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user')
         org = self.user.get_org()
+
         super(ContactForm, self).__init__(*args, **kwargs)
+
+        self.fields['urn'] = URNField(label=_("Phone/Twitter"), org=org, uuid=self.instance.uuid)
 
         self.instance.org = org
         self.instance.modified_by = self.user

@@ -21,7 +21,7 @@ enum34==1.1.2
   Markdown==2.6.6
   Pygments==2.1.3
 numpy==1.12.0
-phonenumbers==7.1.1
+phonenumbers==8.5.1
 pisa==3.0.33
 psycopg2==2.6.1
 pycountry==1.10

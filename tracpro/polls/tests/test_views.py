@@ -36,6 +36,8 @@ class ResponseCRUDLTest(TracProDataTest):
         date2 = datetime.datetime(2014, 1, 1, 8, tzinfo=pytz.UTC)
         date3 = datetime.datetime(2014, 1, 2, 7, tzinfo=pytz.UTC)
 
+        self.mock_temba_client.create_flow_start.return_value = []
+
         # create non-regional pollrun with 3 responses (1 complete, 1 partial, 1 empty)
         self.pollrun1 = factories.UniversalPollRun(
             poll=self.poll1, conducted_on=date1)
