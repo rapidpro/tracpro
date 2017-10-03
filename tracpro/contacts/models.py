@@ -246,9 +246,15 @@ class Contact(models.Model):
                     c=temba_contact,
                 ))
 
-        # make a list of groups
-        # Use all the Temba groups that match one of the org's Groups. (cohort)
-        groups = Group.get_all(org).filter(uuid__in=get_uuids(temba_contact.groups))
+        # Make a list of groups that the Contact belongs to.
+        # Use all the Temba groups that match a group (cohort) in Tracpro.
+        # We INCLUDE groups that the org is not currently tracking, because otherwise
+        # we might end up pushing the subset of groups belonged to back to Rapidpro,
+        # resulting in losing the data about the other groups the contact belonged to.
+        # Including non-tracked groups in the contact's cohorts should be harmless -
+        # we only ever check to see if a cohort we're tracking is in the contact's
+        # cohorts, and will never even notice the other groups.
+        groups = Group.objects.filter(uuid__in=get_uuids(temba_contact.groups))
 
         # Use the first URN we know about the scheme of
         urn = None
