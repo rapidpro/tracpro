@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 import six
 
 from celery.utils.log import get_task_logger
+from temba_client.base import TembaNoSuchObjectError
 
 from temba_client.clients import TembaBadRequestError
 
@@ -227,6 +228,9 @@ def sync_push_contact(org, contact, change_type):
     elif change_type == ChangeType.deleted:
         try:
             client.delete_contact(contact.uuid)
+        except TembaNoSuchObjectError:
+            # Nothing to do, it's already gone (or was never there)
+            pass
         except TembaBadRequestError as e:
             temba_err_msg = ''
             for key, value in e.errors.iteritems():
