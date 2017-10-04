@@ -37,6 +37,7 @@ class ContactForm(forms.ModelForm):
 
         self.fields['name'].required = True
         self.fields['groups'].required = True
+        self.fields['language'].required = True
 
         regions = self.user.get_all_regions(org).order_by(Lower('name'))
         self.fields['region'].queryset = regions
