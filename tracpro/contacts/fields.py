@@ -76,11 +76,11 @@ def urn_already_used(client, uuid, urn):
     # RapidPro checks for the numeric id without handle
     # we are going to mimic that here locally
     if urn.startswith('twitterid'):
-        contacts = Contact.objects.filter(urn__startswith=urn.split('#')[0])
+        contacts = Contact.objects.filter(urn__startswith=urn.split('#')[0], is_active=True)
         if uuid:
             contacts = contacts.exclude(uuid=uuid)
     else:
-        contacts = Contact.objects.filter(urn=urn)
+        contacts = Contact.objects.filter(urn=urn, is_active=True)
         if uuid:
             contacts = contacts.exclude(uuid=uuid)
 
