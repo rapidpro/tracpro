@@ -111,6 +111,7 @@ class InboxMessageCRUDL(SmartCRUDL):
 
         def derive_queryset(self, **kwargs):
             qs = InboxMessage.get_all(self.request.org, self.request.data_regions)
+            qs = qs.exclude(contact__is_active=False)
             qs = qs.select_related('contact')
 
             qs = qs.order_by('contact', '-created_on')
