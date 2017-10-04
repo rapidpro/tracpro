@@ -31,11 +31,12 @@ class ContactCRUDLTest(TracProDataTest):
         response = self.url_post('unicef', url, dict())
         self.assertEqual(response.status_code, 200)
         form = response.context['form']
-        self.assertEqual(len(form.errors), 4, form.errors)
+        self.assertEqual(len(form.errors), 5, form.errors)
         self.assertFormError(response, 'form', 'name', 'This field is required.')
         self.assertFormError(response, 'form', 'urn', 'This field is required.')
         self.assertFormError(response, 'form', 'region', 'This field is required.')
         self.assertFormError(response, 'form', 'groups', 'This field is required.')
+        self.assertFormError(response, 'form', 'language', 'This field is required.')
 
     def test_create_with_fields(self):
         url = reverse('contacts.contact_create')
@@ -79,6 +80,7 @@ class ContactCRUDLTest(TracProDataTest):
             'urn_1': "+16782345765",
             'region': self.region3.pk,
             'groups': (self.group1.pk, self.group2.pk, self.group3.pk),
+            'language': 'eng',
         })
 
         self.assertFormError(response, 'form', 'region',
@@ -120,6 +122,7 @@ class ContactCRUDLTest(TracProDataTest):
             'urn_1': "+16782345763",
             'region': self.region1.pk,
             'groups': (self.group1.pk, self.group2.pk, self.group3.pk),
+            'language': 'eng',
         })
 
         self.assertEqual(response.status_code, 302)
@@ -137,6 +140,7 @@ class ContactCRUDLTest(TracProDataTest):
             'urn_1': "qwerty",
             'region': self.region1.pk,
             'groups': (self.group1.pk, self.group2.pk, self.group3.pk),
+            'language': 'eng',
         })
 
         self.assertEqual(response.status_code, 200)
@@ -160,6 +164,7 @@ class ContactCRUDLTest(TracProDataTest):
             'urn_1': "2345263746",
             'region': self.region1.pk,
             'groups': (self.group1.pk, self.group2.pk, self.group3.pk),
+            'language': 'eng',
         })
 
         self.assertEqual(response.status_code, 200)
@@ -180,6 +185,7 @@ class ContactCRUDLTest(TracProDataTest):
             'urn_1': "+167",
             'region': self.region1.pk,
             'groups': (self.group1.pk, self.group2.pk, self.group3.pk),
+            'language': 'eng',
         })
 
         self.assertEqual(response.status_code, 200)
@@ -200,6 +206,7 @@ class ContactCRUDLTest(TracProDataTest):
             'urn_1': "+167823457657364576297",
             'region': self.region1.pk,
             'groups': (self.group1.pk, self.group2.pk, self.group3.pk),
+            'language': 'eng',
         })
 
         self.assertEqual(response.status_code, 200)
@@ -226,6 +233,7 @@ class ContactCRUDLTest(TracProDataTest):
             'urn_1': "+19102223333",
             'region': self.region1.pk,
             'groups': (self.group1.pk, self.group2.pk, self.group3.pk),
+            'language': 'eng',
         })
 
         self.assertEqual(response.status_code, 200)
@@ -246,6 +254,7 @@ class ContactCRUDLTest(TracProDataTest):
             'urn_1': "88-uu-oo",
             'region': self.region1.pk,
             'groups': (self.group1.pk, self.group2.pk, self.group3.pk),
+            'language': 'eng',
         })
 
         self.assertEqual(response.status_code, 200)
@@ -271,6 +280,7 @@ class ContactCRUDLTest(TracProDataTest):
             'urn_1': "just_a_handle",
             'region': self.region1.pk,
             'groups': (self.group1.pk, self.group2.pk, self.group3.pk),
+            'language': 'eng',
         })
 
         self.assertEqual(response.status_code, 200)
@@ -294,6 +304,7 @@ class ContactCRUDLTest(TracProDataTest):
             'urn_1': "aaa123#handle",
             'region': self.region1.pk,
             'groups': (self.group1.pk, self.group2.pk, self.group3.pk),
+            'language': 'eng',
         })
 
         self.assertEqual(response.status_code, 200)
