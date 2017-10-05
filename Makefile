@@ -7,7 +7,7 @@ test:
 	# Run all tests and report coverage
 	# Requires coverage
 	coverage erase
-	coverage run manage.py test
+	coverage run manage.py test --keepdb
 	coverage report -m --fail-under 80
 
 lint-py:
@@ -18,7 +18,7 @@ lint-py:
 lint-js:
 	# Check JS for any problems
 	# Requires jshint
-	find -name "*.js" -not -path "${STATIC_LIBS_DIR}*" -print0 | xargs -0 jshint
+	find -name "*.js" -not -path "${STATIC_LIBS_DIR}*" -a -not -path "./tracpro/static/js/*" -print0 | xargs -0 jshint
 
 lint: lint-py lint-js
 
