@@ -24,7 +24,7 @@ lint-py:
 lint-js:
 	# Check JS for any problems
 	# Requires jshint
-	find -name "*.js" -not \( -path "${STATIC_LIBS_DIR}*" -o -path '*CACHE*' -o -path '*.min.js' -o -path './docs/*' \) -print0 | xargs -0 jshint --verbose
+	find -name "*.js" -not \( -path "${STATIC_LIBS_DIR}*" -o -path '*CACHE*' -o -path '*.min.js' -o -path './docs/*' -o -path './node_modules/*' \) -print0 | xargs -0 jshint --verbose
 
 lint: lint-py lint-js
 
