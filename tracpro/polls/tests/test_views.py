@@ -27,6 +27,17 @@ class PollCRUDLTest(TracProDataTest):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context['object_list']), 1)
 
+    def test_read(self):
+        url = reverse('polls.poll_read', kwargs={'pk': self.poll1.pk})
+        # log in as admin
+        self.login(self.admin)
+
+        response = self.url_get('unicef', url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['object'].pk, self.poll1.pk)
+        self.assertEqual(self.poll1.name, response.context['title'])
+        self.assertEqual(2, len(response.context['question_data']))
+
 
 class ResponseCRUDLTest(TracProDataTest):
 

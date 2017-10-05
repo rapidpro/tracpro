@@ -1,3 +1,5 @@
+/* globals Highcharts */
+/* jshint -W033 */
 Highcharts.setOptions({
     lang: {
         numericSymbols: []
@@ -44,9 +46,9 @@ jQuery.fn.extend({
     chart_numeric: function() {
         var getSeries = function(chartData, dataType) {
             var urls;
-            if (dataType == "sum" || dataType == "average") {
+            if (dataType === "sum" || dataType === "average") {
                 urls = chartData["pollrun-urls"];
-            } else if (dataType == "response-rate") {
+            } else if (dataType === "response-rate") {
                 urls = chartData["participation-urls"];
             } else {
                 return []

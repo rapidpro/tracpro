@@ -1,3 +1,4 @@
+/* jshint -W033, -W003 */
 $(function() {
     var EDIT_REGIONS_HELP = "Edit panel hierarchy by dragging and " +
                             "dropping table rows. Click 'Save Panels' " +
@@ -14,12 +15,12 @@ $(function() {
     /* Per Django documentation, to get CSRF cookie for AJAX post. */
     function getCookie(name) {
         var cookieValue = null;
-        if (document.cookie && document.cookie != '') {
+        if (document.cookie && document.cookie !== '') {
             var cookies = document.cookie.split(';');
             for (var i = 0; i < cookies.length; i++) {
                 var cookie = jQuery.trim(cookies[i]);
                 // Does this cookie string begin with the name we want?
-                if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
                     cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
                     break;
                 }
@@ -31,11 +32,11 @@ $(function() {
     /* Add user message to the top of the page. */
     var addUserMessage = function(id, type, message, hideClose) {
         clearUserMessage(id);  // Remove previous messages that used this ID.
-        msgDiv = $("<div>").attr("id", id);
+        var msgDiv = $("<div>").attr("id", id);
         msgDiv.addClass("alert alert-" + type);
         msgDiv.html(message)
         if (!hideClose) {
-            close = $("<a>").attr("href", "#")
+            var close = $("<a>").attr("href", "#")
             close.addClass("close").attr("data-dismiss", "alert")
             close.html("×");
             msgDiv.prepend(close);
@@ -132,7 +133,7 @@ $(function() {
             if (data['success']) {
                 saveRegionsSuccess(data['message']);
             } else {
-                message = "<strong>An error occurred while saving the " +
+                var message = "<strong>An error occurred while saving the " +
                           "panel changes:</strong> " + data["message"];
                 saveRegionsFailure(message);
             }
@@ -185,7 +186,7 @@ $(function() {
         over: function(e, ui) {
             var toMove = ui.draggable;
             var candidateParent = $(this);
-            if (toMove != candidateParent && !candidateParent.is(".expanded")) {
+            if (toMove !== candidateParent && !candidateParent.is(".expanded")) {
                 var table = $(this).closest(".treetable");
                 table.treetable("expandNode", candidateParent.data("ttId"));
             }

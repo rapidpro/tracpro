@@ -129,3 +129,33 @@ class TestChartBaseline(TracProTest):
             {'y': 84.0},  # 14 + 28 + 42
             {'y': 126.0},  # 21 + 42 + 63
         ])
+
+    def test_chart_data__with_user_goal(self):
+        user_goal = 666
+        self.filter_form.data['goal'] = user_goal
+        series, categories, summary_data = self.get_data(region=None, include_subregions=True)
+
+        # There should be 3 dates to match each follow-up pollrun.
+        self.assertEqual(categories, [
+            "2015-01-02",
+            "2015-01-03",
+            "2015-01-04",
+        ])
+
+        self.assertEqual(summary_data['Dates'], 'January 01, 2015 - January 04, 2015')
+        self.assertIsNone(summary_data['Baseline response rate (%)'])
+        self.assertEqual(summary_data['Baseline value (# cats)'], user_goal)
+        self.assertEqual(summary_data['Follow up mean (# cats)'], 84.0)
+        self.assertEqual(summary_data['Follow up standard deviation'], 34.3)
+        self.assertEqual(summary_data['Follow up response rate (%)'], 100)
+
+        # Series length should match that of follow-up.
+        # 10 + 20 + 30 = 60
+        self.assertEqual(series['Baseline'], [user_goal, user_goal, user_goal])
+
+        # Follow-up should be sum of contact answers per pollrun.
+        self.assertEqual(series['Follow up'], [
+            {'y': 42.0},  # 7 + 14 + 21
+            {'y': 84.0},  # 14 + 28 + 42
+            {'y': 126.0},  # 21 + 42 + 63
+        ])

@@ -1,3 +1,5 @@
+/* globals L */
+/* jshint -W033 */
 $(function() {
 
   var COLORS = [

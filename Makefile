@@ -1,13 +1,19 @@
 PROJECT_NAME = tracpro
 STATIC_LIBS_DIR = ./$(PROJECT_NAME)/static/libs
 
-default: lint test
+default: lint test docs
 
-test:
-	# Run all tests and report coverage
+test: testpy testcoverage
+
+testpy:
+	# Run all tests and gather coverage data (use testcoverage to report it)
 	# Requires coverage
 	coverage erase
-	coverage run manage.py test
+	coverage run manage.py test --noinput --keepdb
+
+# This is a separate rule so we can run with 'make -k' and still get a coverage report
+# even if the tests fail.
+testcoverage:
 	coverage report -m --fail-under 80
 
 lint-py:
@@ -18,7 +24,7 @@ lint-py:
 lint-js:
 	# Check JS for any problems
 	# Requires jshint
-	find -name "*.js" -not -path "${STATIC_LIBS_DIR}*" -print0 | xargs -0 jshint
+	find -name "*.js" -not \( -path "${STATIC_LIBS_DIR}*" -o -path '*CACHE*' -o -path '*.min.js' -o -path './docs/*' \) -print0 | xargs -0 jshint --verbose
 
 lint: lint-py lint-js
 
@@ -89,6 +95,7 @@ docs:
 	cd docs && make html
 
 .PHONY: default test lint lint-py lint-js generate-secret makemessages \
-		pushmessages pullmessages compilemessages docs
+		pushmessages pullmessages compilemessages docs \
+		testpy testcoverage
 
 .PRECIOUS: conf/%.pub.ssh

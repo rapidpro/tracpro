@@ -20,7 +20,7 @@ $(function() {
     $('.filter-form #id_date_range').on('change', function() {
         var showDates = $(this).val() === 'custom';
         $('#filter-dates').toggleClass('hidden', !showDates);
-        $('#filter-dates').find('input').prop('disabled', !showDates)
+        $('#filter-dates').find('input').prop('disabled', !showDates);
     }).change();
 
     /* Don't submit empty form fields. */

@@ -23,9 +23,6 @@ before_script:
   - pipconflictchecker
   - python manage.py makemigrations --dry-run | grep 'No changes detected' || (echo 'There are changes which require migrations.' && exit 1)
 script:
-  - coverage run manage.py test
-  - coverage report --fail-under=75
-  - flake8 .
-  - make docs
+  - make -k
 notifications:
     hipchat:  259913064a0a577b61d874d51dfbc2@Edutrac
