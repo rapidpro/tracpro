@@ -16,7 +16,7 @@ install:
   - pip install -r requirements/tests.txt
   - npm install less
   - npm install coffee-script
-  - npm install jshint
+  - sudo npm install -g jshint
 before_script:
   - psql -U postgres -c "CREATE USER tracpro WITH PASSWORD 'nyaruka';"
   - psql -U postgres -c "ALTER ROLE tracpro WITH SUPERUSER;"
