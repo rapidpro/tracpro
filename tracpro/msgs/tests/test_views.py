@@ -97,3 +97,25 @@ class InboxMessageCRUDLTest(TracProDataTest):
         # This should redirect to login (not 500)
         response = self.url_get('unicef', url)
         self.assertLoginRedirect(response, 'unicef', url)
+
+    def test_hide_messages_inactive_contacts(self):
+        # If a contact is not active, its inbox messages should not show up.
+        self.contact3.is_active = False
+        self.contact3.save()
+
+        self.inboxmsg4 = InboxMessage.objects.create(
+            org=self.unicef,
+            rapidpro_message_id=6790,
+            contact=self.contact3,
+            text="inboxmsg4: A message from inactive contact3",
+            archived=False,
+            direction="I",
+            created_on=timezone.now(),
+        )
+
+        url = reverse('msgs.inboxmessage_list')
+
+        # Only the most recent message related per contact should display
+        response = self.url_get('unicef', url)
+        self.assertEqual(list(response.context['object_list']),
+                         [self.inboxmsg2, self.inboxmsg3])
