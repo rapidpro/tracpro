@@ -14,6 +14,11 @@ may be needed for Mac setup. To begin you should have the following applications
 - git >= 1.7
 - Redis
 
+.. WARNING::
+
+    Need to update the following instructions for installing node; the chris-lea repo is
+    no longer how we do it.
+
 #. Install the LESS CSS precompiler and the CoffeeScript JavaScript compiler using ``npm``.
    First, install ``nodejs`` which comes with ``npm``::
 
@@ -67,7 +72,7 @@ may be needed for Mac setup. To begin you should have the following applications
 
     (tracpro)$ python manage.py migrate
 
-#. Background tasks. To run background tasks, you'll also need to start celery::
+#. Background tasks. To run background tasks, you'll also need to start celery (in another window)::
 
     (tracpro)$ celery -A tracpro worker -B -l info
 
@@ -83,7 +88,12 @@ may be needed for Mac setup. To begin you should have the following applications
 
 #. Create Super User
 
-   If creating a super user, be sure to select a valid password. TracPro enforces an 8 character minimum password.
+   If creating a super user, be sure to select a valid password.
+   TracPro enforces an 8 character minimum password.
+
+   (It's possible to create a password that does not meet that requirement,
+   and then your logins will fail with "invalid password" even if you
+   correctly enter that password.)
 
 #. Run the development server and navigate to
    `localhost:8000 <http://localhost:8000>`_::
