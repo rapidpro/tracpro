@@ -223,3 +223,19 @@ class SyncPullTest(TracProDataTest):
         c = Contact.objects.get(uuid=blocked_contact.uuid)
         self.assertFalse(c.is_active)
         self.assertFalse(errors)
+
+    def test_existing_contact_not_returned_by_rapidpro(self):
+        contact = Contact.objects.get(uuid=self.rapidpro_contacts_as_temba[0].uuid)
+        self.assertTrue(contact.is_active)
+
+        # Do not include this one in the contacts RapidPro "returns" to us
+        self.rapidpro_contacts_as_temba = [
+            c for c in self.rapidpro_contacts_as_temba if c.uuid != contact.uuid]
+
+        sync_pull_contacts(
+            org=self.org, region_uuids=self.get_region_uuids(), group_uuids=self.get_group_uuids())
+
+        # RapidPro didn't return this contact to us, so it must no longer be
+        # of interest to us, and we should have marked it inactive.
+        contact.refresh_from_db()
+        self.assertFalse(contact.is_active)

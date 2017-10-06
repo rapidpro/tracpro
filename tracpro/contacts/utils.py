@@ -128,6 +128,13 @@ def sync_pull_contacts(org, region_uuids, group_uuids):
     # Mark all deleted contacts as not active if they aren't already.
     existing_contacts.filter(uuid__in=deleted_uuids, is_active=True).update(is_active=False)
 
+    # See if any of our existing contacts that are still active never showed
+    # up from RapidPro, which could mean they were just edited so they no longer
+    # belong to any of the groups we were using to sync.  Mark those inactive too.
+    uuids_seen = set(created_uuids) | set(updated_uuids) | set(deleted_uuids) | set(failed_uuids)
+    Contact.objects.filter(org=org, is_active=True).exclude(uuid__in=uuids_seen).\
+        update(is_active=False)
+
     return (list(set(created_uuids)),
             list(set(updated_uuids)),
             list(set(deleted_uuids)),
