@@ -514,10 +514,13 @@ class ResponseCRUDL(smartmin.SmartCRUDL):
 
         def derive_queryset(self, **kwargs):
             # only show partial and complete responses
+            # only include repeated responses if downloading a CSV
             return self.derive_pollrun().get_responses(
                 region=self.request.region,
                 include_subregions=self.request.include_subregions,
-                include_empty=False)
+                include_empty=False,
+                include_inactive_responses=self.csv
+            )
 
         def get_paginate_by(self, queryset):
             if self.csv:
@@ -540,14 +543,16 @@ class ResponseCRUDL(smartmin.SmartCRUDL):
             elif field.startswith('question_'):
                 question = self.derive_questions()[field]
                 answer = obj.answers.filter(question=question).first()
+                # Note: if CSV, we use the actual answer value, not the 'value_to_use'
+                # which could be the sum or last of multiple responses' answers' values.
                 if answer:
                     if question.question_type == Question.TYPE_RECORDING:
                         return '<a class="answer answer-audio" href="%s" data-answer-id="%d">Play</a>' % (
-                            answer.value_to_use,
+                            answer.value if self.csv else answer.value_to_use,
                             answer.pk,
                         )
                     else:
-                        return answer.value_to_use
+                        return answer.value if self.csv else answer.value_to_use
                 else:
                     return '--'
             else:
@@ -610,9 +615,14 @@ class ResponseCRUDL(smartmin.SmartCRUDL):
                     answer_cols = []
 
                     answers_by_question_id = {a.question_id: a for a in resp.answers.all()}
+                    # Note: if CSV, we use the actual answer value, not the 'value_to_use'
+                    # which could be the sum or last of multiple responses' answers' values.
+                    val = ''
                     for question in questions:
                         answer = answers_by_question_id.get(question.pk, None)
-                        answer_cols.append(answer.value_to_use if answer else '')
+                        if answer:
+                            val = answer.value if self.csv else answer.value_to_use
+                        answer_cols.append(val if answer else '')
 
                     writer.writerow(resp_cols + contact_cols + answer_cols)
 

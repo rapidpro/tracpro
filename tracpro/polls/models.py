@@ -448,15 +448,22 @@ class PollRun(models.Model):
                 return region in self.region.get_descendants()
 
     def get_responses(self, region=None, include_subregions=True,
-                      include_empty=True):
-        """Return queryset of all PollRun responses for this region and sub-regions."""
+                      include_empty=True, include_inactive_responses=False):
+        """
+        Return queryset of all PollRun responses for this region and sub-regions,
+        omitting the inactive ones (probably earlier versions of responses by the
+        same contact to the same poll) unless include_inactive_responses is True.
+        """
         if not self.covers_region(region, include_subregions):
             raise ValueError(
                 "Request for responses in panel where poll wasn't conducted")
+        # Filter out inactive contacts
         responses = self.responses.filter(
-            is_active=True,
             contact__region__is_active=True,
             contact__is_active=True)  # Filter out inactive contacts
+        if not include_inactive_responses:
+            # Filter out inactive responses (Multiple responses on same day from same contact)
+            responses = responses.filter(is_active=True)
         if region:
             if include_subregions:
                 regions = region.get_descendants(include_self=True)
@@ -467,13 +474,14 @@ class PollRun(models.Model):
             responses = responses.exclude(status=Response.STATUS_EMPTY)
         return responses.select_related('contact')
 
-    def get_response_counts(self, region=None, include_subregions=True):
+    def get_response_counts(self, region=None, include_subregions=True, include_inactive_responses=False):
         """
         Returns dictionary of PollRun response counts for this region and sub-regions.
         key = str 'status' field from response
         value = int count of responses with that status.
         """
-        status_counts = self.get_responses(region, include_subregions)
+        status_counts = self.get_responses(
+            region, include_subregions, include_inactive_responses=include_inactive_responses)
         status_counts = status_counts.values('status')
         status_counts = status_counts.annotate(count=Count('status'))
         results = {status[0]: 0 for status in Response.STATUS_CHOICES}

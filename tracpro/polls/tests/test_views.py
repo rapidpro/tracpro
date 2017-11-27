@@ -32,17 +32,33 @@ class ResponseCRUDLTest(TracProDataTest):
 
     def setUp(self):
         super(ResponseCRUDLTest, self).setUp()
+        date0 = datetime.datetime(2014, 1, 1, 6, 59, 59, tzinfo=pytz.UTC)  # Slightly earlier than date1
         date1 = datetime.datetime(2014, 1, 1, 7, tzinfo=pytz.UTC)
         date2 = datetime.datetime(2014, 1, 1, 8, tzinfo=pytz.UTC)
         date3 = datetime.datetime(2014, 1, 2, 7, tzinfo=pytz.UTC)
 
         self.mock_temba_client.create_flow_start.return_value = []
 
-        # create non-regional pollrun with 3 responses (1 complete, 1 partial, 1 empty)
+        # create non-regional pollrun with 4 responses (2 complete, 1 partial, 1 empty)
         self.pollrun1 = factories.UniversalPollRun(
             poll=self.poll1, conducted_on=date1)
 
-        self.pollrun1_r1 = factories.Response(
+        pollrun1_r0 = factories.Response(  # Contact's first response
+            pollrun=self.pollrun1, contact=self.contact1,
+            created_on=date0, updated_on=date0,
+            status=Response.STATUS_COMPLETE,
+            is_active=False,  # not active because it gets superseded
+        )
+        # This answer is different than the next time they answer it
+        factories.Answer(
+            response=pollrun1_r0, question=self.poll1_question1,
+            value="2.0000", category="1 - 10", submitted_on=date0)
+        factories.Answer(
+            response=pollrun1_r0, question=self.poll1_question2,
+            value="Cloudy", category="All Responses", submitted_on=date0)
+
+        # Same contact's second response to same poll, slightly later
+        self.pollrun1_r1 = factories.Response(  # Supersedes the one on date0, for most purposes
             pollrun=self.pollrun1, contact=self.contact1,
             created_on=date1, updated_on=date1,
             status=Response.STATUS_COMPLETE)
@@ -53,6 +69,7 @@ class ResponseCRUDLTest(TracProDataTest):
             response=self.pollrun1_r1, question=self.poll1_question2,
             value="Sunny", category="All Responses", submitted_on=date1)
 
+        # Another contact's response
         self.pollrun1_r2 = factories.Response(
             pollrun=self.pollrun1, contact=self.contact2,
             created_on=date2, updated_on=date2,
@@ -61,6 +78,7 @@ class ResponseCRUDLTest(TracProDataTest):
             response=self.pollrun1_r2, question=self.poll1_question1,
             value="6.0000", category="1 - 10", submitted_on=date2)
 
+        # Another contact's response
         self.pollrun1_r3 = factories.Response(
             pollrun=self.pollrun1, contact=self.contact4,
             created_on=date3, updated_on=date3,
@@ -127,7 +145,8 @@ class ResponseCRUDLTest(TracProDataTest):
         self.assertEqual(200, response.status_code)
         self.assertEqual('text/csv', response['Content-Type'])
 
-        rows = [row for row in csv.reader(StringIO(response.content.decode('utf-8')))]
+        rows = [[element.decode('utf-8') for element in row]
+                for row in csv.reader(StringIO(response.content.decode('utf-8')))]
         self.assertEqual(rows[0], ['Date', 'Name', 'URN', 'Panel', 'Cohort', 'Number of sheep', 'How is the weather?'])
         self.assertEqual(rows[1], [
                                     'Jan 01, 2014 12:30',
@@ -147,4 +166,13 @@ class ResponseCRUDLTest(TracProDataTest):
                                     '5.0000',
                                     'Sunny',
                                 ])
-        self.assertEqual(3, len(rows))
+        self.assertEqual(rows[3], [
+                                    'Jan 01, 2014 11:29',
+                                    'Ann',
+                                    'tel:1234',
+                                    'Kandahar',
+                                    'Farmers, Teachers',
+                                    '2.0000',
+                                    'Cloudy',
+                                ])
+        self.assertEqual(4, len(rows))
