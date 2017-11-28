@@ -147,7 +147,7 @@ class ResponseCRUDLTest(TracProDataTest):
 
         rows = [[element.decode('utf-8') for element in row]
                 for row in csv.reader(StringIO(response.content.decode('utf-8')))]
-        self.assertEqual(rows[0], ['Date', 'Name', 'URN', 'Panel', 'Cohort', 'Number of sheep', 'How is the weather?'])
+        self.assertEqual(rows[0], ['Date', 'Name', 'URN', 'Panel', 'Cohorts', 'Number of sheep', 'How is the weather?'])
         self.assertEqual(rows[1], [
                                     'Jan 01, 2014 12:30',
                                     'Bob',

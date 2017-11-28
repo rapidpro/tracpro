@@ -601,7 +601,7 @@ class ResponseCRUDL(smartmin.SmartCRUDL):
                 questions = self.derive_questions().values()
 
                 resp_headers = ['Date']
-                contact_headers = ['Name', 'URN', 'Panel', 'Cohort']
+                contact_headers = ['Name', 'URN', 'Panel', 'Cohorts']
                 question_headers = [q.name for q in questions]
                 writer.writerow(resp_headers + contact_headers + question_headers)
 
