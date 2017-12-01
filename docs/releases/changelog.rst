@@ -6,6 +6,33 @@ Tracpro's version is incremented upon each merge to master according to our `Dep
 We recommend reviewing the release notes and code diffs before upgrading
 between versions.
 
+v1.7.0 (released 2017-12-01)
+----------------------------
+
+Code diff: https://github.com/rapidpro/tracpro/compare/v1.6.1...v1.7.0
+
+* Add an optional org setting, how_to_handle_sameday_responses, with
+  two choices that control how to handle multiple responses to the
+  same numeric question by the same contact in the same day.
+
+  * use_last - charts display data as if the last response by
+    a contact to the same question in the same day was
+    the only response that day.  This is the default value, and
+    was always the behavior in previous releases.
+
+  * sum - charts display data by summing all responses by the
+    same contact to the same numeric question in the same day,
+    as if they only answered once and their answer was that sum.
+    This would be a change from previous behavior, and will require
+    changing this in the org settings.
+    (Non-numeric questions' responses continue the previous behavior,
+    as described above in *use_last*.)
+
+* When downloading responses, always include all responses in the CSV
+  file. Previously, the responses downloaded were consistent with what
+  the charts were showing, meaning if a contact responded multiple times
+  to the same numeric question on the same day, only their last response
+  was included.
 
 v1.6.1 (released 2017-06-05)
 ----------------------------
