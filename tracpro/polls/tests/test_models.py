@@ -688,7 +688,7 @@ class TestAnswer(TracProDataTest):
         self.assertEqual(answer1.question, self.poll1_question1)
         self.assertEqual(answer1.category, "1 - 5")
         self.assertEqual(answer1.value, str(4.0))
-        self.assertEqual(answer1.value_to_use, str(4.0))
+        self.assertEqual(answer1.compute_value_to_use(), str(4.0))
 
         response2 = Response.create_empty(
             self.unicef, pollrun,
@@ -698,7 +698,7 @@ class TestAnswer(TracProDataTest):
             response=response2, question=self.poll1_question1,
             value="rain", category=dict(base="Rain", rwa="Imvura"))
         self.assertEqual(answer2.category, "Rain")
-        self.assertEqual(answer2.value_to_use, "rain")
+        self.assertEqual(answer2.compute_value_to_use(), "rain")
 
         response3 = Response.create_empty(
             self.unicef, pollrun,
@@ -708,7 +708,7 @@ class TestAnswer(TracProDataTest):
             response=response3, question=self.poll1_question1,
             value="rain", category=dict(eng="Yes"))
         self.assertEqual(answer3.category, "Yes")
-        self.assertEqual(answer3.value_to_use, "rain")
+        self.assertEqual(answer3.compute_value_to_use(), "rain")
 
     def test_same_question_contact_and_day(self):
         poll = self.poll1_question1.poll
@@ -752,7 +752,7 @@ class TestAnswerSumming(TracProDataTest):
             response=response, question=self.poll1_question1,
             value=str(4.0), category="1 - 5")
         self.assertEqual(answer1.value, str(4.0))  # untouched
-        self.assertEqual(answer1.value_to_use, str(4.0))
+        self.assertEqual(answer1.compute_value_to_use(), str(4.0))
 
         # Another response, same contact
         response2 = factories.Response(pollrun=pollrun, contact=response.contact)
@@ -763,9 +763,9 @@ class TestAnswerSumming(TracProDataTest):
             submitted_on=answer1.submitted_on,  # same day (exactly!)
         )
         self.assertEqual(answer2.value, str(8.0))
-        self.assertEqual(answer2.value_to_use, str(12.0))
+        self.assertEqual(answer2.compute_value_to_use(), str(12.0))
         answer1.refresh_from_db()  # This should have been updated in the DB
-        self.assertEqual(answer1.value_to_use, str(12.0))
+        self.assertEqual(answer1.compute_value_to_use(), str(12.0))
 
     def test_phone_numbers_not_summed(self):
         # Really this is testing error handling, since "phone numbers" aren't "numbers"
@@ -778,7 +778,7 @@ class TestAnswerSumming(TracProDataTest):
             response=response, question=self.poll1_question1,
             value="444-5555", category="1 - 5")
         self.assertEqual(answer1.value, "444-5555")  # untouched
-        self.assertEqual(answer1.value_to_use, "444-5555")
+        self.assertEqual(answer1.compute_value_to_use(), "444-5555")
 
         # Another response, same contact
         response2 = factories.Response(pollrun=pollrun, contact=response.contact)
@@ -789,9 +789,9 @@ class TestAnswerSumming(TracProDataTest):
             submitted_on=answer1.submitted_on,  # same day (exactly!)
         )
         self.assertEqual(answer2.value, "555-1212")
-        self.assertEqual(answer2.value_to_use, "555-1212")
+        self.assertEqual(answer2.compute_value_to_use(), "555-1212")
         answer1.refresh_from_db()
-        self.assertEqual(answer1.value_to_use, "444-5555")
+        self.assertEqual(answer1.compute_value_to_use(), "444-5555")
 
     def test_last_answer(self):
         pollrun = factories.UniversalPollRun(
@@ -807,7 +807,7 @@ class TestAnswerSumming(TracProDataTest):
             submitted_on=now() - datetime.timedelta(minutes=5),
             category="1 - 5")
         self.assertEqual(answer1.value, str(4.0))  # untouched
-        self.assertEqual(answer1.value_to_use, str(4.0))
+        self.assertEqual(answer1.compute_value_to_use(), str(4.0))
 
         # Another response, same contact
         response2 = factories.Response(
@@ -821,9 +821,9 @@ class TestAnswerSumming(TracProDataTest):
             submitted_on=now(),
         )
         self.assertEqual(answer2.value, str(8.0))
-        self.assertEqual(answer2.value_to_use, str(8.0))
+        self.assertEqual(answer2.compute_value_to_use(), str(8.0))
         answer1.refresh_from_db()  # This should have been updated in the DB
-        self.assertEqual(answer1.value_to_use, str(8.0))
+        self.assertEqual(answer1.compute_value_to_use(), str(8.0))
 
 
 class TestAnswerQuerySet(TracProDataTest):

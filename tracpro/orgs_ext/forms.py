@@ -120,6 +120,8 @@ class OrgExtForm(OrgForm):
             self.fields['contact_fields'].queryset = data_fields.order_by(Lower('label'))
             self.fields['contact_fields'].initial = data_fields.visible()
 
+        self.instance.original_how_to_handle_sameday_responses = self.fields['how_to_handle_sameday_responses'].initial
+
     def clean(self):
         """Ensure the default language is chosen from the available languages."""
         language = self.cleaned_data.get('language')
