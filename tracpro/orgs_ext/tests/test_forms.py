@@ -279,9 +279,9 @@ class TestChangingHowRepeatedAnswersAreHandledFromLatestToSum(TracProDataTest):
             self.unicef.refresh_from_db()
             self.assertEqual(SAMEDAY_LAST, self.unicef.how_to_handle_sameday_responses)
             self.answer1.refresh_from_db()
-            self.assertEqual(str(3.0), self.answer1.compute_value_to_use())
+            self.assertEqual(str(3.0), self.answer1.value_to_use)
             self.answer2.refresh_from_db()
-            self.assertEqual(str(3.0), self.answer2.compute_value_to_use())
+            self.assertEqual(str(3.0), self.answer2.value_to_use)
 
     def test_changed_last_to_sum_sets_new_value(self):
         self.assertEqual(SAMEDAY_LAST, self.unicef.how_to_handle_sameday_responses)
@@ -304,10 +304,10 @@ class TestChangingHowRepeatedAnswersAreHandledFromLatestToSum(TracProDataTest):
             self.assertEqual(SAMEDAY_SUM, self.unicef.how_to_handle_sameday_responses)
             self.answer1.refresh_from_db()
             self.assertEqual(SAMEDAY_SUM, self.answer1.org.how_to_handle_sameday_responses)
-            self.assertEqual(str(4.0), self.answer1.compute_value_to_use())
+            self.assertEqual(str(4.0), self.answer1.value_to_use)
             self.answer2.refresh_from_db()
             self.assertEqual(SAMEDAY_SUM, self.answer2.org.how_to_handle_sameday_responses)
-            self.assertEqual(str(4.0), self.answer2.compute_value_to_use())
+            self.assertEqual(str(4.0), self.answer2.value_to_use)
 
 
 class TestChangingHowRepeatedAnswersAreHandledFromSumToLatest(TracProDataTest):
@@ -347,9 +347,9 @@ class TestChangingHowRepeatedAnswersAreHandledFromSumToLatest(TracProDataTest):
     def test_changed_sum_to_last_changes_value(self):
         self.assertEqual(SAMEDAY_SUM, self.unicef.how_to_handle_sameday_responses)
         self.answer1.refresh_from_db()
-        self.assertEqual(str(4.0), self.answer1.compute_value_to_use())
+        self.assertEqual(str(4.0), self.answer1.value_to_use)
         self.answer2.refresh_from_db()
-        self.assertEqual(str(4.0), self.answer2.compute_value_to_use())
+        self.assertEqual(str(4.0), self.answer2.value_to_use)
         with mock.patch('tracpro.orgs_ext.forms.DataField'):
             data = model_to_dict(self.unicef)
             data.update(dict(
@@ -368,6 +368,6 @@ class TestChangingHowRepeatedAnswersAreHandledFromSumToLatest(TracProDataTest):
             self.unicef.refresh_from_db()
             self.assertEqual(SAMEDAY_LAST, self.unicef.how_to_handle_sameday_responses)
             self.answer1.refresh_from_db()
-            self.assertEqual(str(3.0), self.answer1.compute_value_to_use())
+            self.assertEqual(str(3.0), self.answer1.value_to_use)
             self.answer2.refresh_from_db()
-            self.assertEqual(str(3.0), self.answer2.compute_value_to_use())
+            self.assertEqual(str(3.0), self.answer2.value_to_use)

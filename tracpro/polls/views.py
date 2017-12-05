@@ -549,11 +549,11 @@ class ResponseCRUDL(smartmin.SmartCRUDL):
                 if answer:
                     if question.question_type == Question.TYPE_RECORDING:
                         return '<a class="answer answer-audio" href="%s" data-answer-id="%d">Play</a>' % (
-                            answer.value if self.csv else answer.compute_value_to_use(),
+                            answer.value if self.csv else answer.value_to_use,
                             answer.pk,
                         )
                     else:
-                        return answer.value if self.csv else answer.compute_value_to_use()
+                        return answer.value if self.csv else answer.value_to_use
                 else:
                     return '--'
             else:
@@ -619,11 +619,10 @@ class ResponseCRUDL(smartmin.SmartCRUDL):
                     # Note: if CSV, we use the actual answer value, not the 'value_to_use'
                     # which could be the sum or last of multiple responses' answers' values.
                     val = ''
-                    answer_cache = {}
                     for question in questions:
                         answer = answers_by_question_id.get(question.pk, None)
                         if answer:
-                            val = answer.value if self.csv else answer.compute_value_to_use(answer_cache)
+                            val = answer.value if self.csv else answer.value_to_use
                         answer_cols.append(val if answer else '')
 
                     writer.writerow(resp_cols + contact_cols + answer_cols)
@@ -665,13 +664,12 @@ class ResponseCRUDL(smartmin.SmartCRUDL):
                 return '<i>%s</i>' % _("No response")
 
             questions = obj.pollrun.poll.questions.active()
-            answer_cache = {}
             for i, question in enumerate(questions, start=1):
                 answer = answers_by_q_id.get(question.pk, None)
                 if not answer:
                     answer_display = ""
                 elif question.question_type == Question.TYPE_OPEN:
-                    answer_display = answer.compute_value_to_use(answer_cache)
+                    answer_display = answer.value_to_use
                 else:
                     answer_display = answer.category
 

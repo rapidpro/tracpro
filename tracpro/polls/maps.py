@@ -47,11 +47,10 @@ def get_answers(responses, question):
 def numeric_map_data(answers, question):
     """For each boundary, display the category of the average answer value."""
     map_data = {}
-    answer_cache = {}
     answer_data = [
         {
             'boundary': answer.boundary,
-            'value_to_use': answer.compute_value_to_use(answer_cache)
+            'value_to_use': answer.value_to_use
         }
         for answer in answers.order_by('boundary')
     ]
