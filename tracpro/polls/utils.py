@@ -50,7 +50,7 @@ def get_numeric_values(values):
 
 
 def summarize_by_pollrun(answers, responses):
-    answer_values = answers.group_values('response__pollrun')
+    answer_values = answers.group_values('response__pollrun_id')
     response_counts = responses.group_counts('pollrun')
 
     answer_sums = {}
@@ -72,7 +72,7 @@ def summarize_by_pollrun(answers, responses):
 
 def summarize_by_region_and_pollrun(answers, responses):
     answer_values = answers.group_values(
-        'response__contact__region', 'response__pollrun')
+        'response__contact__region_id', 'response__pollrun_id')
     response_counts = responses.group_counts(
         'contact__region', 'pollrun')
 

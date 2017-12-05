@@ -10,7 +10,7 @@ import pytz
 
 from django.conf import settings
 from django.db import models, transaction
-from django.db.models import Count, Q
+from django.db.models import Count, Q, F
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
@@ -18,6 +18,7 @@ from django.utils.translation import ugettext_lazy as _
 from tracpro.charts.utils import midnight, end_of_day
 from tracpro.client import get_client
 from tracpro.contacts.models import Contact, NoMatchingCohortsWarning, NoContactInRapidProWarning
+from tracpro.utils import dunder_to_chained_attrs
 
 from . import rules
 from .tasks import pollrun_start
@@ -677,15 +678,24 @@ class Response(models.Model):
 
 class AnswerQuerySet(models.QuerySet):
 
+    def values_to_use(self):
+        return [a.value_to_use for a in self.select_related('response')]
+
     def word_counts(self):
-        answers = self.values_list('value_to_use', 'response__contact__language')
+        answers = [(answer.value_to_use, answer.response.contact.language) for answer in self]
         words = [extract_words(*a) for a in answers]
         counts = Counter(chain(*words))
         return counts.most_common(50)
 
     def group_values(self, *fields):
         """Group answers by the given fields then map to a list of matching values."""
-        answers = self.order_by(*fields).values('value_to_use', *fields)
+        answers = [
+            dict(
+                value_to_use=answer.value_to_use,
+                **{fieldname: dunder_to_chained_attrs(answer, fieldname) for fieldname in fields}
+            )
+            for answer in self.order_by(*fields).select_related('response')
+        ]
         data = {}
         for field_values, _answers in groupby(answers, itemgetter(*fields)):
             data[field_values] = [a['value_to_use'] for a in _answers]
@@ -715,7 +725,7 @@ class AnswerQuerySet(models.QuerySet):
         Category names are of the form "N.N-N.N".
         """
         answers_to_numeric_questions = self.filter(question__question_type=Question.TYPE_NUMERIC)
-        answers = just_floats(answers_to_numeric_questions.values_list('value_to_use', flat=True))
+        answers = just_floats(answers_to_numeric_questions.values_to_use())
         if not answers:
             return {
                 'categories': [],
@@ -777,11 +787,17 @@ class Answer(models.Model):
     value = models.CharField(
         max_length=640, null=True,
         help_text="Value from rapidpro")
-    value_to_use = models.CharField(
+
+    last_value = models.CharField(
         max_length=640, null=True,
-        help_text=_("For numeric questions for orgs that want to use the sum of numeric "
-                    "responses from the same contact on the same day, the sum of those "
-                    "responses. For all others, just a copy of 'value'.")
+        help_text="For numeric questions, last answer from same contact on same day for same question. "
+                  "Otherwise, same as value."
+    )
+
+    sum_value = models.CharField(
+        max_length=640, null=True,
+        help_text="For numeric questions, sum of answers from same contact on same "
+                  "day for same question. Otherwise, same as value."
     )
 
     category = models.CharField(max_length=36, null=True)
@@ -792,38 +808,44 @@ class Answer(models.Model):
 
     def save(self, *args, **kwargs):
         is_new = self.pk is None
-        if is_new and not (self.should_use_sum() or self.should_use_last()):
-            self.value_to_use = self.value
+        if is_new:
+            self.last_value = self.value
+            self.sum_value = self.value
         super(Answer, self).save(*args, **kwargs)
         if is_new and (self.should_use_sum() or self.should_use_last()):
-            # We created a new answer - we need to update the summed
-            # values in this and maybe other answers
-            self.update_own_sameday_values_and_others()
+            answers = self.same_question_contact_and_day()
+            last_value = answers.order_by('-submitted_on')[0].value
+            self.last_value = last_value
+            try:
+                sum_value = str(sum([float(a.value) for a in answers]))
+                self.sum_value = sum_value
+            except ValueError:
+                sum_value = F('value')  # Just use each records' value
+                self.sum_value = self.value
+            answers.update(last_value=last_value, sum_value=sum_value)
 
     @property
     def org(self):
-        return self.question.poll.org
+        if not hasattr(self, 'cached_org'):
+            self.cached_org = self.question.poll.org
+        return self.cached_org
 
-    def update_own_sameday_values_and_others(self):
-        """
-        Update the sameday value for this answer, and any others on
-        the same day/contact/question.
+    def same_question_contact_and_day(self):
+        return Answer.objects.filter(
+            question_id=self.question_id,
+            response__contact_id=self.response.contact_id,
+            submitted_on__gte=midnight(self.submitted_on),
+            submitted_on__lte=end_of_day(self.submitted_on),
+        )
 
-        If any of the values to sum aren't valid floats, set the value
-        to use for this answer to its value, and don't change any other
-        records.
-        """
-        try:
-            value_to_use = self.compute_value_to_use()
-        except ValueError:
-            self.value_to_use = self.value
-            self.save()
-            return
+    @property
+    def value_to_use(self):
+        if self.should_use_sum():
+            return self.sum_value
+        elif self.should_use_last():
+            return self.last_value
         else:
-            # Update the database
-            self.same_question_contact_and_day().update(value_to_use=value_to_use)
-            # And update this particular record in memory to avoid confusion
-            self.value_to_use = value_to_use
+            return self.value
 
     def should_use_sum(self):
         """
@@ -840,48 +862,5 @@ class Answer(models.Model):
         the same contact on the same day for the same question
         for this answer.
         """
-        question = self.question
-        org = question.poll.org
-        return (org.how_to_handle_sameday_responses == SAMEDAY_LAST and
-                question.question_type == Question.TYPE_NUMERIC)
-
-    def same_question_contact_and_day(self):
-        """
-        Return a queryset of answers that are the same question,
-        contact, and day as this one (includes this one).
-        """
-        return Answer.objects.filter(
-            question_id=self.question_id,
-            response__contact_id=self.response.contact_id,
-            submitted_on__gte=midnight(self.submitted_on),
-            submitted_on__lte=end_of_day(self.submitted_on),
-        )
-
-    def compute_value_to_use(self):
-        """
-        If it's a numeric question and
-        the org is configured to sum multiple responses on the same day from
-        the same contact, look up all the answers from that contact to this
-        question on this same day and return the sum of them as a float.
-
-        If it's a numeric question and the org is configured to use the
-        last response, find the last response and use its value.
-
-        Otherwise, use the value from rapidpro.
-
-        IF any of the values we try to sum are not valid floats, this
-        will throw a ValueError which the caller must handle.
-        """
-        assert self.pk  # Don't use on unsaved records, it'll miss this record's value
-        if self.should_use_sum():
-            # Include inactive responses from same contact on same day and
-            # add them all up, including this one
-            # ALLOW ValueError to propagate
-            values = [float(a.value) for a in self.same_question_contact_and_day()]
-            # Use the sum
-            return str(sum(values))
-        elif self.should_use_last():
-            answers = self.same_question_contact_and_day().order_by('-submitted_on')
-            return answers[0].value
-        else:
-            return self.value
+        return (self.org.how_to_handle_sameday_responses == SAMEDAY_LAST and
+                self.question.question_type == Question.TYPE_NUMERIC)

@@ -47,7 +47,14 @@ def get_answers(responses, question):
 def numeric_map_data(answers, question):
     """For each boundary, display the category of the average answer value."""
     map_data = {}
-    answer_data = answers.order_by('boundary').values('boundary', 'value_to_use')
+    answer_data = [
+        {
+            'boundary': answer.boundary,
+            'value_to_use': answer.value_to_use
+        }
+        for answer in answers.order_by('boundary')
+    ]
+
     for boundary_id, _answers in groupby(answer_data, itemgetter('boundary')):
         average = round(numpy.mean(get_numeric_values(a['value_to_use'] for a in _answers)), 2)
         map_data[boundary_id] = {

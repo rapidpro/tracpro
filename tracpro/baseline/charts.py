@@ -83,7 +83,7 @@ def get_baseline_data(baseline_term, **kwargs):
     # The sum of the first answer from each contact.
     answers = answers.order_by('response__contact', 'submitted_on')
     answers = answers.distinct('response__contact')
-    numeric_values = get_numeric_values(answers.values_list('value_to_use', flat=True))
+    numeric_values = get_numeric_values(answers.values_to_use())
 
     baseline = numpy.sum(numeric_values)
 

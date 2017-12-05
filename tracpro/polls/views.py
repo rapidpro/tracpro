@@ -502,7 +502,8 @@ class ResponseCRUDL(smartmin.SmartCRUDL):
         def derive_questions(self):
             def fetch():
                 questions = OrderedDict()
-                for question in self.derive_pollrun().poll.questions.active():
+                for question in self.derive_pollrun().poll.questions.prefetch_related('answers').active():
+                    setattr(question, 'first_answer', question.answers.all()[0])
                     questions['question_%d' % question.pk] = question
                 return questions
 
