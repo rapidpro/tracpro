@@ -22,7 +22,7 @@ from tracpro.utils import dunder_to_chained_attrs
 
 from . import rules
 from .tasks import pollrun_start
-from .utils import extract_words, natural_sort_key, just_floats
+from .utils import extract_words, natural_sort_key, get_numeric_values
 
 
 SAMEDAY_LAST = 'use_last'
@@ -473,7 +473,7 @@ class PollRun(models.Model):
                 responses = responses.filter(contact__region=region)
         if not include_empty:
             responses = responses.exclude(status=Response.STATUS_EMPTY)
-        return responses.select_related('contact')
+        return responses.select_related('contact', 'contact__region').prefetch_related('contact__groups')
 
     def get_response_counts(self, region=None, include_subregions=True, include_inactive_responses=False):
         """
@@ -694,7 +694,7 @@ class AnswerQuerySet(models.QuerySet):
                 value_to_use=answer.value_to_use,
                 **{fieldname: dunder_to_chained_attrs(answer, fieldname) for fieldname in fields}
             )
-            for answer in self.order_by(*fields).select_related('response')
+            for answer in self.order_by(*fields).select_related('response', 'question__poll__org')
         ]
         data = {}
         for field_values, _answers in groupby(answers, itemgetter(*fields)):
@@ -725,7 +725,7 @@ class AnswerQuerySet(models.QuerySet):
         Category names are of the form "N.N-N.N".
         """
         answers_to_numeric_questions = self.filter(question__question_type=Question.TYPE_NUMERIC)
-        answers = just_floats(answers_to_numeric_questions.values_to_use())
+        answers = get_numeric_values(answers_to_numeric_questions.values_to_use())
         if not answers:
             return {
                 'categories': [],
@@ -808,18 +808,19 @@ class Answer(models.Model):
 
     def save(self, *args, **kwargs):
         is_new = self.pk is None
-        if is_new:
-            self.last_value = self.value
-            self.sum_value = self.value
         super(Answer, self).save(*args, **kwargs)
-        if is_new and (self.should_use_sum() or self.should_use_last()):
-            answers = self.same_question_contact_and_day()
-            last_value = answers.order_by('-submitted_on')[0].value
+        if is_new:
+            # If there have been multiple answers by the same contact on the same
+            # day, we might want to show either the last answer or the sum of the
+            # numeric answers, depending on other things. Compute those in advance.
+            answers = self.same_question_contact_and_day().order_by('-submitted_on')
+            last_value = answers[0].value
             self.last_value = last_value
-            try:
-                sum_value = str(sum([float(a.value) for a in answers]))
+            float_values = get_numeric_values([a.value for a in answers])
+            if len(float_values) > 0:
+                sum_value = str(sum(float_values))
                 self.sum_value = sum_value
-            except ValueError:
+            else:
                 sum_value = F('value')  # Just use each records' value
                 self.sum_value = self.value
             answers.update(last_value=last_value, sum_value=sum_value)

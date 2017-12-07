@@ -87,7 +87,9 @@ def multiple_pollruns(pollruns, responses, question, split_regions, contact_filt
     summary_table = None
 
     pollruns = pollruns.order_by('conducted_on')
-    answers = Answer.objects.filter(response__in=responses, question=question)
+    answers = Answer.objects.\
+        filter(response__in=responses, question=question).\
+        select_related('question__poll__org', 'response__contact')
 
     # Save a bit of time with .exists();
     # queryset is re-evaluated later as a values set.
