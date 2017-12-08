@@ -503,7 +503,6 @@ class ResponseCRUDL(smartmin.SmartCRUDL):
             def fetch():
                 questions = OrderedDict()
                 for question in self.derive_pollrun().poll.questions.prefetch_related('answers').active():
-                    setattr(question, 'first_answer', question.answers.all()[0])
                     questions['question_%d' % question.pk] = question
                 return questions
 
@@ -540,7 +539,10 @@ class ResponseCRUDL(smartmin.SmartCRUDL):
             if field == 'region':
                 return obj.contact.region
             elif field == 'groups':
-                return ', '.join(group.name.encode('utf-8') for group in obj.contact.groups.all().order_by('name'))
+                # obj is a Response
+                groups = obj.contact.groups  # This can be pre-fetched, avoiding a query per row
+                group_names = [group.name for group in groups.all()]  # then sort in Python, the list is small
+                return u', '.join(sorted(group_names))
             elif field.startswith('question_'):
                 question = self.derive_questions()[field]
                 answer = obj.answers.filter(question=question).first()
