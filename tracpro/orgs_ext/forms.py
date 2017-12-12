@@ -4,16 +4,13 @@ from dash.orgs.forms import OrgForm
 from django.contrib.auth.models import User
 from django.db.models.functions import Lower
 
-from temba_client.base import TembaAPIError
-
 from django import forms
 from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
+from temba_client.exceptions import TembaTokenError
 
 from tracpro.contacts.models import DataField
 from tracpro.polls.models import SAMEDAY_LAST, SAMEDAY_SUM
-
-from . import utils
 
 
 class UserMultipleChoiceField(forms.ModelMultipleChoiceField):
@@ -108,13 +105,10 @@ class OrgExtForm(OrgForm):
                 # Make sure we have the most up-to-date DataField info.
                 # NOTE: This makes an in-band request to an external API.
                 DataField.objects.sync(self.instance)
-            except TembaAPIError as e:
-                if utils.caused_by_bad_api_key(e):
-                    # Org has an invalid API key, but user needs to be
-                    # able to access this form in order to update it.
-                    pass
-                else:
-                    raise
+            except TembaTokenError:
+                # Org has an invalid API key, but user needs to be
+                # able to access this form in order to update it.
+                pass
 
             data_fields = self.instance.datafield_set.all()
             self.fields['contact_fields'].queryset = data_fields.order_by(Lower('label'))
