@@ -3,9 +3,9 @@ from __future__ import unicode_literals
 import six
 
 from celery.utils.log import get_task_logger
-from temba_client.base import TembaNoSuchObjectError
 
 from temba_client.clients import TembaBadRequestError
+from temba_client.exceptions import TembaNoSuchObjectError
 
 from tracpro.client import get_client
 from tracpro.utils import get_uuids

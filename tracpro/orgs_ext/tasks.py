@@ -16,14 +16,12 @@ from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 
 from djcelery_transactions import PostTransactionTask, task
+from temba_client.exceptions import TembaTokenError
 
-from temba_client.base import TembaAPIError
 from temba_client.utils import parse_iso8601, format_iso8601
 
 from tracpro.celery import app as celery_app
 from tracpro.client import get_client
-
-from . import utils
 
 
 logger = get_task_logger(__name__)
@@ -193,7 +191,7 @@ class OrgTask(WrapCacheMixin, WrapLoggerMixin, PostTransactionTask):
                 result = self.org_task(org)
             except Exception as e:
                 fail_count = self.fail_count_incr(org)
-                if isinstance(e, TembaAPIError) and utils.caused_by_bad_api_key(e):
+                if isinstance(e, TembaTokenError):
                     msg = "API token is invalid (#{count})."
                     self.log_warning(org, msg, exc_info=True, count=fail_count)
                     return None

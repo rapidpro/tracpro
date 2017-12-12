@@ -1,9 +1,5 @@
 from __future__ import unicode_literals
 
-from requests import HTTPError
-
-from temba_client.base import TembaAPIError
-
 
 class OrgConfigField(object):
     """
@@ -44,16 +40,6 @@ class OrgConfigField(object):
     def __set__(self, instance, value):
         instance.set_config(self.name, value, commit=False)
         instance.__dict__.pop(self.cache_name, None)
-
-
-def caused_by_bad_api_key(exception):
-    """Return whether the exception was likely caused by a bad API key."""
-    if isinstance(exception, TembaAPIError):
-        if isinstance(exception.caused_by, HTTPError):
-            response = exception.caused_by.response
-            if response is not None and response.status_code == 403:
-                return True
-    return False
 
 
 def is_supervisor(org, user):
