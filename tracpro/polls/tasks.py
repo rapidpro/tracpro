@@ -12,7 +12,7 @@ from temba_client.utils import parse_iso8601, format_iso8601
 from dash.utils import datetime_to_ms
 
 from tracpro.client import get_client
-from tracpro.contacts.models import Contact
+from tracpro.contacts.models import Contact, NoMatchingCohortsWarning
 from tracpro.orgs_ext.tasks import OrgTask
 
 logger = get_task_logger(__name__)
@@ -49,17 +49,20 @@ class FetchOrgRuns(OrgTask):
 
         total_runs = 0
         for poll in Poll.objects.active().by_org(org):
-            poll_runs = client.get_runs(flow=poll.flow_uuid, after=last_time, before=until)
+            poll_runs = client.get_runs(flow=poll.flow_uuid, after=last_time, before=until, responded=True)
             total_runs += len(poll_runs.all())
 
-            # convert flow runs into poll responses
+            # convert flow "runs" (one per responding contact) into poll responses
             for run in poll_runs:
                 try:
                     Response.from_run(org, run, poll=poll)
+                except NoMatchingCohortsWarning:
+                    # NoMatchingCohorts happens normally so don't complain about that.
+                    pass
                 except ValueError as e:
-                    logger.error("Unable to save run #%d due to error: %s" % (run.id, e.message))
-                    errors.append("Unable to save run #%d due to error: %s" % (run.id, e.message))
-                    continue
+                    txt = "Unable to save flow run #%d for contact due to error: %s" % (run.id, e.message)
+                    logger.error(txt)
+                    errors.append(txt)
 
         logger.info("Fetched %d new and updated runs for org #%d (since=%s)"
                     % (total_runs, org.id, format_iso8601(last_time) if last_time else 'Never'))
@@ -168,8 +171,8 @@ def sync_questions_categories(org, polls):
     for flow in flows:
         uuid = flow['metadata']['uuid']
         if uuid not in flow_uuids:
-            logger.error("Ignoring flow definition with uuid %r that we didn't ask for. "
-                         "We asked for %r." % (uuid, flow_uuids))
+            # We didn't ask for this flow. I don't know why this happens, but it does;
+            # just ignore it quietly.
             continue
 
         poll = polls_by_uuid[uuid]
