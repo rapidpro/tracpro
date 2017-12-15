@@ -380,7 +380,15 @@ class PollRunManager(models.Manager.from_queryset(PollRunQuerySet)):
 
 @python_2_unicode_compatible
 class PollRun(models.Model):
-    """Associates polls conducted on the same day."""
+    """
+    Associates polls conducted on the same day.
+
+    VERY IMPORTANT: The RapidPro API also has something called a "Run", but
+    it does *not* correspond directly to this PollRun model.  There is a RapidPro
+    Run record for every contact who responded to a given start of a flow,
+    while there's a single PollRun in TracPro for all the responses to one start
+    of a flow.
+    """
 
     TYPE_UNIVERSAL = 'u'  # Sent to all active regions.
     TYPE_SPOOFED = 's'  # Universal PollRun created by baseline data spoof.
@@ -587,7 +595,8 @@ class Response(models.Model):
         :param run: temba Run instance
         :param poll: tracpro Poll instance, or None
         """
-        responses = Response.objects.filter(pollrun__poll__org=org, flow_run_id=run.id)
+        responses = Response.objects.filter(
+            flow_run_id=run.id, contact__uuid=run.contact.uuid, is_active=True)
         response = responses.select_related('pollrun').first()
         run_updated_on = cls.get_run_updated_on(run)
 
@@ -600,9 +609,13 @@ class Response(models.Model):
 
         try:
             contact = Contact.get_or_fetch(poll.org, uuid=run.contact.uuid)
-        except (NoMatchingCohortsWarning, NoContactInRapidProWarning) as e:
-            # Callers expect a ValueError if we don't sync the response
-            raise ValueError("not syncing run because %s" % e.args[0])
+        except NoContactInRapidProWarning as e:
+            # Callers expect an exception if we don't sync the response
+            raise ValueError("not syncing response because %s" % e.args[0], e)
+        except NoMatchingCohortsWarning:
+            # This happens regularly because tracpro users aren't necessarily interested
+            # in all contacts' responses. Just pass it on since we're not going to sync.
+            raise
 
         # categorize completeness
         if run.exit_type == u'completed':
