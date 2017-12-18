@@ -595,17 +595,21 @@ class Response(models.Model):
         :param run: temba Run instance
         :param poll: tracpro Poll instance, or None
         """
+        if not poll:
+            poll = Poll.objects.active().by_org(org).get(flow_uuid=run.flow.uuid)
+
         responses = Response.objects.filter(
-            flow_run_id=run.id, contact__uuid=run.contact.uuid, is_active=True)
+            flow_run_id=run.id,
+            pollrun__poll=poll,
+            contact__uuid=run.contact.uuid,
+            is_active=True,
+        )
         response = responses.select_related('pollrun').first()
         run_updated_on = cls.get_run_updated_on(run)
 
         # if there is an up-to-date existing response for this run, return it
         if response and response.updated_on == run_updated_on:
             return response
-
-        if not poll:
-            poll = Poll.objects.active().by_org(org).get(flow_uuid=run.flow.uuid)
 
         try:
             contact = Contact.get_or_fetch(poll.org, uuid=run.contact.uuid)
