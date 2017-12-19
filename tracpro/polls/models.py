@@ -644,11 +644,17 @@ class Response(models.Model):
                 for_date=run.created_on,
             )
 
-            response = Response.objects.create(
-                is_active=True,  # default, just being explicit
-                flow_run_id=run.id, pollrun=pollrun, contact=contact,
-                created_on=run.created_on, updated_on=run_updated_on,
-                status=status)
+            response, created = Response.objects.update_or_create(
+                flow_run_id=run.id,
+                pollrun=pollrun,
+                defaults=dict(
+                    is_active=True,
+                    contact=contact,
+                    created_on=run.created_on,
+                    updated_on=run_updated_on,
+                    status=status
+                )
+            )
 
             # If more than one for this contact and pollrun,
             # set the last one created as the active one.
@@ -660,7 +666,7 @@ class Response(models.Model):
                     last.is_active = True
                     last.save()
 
-            response.is_new = True
+            response.is_new = created
 
         # organize values by ruleset UUID
         questions = poll.questions.active()
@@ -831,7 +837,10 @@ class Answer(models.Model):
             # day, we might want to show either the last answer or the sum of the
             # numeric answers, depending on other things. Compute those in advance.
             answers = self.same_question_contact_and_day().order_by('-submitted_on')
+
+            # This failed once in a test with an index out of range?!  Could not reproduce.
             last_value = answers[0].value
+
             self.last_value = last_value
             float_values = get_numeric_values([a.value for a in answers])
             if len(float_values) > 0:
