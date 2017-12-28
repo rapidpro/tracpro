@@ -6,6 +6,19 @@ Tracpro's version is incremented upon each merge to master according to our `Dep
 We recommend reviewing the release notes and code diffs before upgrading
 between versions.
 
+v1.8.0 (released 2017-12-28)
+----------------------------
+
+Code diff: https://github.com/rapidpro/tracpro/compare/v1.7.0...v1.8.0
+
+* Update RapidPro client library to 2.2 (fixing incompatibility
+  with recent update to the RapidPro server).
+
+* Change implementation of how_to_handle_sameday_responses to
+  perform acceptably with nearly a million responses that we have
+  in production. There will be a very long migration during the
+  deploy, but after that, performance should be okay.
+
 v1.7.0 (released 2017-12-01)
 ----------------------------
 
