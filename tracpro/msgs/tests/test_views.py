@@ -90,6 +90,23 @@ class InboxMessageCRUDLTest(TracProDataTest):
         self.assertEqual(list(response.context['object_list']),
                          [self.inboxmsg2, self.inboxmsg1])
 
+    def test_send_response(self):
+        # User can send a response to a conversation.  The page POSTs their response data.
+        url = reverse('msgs.inboxmessage_conversation', args=[self.contact1.pk])
+
+        # a task will try to fetch the latest messages from rapidpro
+        self.mock_temba_client.get_messages.return_value = []
+
+        # Post a short message as a response.
+        response = self.url_post('unicef', url, data={'text': 'Now is the time'}, follow=True)
+        self.assertRedirects(
+            response,
+            reverse('msgs.inboxmessage_conversation', kwargs=dict(contact_id=self.contact1.pk)),
+            subdomain='unicef'
+        )
+        # We did try to send it to Rapidpro
+        self.assertTrue(self.mock_temba_client.create_broadcast.call_count)
+
     def test_conversation_not_logged_in(self):
         self.client.logout()
         url = reverse('msgs.inboxmessage_conversation', args=[self.contact1.pk])

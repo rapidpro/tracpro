@@ -166,6 +166,8 @@ class InboxMessageCRUDL(SmartCRUDL):
             return context
 
         def post(self, request, *args, **kwargs):
+            # Call get_queryset to populate the view instance's data
+            self.get_queryset()
             if self.form.is_valid():
                 # Send the new inbox message through the temba task
                 send_unsolicited_message(self.request.org, request.POST.get('text'), self.contact)
