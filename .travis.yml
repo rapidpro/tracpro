@@ -12,6 +12,8 @@ cache:
 env:
   - DJANGO_SETTINGS_MODULE="tracpro.settings.tests"
 install:
+  - psql --version
+  - echo "select version();" | psql
   - pip install --upgrade pip
   - pip install -r requirements/tests.txt
   - npm install less
