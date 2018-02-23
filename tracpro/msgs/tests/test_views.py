@@ -99,11 +99,7 @@ class InboxMessageCRUDLTest(TracProDataTest):
 
         # Post a short message as a response.
         response = self.url_post('unicef', url, data={'text': 'Now is the time'}, follow=True)
-        self.assertRedirects(
-            response,
-            reverse('msgs.inboxmessage_conversation', kwargs=dict(contact_id=self.contact1.pk)),
-            subdomain='unicef'
-        )
+        self.assertRedirects(response, url, subdomain='unicef')
         # We did try to send it to Rapidpro
         self.assertTrue(self.mock_temba_client.create_broadcast.call_count)
 
