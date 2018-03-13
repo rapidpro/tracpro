@@ -6,6 +6,14 @@ Tracpro's version is incremented upon each merge to master according to our `Dep
 We recommend reviewing the release notes and code diffs before upgrading
 between versions.
 
+v1.9.0 (released 2018-03-13)
+----------------------------
+
+Code diff: https://github.com/rapidpro/tracpro/compare/v1.8.0...v1.9.0
+
+* Fix bug that was causing an exception when responding to a message
+  from a user's inbox.
+
 v1.8.0 (released 2017-12-28)
 ----------------------------
 
